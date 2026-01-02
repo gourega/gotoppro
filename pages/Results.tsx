@@ -1,12 +1,30 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule } from '../types';
 import { supabase } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
-import { Sparkles, ArrowRight, Loader2, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
+import { 
+  ArrowRight, 
+  Loader2, 
+  ShieldCheck, 
+  Zap, 
+  Plus, 
+  Lightbulb,
+  X,
+  ChevronRight,
+  TrendingUp,
+  Trash2,
+  CheckCircle2,
+  ShoppingBag,
+  Info,
+  Star
+} from 'lucide-react';
 
 const Results: React.FC = () => {
+  const [strategicModules, setStrategicModules] = useState<TrainingModule[]>([]);
+  const [catalogueModules, setCatalogueModules] = useState<TrainingModule[]>([]);
   const [cart, setCart] = useState<TrainingModule[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'phone' | 'payment'>('phone');
@@ -30,10 +48,13 @@ const Results: React.FC = () => {
       return q?.linkedModuleId;
     });
     
-    const modules = TRAINING_CATALOG.filter(m => negativeLinkedIds.includes(m.id));
-    setCart(modules);
+    const recommended = TRAINING_CATALOG.filter(m => negativeLinkedIds.includes(m.id));
+    const others = TRAINING_CATALOG.filter(m => !negativeLinkedIds.includes(m.id));
+    
+    setStrategicModules(recommended);
+    setCatalogueModules(others);
+    setCart(recommended);
 
-    // AI Synthesis
     const getAdvice = async () => {
       const negativeTexts = negativeQuestions.map((r: any) => {
         return DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text;
@@ -52,27 +73,61 @@ const Results: React.FC = () => {
 
   const pricingData = useMemo(() => {
     const count = cart.length;
-    let discount = count >= 13 ? 50 : count >= 9 ? 30 : count >= 5 ? 20 : 0;
+    let discount = 0;
+    let nextTierCount = 5;
+    let nextTierPercent = 20;
+
+    if (count >= 13) {
+      discount = 50;
+      nextTierCount = 13;
+      nextTierPercent = 50;
+    } else if (count >= 9) {
+      discount = 30;
+      nextTierCount = 13;
+      nextTierPercent = 50;
+    } else if (count >= 5) {
+      discount = 20;
+      nextTierCount = 9;
+      nextTierPercent = 30;
+    } else {
+      discount = 0;
+      nextTierCount = 5;
+      nextTierPercent = 20;
+    }
+
     const subtotal = cart.reduce((acc, curr) => acc + curr.price, 0);
     const savings = Math.round(subtotal * (discount / 100));
-    return { discount, subtotal, savings, total: subtotal - savings };
+    const progress = Math.min((count / 13) * 100, 100);
+
+    return { 
+      discount, 
+      subtotal, 
+      savings, 
+      total: subtotal - savings,
+      remainingForNext: nextTierCount > count ? nextTierCount - count : 0,
+      nextTierPercent,
+      progress,
+      count
+    };
   }, [cart]);
+
+  const toggleCartItem = (mod: TrainingModule) => {
+    setCart(prev => 
+      prev.find(item => item.id === mod.id) 
+        ? prev.filter(item => item.id !== mod.id)
+        : [...prev, mod]
+    );
+  };
 
   const handleIdentification = async () => {
     if (phoneInput.length < 8) {
       alert("Veuillez entrer un numéro valide");
       return;
     }
-    if (!supabase) {
-      alert("Le service d'identification est indisponible.");
-      return;
-    }
     setLoading(true);
     try {
       const cleanPhone = phoneInput.startsWith('+225') ? phoneInput : `+225${phoneInput.replace(/\s/g, '')}`;
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: cleanPhone,
-      });
+      const { error } = await supabase!.auth.signInWithOtp({ phone: cleanPhone });
       if (error) throw error;
       setCheckoutStep('payment');
     } catch (error: any) {
@@ -82,233 +137,344 @@ const Results: React.FC = () => {
     }
   };
 
+  const isInCart = (id: string) => cart.some(item => item.id === id);
+
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      {/* Header Premium */}
-      <section className="bg-white pt-24 pb-32 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-[10px] font-black uppercase tracking-[0.4em] mb-12">
-            <Zap className="w-3 h-3 fill-current" />
-            Analyse de Performance
-          </div>
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 mb-8 tracking-tight">
-            Votre Bilan d'Excellence
+    <div className="min-h-screen bg-[#fcfdfe] pb-24 pt-12">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        <header className="mb-14">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
+            Optimisation Stratégique
           </h1>
-          <p className="text-xl md:text-2xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
-            Voici les piliers stratégiques identifiés pour propulser votre salon vers de nouveaux sommets de rentabilité.
+          <p className="text-slate-500 text-lg font-medium max-w-2xl">
+            Votre plan de transformation est prêt. Sélectionnez les modules pour activer votre croissance.
           </p>
-        </div>
-      </section>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 -mt-16 pb-32">
-        {/* AI Strategy Section */}
-        <section className="mb-24">
-          <div className="bg-white rounded-[4rem] p-10 md:p-20 shadow-2xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-50/20 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
+        <div className="grid lg:grid-cols-12 gap-12 items-start">
+          
+          <div className="lg:col-span-8 space-y-16">
             
-            <div className="relative z-10 flex flex-col md:flex-row items-start gap-16">
-              <div className="flex-shrink-0 mx-auto md:mx-0">
-                 <div className="h-48 w-48 rounded-[3rem] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.1)] border-8 border-white rotate-6 relative group">
-                   <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
-                 </div>
-                 <div className="mt-8 text-center">
-                   <p className="text-[11px] font-black text-brand-600 uppercase tracking-widest mb-1">Expert Mentor</p>
-                   <p className="font-serif font-bold text-slate-900 text-2xl">Coach Kita</p>
-                 </div>
+            {/* L'Analyse de Coach Kita */}
+            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+                <TrendingUp className="w-48 h-48" />
               </div>
               
-              <div className="flex-grow">
-                 <div className="inline-flex items-center gap-3 px-5 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest mb-10 shadow-xl shadow-slate-900/20">
-                   <Sparkles className="w-3.5 h-3.5 text-brand-500" />
-                   Vision Stratégique Personnalisée
-                 </div>
-                 
-                 {loadingAdvice ? (
-                   <div className="space-y-6 animate-pulse">
-                     <div className="h-5 bg-slate-100 rounded-full w-full"></div>
-                     <div className="h-5 bg-slate-100 rounded-full w-5/6"></div>
-                     <div className="h-5 bg-slate-100 rounded-full w-2/3"></div>
-                   </div>
-                 ) : (
-                   <div className="relative">
-                     <span className="absolute -top-12 -left-8 text-9xl text-slate-100 font-serif opacity-50 select-none">“</span>
-                     <p className="text-3xl md:text-4xl font-serif leading-[1.4] italic text-slate-800 relative z-10">
-                       {aiAdvice}
-                     </p>
-                   </div>
-                 )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Modules Detected */}
-        <section className="mb-24 px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Modules Recommandés ({cart.length})</h2>
-            <div className="w-24 h-1 bg-brand-500 mx-auto rounded-full"></div>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {cart.map(mod => (
-              <div key={mod.id} className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-2 h-full bg-brand-100 group-hover:bg-brand-500 transition-colors"></div>
-                <div className="flex items-center gap-2 mb-6">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{mod.topic}</span>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-6 font-serif leading-tight group-hover:text-brand-600 transition-colors">{mod.title}</h3>
-                <p className="text-slate-500 leading-relaxed font-medium">
-                  {mod.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Pricing Box - CTA Excellence */}
-        <section className="bg-[#0c4a6e] rounded-[4rem] p-12 md:p-24 text-white shadow-[0_40px_100px_rgba(12,74,110,0.3)] relative overflow-hidden border border-white/10 group">
-          <div className="absolute top-0 right-0 p-16 opacity-[0.02] text-[20rem] pointer-events-none italic font-serif group-hover:scale-105 transition-transform duration-1000 leading-none">Pro</div>
-          
-          <div className="relative z-10">
-            <div className="grid lg:grid-cols-2 gap-20 items-center">
-              <div>
-                <div className="inline-flex items-center gap-3 px-6 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-10">
-                  <ShieldCheck className="w-4 h-4 text-brand-400" />
-                  Offre Certifiée Excellence
-                </div>
-                <h2 className="text-5xl md:text-7xl font-serif font-bold mb-10 leading-[1.1] tracking-tight">
-                  Prenez le contrôle <br/> de votre <span className="text-brand-500">destin</span>.
-                </h2>
-                <div className="space-y-6 mb-12">
-                   {[
-                     "Accès illimité aux modules sélectionnés",
-                     "Certifications professionnelles Go'Top",
-                     "Support stratégique de Coach Kita",
-                     "Plan d'action IA automatisé"
-                   ].map((item, i) => (
-                     <div key={i} className="flex items-center gap-4 text-lg font-medium text-slate-200">
-                       <div className="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/20">✓</div>
-                       {item}
-                     </div>
-                   ))}
-                </div>
-              </div>
-              
-              <div className="bg-white/5 backdrop-blur-2xl p-12 md:p-16 rounded-[4rem] border border-white/10 text-center relative shadow-2xl">
-                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-brand-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-500/30">
-                   Investissement Unique
-                 </div>
-                 
-                 <div className="mb-10 pt-4">
-                   <div className="flex flex-col items-center">
-                     <span className="text-7xl md:text-8xl font-black tracking-tighter mb-2">{pricingData.total.toLocaleString()}</span>
-                     <span className="text-2xl font-serif text-brand-400">FCFA TTC</span>
-                   </div>
-                   {pricingData.discount > 0 && (
-                     <div className="mt-6 inline-block bg-emerald-500/20 text-emerald-400 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                       Économie Pack : -{pricingData.savings.toLocaleString()} FCFA
-                     </div>
-                   )}
-                 </div>
-
-                 <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="w-full bg-brand-500 text-white py-8 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(14,165,233,0.4)] hover:bg-brand-400 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group"
-                 >
-                   Activer mon accès premium
-                   <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                 </button>
-                 
-                 <p className="mt-8 text-slate-400 text-[10px] font-black uppercase tracking-widest opacity-60">
-                   Paiement sécurisé via Mobile Money (Wave)
-                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Modal - Modern Look */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl">
-          <div className="bg-white rounded-[4rem] shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-500 border border-slate-100">
-            {checkoutStep === 'phone' ? (
-              <div className="p-12 md:p-16">
-                <div className="mb-12 text-center">
-                  <div className="h-28 w-28 rounded-[2.5rem] overflow-hidden shadow-2xl mb-10 border-4 border-white rotate-3 mx-auto relative group">
+              <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">
+                <div className="shrink-0 mx-auto">
+                  <div className="h-28 w-28 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500 ring-1 ring-slate-100">
                     <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
                   </div>
-                  <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Identification</h2>
-                  <p className="text-slate-500 font-medium text-lg leading-relaxed">
-                    Saisissez votre numéro pour lier votre réussite à votre compte personnel.
-                  </p>
                 </div>
                 
-                <div className="mb-12">
-                  <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Numéro WhatsApp (+225)</label>
-                  <div className="relative group">
-                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-brand-500 transition-colors group-focus-within:text-brand-600">+225</span>
-                    <input 
-                      type="tel"
-                      value={phoneInput}
-                      onChange={(e) => setPhoneInput(e.target.value)}
-                      placeholder="00 00 00 00 00"
-                      className="w-full pl-28 pr-8 py-8 rounded-[2.2rem] bg-slate-50 border-none outline-none text-2xl font-black text-slate-900 transition-all focus:bg-slate-100 ring-2 ring-transparent focus:ring-brand-500/10 shadow-inner"
-                      autoFocus
-                    />
+                <div className="flex-grow space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 font-serif italic">L'audit de Coach Kita</h2>
+                    <div className="h-1.5 w-16 bg-brand-500 rounded-full"></div>
                   </div>
+                  
+                  <div className="text-slate-700 font-medium text-lg leading-relaxed">
+                    {loadingAdvice ? (
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
+                        <span>Calcul de votre stratégie de rentabilité...</span>
+                      </div>
+                    ) : (
+                      aiAdvice || "Voici les leviers prioritaires identifiés pour votre établissement."
+                    )}
+                  </div>
+
+                  {/* Barre de progression de remise visuelle */}
+                  <div className="space-y-4 pt-4 border-t border-slate-50">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      <span>Réduction progressive</span>
+                      <span className="text-brand-600">Palier actuel: -{pricingData.discount}%</span>
+                    </div>
+                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
+                      <div 
+                        className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-1000 ease-out"
+                        style={{ width: `${pricingData.progress}%` }}
+                      ></div>
+                      {/* Marqueurs de paliers */}
+                      <div className="absolute inset-0 flex justify-between px-[38%] pointer-events-none">
+                        <div className="h-full w-px bg-white/30"></div>
+                        <div className="h-full w-px bg-white/30 ml-[30%]"></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[9px] font-bold text-slate-400">
+                      <span>0%</span>
+                      <span>-20% (5 modules)</span>
+                      <span>-30% (9 modules)</span>
+                      <span>-50% (13 modules)</span>
+                    </div>
+                    {pricingData.remainingForNext > 0 && (
+                      <div className="flex items-center gap-2 text-brand-700 font-black text-xs bg-brand-50 p-4 rounded-2xl border border-brand-100">
+                        <Star className="w-4 h-4 fill-brand-500 text-brand-500" />
+                        Ajoutez {pricingData.remainingForNext} module(s) pour débloquer la remise de -{pricingData.nextTierPercent}% !
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Priorités Stratégiques */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <Zap className="w-5 h-5 fill-current" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Vos Priorités Stratégiques</h2>
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Recommandé par l'IA pour corriger vos points faibles</p>
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {strategicModules.map((mod) => (
+                  <ModuleCard key={mod.id} mod={mod} isInCart={isInCart(mod.id)} onToggle={() => toggleCartItem(mod)} variant="premium" />
+                ))}
+              </div>
+            </section>
+
+            {/* Catalogue Général */}
+            <section className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Catalogue de Perfectionnement</h2>
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Modules complémentaires pour une expertise complète</p>
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {catalogueModules.map((mod) => (
+                  <ModuleCard key={mod.id} mod={mod} isInCart={isInCart(mod.id)} onToggle={() => toggleCartItem(mod)} variant="standard" />
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* COLONNE DROITE - Panier Facture Premium */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24">
+            <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
+              
+              <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="w-6 h-6 text-brand-600" />
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Votre Panier</h3>
+                </div>
+                <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
+                  {cart.length}
+                </div>
+              </div>
+
+              <div className="p-6 max-h-[350px] overflow-y-auto custom-scrollbar flex-grow bg-slate-50/30">
+                {cart.length === 0 ? (
+                  <div className="py-20 text-center space-y-4">
+                    <p className="text-slate-300 font-bold italic text-sm">Panier vide</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {cart.map(item => (
+                      <div key={item.id} className="p-5 bg-white rounded-3xl border border-slate-100 flex justify-between items-center group shadow-sm hover:shadow-md transition-all">
+                        <div className="pr-4 max-w-[160px]">
+                          <p className="text-[13px] font-black text-slate-800 leading-tight mb-1 truncate">{item.title}</p>
+                          <p className="text-[9px] text-brand-500 font-black uppercase tracking-widest font-mono">{item.price.toLocaleString()} FCFA</p>
+                        </div>
+                        <button 
+                          onClick={() => toggleCartItem(item)}
+                          className="p-3 text-rose-500 bg-rose-50 rounded-2xl hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Retirer</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* FACTURE STYLE TICKET DE LUXE */}
+              <div className="p-10 bg-slate-900 text-white rounded-t-[3.5rem] space-y-8 relative">
+                <div className="space-y-5">
+                  <div className="flex justify-between items-center font-mono">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sous-total brut</span>
+                    <span className="text-lg">{pricingData.subtotal.toLocaleString()} FCFA</span>
+                  </div>
+                  
+                  {pricingData.discount > 0 && (
+                    <div className="flex justify-between items-center text-emerald-400 font-mono">
+                      <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <Zap className="w-4 h-4 fill-current" />
+                        REMISE PACK (-{pricingData.discount}%)
+                      </span>
+                      <span className="text-lg">-{pricingData.savings.toLocaleString()} FCFA</span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-dashed border-white/20 pt-4"></div>
+
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Net à régler</p>
+                      <p className="text-4xl font-black text-white tracking-tighter font-mono">
+                        {pricingData.total.toLocaleString()}
+                        <span className="text-xs font-bold ml-1 opacity-50">FCFA</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={cart.length === 0}
+                  className="w-full py-6 bg-brand-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-900/40 hover:bg-brand-400 hover:-translate-y-1 active:scale-95 disabled:opacity-30 disabled:translate-y-0 transition-all flex items-center justify-center gap-4 group"
+                >
+                  Finaliser ma commande
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <div className="flex items-center justify-center gap-3 pt-2 opacity-50">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Sécurisé via Wave Côte d'Ivoire</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL DE PAIEMENT */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
+            {checkoutStep === 'phone' ? (
+              <div className="p-12">
+                <div className="mb-12 text-center">
+                  <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <ShoppingBag className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
+                  <p className="text-slate-500 font-medium text-sm">Validez votre panier pour générer la facture Wave.</p>
+                </div>
+                
+                <div className="mb-10">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">WhatsApp (+225)</label>
+                  <input 
+                    type="tel"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    placeholder="07 00 00 00 00"
+                    className="w-full px-8 py-6 rounded-[2rem] bg-slate-50 border-none outline-none text-2xl font-black text-slate-900 focus:ring-4 focus:ring-brand-500/10 transition-all text-center"
+                    autoFocus
+                  />
                 </div>
 
                 <div className="flex flex-col gap-6">
                   <button 
                     onClick={handleIdentification}
                     disabled={loading}
-                    className="w-full py-7 bg-brand-600 text-white font-black rounded-[2rem] hover:bg-brand-700 shadow-[0_20px_40px_rgba(14,165,233,0.3)] transition-all text-[12px] uppercase tracking-widest flex items-center justify-center"
+                    className="w-full py-6 bg-brand-600 text-white font-black rounded-3xl hover:bg-brand-700 shadow-xl shadow-brand-100 text-[11px] uppercase tracking-widest transition-all"
                   >
-                    {loading ? <Loader2 className="animate-spin" /> : "ACCÉDER À L'ÉTAPE SUIVANTE"}
+                    {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Afficher ma facture Wave"}
                   </button>
-                  <button 
-                    onClick={() => setIsModalOpen(false)} 
-                    className="w-full py-4 text-slate-400 font-black rounded-[2rem] hover:text-slate-600 transition text-[10px] uppercase tracking-widest"
-                  >
-                    RETOURNER AU BILAN
-                  </button>
+                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour</button>
                 </div>
               </div>
             ) : (
-              <div className="p-16 text-center">
-                <div className="h-28 w-28 bg-brand-50 text-brand-600 rounded-[3rem] flex items-center justify-center mx-auto mb-10 shadow-inner">
-                   <Zap className="w-12 h-12 fill-current" />
+              <div className="p-12 text-center">
+                <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-lg">
+                   <Zap className="w-10 h-10 fill-current" />
                 </div>
-                <h2 className="text-3xl font-serif font-bold text-slate-900 mb-6">Paiement Sécurisé</h2>
-                <p className="text-slate-500 mb-12 leading-relaxed font-medium text-lg">
-                  Transférez <b className="text-slate-900 text-2xl font-black underline decoration-brand-500 underline-offset-8">{pricingData.total.toLocaleString()} FCFA</b> via Wave pour activer votre espace.
+                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Paiement Wave CI</h2>
+                <p className="text-slate-500 mb-10 font-medium">
+                  Réglez <b className="text-slate-900 text-2xl font-mono block mt-2">{pricingData.total.toLocaleString()} FCFA</b>
                 </p>
                 
-                <div className="bg-slate-50 p-12 rounded-[3.5rem] mb-12 border border-slate-100 shadow-inner group">
-                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Scanner le QR Code Wave</div>
-                   <div className="p-4 bg-white rounded-[2.5rem] shadow-xl mx-auto inline-block border border-slate-100">
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pay.wave.com/m/M_ci_tl569RJDWLXi/c/ci/`} alt="QR" className="mix-blend-multiply" />
+                <div className="bg-slate-50 p-10 rounded-[3rem] mb-10 border border-slate-100 shadow-inner">
+                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Scannez le code QR ci-dessous</div>
+                   <div className="p-6 bg-white rounded-[2.5rem] shadow-xl inline-block group border border-slate-100">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pay.wave.com/m/M_ci_tl569RJDWLXi/c/ci/`} 
+                      alt="Paiement Wave" 
+                      className="w-48 h-48 group-hover:scale-105 transition-transform duration-500" 
+                    />
                    </div>
-                   <p className="mt-10 font-black text-slate-900 text-2xl tracking-tighter">+225 01 03 43 84 56</p>
-                   <p className="text-[9px] text-brand-600 font-black uppercase mt-2 tracking-widest">Identité : CanticThinkIA / Go'Top</p>
+                   <p className="mt-8 font-black text-slate-900 text-2xl tracking-tight">+225 01 03 43 84 56</p>
                 </div>
                 
                 <button 
                   onClick={() => navigate('/login')} 
-                  className="w-full bg-slate-900 text-white py-8 rounded-[2.2rem] font-black uppercase tracking-[0.2em] text-[12px] hover:bg-black transition shadow-2xl shadow-slate-900/20"
+                  className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] hover:bg-black transition-all shadow-2xl"
                 >
-                  J'AI EFFECTUÉ LE PAIEMENT
+                  J'ai effectué le paiement
                 </button>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+      `}</style>
     </div>
   );
 };
+
+// Fix: Explicitly typing ModuleCard as a React.FC to handle React-specific props like key and avoid TypeScript assignment errors.
+const ModuleCard: React.FC<{
+  mod: TrainingModule;
+  isInCart: boolean;
+  onToggle: () => void;
+  variant: 'premium' | 'standard';
+}> = ({ mod, isInCart, onToggle, variant }) => (
+  <div className={`bg-white rounded-[2.5rem] p-8 border transition-all duration-500 flex flex-col h-full group ${
+    isInCart 
+      ? 'border-brand-500 shadow-xl shadow-brand-50 bg-brand-50/5' 
+      : 'border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1'
+  }`}>
+    <div className="flex-grow space-y-4 mb-10">
+      <div className="flex justify-between items-center">
+        <span className={`text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${
+          variant === 'premium' 
+            ? 'bg-brand-900 text-white shadow-lg shadow-brand-900/20' 
+            : isInCart ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-500'
+        }`}>
+          {mod.topic} {variant === 'premium' && '★'}
+        </span>
+        {isInCart && <div className="h-6 w-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 className="w-4 h-4 text-white" /></div>}
+      </div>
+      <h3 className="text-2xl font-black text-slate-900 leading-tight group-hover:text-brand-600 transition-colors">{mod.title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed font-medium">{mod.description}</p>
+    </div>
+    
+    <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+      <div className="space-y-0.5">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Prix Module</p>
+        <span className="text-xl font-black text-brand-600 font-mono">{mod.price.toLocaleString()} FCFA</span>
+      </div>
+      <button 
+        onClick={onToggle}
+        className={`px-7 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${
+          isInCart 
+            ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white shadow-rose-100' 
+            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white shadow-emerald-100'
+        }`}
+      >
+        {isInCart ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+        {isInCart ? 'Retirer' : 'Ajouter'}
+      </button>
+    </div>
+  </div>
+);
 
 export default Results;
