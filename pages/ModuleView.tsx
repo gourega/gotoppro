@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG } from '../constants';
@@ -5,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
 import ReactCanvasConfetti from 'react-canvas-confetti';
+// Added Zap and Loader2 to the imports
+import { ChevronLeft, Sparkles, Book, Award, ArrowRight, CheckCircle2, Zap, Loader2 } from 'lucide-react';
 
 const ModuleView: React.FC = () => {
   const { moduleId } = useParams();
@@ -84,123 +87,166 @@ const ModuleView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
+    <div className="min-h-screen bg-white">
       {shouldFire && (
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
           onInit={({ confetti }) => {
             confetti({
-              particleCount: 150,
-              spread: 70,
-              origin: { y: 0.6 }
+              particleCount: 200,
+              spread: 100,
+              origin: { y: 0.6 },
+              colors: ['#0ea5e9', '#0c4a6e', '#fbbf24']
             });
             setShouldFire(false);
           }}
         />
       )}
       
-      <div className="mb-8 flex items-center justify-between">
-        <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-brand-600 flex items-center gap-2 font-bold text-sm">
-          ← Retour au tableau de bord
-        </button>
-        <div className="flex bg-slate-200 p-1 rounded-2xl">
-          <button onClick={() => setActiveTab('lesson')} className={`px-6 py-2 rounded-xl font-bold transition text-sm ${activeTab === 'lesson' ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-500'}`}>Cours</button>
-          <button onClick={() => setActiveTab('quiz')} className={`px-6 py-2 rounded-xl font-bold transition text-sm ${activeTab === 'quiz' ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-500'}`}>Certification</button>
+      {/* Navigation Header */}
+      <div className="sticky top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors font-black text-[10px] uppercase tracking-widest group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Retour
+          </button>
+          
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+            <button 
+              onClick={() => setActiveTab('lesson')} 
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'lesson' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Book className="w-3 h-3" />
+              La Leçon
+            </button>
+            <button 
+              onClick={() => setActiveTab('quiz')} 
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quiz' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Award className="w-3 h-3" />
+              Certification
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 min-h-[500px]">
+      {/* Main Content Area */}
+      <div className="max-w-3xl mx-auto px-6 py-20 pb-32">
         {activeTab === 'lesson' ? (
-          <div className="p-8 md:p-12">
-            <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <span className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em]">{module.topic}</span>
-                <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mt-2">{module.title}</h1>
-              </div>
-              <div className="bg-brand-50 px-4 py-2 rounded-xl border border-brand-100">
-                <p className="text-[10px] font-black text-brand-600 uppercase">Durée estimée</p>
-                <p className="font-bold text-slate-900">10-15 min</p>
-              </div>
+          <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <div className="text-center mb-20">
+              <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-5 py-2 rounded-full uppercase tracking-[0.3em] inline-block mb-8">{module.topic}</span>
+              <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-tight mb-8">{module.title}</h1>
+              <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto">
+                "{module.mini_course}"
+              </p>
             </div>
 
-            <div className="prose prose-slate max-w-none prose-lg" dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
+            <div className="prose prose-slate prose-xl max-w-none prose-headings:font-serif prose-headings:font-bold prose-p:leading-relaxed prose-strong:text-brand-900 prose-li:text-slate-600">
+               <div dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
+            </div>
             
-            <div className="mt-16 bg-slate-50 rounded-3xl p-8 border border-slate-100 flex flex-col md:flex-row gap-8 items-start relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">💡</div>
-               <div className="h-20 w-20 rounded-2xl bg-white shadow-lg overflow-hidden flex-shrink-0 rotate-3 p-1">
-                 <img src={COACH_AVATAR_URL} alt="Coach Kita" className="w-full h-full object-cover rounded-xl" />
+            <div className="my-24 bg-brand-50 rounded-[4rem] p-12 md:p-16 border border-brand-100 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                 <Sparkles className="w-32 h-32" />
                </div>
-               <div>
-                 <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">Le Conseil Privé de Coach Kita</h4>
-                 <p className="text-slate-700 italic leading-relaxed text-lg">"{module.coach_tip}"</p>
+               
+               <div className="flex flex-col md:flex-row gap-12 items-center md:items-start relative z-10">
+                 <div className="h-32 w-32 rounded-[2.5rem] bg-white shadow-2xl overflow-hidden p-1.5 rotate-3 group-hover:rotate-0 transition-transform flex-shrink-0">
+                   <img src={COACH_AVATAR_URL} alt="Coach Kita" className="w-full h-full object-cover rounded-[2rem]" />
+                 </div>
+                 <div>
+                   <h4 className="font-black text-brand-900 uppercase tracking-[0.4em] text-[10px] mb-6 flex items-center gap-2">
+                     <div className="w-6 h-px bg-brand-900"></div>
+                     Conseil de Coach Kita
+                   </h4>
+                   <p className="text-brand-950 font-serif italic leading-relaxed text-2xl">
+                     "{module.coach_tip}"
+                   </p>
+                 </div>
                </div>
             </div>
 
-            <div className="mt-16 flex justify-center">
+            <div className="flex justify-center pt-10">
               <button 
                 onClick={() => setActiveTab('quiz')} 
-                className="bg-brand-600 text-white px-10 py-5 rounded-2xl font-black hover:bg-brand-700 transition shadow-xl shadow-brand-200 transform hover:-translate-y-1 active:scale-95 uppercase tracking-widest text-xs"
+                className="bg-brand-900 text-white px-12 py-7 rounded-[2rem] font-black hover:bg-brand-800 transition shadow-[0_20px_60px_rgba(12,74,110,0.2)] flex items-center gap-4 group uppercase tracking-[0.2em] text-[11px]"
               >
-                Passer la certification →
+                Passer la certification
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
-          </div>
+          </article>
         ) : (
-          <div className="p-8 md:p-12 flex flex-col items-center justify-center min-h-[500px]">
+          <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             {quizState === 'intro' && (
-              <div className="text-center max-w-md">
-                <div className="h-24 w-24 bg-brand-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-                  <span className="text-5xl">🎯</span>
+              <div className="text-center max-w-lg mx-auto">
+                <div className="h-32 w-32 bg-slate-900 text-white rounded-[3rem] flex items-center justify-center mx-auto mb-12 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-brand-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Award className="w-12 h-12 relative z-10" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-4 font-serif">Validation des acquis</h2>
-                <p className="text-slate-500 mb-10 leading-relaxed font-medium">Obtenez 80% de bonnes réponses pour valider ce module et débloquer votre badge de compétence.</p>
-                <button onClick={handleStartQuiz} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black hover:bg-slate-800 transition shadow-xl shadow-slate-200 uppercase tracking-widest text-xs">Démarrer maintenant</button>
+                <h2 className="text-4xl font-bold text-slate-900 mb-6 font-serif tracking-tight">Certification Professionnelle</h2>
+                <p className="text-slate-500 mb-12 text-lg font-medium leading-relaxed">
+                  Validez vos acquis avec ce test de haute précision. Un score de <b className="text-slate-900">80%</b> est requis pour obtenir votre badge d'excellence.
+                </p>
+                <button onClick={handleStartQuiz} className="w-full bg-brand-600 text-white py-6 rounded-[2rem] font-black hover:bg-brand-700 transition shadow-xl shadow-brand-100 uppercase tracking-widest text-[11px]">Démarrer la session</button>
               </div>
             )}
+
             {quizState === 'active' && (
-              <div className="w-full max-w-2xl">
-                <div className="mb-10">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Question {currentIdx + 1} sur {module.quiz_questions.length}</p>
-                    <span className="h-1.5 w-32 bg-slate-100 rounded-full overflow-hidden">
-                      <span className="block h-full bg-brand-500 transition-all duration-300" style={{ width: `${((currentIdx + 1) / module.quiz_questions.length) * 100}%` }}></span>
-                    </span>
+              <div className="w-full animate-in slide-in-from-right-10 duration-500">
+                <div className="mb-16">
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em]">Étape {currentIdx + 1} de {module.quiz_questions.length}</span>
+                    <div className="flex gap-1.5">
+                      {module.quiz_questions.map((_, i) => (
+                        <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-500 ${i <= currentIdx ? 'bg-brand-500' : 'bg-slate-100'}`}></div>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 leading-tight">{module.quiz_questions[currentIdx].question}</h3>
+                  <h3 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 leading-tight tracking-tight">{module.quiz_questions[currentIdx].question}</h3>
                 </div>
-                <div className="grid gap-4">
+                
+                <div className="grid gap-6">
                   {module.quiz_questions[currentIdx].options.map((opt, i) => (
                     <button 
                       key={i} 
                       onClick={() => handleAnswer(i)} 
-                      className="w-full text-left p-6 rounded-2xl border-2 border-slate-50 bg-slate-50/50 hover:border-brand-500 hover:bg-white hover:shadow-xl hover:shadow-brand-900/5 transition-all duration-300 font-bold text-slate-700"
+                      className="w-full text-left p-8 rounded-[2rem] border-2 border-slate-50 bg-slate-50/50 hover:border-brand-500 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 font-bold text-slate-800 text-lg group flex items-center justify-between"
                     >
                       {opt}
+                      <div className="h-6 w-6 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
+
             {quizState === 'results' && (
-              <div className="text-center w-full max-w-2xl">
-                <div className="h-20 w-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 text-4xl">🏆</div>
-                <h2 className="text-4xl font-bold text-slate-900 font-serif">Félicitations !</h2>
-                <div className="mt-4 flex items-center justify-center gap-4">
-                   <div className="bg-slate-100 px-4 py-2 rounded-xl text-sm font-bold text-slate-600">Score final : {user.progress?.[module.id]}%</div>
+              <div className="text-center w-full animate-in zoom-in-95 duration-700">
+                <div className="h-32 w-32 bg-emerald-50 text-emerald-500 rounded-[3rem] flex items-center justify-center mx-auto mb-10 shadow-inner ring-8 ring-emerald-50/50">
+                  <CheckCircle2 className="w-16 h-16" />
+                </div>
+                <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">Mission Accomplie !</h2>
+                <div className="inline-block px-8 py-3 bg-slate-900 text-white rounded-full text-sm font-black uppercase tracking-widest mb-16">
+                  Score de certification : {user.progress?.[module.id]}%
                 </div>
                 
-                <div className="mt-12 bg-slate-900 rounded-[2.5rem] p-10 text-white text-left shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12">📝</div>
-                  <h4 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.3em] mb-4">Engagement Actionnel</h4>
-                  <p className="text-2xl font-serif mb-8 leading-relaxed italic text-slate-200">"{module.strategic_mantra}"</p>
+                <div className="bg-[#0c4a6e] rounded-[4rem] p-12 md:p-16 text-white text-left shadow-[0_40px_100px_rgba(12,74,110,0.2)] relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] pointer-events-none italic font-serif">Action</div>
+                  <h4 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-8 flex items-center gap-2">
+                    <Zap className="w-3 h-3 fill-current" />
+                    Engagement Immédiat
+                  </h4>
+                  <p className="text-2xl font-serif mb-12 leading-relaxed italic text-slate-200">"{module.strategic_mantra}"</p>
                   
-                  <div className="mb-8">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Quel est votre premier engagement concret ?</label>
+                  <div className="mb-10">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Décidez de votre première action concrète :</label>
                     <textarea 
                       value={commitment} 
                       onChange={e => setCommitment(e.target.value)} 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white placeholder-slate-600 outline-none ring-2 ring-transparent focus:ring-brand-500 focus:bg-white/10 transition text-lg" 
-                      placeholder="Ex: Je vais briefer mon équipe sur l'accueil demain matin..." 
+                      className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-8 text-white placeholder-slate-600 outline-none ring-2 ring-transparent focus:ring-brand-500/30 focus:bg-white/10 transition text-xl font-medium" 
+                      placeholder="Ex: Demain à 9h, je brief l'équipe sur..." 
                       rows={3} 
                     />
                   </div>
@@ -208,9 +254,10 @@ const ModuleView: React.FC = () => {
                   <button 
                     onClick={handleCommit} 
                     disabled={isSaving || !commitment.trim()} 
-                    className="w-full bg-brand-600 py-5 rounded-2xl font-black hover:bg-brand-700 transition disabled:opacity-20 shadow-xl shadow-brand-900/50 uppercase tracking-widest text-xs"
+                    className="w-full bg-brand-500 py-7 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3"
                   >
-                    {isSaving ? 'Synchronisation...' : 'Enregistrer mon engagement'}
+                    {isSaving ? <Loader2 className="animate-spin" /> : "Sceller mon engagement"}
+                    {!isSaving && <ArrowRight className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
