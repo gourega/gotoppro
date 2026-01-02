@@ -16,6 +16,8 @@ const Login: React.FC = () => {
   const handlePhoneLogin = async () => {
     setError('');
     if (!phone) return setError('Veuillez entrer un numéro au format +225XXXXXXXXXX.');
+    if (!supabase) return setError("Le service de connexion est indisponible actuellement.");
+    
     setLoading(true);
     try {
       const { error: authError } = await supabase.auth.signInWithOtp({
@@ -33,6 +35,8 @@ const Login: React.FC = () => {
   const verifyOtp = async () => {
     setError('');
     if (!otp) return setError('Veuillez entrer le code reçu.');
+    if (!supabase) return setError("Le service de connexion est indisponible actuellement.");
+
     setLoading(true);
     try {
       const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -52,6 +56,8 @@ const Login: React.FC = () => {
   const handleEmailLogin = async () => {
     setError('');
     if (!email || !password) return setError('Veuillez remplir tous les champs.');
+    if (!supabase) return setError("Le service de connexion est indisponible actuellement.");
+
     setLoading(true);
     try {
       const { error: loginError } = await supabase.auth.signInWithPassword({

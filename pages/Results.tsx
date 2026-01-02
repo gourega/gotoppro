@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
@@ -42,7 +41,7 @@ const Results: React.FC = () => {
 
       if (negativeTexts.length > 0) {
         const advice = await generateStrategicAdvice(negativeTexts);
-        setAiAdvice(advice);
+        setAiAdvice(advice ?? null);
       }
       setLoadingAdvice(false);
     };
@@ -61,6 +60,10 @@ const Results: React.FC = () => {
   const handleIdentification = async () => {
     if (phoneInput.length < 8) {
       alert("Veuillez entrer un numéro valide");
+      return;
+    }
+    if (!supabase) {
+      alert("Le service d'identification est indisponible.");
       return;
     }
     setLoading(true);

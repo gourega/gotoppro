@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
-import Confetti from 'react-canvas-confetti';
+import ReactCanvasConfetti from 'react-canvas-confetti';
 
 const ModuleView: React.FC = () => {
   const { moduleId } = useParams();
@@ -16,7 +15,7 @@ const ModuleView: React.FC = () => {
   const [quizState, setQuizState] = useState<'intro' | 'active' | 'results'>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
-  const [fire, setFire] = useState(false);
+  const [shouldFire, setShouldFire] = useState(false);
   const [commitment, setCommitment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -57,7 +56,7 @@ const ModuleView: React.FC = () => {
     updatedUser.progress[module.id] = percentage;
     
     if (percentage >= 80) {
-      setFire(true);
+      setShouldFire(true);
       if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
     }
 
@@ -86,7 +85,19 @@ const ModuleView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      {fire && <Confetti fire={fire} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }} />}
+      {shouldFire && (
+        <ReactCanvasConfetti
+          style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
+          onInit={({ confetti }) => {
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+            setShouldFire(false);
+          }}
+        />
+      )}
       
       <div className="mb-8 flex items-center justify-between">
         <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-brand-600 flex items-center gap-2 font-bold text-sm">
