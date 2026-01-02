@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getAllUsers, toggleUserStatus, updateUserRole, createTestUser, deleteUserProfile } from '../services/supabase';
+import { getAllUsers, toggleUserStatus, updateUserRole, deleteUserProfile } from '../services/supabase';
 import { UserProfile, UserRole } from '../types';
 
 const AdminDashboard: React.FC = () => {
@@ -8,7 +9,7 @@ const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'active' | 'tests'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'active'>('all');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
@@ -28,19 +29,6 @@ const AdminDashboard: React.FC = () => {
     } catch (err) {
       console.error(err);
       showNotification("Erreur lors de la récupération des données", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSimulateUser = async () => {
-    try {
-      setLoading(true);
-      const newUser = await createTestUser();
-      showNotification(`Client test ${newUser.firstName} créé avec succès !`);
-      await fetchUsers();
-    } catch (err) {
-      showNotification("Erreur : Vérifiez vos permissions RLS sur Supabase", "error");
     } finally {
       setLoading(false);
     }
@@ -85,19 +73,16 @@ const AdminDashboard: React.FC = () => {
   const stats = useMemo(() => {
     const active = users.filter(u => u.isActive);
     const pending = users.filter(u => !u.isActive);
-    const tests = users.filter(u => u.phoneNumber.startsWith('+22500000'));
-    const estimatedRevenue = active.filter(u => !u.phoneNumber.startsWith('+22500000')).reduce((acc, u) => acc + (u.purchasedModuleIds?.length || 0) * 500, 0);
+    const estimatedRevenue = active.reduce((acc, u) => acc + (u.purchasedModuleIds?.length || 0) * 500, 0);
 
-    return { total: users.length, active: active.length, pending: pending.length, tests: tests.length, revenue: estimatedRevenue };
+    return { total: users.length, active: active.length, pending: pending.length, revenue: estimatedRevenue };
   }, [users]);
 
   const filteredUsers = users.filter(u => {
     const nameMatch = (u.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                      (u.lastName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSearch = u.phoneNumber.includes(searchTerm) || nameMatch;
-    const isTest = u.phoneNumber.startsWith('+22500000');
     
-    if (filterStatus === 'tests') return isTest && matchesSearch;
     const matchesStatus = filterStatus === 'all' || 
       (filterStatus === 'pending' && !u.isActive) || 
       (filterStatus === 'active' && u.isActive);
@@ -123,32 +108,20 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-4xl font-serif font-bold text-slate-900 tracking-tight">Console d'Administration</h1>
             <p className="text-slate-500 mt-2 font-medium">Pilotage stratégique de Go'Top Pro.</p>
           </div>
-          <div className="flex items-center gap-3">
-            {currentUser?.role === 'SUPER_ADMIN' && (
-              <button 
-                onClick={handleSimulateUser}
-                disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 font-black text-[10px] uppercase tracking-widest hover:bg-indigo-100 transition shadow-sm disabled:opacity-50"
-              >
-                🧪 {loading ? 'Création...' : 'Créer Client Test'}
-              </button>
-            )}
-            <button 
-              onClick={fetchUsers}
-              className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm text-slate-400"
-            >
-              <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
+          <button 
+            onClick={fetchUsers}
+            className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm text-slate-400"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard title="Total Clients" value={stats.total} icon="👥" color="bg-blue-50 text-blue-600" />
           <StatCard title="Attente Wave" value={stats.pending} icon="⏳" color="bg-amber-50 text-amber-600" pulse={stats.pending > 0} />
           <StatCard title="Revenus Réels" value={`${stats.revenue.toLocaleString()} FCFA`} icon="💰" color="bg-emerald-50 text-emerald-600" />
-          <StatCard title="Comptes Tests" value={stats.tests} icon="🧪" color="bg-indigo-50 text-indigo-600" />
         </div>
       </div>
 
@@ -171,7 +144,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 self-start">
             <FilterBtn active={filterStatus === 'all'} onClick={() => setFilterStatus('all')} label="Tous" />
             <FilterBtn active={filterStatus === 'pending'} onClick={() => setFilterStatus('pending')} label="En attente" count={stats.pending} />
-            <FilterBtn active={filterStatus === 'tests'} onClick={() => setFilterStatus('tests')} label="Tests" count={stats.tests} />
+            <FilterBtn active={filterStatus === 'active'} onClick={() => setFilterStatus('active')} label="Actifs" />
           </div>
         </div>
 
@@ -192,19 +165,14 @@ const AdminDashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredUsers.map(u => (
-                  <tr key={u.uid} className={`group hover:bg-slate-50/80 transition-all ${u.phoneNumber.startsWith('+22500000') ? 'bg-indigo-50/5' : ''}`}>
+                  <tr key={u.uid} className="group hover:bg-slate-50/80 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="h-11 w-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center font-bold text-slate-400 shadow-sm overflow-hidden">
                           {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/> : (u.firstName?.[0] || 'U')}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-slate-900">{u.firstName} {u.lastName || ''}</p>
-                            {u.phoneNumber.startsWith('+22500000') && (
-                              <span className="text-[8px] font-black bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-md uppercase">Test</span>
-                            )}
-                          </div>
+                          <p className="font-bold text-slate-900">{u.firstName} {u.lastName || ''}</p>
                           <p className="text-xs font-bold text-slate-400">{u.phoneNumber}</p>
                         </div>
                       </div>

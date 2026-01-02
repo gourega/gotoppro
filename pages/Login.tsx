@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -123,10 +124,6 @@ const Login: React.FC = () => {
               >
                 {loading ? 'Envoi...' : 'Recevoir le code'}
               </button>
-              <p className="text-[10px] text-slate-400 text-center font-bold">
-                Pour le test Super Admin, utilisez le numéro <br/>
-                <span className="text-brand-500">+2250001020304</span>
-              </p>
             </div>
           ) : (
             <div className="space-y-6">
