@@ -30,7 +30,6 @@ const QUIZ_SCHEMA = {
  * Generates dynamic quiz content based on salon training topics using the Gemini API.
  */
 export const generateDynamicQuiz = async (topic: string, moduleTitle: string) => {
-  // Fix: Instantiating GoogleGenAI inside the function to ensure the most current environment configuration (API Key) is used.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -50,11 +49,57 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
       }
     });
     
-    // Fix: text is a property on GenerateContentResponse, not a method. Trimming for safety.
     const jsonStr = response.text?.trim();
     return JSON.parse(jsonStr || '{}');
   } catch (error) {
     console.error("Gemini Error:", error);
     return null;
   }
+};
+
+/**
+ * Generates a strategic personalized summary based on diagnostic results.
+ */
+export const generateStrategicAdvice = async (negativePoints: string[]) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const pointsStr = negativePoints.join(", ");
+  const prompt = `
+    Rôle: Coach Kita.
+    Contexte: Un gérant de salon vient de faire un diagnostic. Ses points faibles sont: ${pointsStr}.
+    Tâche: Rédige un court paragraphe d'analyse stratégique (max 150 mots) très motivant et "pro".
+    Structure:
+    1. Un constat honnête mais encourageant.
+    2. La priorité absolue selon toi.
+    3. Une vision de succès futur.
+    Langage: Français ivoirien élégant/professionnel (quelques expressions locales autorisées si elles restent pro).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        temperature: 0.8,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Strategic Advice Error:", error);
+    return "L'excellence vous attend. Focalisez-vous sur vos priorités pour transformer votre salon en succès.";
+  }
+};
+
+/**
+ * Chat instance for interactive coaching.
+ */
+export const createCoachChat = () => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return ai.chats.create({
+    model: 'gemini-3-flash-preview',
+    config: {
+      systemInstruction: "Tu es Coach Kita, l'expert mentor de Go'Top Pro. Ton ton est celui d'un coach de haut niveau : exigeant, visionnaire, mais profondément bienveillant envers les gérants de salon de coiffure en Afrique. Tu aides sur la gestion, le management, le marketing et la technique. Sois concis et percutant.",
+    },
+  });
 };
