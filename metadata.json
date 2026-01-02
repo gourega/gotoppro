@@ -1,0 +1,8 @@
+{
+  "name": "Go'Top Pro - Excellence en Beauté",
+  "description": "Plateforme de diagnostic et de formation continue pour gérants de salons de coiffure et instituts de beauté, optimisée avec l'IA Gemini pour des parcours personnalisés.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
