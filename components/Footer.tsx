@@ -160,19 +160,20 @@ const Footer: React.FC = () => {
                   <div className="mt-2 p-3 bg-slate-900/50 rounded-lg border border-rose-500/30 text-[10px] leading-relaxed font-medium">
                     <p className="text-white mb-2 flex items-center gap-2">
                       <HelpCircle className="w-3 h-3 text-brand-400" />
-                      Comment débloquer :
+                      Comment débloquer définitivement :
                     </p>
-                    <ol className="list-decimal list-inside space-y-1 text-slate-400">
-                      <li>Allez dans votre dashboard Supabase</li>
-                      <li>Authentication {'>'} Providers {'>'} Email</li>
-                      <li>Décochez <span className="text-brand-400">"Confirm email"</span></li>
-                      <li>Cliquez sur <span className="text-brand-400">Save</span></li>
+                    <ol className="list-decimal list-inside space-y-2 text-slate-400">
+                      <li>Dans Supabase, <span className="text-rose-400">supprimez l'utilisateur</span> {email || "actuel"}.</li>
+                      <li>Vérifiez que <span className="text-brand-400">"Confirm email"</span> est bien décoché dans Authentication {'>'} Settings.</li>
+                      <li>Cliquez sur <span className="text-emerald-400">"Add User"</span> {'>'} <span className="text-emerald-400">"Create new user"</span>.</li>
+                      <li>Saisissez l'email et le mot de passe manuellement.</li>
                     </ol>
+                    <p className="mt-3 text-[9px] text-slate-500 italic">L'utilisateur sera créé avec le statut "Confirmed" immédiatement.</p>
                     <button 
                       onClick={handleAdminLogin}
                       className="mt-4 w-full py-2 bg-brand-500/20 text-brand-400 rounded-md hover:bg-brand-500/30 transition border border-brand-500/40 uppercase tracking-widest font-black text-[9px]"
                     >
-                      Réessayer après correction
+                      Réessayer après recréation
                     </button>
                   </div>
                 )}
