@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -165,7 +164,7 @@ const Footer: React.FC = () => {
                     </p>
                     <ol className="list-decimal list-inside space-y-1 text-slate-400">
                       <li>Allez dans votre dashboard Supabase</li>
-                      <li>Authentication &gt; Providers &gt; Email</li>
+                      <li>Authentication {'>'} Providers {'>'} Email</li>
                       <li>Décochez <span className="text-brand-400">"Confirm email"</span></li>
                       <li>Cliquez sur <span className="text-brand-400">Save</span></li>
                     </ol>
