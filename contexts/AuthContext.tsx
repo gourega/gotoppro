@@ -4,7 +4,6 @@ import { supabase, getUserProfile, saveUserProfile } from '../services/supabase'
 import { UserProfile } from '../types';
 import { SUPER_ADMIN_PHONE_NUMBER } from '../constants';
 
-// Utilisation de process.env pour correspondre à la config Vite
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
 interface AuthContextType {
@@ -62,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth State Change:", event);
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         await handleUserSetup(session.user);
       } else if (event === 'SIGNED_OUT') {
@@ -74,17 +74,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
-    // S'assurer qu'on ne reste pas bloqué indéfiniment
-    const timeout = setTimeout(() => {
-      if (loading) setLoading(false);
-    }, 5000);
+    // Si on a déjà l'utilisateur en mémoire et qu'il correspond, on ne refait pas tout
+    if (user && user.uid === authUser.id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    const setupTimeout = setTimeout(() => {
+      console.warn("User setup timeout reached");
+      setLoading(false);
+    }, 8000);
 
     try {
       const uid = authUser.id;
       const phone = authUser.phone || '';
       const email = authUser.email || '';
 
-      // Détection du statut Master Admin
       const isMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || phone === SUPER_ADMIN_PHONE_NUMBER;
       
       let profile = await getUserProfile(uid);
@@ -108,12 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         try {
-          // On tente la sauvegarde, mais on ne bloque pas si la RLS de Supabase refuse
           await saveUserProfile(newProfile);
           profile = newProfile;
         } catch (saveErr) {
-          console.warn("Profil non sauvegardé en base (vérifiez RLS), utilisation du profil mémoire:", saveErr);
-          profile = newProfile; // On garde le profil en mémoire pour permettre l'accès UI
+          console.warn("Profil non sauvegardé en base, utilisation mémoire:", saveErr);
+          profile = newProfile;
         }
       }
       
@@ -121,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error("Erreur critique setup utilisateur:", err);
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(setupTimeout);
       setLoading(false);
     }
   };
@@ -129,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     if (supabase) await supabase.auth.signOut();
     setUser(null);
+    setLoading(false);
   };
 
   return (

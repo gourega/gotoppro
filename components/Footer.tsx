@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -26,24 +27,45 @@ const Footer: React.FC = () => {
       return;
     }
 
+    // Création d'un contrôleur d'abandon pour éviter les attentes infinies
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      if (loading) {
+        setLoading(false);
+        setError("Le serveur met trop de temps à répondre. Vérifiez votre connexion.");
+      }
+    }, 12000); // 12 secondes max
+
     try {
+      console.log("Tentative de connexion admin...");
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim(),
       });
+
+      clearTimeout(timeoutId);
 
       if (loginError) {
         throw loginError;
       }
 
       if (data?.user) {
+        console.log("Connexion réussie, redirection...");
         setIsAdminModalOpen(false);
-        navigate('/admin');
+        // On attend un tout petit peu pour laisser le temps au AuthContext de se mettre à jour
+        setTimeout(() => {
+          navigate('/admin');
+          setLoading(false);
+        }, 500);
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error("Erreur Auth Admin:", err);
       
-      if (err.message === "Email not confirmed") {
+      if (err.name === 'AbortError') {
+        setError("Délai d'attente dépassé. Réessayez.");
+      } else if (err.message === "Email not confirmed") {
         setError("Email non confirmé dans Supabase.");
         setShowTroubleshoot(true);
       } else if (err.message === "Invalid login credentials") {
@@ -51,7 +73,6 @@ const Footer: React.FC = () => {
       } else {
         setError(err.message || "Une erreur est survenue.");
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -164,17 +185,11 @@ const Footer: React.FC = () => {
                     </p>
                     <ol className="list-decimal list-inside space-y-2 text-slate-400">
                       <li>Dans Supabase, <span className="text-rose-400">supprimez l'utilisateur</span> {email || "actuel"}.</li>
-                      <li>Vérifiez que <span className="text-brand-400">"Confirm email"</span> est bien décoché dans Authentication {'>'} Settings.</li>
+                      <li>Vérifiez que <span className="text-brand-400">"Confirm email"</span> est bien décoché dans Configuration {'>'} Sign In / Providers.</li>
                       <li>Cliquez sur <span className="text-emerald-400">"Add User"</span> {'>'} <span className="text-emerald-400">"Create new user"</span>.</li>
                       <li>Saisissez l'email et le mot de passe manuellement.</li>
                     </ol>
                     <p className="mt-3 text-[9px] text-slate-500 italic">L'utilisateur sera créé avec le statut "Confirmed" immédiatement.</p>
-                    <button 
-                      onClick={handleAdminLogin}
-                      className="mt-4 w-full py-2 bg-brand-500/20 text-brand-400 rounded-md hover:bg-brand-500/30 transition border border-brand-500/40 uppercase tracking-widest font-black text-[9px]"
-                    >
-                      Réessayer après recréation
-                    </button>
                   </div>
                 )}
               </div>
@@ -190,8 +205,9 @@ const Footer: React.FC = () => {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                     autoComplete="email"
-                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium disabled:opacity-50"
                   />
                 </div>
                 <div className="relative">
@@ -202,8 +218,9 @@ const Footer: React.FC = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
+                    disabled={loading}
                     autoComplete="current-password"
-                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium disabled:opacity-50"
                   />
                 </div>
               </div>
