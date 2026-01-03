@@ -60,34 +60,48 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
 /**
  * Generates a strategic personalized summary based on diagnostic results.
  */
-export const generateStrategicAdvice = async (negativePoints: string[]) => {
+export const generateStrategicAdvice = async (negativePoints: string[], isPerfectScore: boolean = false) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const pointsStr = negativePoints.join(", ");
-  const prompt = `
-    Rôle: Coach Kita.
-    Contexte: Un gérant de salon vient de faire un diagnostic. Ses points faibles sont: ${pointsStr}.
-    Tâche: Rédige un court paragraphe d'analyse stratégique (max 150 mots) très motivant et "pro".
-    Structure:
-    1. Un constat honnête mais encourageant.
-    2. La priorité absolue selon toi.
-    3. Une vision de succès futur.
-    Langage: Français ivoirien élégant/professionnel (quelques expressions locales autorisées si elles restent pro).
-  `;
+  let prompt = "";
+  
+  if (isPerfectScore) {
+    prompt = `
+      Rôle: Coach Kita, mentor de luxe pour gérants de salons de coiffure.
+      Contexte: Le gérant a répondu "OUI" à tous les points du diagnostic. C'est un profil performant.
+      Tâche: Rédige une analyse (max 180 mots) qui le félicite mais le met au défi. 
+      Argumentaire: "Le plus dur n'est pas de monter, c'est de rester au sommet". Explique que pour passer de "bon" à "légendaire", il doit s'attaquer à la haute gestion et au marketing d'influence.
+      Incite-le à prendre les modules de perfectionnement pour sécuriser son empire.
+      Ton: Très prestigieux, visionnaire, inspirant. Langage élégant.
+    `;
+  } else {
+    const pointsStr = negativePoints.join(", ");
+    prompt = `
+      Rôle: Coach Kita, mentor expert en business de la beauté.
+      Contexte: Un gérant a des lacunes sur: ${pointsStr}.
+      Tâche: Rédige une analyse stratégique (max 180 mots) extrêmement persuasive.
+      Structure:
+      1. Accroche choc: "Votre salon est une mine d'or, mais vous laissez l'argent s'échapper".
+      2. Analyse: Pourquoi ces points précis (${pointsStr}) bloquent sa croissance aujourd'hui. 
+      3. Désir: Peins une image du succès s'il suit ce parcours (agenda plein, équipe autonome, sérénité financière).
+      4. Appel à l'action: Encourage-le à ne pas hésiter, car chaque jour sans formation est un manque à gagner.
+      Ton: Dynamique, "pro", direct, avec l'élégance d'un mentor qui veut la réussite de son poulain.
+    `;
+  }
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        temperature: 0.8,
+        temperature: 0.85,
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
     return response.text;
   } catch (error) {
     console.error("Strategic Advice Error:", error);
-    return "L'excellence vous attend. Focalisez-vous sur vos priorités pour transformer votre salon en succès.";
+    return "L'excellence vous attend. Chaque module choisi est une pierre posée pour bâtir votre empire de la beauté.";
   }
 };
 

@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   ShoppingBag,
   Info,
-  Star
+  Star,
+  Crown
 } from 'lucide-react';
 
 const Results: React.FC = () => {
@@ -32,6 +33,7 @@ const Results: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
+  const [isPerfectScore, setIsPerfectScore] = useState(false);
   
   const navigate = useNavigate();
 
@@ -43,13 +45,26 @@ const Results: React.FC = () => {
     }
     const results = JSON.parse(raw);
     const negativeQuestions = results.filter((r: any) => !r.answer);
-    const negativeLinkedIds = negativeQuestions.map((r: any) => {
-      const q = DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId);
-      return q?.linkedModuleId;
-    });
     
-    const recommended = TRAINING_CATALOG.filter(m => negativeLinkedIds.includes(m.id));
-    const others = TRAINING_CATALOG.filter(m => !negativeLinkedIds.includes(m.id));
+    let recommended: TrainingModule[] = [];
+    let others: TrainingModule[] = [];
+    let perfect = false;
+
+    if (negativeQuestions.length === 0) {
+      // CAS PARFAIT : On propose des modules de "Haute Maîtrise"
+      perfect = true;
+      setIsPerfectScore(true);
+      const masteryIds = ["mod_tarification", "mod_social_media", "mod_management", "mod_tresorerie"];
+      recommended = TRAINING_CATALOG.filter(m => masteryIds.includes(m.id));
+      others = TRAINING_CATALOG.filter(m => !masteryIds.includes(m.id));
+    } else {
+      const negativeLinkedIds = negativeQuestions.map((r: any) => {
+        const q = DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId);
+        return q?.linkedModuleId;
+      });
+      recommended = TRAINING_CATALOG.filter(m => negativeLinkedIds.includes(m.id));
+      others = TRAINING_CATALOG.filter(m => !negativeLinkedIds.includes(m.id));
+    }
     
     setStrategicModules(recommended);
     setCatalogueModules(others);
@@ -60,10 +75,8 @@ const Results: React.FC = () => {
         return DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text;
       }).filter(Boolean) as string[];
 
-      if (negativeTexts.length > 0) {
-        const advice = await generateStrategicAdvice(negativeTexts);
-        setAiAdvice(advice ?? null);
-      }
+      const advice = await generateStrategicAdvice(negativeTexts, perfect);
+      setAiAdvice(advice ?? null);
       setLoadingAdvice(false);
     };
     getAdvice();
@@ -145,10 +158,12 @@ const Results: React.FC = () => {
         
         <header className="mb-14">
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-            Optimisation Stratégique
+            {isPerfectScore ? "Parcours Maîtrise Elite" : "Optimisation Stratégique"}
           </h1>
           <p className="text-slate-500 text-lg font-medium max-w-2xl">
-            Votre plan de transformation est prêt. Sélectionnez les modules pour activer votre croissance.
+            {isPerfectScore 
+              ? "Vos bases sont solides. Passons maintenant à la vitesse supérieure pour dominer votre marché."
+              : "Votre plan de transformation est prêt. Sélectionnez les modules pour activer votre croissance."}
           </p>
         </header>
 
@@ -159,7 +174,7 @@ const Results: React.FC = () => {
             {/* L'Analyse de Coach Kita */}
             <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-                <TrendingUp className="w-48 h-48" />
+                {isPerfectScore ? <Crown className="w-48 h-48" /> : <TrendingUp className="w-48 h-48" />}
               </div>
               
               <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">
@@ -179,29 +194,23 @@ const Results: React.FC = () => {
                     {loadingAdvice ? (
                       <div className="flex items-center gap-3">
                         <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
-                        <span>Calcul de votre stratégie de rentabilité...</span>
+                        <span>Analyse de votre potentiel en cours...</span>
                       </div>
                     ) : (
-                      aiAdvice || "Voici les leviers prioritaires identifiés pour votre établissement."
+                      aiAdvice || "Préparez-vous à une transformation radicale."
                     )}
                   </div>
 
-                  {/* Barre de progression de remise visuelle */}
                   <div className="space-y-4 pt-4 border-t border-slate-50">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                       <span>Réduction progressive</span>
-                      <span className="text-brand-600">Palier actuel: -{pricingData.discount}%</span>
+                      <span className="text-brand-600 font-black">PALIER ACTUEL: -{pricingData.discount}%</span>
                     </div>
                     <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
                       <div 
                         className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-1000 ease-out"
                         style={{ width: `${pricingData.progress}%` }}
                       ></div>
-                      {/* Marqueurs de paliers */}
-                      <div className="absolute inset-0 flex justify-between px-[38%] pointer-events-none">
-                        <div className="h-full w-px bg-white/30"></div>
-                        <div className="h-full w-px bg-white/30 ml-[30%]"></div>
-                      </div>
                     </div>
                     <div className="flex justify-between text-[9px] font-bold text-slate-400">
                       <span>0%</span>
@@ -210,9 +219,9 @@ const Results: React.FC = () => {
                       <span>-50% (13 modules)</span>
                     </div>
                     {pricingData.remainingForNext > 0 && (
-                      <div className="flex items-center gap-2 text-brand-700 font-black text-xs bg-brand-50 p-4 rounded-2xl border border-brand-100">
+                      <div className="flex items-center gap-2 text-brand-700 font-black text-xs bg-brand-50 p-4 rounded-2xl border border-brand-100 animate-in fade-in duration-500">
                         <Star className="w-4 h-4 fill-brand-500 text-brand-500" />
-                        Ajoutez {pricingData.remainingForNext} module(s) pour débloquer la remise de -{pricingData.nextTierPercent}% !
+                        Plus que {pricingData.remainingForNext} module(s) pour économiser -{pricingData.nextTierPercent}% !
                       </div>
                     )}
                   </div>
@@ -224,11 +233,15 @@ const Results: React.FC = () => {
             <section className="space-y-8">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                  <Zap className="w-5 h-5 fill-current" />
+                  {isPerfectScore ? <Crown className="w-5 h-5" /> : <Zap className="w-5 h-5 fill-current" />}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Vos Priorités Stratégiques</h2>
-                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Recommandé par l'IA pour corriger vos points faibles</p>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                    {isPerfectScore ? "Vos Modules de Maîtrise Elite" : "Vos Priorités Stratégiques"}
+                  </h2>
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                    {isPerfectScore ? "Sélectionnés pour sécuriser votre position de leader" : "Recommandé par l'IA pour corriger vos points faibles"}
+                  </p>
                 </div>
               </div>
               
@@ -284,14 +297,13 @@ const Results: React.FC = () => {
                       <div key={item.id} className="p-5 bg-white rounded-3xl border border-slate-100 flex justify-between items-center group shadow-sm hover:shadow-md transition-all">
                         <div className="pr-4 max-w-[160px]">
                           <p className="text-[13px] font-black text-slate-800 leading-tight mb-1 truncate">{item.title}</p>
-                          <p className="text-[9px] text-brand-500 font-black uppercase tracking-widest font-mono">{item.price.toLocaleString()} FCFA</p>
+                          <p className="text-[9px] text-brand-50 font-black px-2 py-0.5 rounded bg-brand-500 uppercase tracking-widest font-mono inline-block">{item.price.toLocaleString()} FCFA</p>
                         </div>
                         <button 
                           onClick={() => toggleCartItem(item)}
                           className="p-3 text-rose-500 bg-rose-50 rounded-2xl hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Retirer</span>
                         </button>
                       </div>
                     ))}
@@ -299,11 +311,10 @@ const Results: React.FC = () => {
                 )}
               </div>
 
-              {/* FACTURE STYLE TICKET DE LUXE */}
               <div className="p-10 bg-slate-900 text-white rounded-t-[3.5rem] space-y-8 relative">
                 <div className="space-y-5">
                   <div className="flex justify-between items-center font-mono">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sous-total brut</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur totale</span>
                     <span className="text-lg">{pricingData.subtotal.toLocaleString()} FCFA</span>
                   </div>
                   
@@ -311,7 +322,7 @@ const Results: React.FC = () => {
                     <div className="flex justify-between items-center text-emerald-400 font-mono">
                       <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                         <Zap className="w-4 h-4 fill-current" />
-                        REMISE PACK (-{pricingData.discount}%)
+                        Économie Pack (-{pricingData.discount}%)
                       </span>
                       <span className="text-lg">-{pricingData.savings.toLocaleString()} FCFA</span>
                     </div>
@@ -321,7 +332,7 @@ const Results: React.FC = () => {
 
                   <div className="flex justify-between items-end">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Net à régler</p>
+                      <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Investissement Net</p>
                       <p className="text-4xl font-black text-white tracking-tighter font-mono">
                         {pricingData.total.toLocaleString()}
                         <span className="text-xs font-bold ml-1 opacity-50">FCFA</span>
@@ -335,13 +346,13 @@ const Results: React.FC = () => {
                   disabled={cart.length === 0}
                   className="w-full py-6 bg-brand-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-900/40 hover:bg-brand-400 hover:-translate-y-1 active:scale-95 disabled:opacity-30 disabled:translate-y-0 transition-all flex items-center justify-center gap-4 group"
                 >
-                  Finaliser ma commande
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Démarrer mon parcours
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
 
                 <div className="flex items-center justify-center gap-3 pt-2 opacity-50">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Sécurisé via Wave Côte d'Ivoire</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Validation via Wave Côte d'Ivoire</span>
                 </div>
               </div>
             </div>
@@ -349,7 +360,7 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DE PAIEMENT */}
+      {/* MODAL DE PAIEMENT RESTE INCHANGÉ */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
@@ -430,7 +441,6 @@ const Results: React.FC = () => {
   );
 };
 
-// Fix: Explicitly typing ModuleCard as a React.FC to handle React-specific props like key and avoid TypeScript assignment errors.
 const ModuleCard: React.FC<{
   mod: TrainingModule;
   isInCart: boolean;
