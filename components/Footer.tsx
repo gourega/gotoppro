@@ -1,7 +1,45 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../services/supabase';
+import { Loader2, X, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 const Footer: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (!supabase) {
+      setError("Service indisponible.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (loginError) throw loginError;
+
+      setIsAdminModalOpen(false);
+      navigate('/admin');
+    } catch (err: any) {
+      setError("Identifiants incorrects ou accès non autorisé.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-[#1e293b] text-white py-10 px-6 mt-auto border-t border-slate-800">
       <div className="max-w-7xl mx-auto">
@@ -63,31 +101,88 @@ const Footer: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Cadenas anonyme pour l'accès Admin */}
-            <Link 
-              to="/admin" 
+            {/* Cadenas déclencheur de modale */}
+            <button 
+              onClick={() => setIsAdminModalOpen(true)}
               aria-label="Accès sécurisé"
               title="Accès sécurisé"
-              className="text-slate-600 hover:text-brand-400 transition-colors duration-300"
+              className="text-slate-600 hover:text-brand-400 transition-colors duration-300 p-2"
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-4 w-4" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8-0v4h8z" 
-                />
-              </svg>
-            </Link>
+              <Lock className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
+
+      {/* MODALE AUTH ADMIN */}
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Décoration fond */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-[80px]"></div>
+            
+            <button 
+              onClick={() => setIsAdminModalOpen(false)}
+              className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-10">
+              <div className="h-16 w-16 bg-brand-500/10 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner border border-brand-500/20">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-serif font-bold text-white mb-2 tracking-tight">Accès Administrateur</h2>
+              <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Zone de pilotage Go'Top Pro</p>
+            </div>
+
+            {error && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex items-center gap-3">
+                <span className="text-lg">⚠️</span> {error}
+              </div>
+            )}
+
+            <form onSubmit={handleAdminLogin} className="space-y-6 relative z-10">
+              <div className="space-y-4">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="email" 
+                    placeholder="Email Professionnel"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
+                  />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="password" 
+                    placeholder="Mot de passe"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-brand-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-brand-500 transition shadow-lg shadow-brand-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "S'identifier"}
+              </button>
+
+              <p className="text-center text-[9px] text-slate-500 uppercase tracking-widest font-black opacity-50">
+                L'accès est journalisé pour des raisons de sécurité.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </footer>
   );
 };
