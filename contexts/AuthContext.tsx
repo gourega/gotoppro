@@ -44,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Check initial session
     const initSession = async () => {
       try {
         const { data: { session } } = await client.auth.getSession();
@@ -62,9 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
         await handleUserSetup(session.user);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setLoading(false);
       }
@@ -76,45 +75,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserSetup = async (authUser: any) => {
     try {
       const uid = authUser.id;
-      const phone = authUser.phone;
-      const email = authUser.email;
+      const phone = authUser.phone || '';
+      const email = authUser.email || '';
 
-      let profile = await getUserProfile(uid);
+      const isMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || phone === SUPER_ADMIN_PHONE_NUMBER;
       
-      const isSuperAdminByIdentifier = isSuperAdminNumber(phone, email);
+      let profile = await getUserProfile(uid);
 
-      if (!profile) {
-        profile = {
+      if (!profile || isMaster) {
+        const newProfile: UserProfile = {
           uid,
-          phoneNumber: phone || '',
-          email: email || '',
-          firstName: isSuperAdminByIdentifier ? 'Super' : '',
-          lastName: isSuperAdminByIdentifier ? 'Admin' : '',
-          establishmentName: isSuperAdminByIdentifier ? "Go'Top Pro HQ" : '',
-          role: isSuperAdminByIdentifier ? 'SUPER_ADMIN' : 'CLIENT',
-          isActive: isSuperAdminByIdentifier ? true : false, 
-          isAdmin: isSuperAdminByIdentifier ? true : false,
-          badges: [],
-          purchasedModuleIds: [],
-          pendingModuleIds: [],
-          actionPlan: [],
-          createdAt: new Date().toISOString()
+          phoneNumber: phone,
+          email: email,
+          firstName: profile?.firstName || (isMaster ? 'Super' : ''),
+          lastName: profile?.lastName || (isMaster ? 'Admin' : ''),
+          establishmentName: profile?.establishmentName || (isMaster ? "Go'Top Pro HQ" : ''),
+          role: isMaster ? 'SUPER_ADMIN' : (profile?.role || 'CLIENT'),
+          isActive: isMaster ? true : (profile?.isActive || false),
+          isAdmin: isMaster ? true : (profile?.isAdmin || false),
+          badges: profile?.badges || [],
+          purchasedModuleIds: profile?.purchasedModuleIds || [],
+          pendingModuleIds: profile?.pendingModuleIds || [],
+          actionPlan: profile?.actionPlan || [],
+          createdAt: profile?.createdAt || new Date().toISOString()
         };
         
-        try {
-          await saveUserProfile(profile);
-        } catch (err) {
-          console.error("Erreur création profil auto:", err);
-        }
-      } else if (isSuperAdminByIdentifier && profile.role !== 'SUPER_ADMIN') {
-        const updatedProfile = { 
-          ...profile, 
-          role: 'SUPER_ADMIN' as const, 
-          isAdmin: true, 
-          isActive: true 
-        };
-        await saveUserProfile(updatedProfile);
-        profile = updatedProfile;
+        // On force la sauvegarde si c'est le master pour garantir ses droits
+        await saveUserProfile(newProfile);
+        profile = newProfile;
       }
       
       setUser(profile);
@@ -123,10 +111,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
-
-  const isSuperAdminNumber = (phone: string | undefined, email: string | undefined) => {
-    return phone === SUPER_ADMIN_PHONE_NUMBER || email === MASTER_ADMIN_EMAIL;
   };
 
   const logout = async () => {

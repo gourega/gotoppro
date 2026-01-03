@@ -14,27 +14,38 @@ const Footer: React.FC = () => {
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    
     setError('');
     setLoading(true);
 
     if (!supabase) {
-      setError("Service indisponible.");
+      setError("Configuration Supabase manquante.");
       setLoading(false);
       return;
     }
 
     try {
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
       });
 
-      if (loginError) throw loginError;
+      if (loginError) {
+        throw loginError;
+      }
 
-      setIsAdminModalOpen(false);
-      navigate('/admin');
+      if (data?.user) {
+        // Le AuthContext s'occupera du profil via onAuthStateChange
+        setIsAdminModalOpen(false);
+        // On attend un court instant que le profil soit créé/mis à jour
+        setTimeout(() => navigate('/admin'), 500);
+      }
     } catch (err: any) {
-      setError("Identifiants incorrects ou accès non autorisé.");
+      console.error("Admin Login Error:", err);
+      setError(err.message === "Invalid login credentials" 
+        ? "Email ou mot de passe incorrect." 
+        : "Erreur de connexion. Vérifiez votre réseau.");
     } finally {
       setLoading(false);
     }
@@ -45,7 +56,6 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
           
-          {/* Bloc 1: Identité et Question */}
           <div className="space-y-3">
             <h3 className="text-xl font-bold font-serif tracking-tight">
               Go'Top <span className="text-brand-500">Pro</span>
@@ -55,7 +65,6 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Bloc 2: Contacts & Services */}
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Contacts & Services</h4>
             <div className="flex flex-col gap-3 text-sm font-medium">
@@ -63,9 +72,7 @@ const Footer: React.FC = () => {
                 href="mailto:ourega.goble@canticthinkia.ci" 
                 className="text-slate-300 hover:text-brand-400 transition-colors inline-flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Mail className="w-4 h-4" />
                 ourega.goble@canticthinkia.ci
               </a>
               <a 
@@ -82,7 +89,6 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Bloc 3: Liens Légaux */}
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Légal</h4>
             <div className="flex flex-col gap-2 text-sm">
@@ -94,16 +100,17 @@ const Footer: React.FC = () => {
 
         </div>
 
-        {/* Barre de pied de page (Copyright & Admin) */}
         <div className="mt-10 pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
             © {new Date().getFullYear()} Go'Top Pro. Propulsé par CanticThinkia.
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Cadenas déclencheur de modale */}
             <button 
-              onClick={() => setIsAdminModalOpen(true)}
+              onClick={() => {
+                setError('');
+                setIsAdminModalOpen(true);
+              }}
               aria-label="Accès sécurisé"
               title="Accès sécurisé"
               className="text-slate-600 hover:text-brand-400 transition-colors duration-300 p-2"
@@ -114,11 +121,9 @@ const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALE AUTH ADMIN */}
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Décoration fond */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-[80px]"></div>
             
             <button 
@@ -137,7 +142,7 @@ const Footer: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex items-center gap-3">
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex items-center gap-3 animate-in shake duration-300">
                 <span className="text-lg">⚠️</span> {error}
               </div>
             )}
