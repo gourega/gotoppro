@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, HelpCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
@@ -11,12 +11,14 @@ const Footer: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     
     setError('');
+    setShowTroubleshoot(false);
     setLoading(true);
 
     if (!supabase) {
@@ -42,13 +44,13 @@ const Footer: React.FC = () => {
     } catch (err: any) {
       console.error("Erreur Auth Admin:", err);
       
-      // Gestion spécifique de l'erreur d'email non confirmé
       if (err.message === "Email not confirmed") {
-        setError("Votre email n'est pas encore confirmé. Veuillez vérifier votre boîte de réception ou valider l'utilisateur manuellement dans Supabase.");
+        setError("Email non confirmé dans Supabase.");
+        setShowTroubleshoot(true);
       } else if (err.message === "Invalid login credentials") {
-        setError("Email ou mot de passe incorrect.");
+        setError("Identifiants incorrects.");
       } else {
-        setError("Une erreur est survenue : " + (err.message || "Connexion impossible."));
+        setError(err.message || "Une erreur est survenue.");
       }
     } finally {
       setLoading(false);
@@ -127,11 +129,14 @@ const Footer: React.FC = () => {
 
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-[80px]"></div>
             
             <button 
-              onClick={() => setIsAdminModalOpen(false)}
+              onClick={() => {
+                setIsAdminModalOpen(false);
+                setShowTroubleshoot(false);
+              }}
               className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white transition"
             >
               <X className="w-5 h-5" />
@@ -146,9 +151,32 @@ const Footer: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex flex-start items-start gap-3 animate-in shake duration-300">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <span>{error}</span>
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-6 text-xs font-bold flex flex-col gap-3 animate-in shake duration-300">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                
+                {showTroubleshoot && (
+                  <div className="mt-2 p-3 bg-slate-900/50 rounded-lg border border-rose-500/30 text-[10px] leading-relaxed font-medium">
+                    <p className="text-white mb-2 flex items-center gap-2">
+                      <HelpCircle className="w-3 h-3 text-brand-400" />
+                      Comment débloquer :
+                    </p>
+                    <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                      <li>Allez dans votre dashboard Supabase</li>
+                      <li>Authentication > Providers > Email</li>
+                      <li>Décochez <span className="text-brand-400">"Confirm email"</span></li>
+                      <li>Cliquez sur <span className="text-brand-400">Save</span></li>
+                    </ol>
+                    <button 
+                      onClick={handleAdminLogin}
+                      className="mt-4 w-full py-2 bg-brand-500/20 text-brand-400 rounded-md hover:bg-brand-500/30 transition border border-brand-500/40 uppercase tracking-widest font-black text-[9px]"
+                    >
+                      Réessayer après correction
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

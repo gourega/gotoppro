@@ -74,7 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
-    setLoading(true);
+    // S'assurer qu'on ne reste pas bloqué indéfiniment
+    const timeout = setTimeout(() => {
+      if (loading) setLoading(false);
+    }, 5000);
+
     try {
       const uid = authUser.id;
       const phone = authUser.phone || '';
@@ -117,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error("Erreur critique setup utilisateur:", err);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
