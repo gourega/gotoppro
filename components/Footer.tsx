@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { Loader2, X, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
@@ -36,16 +36,20 @@ const Footer: React.FC = () => {
       }
 
       if (data?.user) {
-        console.log("Admin authentifié avec succès.");
         setIsAdminModalOpen(false);
-        // On redirige immédiatement, le AuthContext se mettra à jour en arrière-plan
         navigate('/admin');
       }
     } catch (err: any) {
       console.error("Erreur Auth Admin:", err);
-      setError(err.message === "Invalid login credentials" 
-        ? "Identifiants invalides." 
-        : "Erreur de connexion : " + (err.message || "inconnue"));
+      
+      // Gestion spécifique de l'erreur d'email non confirmé
+      if (err.message === "Email not confirmed") {
+        setError("Votre email n'est pas encore confirmé. Veuillez vérifier votre boîte de réception ou valider l'utilisateur manuellement dans Supabase.");
+      } else if (err.message === "Invalid login credentials") {
+        setError("Email ou mot de passe incorrect.");
+      } else {
+        setError("Une erreur est survenue : " + (err.message || "Connexion impossible."));
+      }
     } finally {
       setLoading(false);
     }
@@ -142,8 +146,9 @@ const Footer: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex items-center gap-3 animate-in shake duration-300">
-                <span className="text-lg">⚠️</span> {error}
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-8 text-xs font-bold flex flex-start items-start gap-3 animate-in shake duration-300">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 

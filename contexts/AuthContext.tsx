@@ -4,7 +4,7 @@ import { supabase, getUserProfile, saveUserProfile } from '../services/supabase'
 import { UserProfile } from '../types';
 import { SUPER_ADMIN_PHONE_NUMBER } from '../constants';
 
-// Fix: Use process.env instead of import.meta.env as defined in vite.config.ts to avoid TS error on ImportMeta
+// Utilisation de process.env pour correspondre à la config Vite
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
 interface AuthContextType {
