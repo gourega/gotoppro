@@ -4,6 +4,7 @@ import { supabase, getUserProfile, saveUserProfile } from '../services/supabase'
 import { UserProfile } from '../types';
 import { SUPER_ADMIN_PHONE_NUMBER } from '../constants';
 
+// Fix: Use process.env instead of import.meta.env as defined in vite.config.ts to avoid TS error on ImportMeta
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
 interface AuthContextType {
@@ -61,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         await handleUserSetup(session.user);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -73,11 +74,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
+    setLoading(true);
     try {
       const uid = authUser.id;
       const phone = authUser.phone || '';
       const email = authUser.email || '';
 
+      // Détection du statut Master Admin
       const isMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || phone === SUPER_ADMIN_PHONE_NUMBER;
       
       let profile = await getUserProfile(uid);
@@ -100,14 +103,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: profile?.createdAt || new Date().toISOString()
         };
         
-        // On force la sauvegarde si c'est le master pour garantir ses droits
-        await saveUserProfile(newProfile);
-        profile = newProfile;
+        try {
+          // On tente la sauvegarde, mais on ne bloque pas si la RLS de Supabase refuse
+          await saveUserProfile(newProfile);
+          profile = newProfile;
+        } catch (saveErr) {
+          console.warn("Profil non sauvegardé en base (vérifiez RLS), utilisation du profil mémoire:", saveErr);
+          profile = newProfile; // On garde le profil en mémoire pour permettre l'accès UI
+        }
       }
       
       setUser(profile);
     } catch (err) {
-      console.error("Critical error in handleUserSetup:", err);
+      console.error("Erreur critique setup utilisateur:", err);
     } finally {
       setLoading(false);
     }

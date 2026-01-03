@@ -20,7 +20,7 @@ const Footer: React.FC = () => {
     setLoading(true);
 
     if (!supabase) {
-      setError("Configuration Supabase manquante.");
+      setError("Erreur : Client de connexion non initialisé.");
       setLoading(false);
       return;
     }
@@ -36,16 +36,16 @@ const Footer: React.FC = () => {
       }
 
       if (data?.user) {
-        // Le AuthContext s'occupera du profil via onAuthStateChange
+        console.log("Admin authentifié avec succès.");
         setIsAdminModalOpen(false);
-        // On attend un court instant que le profil soit créé/mis à jour
-        setTimeout(() => navigate('/admin'), 500);
+        // On redirige immédiatement, le AuthContext se mettra à jour en arrière-plan
+        navigate('/admin');
       }
     } catch (err: any) {
-      console.error("Admin Login Error:", err);
+      console.error("Erreur Auth Admin:", err);
       setError(err.message === "Invalid login credentials" 
-        ? "Email ou mot de passe incorrect." 
-        : "Erreur de connexion. Vérifiez votre réseau.");
+        ? "Identifiants invalides." 
+        : "Erreur de connexion : " + (err.message || "inconnue"));
     } finally {
       setLoading(false);
     }
@@ -157,6 +157,7 @@ const Footer: React.FC = () => {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                     className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
                   />
                 </div>
@@ -168,6 +169,7 @@ const Footer: React.FC = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                     className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium"
                   />
                 </div>
