@@ -1,11 +1,14 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllUsers, toggleUserStatus, updateUserRole, deleteUserProfile } from '../services/supabase';
 import { UserProfile, UserRole } from '../types';
+import { Loader2, ShieldAlert, RefreshCcw, Users, Clock, Banknote, Search, Check, Square, Trash2 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,8 +16,12 @@ const AdminDashboard: React.FC = () => {
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (currentUser && currentUser.isAdmin) {
+      fetchUsers();
+    } else if (currentUser && !currentUser.isAdmin) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, navigate]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -90,7 +97,15 @@ const AdminDashboard: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (!currentUser?.isAdmin) return null;
+  if (!currentUser?.isAdmin) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6">
+        <ShieldAlert className="w-16 h-16 text-rose-500 mb-6" />
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Accès Restreint</h2>
+        <p className="text-slate-500">Vous n'avez pas les permissions nécessaires pour accéder à cette console.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -110,18 +125,17 @@ const AdminDashboard: React.FC = () => {
           </div>
           <button 
             onClick={fetchUsers}
-            className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm text-slate-400"
+            disabled={loading}
+            className="p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm text-slate-400 disabled:opacity-50"
           >
-            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard title="Total Clients" value={stats.total} icon="👥" color="bg-blue-50 text-blue-600" />
-          <StatCard title="Attente Wave" value={stats.pending} icon="⏳" color="bg-amber-50 text-amber-600" pulse={stats.pending > 0} />
-          <StatCard title="Revenus Réels" value={`${stats.revenue.toLocaleString()} FCFA`} icon="💰" color="bg-emerald-50 text-emerald-600" />
+          <StatCard title="Total Clients" value={stats.total} icon={<Users />} color="bg-blue-50 text-blue-600" />
+          <StatCard title="Attente Wave" value={stats.pending} icon={<Clock />} color="bg-amber-50 text-amber-600" pulse={stats.pending > 0} />
+          <StatCard title="Revenus Réels" value={`${stats.revenue.toLocaleString()} FCFA`} icon={<Banknote />} color="bg-emerald-50 text-emerald-600" />
         </div>
       </div>
 
@@ -129,9 +143,7 @@ const AdminDashboard: React.FC = () => {
         <div className="p-8 border-b border-slate-100 bg-slate-50/30 flex flex-col lg:flex-row justify-between gap-6">
           <div className="relative flex-grow max-w-xl">
             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="w-5 h-5" />
             </span>
             <input 
               type="text" 
@@ -149,7 +161,12 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          {filteredUsers.length === 0 ? (
+          {loading && users.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center">
+              <Loader2 className="w-10 h-10 animate-spin text-brand-500 mb-4" />
+              <p className="text-slate-400 font-medium">Chargement des clients...</p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-slate-400 font-medium">Aucun client trouvé.</p>
             </div>
@@ -205,7 +222,7 @@ const AdminDashboard: React.FC = () => {
                           }`}
                           title={u.isActive ? "Désactiver" : "Activer & Valider"}
                         >
-                          {u.isActive ? '⏹' : '✅'}
+                          {u.isActive ? <Square className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                         </button>
                         {currentUser?.role === 'SUPER_ADMIN' && (
                           <button 
@@ -213,7 +230,7 @@ const AdminDashboard: React.FC = () => {
                             className="p-2.5 rounded-xl text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
                             title="Supprimer définitivement"
                           >
-                            🗑️
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -229,7 +246,7 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-const StatCard: React.FC<{ title: string, value: string | number, icon: string, color: string, pulse?: boolean }> = ({ title, value, icon, color, pulse }) => (
+const StatCard: React.FC<{ title: string, value: string | number, icon: React.ReactNode, color: string, pulse?: boolean }> = ({ title, value, icon, color, pulse }) => (
   <div className={`bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 ${pulse ? 'ring-2 ring-amber-400 animate-pulse' : ''}`}>
     <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl ${color}`}>
       {icon}

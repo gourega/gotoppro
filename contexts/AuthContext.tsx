@@ -43,13 +43,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleUserSetup(session.user);
-      } else {
+    // Check initial session
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await handleUserSetup(session.user);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Session init error:", err);
         setLoading(false);
       }
-    }).catch(() => setLoading(false));
+    };
+
+    initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
@@ -64,50 +73,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
-    const uid = authUser.id;
-    const phone = authUser.phone;
-    const email = authUser.email;
+    try {
+      const uid = authUser.id;
+      const phone = authUser.phone;
+      const email = authUser.email;
 
-    let profile = await getUserProfile(uid);
-    
-    const isSuperAdminByIdentifier = isSuperAdminNumber(phone, email);
-
-    if (!profile) {
-      profile = {
-        uid,
-        phoneNumber: phone || '',
-        email: email || '',
-        firstName: isSuperAdminByIdentifier ? 'Super' : '',
-        lastName: isSuperAdminByIdentifier ? 'Admin' : '',
-        establishmentName: isSuperAdminByIdentifier ? "Go'Top Pro HQ" : '',
-        role: isSuperAdminByIdentifier ? 'SUPER_ADMIN' : 'CLIENT',
-        isActive: isSuperAdminByIdentifier ? true : false, 
-        isAdmin: isSuperAdminByIdentifier ? true : false,
-        badges: [],
-        purchasedModuleIds: [],
-        pendingModuleIds: [],
-        actionPlan: [],
-        createdAt: new Date().toISOString()
-      };
+      let profile = await getUserProfile(uid);
       
-      try {
-        await saveUserProfile(profile);
-      } catch (err) {
-        console.error("Erreur création profil auto:", err);
+      const isSuperAdminByIdentifier = isSuperAdminNumber(phone, email);
+
+      if (!profile) {
+        profile = {
+          uid,
+          phoneNumber: phone || '',
+          email: email || '',
+          firstName: isSuperAdminByIdentifier ? 'Super' : '',
+          lastName: isSuperAdminByIdentifier ? 'Admin' : '',
+          establishmentName: isSuperAdminByIdentifier ? "Go'Top Pro HQ" : '',
+          role: isSuperAdminByIdentifier ? 'SUPER_ADMIN' : 'CLIENT',
+          isActive: isSuperAdminByIdentifier ? true : false, 
+          isAdmin: isSuperAdminByIdentifier ? true : false,
+          badges: [],
+          purchasedModuleIds: [],
+          pendingModuleIds: [],
+          actionPlan: [],
+          createdAt: new Date().toISOString()
+        };
+        
+        try {
+          await saveUserProfile(profile);
+        } catch (err) {
+          console.error("Erreur création profil auto:", err);
+        }
+      } else if (isSuperAdminByIdentifier && profile.role !== 'SUPER_ADMIN') {
+        const updatedProfile = { 
+          ...profile, 
+          role: 'SUPER_ADMIN' as const, 
+          isAdmin: true, 
+          isActive: true 
+        };
+        await saveUserProfile(updatedProfile);
+        profile = updatedProfile;
       }
-    } else if (isSuperAdminByIdentifier && profile.role !== 'SUPER_ADMIN') {
-      const updatedProfile = { 
-        ...profile, 
-        role: 'SUPER_ADMIN' as const, 
-        isAdmin: true, 
-        isActive: true 
-      };
-      await saveUserProfile(updatedProfile);
-      profile = updatedProfile;
+      
+      setUser(profile);
+    } catch (err) {
+      console.error("Critical error in handleUserSetup:", err);
+    } finally {
+      setLoading(false);
     }
-    
-    setUser(profile);
-    setLoading(false);
   };
 
   const isSuperAdminNumber = (phone: string | undefined, email: string | undefined) => {
