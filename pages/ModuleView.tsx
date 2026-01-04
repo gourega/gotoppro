@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { TRAINING_CATALOG, COACH_KITA_AVATAR } from '../constants';
+import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
@@ -18,7 +18,14 @@ import {
   Loader2, 
   Play, 
   Pause, 
-  Headphones
+  Headphones,
+  Crown,
+  Share2,
+  Calendar,
+  RotateCcw,
+  AlertTriangle,
+  HelpCircle,
+  Coins
 } from 'lucide-react';
 
 // Helpers for Audio Processing
@@ -67,10 +74,8 @@ const ModuleView: React.FC = () => {
   // Audio States
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [useNativeFallback, setUseNativeFallback] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const nativeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
@@ -97,35 +102,6 @@ const ModuleView: React.FC = () => {
     setIsPlaying(false);
   };
 
-  const playNativeFallback = (text: string) => {
-    if (!window.speechSynthesis) return;
-    
-    stopAudio();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 0.9; 
-    utterance.pitch = 1;
-    
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.includes('fr') && v.name.toLowerCase().includes('thomas')) 
-                        || voices.find(v => v.lang.includes('fr'));
-    if (preferredVoice) utterance.voice = preferredVoice;
-
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setIsAudioLoading(false);
-      setUseNativeFallback(true);
-    };
-    utterance.onend = () => setIsPlaying(false);
-    utterance.onerror = () => {
-      setIsPlaying(false);
-      setIsAudioLoading(false);
-    };
-
-    nativeUtteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  };
-
   const handlePlayAudio = async () => {
     if (isPlaying) {
       stopAudio();
@@ -133,68 +109,39 @@ const ModuleView: React.FC = () => {
     }
 
     setIsAudioLoading(true);
-    
-    const cleanText = module.lesson_content
-      .replace(/<[^>]*>/g, ' ') 
-      .replace(/\s+/g, ' ')
-      .trim();
-    
+    const cleanText = module.lesson_content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const fullText = `${module.title}. ${cleanText}`;
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const truncatedText = fullText.length > 3500 ? fullText.substring(0, 3500) + "..." : fullText;
-      
-      const prompt = `Lisez ce cours de coiffure expert avec un ton calme, posé et très inspirant. 
-      IMPORTANT : Faites des pauses de 2 secondes après chaque titre (numérotés I, II, III...) et entre chaque paragraphe. 
-      Ne prononcez pas les symboles de ponctuation, utilisez-les simplement pour le rythme : ${truncatedText}`;
+      const prompt = `Lisez ce cours de coiffure expert avec un ton calme, posé et très inspirant. IMPORTANT : Faites des pauses de 2 secondes après chaque titre et entre chaque paragraphe. Ne prononcez pas les symboles de ponctuation : ${fullText.substring(0, 3500)}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
-          },
-          thinkingConfig: { thinkingBudget: 0 }
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
         },
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-      
       if (base64Audio) {
-        if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        }
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume();
-        }
-        
+        if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         const audioBuffer = await decodeAudioData(decodeBase64(base64Audio), audioContextRef.current, 24000, 1);
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
         source.onended = () => setIsPlaying(false);
-        
         sourceNodeRef.current = source;
         source.start(0);
         setIsPlaying(true);
-        setIsAudioLoading(false);
-        setUseNativeFallback(false);
-      } else {
-        throw new Error("No data");
       }
-    } catch (err: any) {
-      console.log("Fallback TTS...");
-      playNativeFallback(fullText);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAudioLoading(false);
     }
-  };
-
-  const handleStartQuiz = () => {
-    setQuizState('active');
-    setCurrentIdx(0);
-    setAnswers([]);
   };
 
   const handleAnswer = (idx: number) => {
@@ -209,39 +156,75 @@ const ModuleView: React.FC = () => {
 
   const finishQuiz = async (finalAnswers: number[]) => {
     let score = 0;
-    finalAnswers.forEach((ans, i) => {
-      if (ans === module.quiz_questions[i].correctAnswer) score++;
-    });
+    finalAnswers.forEach((ans, i) => { if (ans === module.quiz_questions[i].correctAnswer) score++; });
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
+    
     const updatedUser = { ...user };
     if (!updatedUser.progress) updatedUser.progress = {};
-    updatedUser.progress[module.id] = percentage;
+    if (!updatedUser.attempts) updatedUser.attempts = {};
+
+    // Increment attempts
+    const currentAttempts = (updatedUser.attempts[module.id] || 0) + 1;
+    updatedUser.attempts[module.id] = currentAttempts;
+    
+    // Update progress only if it's a better score
+    const prevBest = updatedUser.progress[module.id] || 0;
+    if (percentage > prevBest) {
+      updatedUser.progress[module.id] = percentage;
+    }
+
+    // Badge Logic
     if (percentage >= 80) {
       setShouldFire(true);
       if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
+      const completedModulesCount = Object.values(updatedUser.progress).filter(p => p >= 80).length;
+      if (completedModulesCount >= 5 && !updatedUser.badges.includes('dedicated')) {
+        updatedUser.badges.push('dedicated');
+      }
     }
+
     await saveUserProfile(updatedUser);
     await refreshProfile();
     setQuizState('results');
   };
 
+  // Fix: Adding handleCommit function to save user action commitment
   const handleCommit = async () => {
-    if (!commitment.trim()) return;
+    if (!commitment.trim() || !user || !module) return;
+
     setIsSaving(true);
-    const newCommitment: UserActionCommitment = {
-      moduleId: module.id,
-      moduleTitle: module.title,
-      action: commitment,
-      date: new Date().toLocaleDateString('fr-FR'),
-      isCompleted: false
-    };
-    const updatedUser = { ...user };
-    updatedUser.actionPlan = [...user.actionPlan, newCommitment];
-    await saveUserProfile(updatedUser);
-    await refreshProfile();
-    setIsSaving(false);
-    navigate('/dashboard');
+    try {
+      const newAction: UserActionCommitment = {
+        moduleId: module.id,
+        moduleTitle: module.title,
+        action: commitment.trim(),
+        date: new Date().toLocaleDateString('fr-FR'),
+        isCompleted: false
+      };
+
+      const updatedUser = {
+        ...user,
+        actionPlan: [newAction, ...(user.actionPlan || [])]
+      };
+
+      await saveUserProfile(updatedUser);
+      await refreshProfile();
+      setCommitment('');
+      navigate('/dashboard');
+    } catch (err) {
+      console.error("Error saving commitment:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const currentScore = user.progress?.[module.id] || 0;
+  const latestAttemptScore = answers.reduce((acc, ans, i) => ans === module.quiz_questions[i].correctAnswer ? acc + 1 : acc, 0);
+  const latestPercentage = Math.round((latestAttemptScore / module.quiz_questions.length) * 100);
+  
+  const isCertified = currentScore >= 80;
+  const attemptCount = user.attempts?.[module.id] || 0;
+  const tokensRemaining = Math.max(0, 3 - attemptCount);
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -249,7 +232,7 @@ const ModuleView: React.FC = () => {
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
           onInit={({ confetti }) => {
-            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#0ea5e9', '#0c4a6e', '#fbbf24'] });
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#fbbf24', '#0c4a6e', '#0ea5e9'] });
             setShouldFire(false);
           }}
         />
@@ -290,95 +273,79 @@ const ModuleView: React.FC = () => {
                   {isAudioLoading ? <Loader2 className="w-7 h-7 animate-spin" /> : isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
                 </button>
                 <div className="flex-grow text-left">
-                  <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                    <Headphones className="w-3.5 h-3.5" />
-                    Audio Guide Masterclass
-                  </p>
-                  <p className="text-sm font-bold text-slate-500">
-                    {isPlaying ? "Écoute en cours..." : isAudioLoading ? "Génération de l'audio..." : "Écouter la leçon complète"}
-                  </p>
-                  {isPlaying && (
-                    <div className="flex items-end gap-1 mt-3 h-5">
-                      {[1,2,3,4,5,6,7,8,9,10].map(i => (
-                        <div key={i} className="w-1 rounded-full animate-[pulse_0.8s_infinite] bg-brand-500" style={{ height: `${30 + Math.random() * 70}%`, animationDelay: `${i * 0.08}s` }}></div>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1.5 flex items-center gap-2"><Headphones className="w-3.5 h-3.5" /> Audio Guide Expert</p>
+                  <p className="text-sm font-bold text-slate-500">{isPlaying ? "Écoute immersive..." : isAudioLoading ? "Génération..." : "Écouter la masterclass"}</p>
                 </div>
               </div>
             </header>
 
-            {/* Structured Editorial Layout with CSS Overrides */}
-            <div 
-              className="lesson-content-container"
-              dangerouslySetInnerHTML={{ __html: module.lesson_content }} 
-            />
+            <div className="lesson-content-container" dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
             
             <div className="my-24 bg-brand-900 rounded-[5rem] p-16 md:p-24 text-white relative overflow-hidden group shadow-2xl shadow-brand-900/20">
-               <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000">
-                 <Sparkles className="w-48 h-48" />
-               </div>
-               
+               <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000"><Sparkles className="w-48 h-48" /></div>
                <div className="flex flex-col lg:flex-row gap-16 items-center lg:items-start relative z-10">
                  <div className="h-44 w-44 rounded-[3.5rem] bg-white p-2 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-700 flex-shrink-0">
                    <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover rounded-[2.8rem]" />
                  </div>
                  <div>
-                   <h4 className="font-black text-brand-400 uppercase tracking-[0.6em] text-[10px] mb-10 flex items-center gap-4">
-                     <div className="w-12 h-px bg-brand-400"></div> Sagesse du Mentor
-                   </h4>
+                   <h4 className="font-black text-brand-400 uppercase tracking-[0.6em] text-[10px] mb-10 flex items-center gap-4"><div className="w-12 h-px bg-brand-400"></div> Sagesse du Mentor</h4>
                    <p className="text-white font-serif italic leading-relaxed text-3xl md:text-4xl opacity-90">"{module.coach_tip}"</p>
                  </div>
                </div>
             </div>
 
             <div className="flex justify-center pt-10">
-              <button 
-                onClick={() => { stopAudio(); setActiveTab('quiz'); }} 
-                className="bg-slate-900 text-white px-16 py-8 rounded-[2.5rem] font-black hover:bg-brand-600 transition shadow-2xl shadow-slate-900/20 flex items-center gap-6 group uppercase tracking-[0.3em] text-xs"
-              >
-                Passer la certification <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-              </button>
+              <button onClick={() => { stopAudio(); setActiveTab('quiz'); }} className="bg-slate-900 text-white px-16 py-8 rounded-[2.5rem] font-black hover:bg-brand-600 transition shadow-2xl shadow-slate-900/20 flex items-center gap-6 group uppercase tracking-[0.3em] text-xs">Passer la certification <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" /></button>
             </div>
           </article>
         ) : (
-          <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center max-w-2xl mx-auto">
+          <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             {quizState === 'intro' && (
-              <div className="text-center">
+              <div className="text-center max-w-2xl mx-auto">
                 <div className="h-36 w-36 bg-slate-900 text-white rounded-[3.5rem] flex items-center justify-center mx-auto mb-14 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-brand-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <Award className="w-16 h-16 relative z-10" />
                 </div>
                 <h2 className="text-5xl font-bold text-slate-900 mb-8 font-serif tracking-tight">Certification Excellence</h2>
-                <p className="text-slate-500 mb-16 text-xl font-medium leading-relaxed opacity-80">
-                  Le badge d'expert est réservé à ceux qui atteignent <b className="text-brand-900">80%</b> de réussite. Prêt pour l'épreuve ?
-                </p>
-                <button onClick={handleStartQuiz} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl shadow-brand-200 uppercase tracking-widest text-xs">Débuter l'évaluation</button>
+                
+                <div className="flex items-center justify-center gap-4 mb-16">
+                   <div className={`px-6 py-3 rounded-2xl flex items-center gap-3 border ${tokensRemaining > 0 ? 'bg-brand-50 border-brand-100 text-brand-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
+                      <Coins className={`w-5 h-5 ${tokensRemaining > 0 ? 'animate-bounce' : ''}`} />
+                      <span className="font-black text-xs uppercase tracking-widest">{tokensRemaining} Jetons restants</span>
+                   </div>
+                   <div className="text-slate-400 text-xs font-medium">Tentative {attemptCount}/3</div>
+                </div>
+
+                {tokensRemaining > 0 ? (
+                  <button onClick={() => setQuizState('active')} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl shadow-brand-200 uppercase tracking-widest text-xs flex items-center justify-center gap-4">
+                     Utiliser 1 jeton & Commencer <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div className="bg-rose-50 border border-rose-100 p-10 rounded-[3rem] text-center">
+                     <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-6" />
+                     <h3 className="text-2xl font-bold text-rose-900 font-serif mb-4 tracking-tight">Stock épuisé</h3>
+                     <p className="text-rose-700 font-medium mb-10 leading-relaxed italic">Vous avez utilisé vos 3 jetons sans valider l'excellence. Relancez le processus pour continuer votre perfectionnement.</p>
+                     <button onClick={() => navigate('/quiz')} className="w-full bg-rose-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition shadow-xl shadow-rose-200">Racheter le module</button>
+                  </div>
+                )}
               </div>
             )}
 
             {quizState === 'active' && (
-              <div className="w-full animate-in slide-in-from-right-10 duration-500">
+              <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500">
                 <div className="mb-20">
                   <div className="flex justify-between items-center mb-10">
                     <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Section {currentIdx + 1} / {module.quiz_questions.length}</span>
-                    <div className="flex gap-2">
-                      {module.quiz_questions.map((_, i) => (
-                        <div key={i} className={`h-2 w-10 rounded-full transition-all duration-700 ${i <= currentIdx ? 'bg-brand-500' : 'bg-slate-200'}`}></div>
-                      ))}
+                    <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
+                       <Coins className="w-3.5 h-3.5 text-brand-600" />
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">En cours : Jeton {attemptCount + 1}</span>
                     </div>
                   </div>
                   <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{module.quiz_questions[currentIdx].question}</h3>
                 </div>
-                
                 <div className="grid gap-6">
                   {module.quiz_questions[currentIdx].options.map((opt, i) => (
-                    <button 
-                      key={i} 
-                      onClick={() => handleAnswer(i)} 
-                      className="w-full text-left p-10 rounded-[3rem] border-2 border-slate-100 bg-white hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300 font-bold text-slate-800 text-xl group flex items-center justify-between"
-                    >
-                      {opt} <div className="h-8 w-8 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all shadow-inner"></div>
+                    <button key={i} onClick={() => handleAnswer(i)} className="w-full text-left p-10 rounded-[3rem] border-2 border-slate-100 bg-white hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300 font-bold text-slate-800 text-xl flex items-center justify-between group">
+                      {opt} <div className="h-8 w-8 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
                     </button>
                   ))}
                 </div>
@@ -386,32 +353,137 @@ const ModuleView: React.FC = () => {
             )}
 
             {quizState === 'results' && (
-              <div className="text-center w-full animate-in zoom-in-95 duration-700">
-                <div className="h-32 w-32 bg-emerald-50 text-emerald-500 rounded-[3rem] flex items-center justify-center mx-auto mb-12 shadow-inner ring-8 ring-emerald-50/50">
-                  <CheckCircle2 className="w-16 h-16" />
+              <div className="w-full animate-in zoom-in-95 duration-700">
+                {/* Score Header */}
+                <div className="text-center mb-16">
+                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                      <span className="text-3xl font-black">{latestPercentage}%</span>
+                   </div>
+                   <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">
+                     {latestPercentage >= 80 ? "Excellence Atteinte !" : "Objectif manqué"}
+                   </h2>
+                   <p className="text-slate-500 text-lg font-medium">Tentative effectuée : {attemptCount} / 3</p>
                 </div>
-                <h2 className="text-6xl font-bold text-slate-900 font-serif mb-6 tracking-tight">Succès !</h2>
-                <div className="inline-block px-10 py-4 bg-slate-900 text-white rounded-full text-xs font-black uppercase tracking-[0.3em] mb-20 shadow-xl">
-                  Score Master : {user.progress?.[module.id]}%
-                </div>
-                
-                <div className="bg-brand-950 rounded-[5rem] p-16 md:p-24 text-white text-left shadow-[0_50px_120px_rgba(12,74,110,0.3)] relative overflow-hidden border border-white/5">
-                  <div className="absolute top-0 right-0 p-16 opacity-[0.03] text-[15rem] pointer-events-none italic font-serif leading-none">Action</div>
-                  <h4 className="text-brand-500 font-black uppercase text-[11px] tracking-[0.5em] mb-12 flex items-center gap-3">
-                    <Zap className="w-4 h-4 fill-current" /> Plan d'Action Stratégique
-                  </h4>
-                  <p className="text-3xl font-serif mb-16 leading-relaxed italic text-slate-300 opacity-90">"{module.strategic_mantra}"</p>
-                  
-                  <div className="mb-14">
-                    <label className="block text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Mon engagement post-formation :</label>
-                    <textarea value={commitment} onChange={e => setCommitment(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-[3rem] p-10 text-white placeholder-slate-700 outline-none ring-4 ring-transparent focus:ring-brand-500/20 focus:bg-white/10 transition text-2xl font-medium leading-relaxed" placeholder="Décrivez votre première étape concrète..." rows={4} />
+
+                {/* Case 1: First 2 attempts and failed */}
+                {attemptCount < 3 && latestPercentage < 80 ? (
+                  <div className="text-center max-w-2xl mx-auto py-10">
+                    <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
+                       <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
+                       <p className="text-amber-900 text-xl font-medium leading-relaxed italic">
+                         "La persévérance est la marque des élites. Vous n'avez pas encore atteint les 80%, mais je ne vous donne pas encore les réponses. Relisez bien les chapitres II et III, le secret s'y trouve."
+                       </p>
+                    </div>
+                    <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition shadow-xl">Recommencer ma leçon</button>
                   </div>
-                  
-                  <button onClick={handleCommit} disabled={isSaving || !commitment.trim()} className="w-full bg-brand-500 py-8 rounded-[2.5rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-4">
-                    {isSaving ? <Loader2 className="animate-spin" /> : "Sceller mon évolution"}
-                    {!isSaving && <ArrowRight className="w-6 h-6" />}
-                  </button>
-                </div>
+                ) : (
+                  /* Case 2: Success OR 3rd attempt exhausted -> Show analysis and correct answers */
+                  <div className="space-y-16">
+                    {/* Correction Section (Revealed only on 3rd attempt or success) */}
+                    <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative">
+                      <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] font-serif italic pointer-events-none">Audit</div>
+                      <h4 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-14 flex items-center gap-3">
+                         <HelpCircle className="w-5 h-5" /> Débriefing Expert Coach Kita
+                      </h4>
+                      
+                      <div className="space-y-12">
+                         {module.quiz_questions.map((q, qIdx) => {
+                           const userAns = answers[qIdx];
+                           const isCorrect = userAns === q.correctAnswer;
+                           return (
+                             <div key={qIdx} className="border-b border-slate-50 pb-10 last:border-0">
+                               <p className="text-xl font-bold text-slate-900 mb-6 flex items-start gap-4">
+                                 <span className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs shrink-0">{qIdx + 1}</span>
+                                 {q.question}
+                               </p>
+                               <div className="grid gap-3 mb-6">
+                                  {q.options.map((opt, oIdx) => (
+                                    <div key={oIdx} className={`p-5 rounded-2xl text-sm font-bold flex items-center justify-between ${
+                                      oIdx === q.correctAnswer ? 'bg-emerald-50 text-emerald-700 ring-2 ring-emerald-100' : 
+                                      oIdx === userAns && !isCorrect ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-400 opacity-60'
+                                    }`}>
+                                      {opt}
+                                      {oIdx === q.correctAnswer && <CheckCircle2 className="w-5 h-5" />}
+                                    </div>
+                                  ))}
+                               </div>
+                               <div className="bg-brand-50/50 p-6 rounded-2xl border border-brand-100">
+                                  <p className="text-xs text-brand-900 leading-relaxed"><span className="font-black uppercase tracking-widest text-[9px] block mb-2">Explication du Mentor :</span> {q.explanation}</p>
+                               </div>
+                             </div>
+                           );
+                         })}
+                      </div>
+                    </section>
+
+                    {/* Success Outcome */}
+                    {isCertified ? (
+                      <>
+                        <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
+                          <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2"></div>
+                          <div className="relative z-10">
+                            <div className="mb-14">
+                              <Crown className="w-16 h-16 text-brand-500 mx-auto mb-6" />
+                              <h2 className="text-[12px] font-black text-brand-900 uppercase tracking-[0.6em] mb-4">Certificat d'Excellence Go'Top Pro</h2>
+                              <div className="h-px w-24 bg-brand-200 mx-auto"></div>
+                            </div>
+                            <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
+                            <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
+                            <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-12 mt-20 border-t border-slate-100 pt-16">
+                              <div className="text-left space-y-4">
+                                <div className="flex items-center gap-3 text-slate-400">
+                                  <Calendar className="w-4 h-4" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest">{new Date().toLocaleDateString('fr-FR')}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-400">
+                                  <Award className="w-4 h-4" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
+                                </div>
+                              </div>
+                              <div className="gold-seal h-28 w-28 rounded-full flex items-center justify-center text-white relative group">
+                                <Sparkles className="w-12 h-12" />
+                                <div className="absolute inset-0 rounded-full border-4 border-white/20 scale-110"></div>
+                                <div className="absolute -bottom-2 font-black text-[8px] uppercase tracking-widest bg-slate-900 px-3 py-1 rounded-full whitespace-nowrap">Certifié Kita</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="mb-4"><img src={COACH_KITA_AVATAR} className="h-16 w-16 rounded-2xl mx-auto md:ml-auto grayscale" alt="Kita Sig" /></div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Signature du Mentor</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-brand-950 rounded-[4rem] p-16 md:p-24 text-white shadow-2xl relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-16 opacity-[0.03] text-[15rem] pointer-events-none italic font-serif select-none">Action</div>
+                          <h4 className="text-brand-500 font-black uppercase text-[11px] tracking-[0.5em] mb-12 flex items-center gap-3"><Zap className="w-4 h-4 fill-current" /> Sceller ma réussite par l'action</h4>
+                          <p className="text-3xl font-serif mb-16 leading-relaxed italic text-slate-300 opacity-90">"{module.strategic_mantra}"</p>
+                          <div className="mb-14">
+                            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Mon premier engagement concret :</label>
+                            <textarea value={commitment} onChange={e => setCommitment(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-white placeholder-slate-700 outline-none ring-4 ring-transparent focus:ring-brand-500/20 focus:bg-white/10 transition text-2xl font-medium" placeholder="Décrivez votre première étape concrète..." rows={4} />
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-6">
+                            <button onClick={handleCommit} disabled={isSaving || !commitment.trim()} className="flex-grow bg-brand-500 py-8 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-4">
+                              {isSaving ? <Loader2 className="animate-spin" /> : "Terminer et sceller mon évolution"}
+                              {!isSaving && <ArrowRight className="w-6 h-6" />}
+                            </button>
+                            <button className="px-10 py-8 bg-white/10 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-white/20 transition"><Share2 className="w-5 h-5" /> Partager</button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Exhausted 3 attempts and still failed -> Suggest re-purchase */
+                      <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
+                        <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
+                        <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
+                        <p className="text-rose-700 text-xl font-medium mb-12 leading-relaxed max-w-2xl mx-auto italic">"Même avec l'audit complet sous vos yeux, le standard Go'Top n'est pas atteint. Un expert n'abandonne jamais. Renouvelez vos jetons pour prouver votre détermination."</p>
+                        <button onClick={() => navigate('/quiz')} className="bg-rose-600 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition shadow-2xl shadow-rose-200 flex items-center gap-4 mx-auto">
+                           Renouveler mes jetons d'expert <ArrowRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

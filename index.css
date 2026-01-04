@@ -28,3 +28,16 @@
 .lesson-content-container section:last-child {
   @apply mb-0;
 }
+
+/* Diplôme de Luxe */
+.diploma-paper {
+  background-color: #fff;
+  background-image: 
+    radial-gradient(circle at 2px 2px, rgba(12, 74, 110, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.gold-seal {
+  background: radial-gradient(circle, #fbbf24 0%, #b45309 100%);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+}

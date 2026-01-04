@@ -28,6 +28,7 @@ export interface UserProfile {
   pendingModuleIds: string[];
   actionPlan: UserActionCommitment[];
   progress?: { [moduleId: string]: number };
+  attempts?: { [moduleId: string]: number }; // Suivi des tentatives de quiz
   createdAt: string;
 }
 

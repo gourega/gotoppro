@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TRAINING_CATALOG, BADGES, COACH_KITA_AVATAR } from '../constants';
 import { ModuleStatus } from '../types';
-import { Award, BookOpen, Target, ChevronRight, Sparkles } from 'lucide-react';
+import { Award, BookOpen, Target, ChevronRight, Sparkles, CheckCircle2, History, Users, Coins } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -13,14 +14,17 @@ const Dashboard: React.FC = () => {
   const enrichedModules = TRAINING_CATALOG.map(m => {
     const isPurchased = user.purchasedModuleIds.includes(m.id);
     const score = user.progress?.[m.id];
+    const attempts = user.attempts?.[m.id] || 0;
+    const tokens = Math.max(0, 3 - attempts);
+    
     let status = ModuleStatus.LOCKED;
-    if (isPurchased) status = score !== undefined ? ModuleStatus.COMPLETED : ModuleStatus.NOT_STARTED;
-    return { ...m, status, score };
+    if (isPurchased) status = score !== undefined && score >= 80 ? ModuleStatus.COMPLETED : ModuleStatus.NOT_STARTED;
+    return { ...m, status, score, tokens };
   });
 
   const purchasedModules = enrichedModules.filter(m => m.status !== ModuleStatus.LOCKED);
-  const completedCount = purchasedModules.filter(m => m.status === ModuleStatus.COMPLETED).length;
-  const progress = Math.round((completedCount / (purchasedModules.length || 1)) * 100);
+  const completedModules = purchasedModules.filter(m => m.status === ModuleStatus.COMPLETED);
+  const progress = Math.round((completedModules.length / (purchasedModules.length || 1)) * 100);
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -43,7 +47,7 @@ const Dashboard: React.FC = () => {
             
             <div className="bg-white p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center gap-4">
               <div className="px-8 py-4 bg-brand-900 rounded-[1.5rem] text-white">
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Niveau d'expertise</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Maîtrise</p>
                 <div className="flex items-end gap-2">
                   <span className="text-3xl font-black leading-none">{progress}%</span>
                   <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden mb-1.5">
@@ -51,10 +55,10 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="pr-8 pl-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Collection</p>
-                <p className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                  {user.badges.length} <span className="text-brand-500 font-serif text-lg">Badges</span>
+              <div className="pr-8 pl-4 text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Certificats</p>
+                <p className="text-2xl font-black text-slate-900 flex items-center justify-center gap-2">
+                  {completedModules.length} <Award className="w-5 h-5 text-brand-500" />
                 </p>
               </div>
             </div>
@@ -71,37 +75,43 @@ const Dashboard: React.FC = () => {
               <div className="flex justify-between items-center mb-8 px-2">
                 <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-3">
                   <BookOpen className="w-6 h-6 text-brand-500" />
-                  Parcours de Formation
+                  Mes Modules & Certifications
                 </h2>
-                <Link to="/quiz" className="bg-brand-50 text-brand-600 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-100 transition-all flex items-center gap-2">
-                  Nouveau diagnostic
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
               </div>
 
               <div className="grid md:grid-cols-2 gap-8">
                 {purchasedModules.length > 0 ? (
                   purchasedModules.map(mod => (
-                    <div key={mod.id} className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group">
+                    <div key={mod.id} className={`bg-white rounded-[2.5rem] shadow-sm border overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group ${mod.status === ModuleStatus.COMPLETED ? 'border-brand-100' : 'border-slate-100'}`}>
                       <div className="p-8">
                         <div className="flex justify-between items-start mb-6">
                           <span className="text-[9px] font-black text-brand-500 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-widest">{mod.topic}</span>
-                          {mod.status === ModuleStatus.COMPLETED && (
-                            <div className="h-8 w-8 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-xs font-black ring-4 ring-emerald-50/50">✓</div>
+                          {mod.status === ModuleStatus.COMPLETED ? (
+                            <div className="h-8 w-8 bg-emerald-500 text-white rounded-xl flex items-center justify-center text-xs shadow-lg shadow-emerald-100 animate-in zoom-in-50">✓</div>
+                          ) : (
+                            <div className={`h-8 w-12 rounded-xl flex items-center justify-center text-xs border font-black ${mod.tokens === 0 ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                              {mod.score || 0}%
+                            </div>
                           )}
                         </div>
                         <h3 className="text-xl font-bold text-slate-900 leading-tight font-serif mb-4 group-hover:text-brand-600 transition-colors">{mod.title}</h3>
-                        <p className="text-slate-500 text-sm leading-relaxed line-clamp-2 font-medium mb-8 italic">"{mod.mini_course}"</p>
+                        
+                        <div className="flex items-center gap-2 mb-8">
+                           <Coins className={`w-3.5 h-3.5 ${mod.status === ModuleStatus.COMPLETED ? 'text-slate-300' : mod.tokens === 0 ? 'text-rose-400' : 'text-brand-500'}`} />
+                           <span className={`text-[9px] font-black uppercase tracking-widest ${mod.status === ModuleStatus.COMPLETED ? 'text-slate-300' : mod.tokens === 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                              {mod.status === ModuleStatus.COMPLETED ? 'Certifié' : `${mod.tokens} jetons de tentative`}
+                           </span>
+                        </div>
                         
                         <div className="flex items-center justify-between pt-6 border-t border-slate-50">
                           <div className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></div>
+                             <div className={`w-1.5 h-1.5 rounded-full ${mod.status === ModuleStatus.COMPLETED ? 'bg-emerald-500' : mod.tokens === 0 ? 'bg-rose-500' : 'bg-brand-500 animate-pulse'}`}></div>
                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                               {mod.status === ModuleStatus.COMPLETED ? `Score: ${mod.score}%` : 'En cours'}
+                               {mod.status === ModuleStatus.COMPLETED ? 'Master' : mod.tokens === 0 ? 'Epuisé' : 'En cours'}
                              </span>
                           </div>
-                          <Link to={`/module/${mod.id}`} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-[0.2em] hover:bg-brand-600 transition-all">
-                            Accéder
+                          <Link to={`/module/${mod.id}`} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-[0.2em] transition-all ${mod.status === ModuleStatus.COMPLETED ? 'bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-600' : mod.tokens === 0 ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-slate-900 text-white hover:bg-brand-600'}`}>
+                            {mod.status === ModuleStatus.COMPLETED ? 'Revoir' : mod.tokens === 0 ? 'Racheter' : 'Entrer'}
                           </Link>
                         </div>
                       </div>
@@ -110,8 +120,8 @@ const Dashboard: React.FC = () => {
                 ) : (
                   <div className="md:col-span-2 bg-white rounded-[3rem] p-16 text-center border border-dashed border-slate-200">
                     <div className="h-20 w-20 bg-brand-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-2xl">📚</div>
-                    <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4">Prêt pour votre première leçon ?</h3>
-                    <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">Lancez un diagnostic pour identifier les modules prioritaires pour votre salon.</p>
+                    <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4">Prêt pour votre première masterclass ?</h3>
+                    <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">Lancez un diagnostic pour identifier les modules prioritaires.</p>
                     <Link to="/quiz" className="bg-brand-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-100 hover:scale-105 transition-all">Lancer le diagnostic</Link>
                   </div>
                 )}
@@ -119,26 +129,26 @@ const Dashboard: React.FC = () => {
             </section>
 
             {/* Strategic Actions */}
-            <section className="bg-[#0c4a6e] rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden border border-white/5 group">
+            <section className="bg-brand-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden border border-white/5 group">
               <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[12rem] pointer-events-none italic font-serif group-hover:scale-110 transition-transform duration-1000">Go'Top</div>
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-10">
                   <div className="h-12 w-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10">
                     <Target className="w-6 h-6 text-brand-400" />
                   </div>
-                  <h2 className="text-2xl font-bold font-serif tracking-tight">Objectifs Prioritaires</h2>
+                  <h2 className="text-2xl font-bold font-serif tracking-tight">Plan d'Action Stratégique</h2>
                 </div>
 
                 {user.actionPlan.length === 0 ? (
                   <div className="py-12 px-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-center bg-white/5">
-                    <p className="text-slate-400 font-medium text-lg italic">"C'est l'action qui crée le changement."</p>
-                    <p className="text-[10px] text-brand-400 mt-4 font-black uppercase tracking-widest">Validez un module pour définir votre prochain défi.</p>
+                    <p className="text-slate-400 font-medium text-lg italic">"C'est l'action qui transforme le savoir en profit."</p>
+                    <p className="text-[10px] text-brand-400 mt-4 font-black uppercase tracking-widest">Réussissez un quiz pour définir votre prochaine étape.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {user.actionPlan.map((action, idx) => (
                       <div key={idx} className="bg-white/5 backdrop-blur-sm p-8 rounded-[2rem] border border-white/5 flex items-center gap-8 hover:bg-white/10 transition-all group/action">
-                        <div className={`h-12 w-12 rounded-[1.2rem] border-2 flex items-center justify-center flex-shrink-0 transition-all duration-500 ${action.isCompleted ? 'bg-brand-500 border-brand-500 shadow-[0_0_20px_rgba(14,165,233,0.3)]' : 'border-slate-700 bg-slate-900'}`}>
+                        <div className={`h-12 w-12 rounded-[1.2rem] border-2 flex items-center justify-center flex-shrink-0 transition-all duration-500 ${action.isCompleted ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'border-slate-700 bg-slate-900'}`}>
                           {action.isCompleted && <span className="text-white font-black text-lg">✓</span>}
                         </div>
                         <div className="flex-grow">
@@ -157,64 +167,59 @@ const Dashboard: React.FC = () => {
             </section>
           </div>
 
-          {/* Sidebar: Progress & Inspiration */}
+          {/* Sidebar: Badges & Inspiration */}
           <div className="space-y-10">
             {/* Badges Collection */}
             <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 p-10">
-              <div className="flex items-center gap-3 mb-8">
-                <Award className="w-5 h-5 text-brand-500" />
-                <h3 className="font-serif font-bold text-slate-900 text-lg">Certifications</h3>
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <Award className="w-5 h-5 text-brand-500" />
+                  <h3 className="font-serif font-bold text-slate-900 text-lg">Ma Collection</h3>
+                </div>
+                <span className="text-[10px] font-black text-brand-500">{user.badges.length} / {BADGES.length}</span>
               </div>
               <div className="grid grid-cols-3 gap-6">
                 {BADGES.map(badge => {
                   const hasBadge = user.badges.includes(badge.id);
                   return (
-                    <div 
-                      key={badge.id} 
-                      className={`h-20 w-20 rounded-[1.8rem] flex items-center justify-center text-3xl border-2 transition-all duration-700 shadow-sm relative group ${
-                        hasBadge ? 'bg-brand-50 border-brand-100 scale-100' : 'bg-slate-50 border-slate-100 grayscale opacity-20'
-                      }`}
-                    >
-                      {badge.icon}
-                      {hasBadge && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-brand-500 rounded-full border-2 border-white flex items-center justify-center">
-                          <div className="w-1 h-1 bg-white rounded-full"></div>
-                        </div>
-                      )}
-                      <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none font-black uppercase tracking-widest">
-                        {badge.name}
+                    <div key={badge.id} className="relative group flex flex-col items-center">
+                      <div className={`h-20 w-20 rounded-[1.8rem] flex items-center justify-center text-3xl border-2 transition-all duration-700 shadow-sm ${hasBadge ? 'bg-brand-50 border-brand-100 scale-100' : 'bg-slate-50 border-slate-100 grayscale opacity-20'}`}>
+                        {badge.icon}
+                        {hasBadge && <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>}
                       </div>
+                      <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none font-black uppercase tracking-widest">{badge.name}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Coach Quote */}
-            <div className="bg-brand-50 rounded-[3rem] p-10 border border-brand-100 shadow-inner relative overflow-hidden group">
-              <div className="absolute -top-6 -right-6 h-24 w-24 bg-brand-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+            {/* Coach Wisdom */}
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none"><Sparkles className="w-24 h-24" /></div>
               <h3 className="font-black text-brand-900 mb-6 uppercase text-[10px] tracking-[0.4em] opacity-60">Sagesse du Mentor</h3>
               <p className="text-xl text-brand-900 italic leading-relaxed font-serif font-medium mb-10 relative z-10">
-                "L'excellence n'est pas un acte, mais une habitude. Soyez rigoureux sur les détails, ils créent la confiance."
+                "Votre certificat n'est que le début. La vraie certification se voit dans le regard de vos clients quand ils entrent dans votre salon."
               </p>
-              <div className="flex items-center gap-4 pt-8 border-t border-brand-200/50">
-                <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-xl border-2 border-white relative group-hover:rotate-2 transition-transform">
-                  <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-black text-brand-900 uppercase tracking-widest block">Coach Kita</span>
-                  <span className="text-[9px] text-brand-500 font-bold uppercase tracking-widest">Fondateur Go'Top Pro</span>
-                </div>
+              <div className="flex items-center gap-4 pt-8 border-t border-slate-100">
+                <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-xl border-2 border-white"><img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" /></div>
+                <div><span className="text-[10px] font-black text-brand-900 uppercase tracking-widest block">Coach Kita</span><span className="text-[9px] text-brand-500 font-bold uppercase tracking-widest">Expert Mentor</span></div>
               </div>
             </div>
 
-            {/* Support Quick Link */}
-            <div className="p-8 bg-white border border-slate-100 rounded-[2.5rem] text-center">
-               <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-4">Besoin d'aide ?</p>
-               <a href="https://wa.me/2250103438456" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-slate-900 font-serif font-bold hover:text-brand-600 transition-colors">
-                 Parler avec un expert
-                 <ChevronRight className="w-4 h-4" />
-               </a>
+            {/* Stats Sidebar */}
+            <div className="bg-slate-900 rounded-[3rem] p-10 text-white space-y-8">
+               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-400">Statistiques Business</h3>
+               <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                     <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-brand-400"><Users className="w-5 h-5" /></div>
+                     <div><p className="text-xs text-slate-400">Employés managés</p><p className="font-black text-lg">{user.employeeCount || 0}</p></div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-brand-400"><History className="w-5 h-5" /></div>
+                     <div><p className="text-xs text-slate-400">Années d'expertise</p><p className="font-black text-lg">{user.yearsOfExistence || 0} ans</p></div>
+                  </div>
+               </div>
             </div>
           </div>
         </div>
