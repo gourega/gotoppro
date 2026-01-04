@@ -1,32 +1,12 @@
 
+import { Gift, ArrowRight, Loader2, Zap, Plus, Trash2, CheckCircle2, ShoppingBag, Crown, Users } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
-import { TrainingModule, UserProfile } from '../types';
+import { TrainingModule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
-import { 
-  ArrowRight, 
-  Loader2, 
-  ShieldCheck, 
-  Zap, 
-  Plus, 
-  X,
-  TrendingUp,
-  Trash2,
-  CheckCircle2,
-  ShoppingBag,
-  Info,
-  Star,
-  Crown,
-  AlertTriangle,
-  Smartphone,
-  Users,
-  History,
-  Gift,
-  ChevronRight
-} from 'lucide-react';
 
 const Results: React.FC = () => {
   const { user } = useAuth();
@@ -96,26 +76,24 @@ const Results: React.FC = () => {
     window.scrollTo(0,0);
   }, [user, navigate]);
 
-  // Plan de réduction en fonction du volume du panier
+  // Nouveau plan de réduction : 5 modules (20%), 9 modules (30%), 13 modules (50%)
   const pricingData = useMemo(() => {
     const count = cart.length;
     const subtotal = cart.reduce((acc, curr) => acc + curr.price, 0);
     
     let rate = 0;
-    if (count >= 16) rate = 0.40; // Pack intégral
-    else if (count >= 10) rate = 0.30;
-    else if (count >= 6) rate = 0.20;
-    else if (count >= 3) rate = 0.10;
+    if (count >= 13) rate = 0.50;
+    else if (count >= 9) rate = 0.30;
+    else if (count >= 5) rate = 0.20;
 
     const discountAmount = Math.round(subtotal * rate);
     const total = subtotal - discountAmount;
     
     // Calcul du prochain palier
     let nextTier = null;
-    if (count < 3) nextTier = { count: 3, label: "10 %" };
-    else if (count < 6) nextTier = { count: 6, label: "20 %" };
-    else if (count < 10) nextTier = { count: 10, label: "30 %" };
-    else if (count < 16) nextTier = { count: 16, label: "40 %" };
+    if (count < 5) nextTier = { count: 5, label: "20 %" };
+    else if (count < 9) nextTier = { count: 9, label: "30 %" };
+    else if (count < 13) nextTier = { count: 13, label: "50 %" };
 
     return { subtotal, discountAmount, total, count, rate, nextTier };
   }, [cart]);
@@ -274,7 +252,7 @@ const Results: React.FC = () => {
             )}
           </div>
 
-          {/* Sidebar Panier avec Plan de réduction */}
+          {/* Sidebar Panier avec nouveau plan de réduction */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
@@ -359,7 +337,6 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* Modale de validation */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
