@@ -14,22 +14,34 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La Psychologie de la Voix au Téléphone</h2>
-      <p>Dans l'univers du luxe, l'expérience commence au moment précis où le client compose votre numéro. Au téléphone, 100% de votre image repose sur votre voix. Sans le support visuel de votre salon ou de votre tenue, votre interlocuteur analyse inconsciemment votre professionnalisme à travers votre débit, votre ton et votre dynamisme. Un accueil hésitant ou trop familier dégrade immédiatement la valeur perçue de vos futures prestations techniques.</p>
+      <section>
+        <h2>I. La Psychologie de la Voix au Téléphone</h2>
+        <p>Dans l'univers du luxe, l'expérience commence au moment précis où le client compose votre numéro. Au téléphone, 100% de votre image repose sur votre voix. Sans le support visuel de votre salon ou de votre tenue, votre interlocuteur analyse inconsciemment votre professionnalisme à travers votre débit, votre ton et votre dynamisme.</p>
+        <p>Un accueil hésitant ou trop familier dégrade immédiatement la valeur perçue de vos futures prestations techniques. Vous devez incarner la sérénité et l'expertise dès la première seconde.</p>
+      </section>
+
+      <section>
+        <h2>II. Le Protocole de la Signature Sonore</h2>
+        <p>Un expert ne répond jamais par un simple "Allô". Votre réponse doit être une signature institutionnelle. La structure recommandée par les plus grandes enseignes est : <strong>"Salon [Nom], [Votre Prénom] à votre écoute, bonjour"</strong>.</p>
+        <p>Cette phrase remplit trois objectifs : elle identifie le lieu, elle humanise le contact par le prénom, et elle établit une posture de service par le mot "écoute". La règle d'or est la réactivité : au-delà de trois sonneries, le client commence à développer un sentiment d'abandon. Répondre vite, c'est prouver au client qu'il est une priorité absolue.</p>
+      </section>
       
-      <h2>II. Le Protocole de la Signature Sonore</h2>
-      <p>Un expert ne répond jamais par un simple "Allô". Votre réponse doit être une signature institutionnelle. La structure recommandée par les plus grandes enseignes est : "Salon [Nom], [Votre Prénom] à votre écoute, bonjour". Cette phrase remplit trois objectifs : elle identifie le lieu, elle humanise le contact par le prénom, et elle établit une posture de service par le mot "écoute". </p>
+      <section>
+        <h2>III. Le Sourire Vocal : Une Technique Physique</h2>
+        <p>C'est une loi de la communication : le sourire s'entend. Lorsque vous souriez, les muscles de votre visage se tendent, modifiant la forme de votre conduit vocal et rendant votre voix plus claire et plus chaleureuse.</p>
+        <p>Un client qui entend un sourire au téléphone est psychologiquement plus enclin à accepter des tarifs premium car il se sent accueilli dans un environnement bienveillant et expert. C'est la différence entre une transaction et une relation.</p>
+      </section>
       
-      <p>La règle d'or est la réactivité : au-delà de trois sonneries, le client commence à développer un sentiment d'abandon. Répondre vite, c'est prouver au client qu'il est une priorité absolue, même dans l'agitation du salon.</p>
+      <section>
+        <h2>IV. L'Art de la Maîtrise de l'Agenda</h2>
+        <p>Ne soyez jamais passif face à la demande du client. Au lieu de demander "Quand voulez-vous venir ?", ce qui crée souvent une confusion et des pertes de temps, utilisez la technique de l'Alternative Directive.</p>
+        <p>Proposez deux options précises qui arrangent votre rentabilité : "Madame Traoré, je peux vous recevoir mardi à 10h ou jeudi à 15h30. Laquelle de ces deux options convient le mieux à votre emploi du temps ?". Vous reprenez ainsi le contrôle de votre flux de travail tout en offrant un service structuré.</p>
+      </section>
       
-      <h2>III. Le Sourire Vocal : Une Technique Physique</h2>
-      <p>C'est une loi de la communication : le sourire s'entend. Lorsque vous souriez, les muscles de votre visage se tendent, modifiant la forme de votre conduit vocal et rendant votre voix plus claire et plus chaleureuse. Un client qui entend un sourire au téléphone est psychologiquement plus enclin à accepter des tarifs premium car il se sent accueilli dans un environnement bienveillant et expert.</p>
-      
-      <h2>IV. L'Art de la Maîtrise de l'Agenda</h2>
-      <p>Ne soyez jamais passif face à la demande du client. Au lieu de demander "Quand voulez-vous venir ?", ce qui crée souvent une confusion et des pertes de temps, utilisez la technique de l'Alternative Directive. Proposez deux options précises qui arrangent votre rentabilité : "Madame Traoré, je peux vous recevoir mardi à 10h ou jeudi à 15h30. Laquelle de ces deux options convient le mieux à votre emploi du temps ?". Vous reprenez ainsi le contrôle de votre flux de travail tout en offrant un service structuré.</p>
-      
-      <h2>V. Conclusion et Réassurance</h2>
-      <p>La fin de l'appel est aussi cruciale que le début. Reformulez toujours le rendez-vous pour éviter les "No-Shows" : "Parfait, c'est noté pour votre coloration experte ce jeudi à 15h30 avec moi-même. Nous avons hâte de vous recevoir au salon". Cette petite phrase verrouille psychologiquement l'engagement du client.</p>
+      <section>
+        <h2>V. Conclusion et Réassurance</h2>
+        <p>La fin de l'appel est aussi cruciale que le début. Reformulez toujours le rendez-vous pour éviter les "No-Shows" : "Parfait, c'est noté pour votre coloration experte ce jeudi à 15h30 avec moi-même. Nous avons hâte de vous recevoir au salon". Cette petite phrase verrouille psychologiquement l'engagement du client et valorise son choix.</p>
+      </section>
     `,
     coach_tip: "Installe un petit miroir devant le téléphone. Si tu te vois sourire, ton client l'entendra. C'est magique.",
     strategic_mantra: "Un appel mal géré est un billet de banque que vous offrez gracieusement à votre concurrent.",
@@ -46,20 +58,35 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La Rupture de la Barrière Physique</h2>
-      <p>Le plus grand péché du coiffeur traditionnel est de faire son diagnostic à travers le miroir, en restant debout derrière le client. Pour passer au niveau supérieur, vous devez briser cette barrière. Asseyez-vous ou accroupissez-vous pour que vos yeux soient au même niveau que ceux de votre client. Cette posture de proximité élimine le rapport de force et crée une connexion de confiance immédiate. Vous n'êtes plus celui qui exécute, vous êtes celui qui conseille.</p>
+      <section>
+        <h2>I. La Rupture de la Barrière Physique</h2>
+        <p>Le plus grand péché du coiffeur traditionnel est de faire son diagnostic à travers le miroir, en restant debout derrière le client. Pour passer au niveau supérieur, vous devez briser cette barrière psychologique.</p>
+        <p>Asseyez-vous ou accroupissez-vous pour que vos yeux soient au même niveau que ceux de votre client. Cette posture de proximité élimine le rapport de force et crée une connexion de confiance immédiate. Vous n'êtes plus celui qui exécute, vous êtes celui qui conseille.</p>
+      </section>
+
+      <section>
+        <h2>II. La Maïeutique : L'Art du Questionnement</h2>
+        <p>Le diagnostic n'est pas une présentation de catalogue, c'est une enquête. Remplacez le classique "On fait quoi aujourd'hui ?" par des questions à haute valeur ajoutée qui forcent la réflexion.</p>
+        <p>Demandez : "Quelle image de vous-même souhaitez-vous projeter ?", ou "Si vous aviez une baguette magique, que changeriez-vous sur vos cheveux ?". Écoutez 80% du temps. Le client vous donne lui-même les arguments pour lui vendre les produits et soins dont il a réellement besoin.</p>
+      </section>
       
-      <h2>II. La Maïeutique : L'Art du Questionnement</h2>
-      <p>Le diagnostic n'est pas une présentation de catalogue, c'est une enquête. Remplacez "On fait quoi ?" par des questions à haute valeur ajoutée : "Quelle image de vous-même souhaitez-vous projeter ?", "Qu'est-ce qui vous frustre le plus dans vos cheveux le matin ?", "Si vous aviez une baguette magique, que changeriez-vous aujourd'hui ?". Écoutez 80% du temps. Le client vous donne lui-même les arguments pour lui vendre les produits et soins dont il a besoin.</p>
+      <section>
+        <h2>III. Le Toucher Technique et l'Analyse Sensorielle</h2>
+        <p>Pendant que vous parlez, touchez les cheveux. Analysez la porosité, la densité et l'élasticité. Commentez ce que vous faites avec un vocabulaire d'expert.</p>
+        <p>Utilisez des phrases comme : "Je sens une légère porosité sur les pointes qui va nécessiter un apport en kératine spécifique". En verbalisant votre analyse technique, vous justifiez naturellement le prix de vos soins avant même de les proposer officiellement.</p>
+      </section>
       
-      <h2>III. Le Toucher Technique et l'Analyse Sensorielle</h2>
-      <p>Pendant que vous parlez, touchez les cheveux. Analysez la porosité, la densité et l'élasticité. Commentez ce que vous faites avec un vocabulaire d'expert : "Je sens une légère porosité sur les pointes qui va nécessiter un apport en kératine spécifique". En verbalisant votre analyse technique, vous justifiez naturellement le prix de vos soins avant même de les proposer.</p>
+      <section>
+        <h2>IV. La Proposition de Valeur Globale</h2>
+        <p>Un diagnostic d'élite inclut toujours trois piliers : la technique (couleur/coupe), le soin en salon et la prescription à domicile. Ne proposez jamais un soin comme une option facultative.</p>
+        <p>Présentez-le comme une étape indispensable à la réussite : "Pour obtenir ce blond froid sans sensibiliser votre fibre, nous allons intégrer le protocole de reconstruction profonde". Vous ne vendez pas un extra, vous garantissez un résultat.</p>
+      </section>
       
-      <h2>IV. La Proposition de Valeur Globale</h2>
-      <p>Un diagnostic complet inclut toujours trois piliers : la technique (couleur/coupe), le soin en salon et la prescription à domicile. Ne proposez jamais un soin comme une option, mais comme une étape indispensable à la réussite du résultat final. Dites : "Pour obtenir ce blond froid sans sensibiliser votre fibre, nous allons intégrer le protocole de reconstruction profonde".</p>
-      
-      <h2>V. La Validation et le Devis</h2>
-      <p>Finissez toujours par une reformulation claire et l'annonce du tarif. L'anxiété du prix est le premier frein à la relaxation du client. En étant transparent dès le diagnostic, vous permettez au client de profiter pleinement de sa prestation sans stress financier.</p>
+      <section>
+        <h2>V. La Validation et le Devis</h2>
+        <p>Finissez toujours par une reformulation claire et l'annonce du tarif. L'anxiété du prix est le premier frein à la relaxation du client au bac à shampoing.</p>
+        <p>En étant transparent dès le diagnostic, vous permettez au client de profiter pleinement de sa prestation sans stress financier caché. La clarté est la politesse des experts.</p>
+      </section>
     `,
     coach_tip: "Si ton diagnostic dure moins de 10 minutes, tu n'as pas fait un diagnostic, tu as juste pris une commande.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre cerveau et votre regard d'expert.",
@@ -76,20 +103,35 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 2,
     lesson_content: `
-      <h2>I. La Théorie du Rayon d'Action</h2>
-      <p>Chaque pas que vous faites inutilement dans votre salon est une seconde de profit qui s'envole. Un poste de travail d'élite doit être pensé comme un cockpit d'avion : tout ce dont vous avez besoin pour 90% de vos gestes techniques doit se trouver dans un rayon de 60 centimètres autour de vous. Ciseaux, peignes, pinces et sprays doivent être accessibles sans que vous ayez à décentrer votre regard de la chevelure de votre client.</p>
+      <section>
+        <h2>I. La Théorie du Rayon d'Action</h2>
+        <p>Chaque pas que vous faites inutilement dans votre salon est une seconde de profit qui s'envole. Un poste de travail d'élite doit être pensé comme un cockpit d'avion de chasse.</p>
+        <p>Tout ce dont vous avez besoin pour 90% de vos gestes techniques doit se trouver dans un rayon de 60 centimètres. Ciseaux, peignes, pinces et sprays doivent être accessibles sans que vous ayez à décentrer votre regard de la chevelure de votre client. L'immobilité des pieds est le secret de la rapidité des mains.</p>
+      </section>
+
+      <section>
+        <h2>II. L'Ingénierie du Flux de Travail</h2>
+        <p>Analysez votre parcours quotidien entre le poste de coiffage, le bac à shampoing et le laboratoire de coloration. L'objectif est de créer un flux circulaire fluide, sans croisement inutile.</p>
+        <p>Préparez vos plateaux techniques AVANT l'arrivée du client. Un coiffeur qui doit quitter son client pour aller chercher une serviette brise l'expérience de luxe et donne une image d'amateurisme désorganisé. L'anticipation est la marque des grands professionnels.</p>
+      </section>
       
-      <h2>II. L'Ingénierie du Flux de Travail</h2>
-      <p>Analysez votre parcours quotidien entre le poste de coiffage, le bac à shampoing et le laboratoire de coloration. L'objectif est de créer un flux circulaire fluide. Préparez vos plateaux techniques AVANT l'arrivée du client. Un coiffeur qui doit quitter son client pour aller chercher une serviette ou un pinceau brise l'expérience de luxe et donne une image d'amateurisme désorganisé.</p>
+      <section>
+        <h2>III. La Protection de votre Capital Santé</h2>
+        <p>Votre corps est votre premier outil de travail et votre principal actif financier. La fatigue physique est l'ennemie de la vente additionnelle.</p>
+        <p>Utilisez systématiquement des tabourets à roulettes réglables et assurez-vous que le fauteuil du client est à la hauteur parfaite pour que vos coudes restent à un angle de 90 degrés. Travailler intelligemment, c'est s'assurer de pouvoir exercer son art avec passion pendant des décennies.</p>
+      </section>
       
-      <h2>III. La Protection de votre Capital Santé</h2>
-      <p>Votre corps est votre premier outil de travail. La fatigue physique est l'ennemie de la vente : en fin de journée, si vous avez mal au dos, vous aurez moins d'énergie pour conseiller un produit ou un soin additionnel. Utilisez systématiquement des tabourets à roulettes réglables et assurez-vous que le fauteuil du client est toujours à la hauteur parfaite pour que vos coudes restent à un angle de 90 degrés. Travailler intelligemment, c'est durer plus longtemps.</p>
+      <section>
+        <h2>IV. L'Organisation Visuelle et Mentale</h2>
+        <p>Le désordre sur un poste de travail crée du stress visuel pour le client et du stress mental pour vous. Adoptez la méthode rigoureuse du "Poste Net".</p>
+        <p>À chaque étape de la prestation, rangez ce que vous n'utilisez plus. Un plan de travail épuré renforce votre image d'expert méticuleux et permet au client de se concentrer exclusivement sur votre conseil. Un esprit clair commence par un espace dégagé.</p>
+      </section>
       
-      <h2>IV. L'Organisation Visuelle et Mentale</h2>
-      <p>Le désordre sur un poste de travail crée du stress visuel pour le client et du stress mental pour vous. Adoptez la méthode du 'Poste Net' : à chaque étape de la prestation, rangez ce que vous n'utilisez plus. Un plan de travail épuré renforce votre image d'expert méticuleux et permet au client de se concentrer sur son propre reflet et sur vos conseils.</p>
-      
-      <h2>V. Conclusion : Le Temps est une Unité de Mesure</h2>
-      <p>Gagner 5 minutes par client grâce à une meilleure organisation, c'est pouvoir accueillir une cliente supplémentaire par jour ou terminer sa journée plus tôt sans perte de revenus. L'ergonomie n'est pas un détail, c'est le moteur de votre croissance.</p>
+      <section>
+        <h2>V. Conclusion : Le Temps comme Unité de Mesure</h2>
+        <p>Gagner seulement 5 minutes par client grâce à une meilleure ergonomie, c'est pouvoir accueillir une cliente supplémentaire par jour sans effort supplémentaire.</p>
+        <p>Sur une année, cette petite optimisation représente des centaines de milliers de francs de bénéfice net. L'organisation n'est pas un luxe, c'est la fondation de votre richesse future.</p>
+      </section>
     `,
     coach_tip: "Fais une vidéo de toi en accéléré pendant une prestation. Tu seras choqué du nombre de mouvements inutiles que tu fais.",
     strategic_mantra: "Moins vous bougez vos pieds, plus vous faites travailler vos mains et votre rentabilité.",
