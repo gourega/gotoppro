@@ -38,7 +38,8 @@ import {
   Plus,
   ArrowUpRight,
   UserX,
-  UserCheck
+  UserCheck,
+  Zap
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -83,7 +84,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleToggleStatus = async (user: UserProfile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (user.uid === currentUser?.uid) return showNotification("Vous ne pouvez pas vous suspendre vous-même", "error");
+    if (user.uid === currentUser?.uid) return showNotification("Action impossible sur soi-même", "error");
     
     setProcessingId(user.uid);
     try {
@@ -94,60 +95,75 @@ const AdminDashboard: React.FC = () => {
         setSelectedUser({ ...selectedUser, isActive: !user.isActive });
       }
     } catch (err) {
-      showNotification("Erreur lors du changement de statut", "error");
+      showNotification("Erreur", "error");
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleDelete = async (uid: string) => {
-    if (!window.confirm("Êtes-vous ABSOLUMENT sûr ? Cette action supprimera tout l'historique, les badges et les accès de ce gérant. C'est irréversible.")) return;
-    
+    if (!window.confirm("Action irréversible. Confirmer la suppression ?")) return;
     setProcessingId(uid);
     try {
       await deleteUserProfile(uid);
-      showNotification("Compte définitivement supprimé");
+      showNotification("Compte supprimé");
       setSelectedUser(null);
       await fetchUsers();
     } catch (err) {
-      showNotification("Erreur lors de la suppression", "error");
+      showNotification("Erreur suppression", "error");
     } finally {
       setProcessingId(null);
     }
   };
 
-  // Fix: Added missing handleRewardModule function to offer training modules to users
   const handleRewardModule = async (moduleId: string) => {
     if (!selectedUser) return;
-    setProcessingId(selectedUser.uid);
+    setProcessingId(moduleId);
     try {
       await grantModuleAccess(selectedUser.uid, moduleId);
-      showNotification("Module offert avec succès");
+      showNotification("Module offert !");
       await fetchUsers();
-      setSelectedUser({
-        ...selectedUser,
-        purchasedModuleIds: [...(selectedUser.purchasedModuleIds || []), moduleId],
-        isActive: true
-      });
+      setSelectedUser(prev => prev ? { 
+        ...prev, 
+        purchasedModuleIds: [...new Set([...(prev.purchasedModuleIds || []), moduleId])],
+        isActive: true 
+      } : null);
     } catch (err) {
-      showNotification("Erreur lors de l'attribution du module", "error");
+      showNotification("Erreur attribution", "error");
     } finally {
       setProcessingId(null);
     }
   };
 
-  // Fix: Added missing handleAddAdmin function to create new administrator accounts
+  const handleResetTokens = async (moduleId: string) => {
+    if (!selectedUser) return;
+    setProcessingId(`token_${moduleId}`);
+    try {
+      await updateQuizAttempts(selectedUser.uid, moduleId, 0);
+      showNotification("Jetons réinitialisés (3 offerts)");
+      await fetchUsers();
+      setSelectedUser(prev => prev ? { 
+        ...prev, 
+        attempts: { ...(prev.attempts || {}), [moduleId]: 0 } 
+      } : null);
+    } catch (err) {
+      showNotification("Erreur jetons", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await createAdminAccount(adminForm.email, adminForm.firstName, adminForm.phone);
-      showNotification("Compte administrateur créé");
-      setAdminForm({ email: '', firstName: '', phone: '' });
+      showNotification("Admin ajouté");
       setShowAddAdmin(false);
+      setAdminForm({ email: '', firstName: '', phone: '' });
       await fetchUsers();
     } catch (err: any) {
-      showNotification(err.message || "Erreur lors de la création de l'admin", "error");
+      showNotification(err.message || "Erreur création", "error");
     } finally {
       setLoading(false);
     }
@@ -167,18 +183,19 @@ const AdminDashboard: React.FC = () => {
     const pendingPayment = clients.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
     const totalRevenue = clients.reduce((acc, u) => acc + calculateNetPrice(u.purchasedModuleIds?.length || 0), 0);
     const activeClients = clients.filter(u => u.isActive);
-    const conversionRate = clients.length > 0 ? Math.round((activeClients.length / clients.length) * 100) : 0;
-
-    return { totalClients: clients.length, pending: pendingPayment.length, revenue: totalRevenue, conversionRate };
+    return { 
+      totalClients: clients.length, 
+      pending: pendingPayment.length, 
+      revenue: totalRevenue,
+      conversionRate: clients.length > 0 ? Math.round((activeClients.length / clients.length) * 100) : 0 
+    };
   }, [users]);
 
   const filteredData = users.filter(u => {
     const matchesSearch = u.phoneNumber.includes(searchTerm) || 
       (u.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (u.establishmentName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const isTargetView = viewMode === 'clients' ? !u.isAdmin : u.isAdmin;
-    return matchesSearch && isTargetView;
+    return matchesSearch && (viewMode === 'clients' ? !u.isAdmin : u.isAdmin);
   });
 
   const pendingUsers = users.filter(u => !u.isAdmin && u.pendingModuleIds && u.pendingModuleIds.length > 0);
@@ -221,14 +238,13 @@ const AdminDashboard: React.FC = () => {
           <StatBox title="Recettes Nettes" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" />
         </div>
 
-        {/* Global Management Table */}
         <div className="bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl">
           <div className="p-10 border-b border-white/5 flex flex-col lg:flex-row justify-between gap-8">
             <div className="relative flex-grow max-w-2xl">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
               <input 
                 type="text" 
-                placeholder={viewMode === 'clients' ? "Rechercher un gérant..." : "Rechercher un administrateur..."}
+                placeholder="Rechercher..."
                 className="w-full pl-16 pr-8 py-5 rounded-3xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500/50 text-white placeholder-slate-500 transition-all"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -245,8 +261,8 @@ const AdminDashboard: React.FC = () => {
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Identité</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{viewMode === 'clients' ? "Maîtrise" : "Rôle"}</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut (Interactif)</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Maîtrise</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
@@ -255,7 +271,7 @@ const AdminDashboard: React.FC = () => {
                   <tr key={u.uid} className="group hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setSelectedUser(u)}>
                     <td className="px-10 py-8">
                       <div className="flex items-center gap-5">
-                        <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black ${u.isAdmin ? 'bg-brand-500/20 text-brand-500' : 'bg-white/10 text-brand-500'} overflow-hidden`}>
+                        <div className="h-14 w-14 rounded-2xl flex items-center justify-center font-black bg-white/10 text-brand-500 overflow-hidden">
                           {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"/> : (u.firstName?.[0] || 'U')}
                         </div>
                         <div>
@@ -265,43 +281,28 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-10 py-8">
-                       {viewMode === 'clients' ? (
-                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3">
-                               <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
-                                  <div className="h-full bg-brand-500" style={{ width: `${Math.round((u.purchasedModuleIds?.length || 0)/16 * 100)}%` }}></div>
-                               </div>
-                               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{u.purchasedModuleIds?.length || 0} Acquis</span>
-                            </div>
-                         </div>
-                       ) : (
-                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-500 bg-brand-500/10 px-3 py-1 rounded-lg">
-                           {u.role}
-                         </span>
-                       )}
+                       <div className="flex items-center gap-3">
+                          <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
+                             <div className="h-full bg-brand-500" style={{ width: `${Math.round((u.purchasedModuleIds?.length || 0)/16 * 100)}%` }}></div>
+                          </div>
+                          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{u.purchasedModuleIds?.length || 0} Acquis</span>
+                       </div>
                     </td>
                     <td className="px-10 py-8">
                        <button 
                         onClick={(e) => handleToggleStatus(u, e)}
                         disabled={processingId === u.uid}
-                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 ${
+                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${
                          u.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                        }`}>
                          {processingId === u.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : u.isActive ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
-                         {u.isActive ? 'Compte Actif' : 'Compte Suspendu'}
+                         {u.isActive ? 'Actif' : 'Suspendu'}
                        </button>
                     </td>
                     <td className="px-10 py-8 text-right">
-                       <div className="flex justify-end gap-3" onClick={e => e.stopPropagation()}>
-                          {!u.isAdmin && (
-                            <a href={`https://wa.me/${u.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
-                               <MessageCircle className="w-5 h-5" />
-                            </a>
-                          )}
-                          <button onClick={() => setSelectedUser(u)} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
-                             <ChevronRight className="w-5 h-5" />
-                          </button>
-                       </div>
+                       <button onClick={() => setSelectedUser(u)} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
+                          <ChevronRight className="w-5 h-5" />
+                       </button>
                     </td>
                   </tr>
                 ))}
@@ -314,7 +315,7 @@ const AdminDashboard: React.FC = () => {
       {/* Reward & Detail Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="bg-[#1e293b] w-full max-w-5xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+           <div className="bg-[#1e293b] w-full max-w-5xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
               <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                  <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl overflow-hidden bg-brand-500 flex items-center justify-center font-black">
@@ -331,103 +332,112 @@ const AdminDashboard: React.FC = () => {
               <div className="p-10 overflow-y-auto flex-grow custom-scrollbar">
                  <div className="grid lg:grid-cols-12 gap-10">
                     <div className="lg:col-span-8 space-y-12">
+                       {/* Section Offrir Module */}
                        {!selectedUser.isAdmin && (
                          <section>
                             <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                               <Gift className="w-4 h-4" /> Offrir un Module
+                               <Gift className="w-4 h-4" /> Offrir un Module (Déblocage Immédiat)
                             </h3>
                             <div className="grid md:grid-cols-2 gap-4">
-                               {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).slice(0, 4).map(mod => (
+                               {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).slice(0, 10).map(mod => (
                                  <div key={mod.id} className="p-6 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-brand-500 transition-all">
-                                    <div className="max-w-[180px]">
-                                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{mod.topic}</p>
+                                    <div className="max-w-[200px]">
+                                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{mod.topic}</p>
                                        <p className="text-sm font-bold text-white truncate">{mod.title}</p>
                                     </div>
                                     <button 
                                       onClick={() => handleRewardModule(mod.id)}
-                                      className="h-10 w-10 bg-brand-600 text-white rounded-xl flex items-center justify-center"
+                                      disabled={processingId === mod.id}
+                                      className="h-10 w-10 bg-brand-600 text-white rounded-xl flex items-center justify-center hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20"
                                     >
-                                       <Plus className="w-4 h-4" />
+                                       {processingId === mod.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                                     </button>
                                  </div>
                                ))}
                             </div>
                          </section>
                        )}
+
+                       {/* Section Jetons & Progrès */}
+                       <section>
+                          <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                             <Zap className="w-4 h-4" /> Progrès & Gestion des Jetons (Tentatives)
+                          </h3>
+                          <div className="grid md:grid-cols-2 gap-6">
+                             {selectedUser.purchasedModuleIds?.map(id => {
+                               const m = TRAINING_CATALOG.find(tm => tm.id === id);
+                               const attempts = selectedUser.attempts?.[id] || 0;
+                               const score = selectedUser.progress?.[id] || 0;
+                               return (
+                                 <div key={id} className="bg-white/5 p-6 rounded-[2rem] border border-white/5 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                       <div className="max-w-[150px]">
+                                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Module {id.split('_').pop()}</p>
+                                          <p className="text-xs font-bold text-white truncate">{m?.title}</p>
+                                       </div>
+                                       <div className={`px-3 py-1 rounded-lg text-[10px] font-black ${score >= 80 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-brand-500/10 text-brand-500'}`}>
+                                          {score}%
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                       <div className="flex items-center gap-2">
+                                          <Coins className="w-3.5 h-3.5 text-amber-500" />
+                                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Utilisés : {attempts}/3</span>
+                                       </div>
+                                       <button 
+                                         onClick={() => handleResetTokens(id)}
+                                         disabled={processingId === `token_${id}`}
+                                         className="px-4 py-2 bg-amber-500/10 text-amber-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2"
+                                       >
+                                          {processingId === `token_${id}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                                          Offrir 3 Jetons
+                                       </button>
+                                    </div>
+                                 </div>
+                               );
+                             })}
+                          </div>
+                       </section>
                     </div>
+
                     <div className="lg:col-span-4 space-y-6">
                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Valeur Nette</p>
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Valeur Nette Client</p>
                           <p className="text-3xl font-black text-white">{calculateNetPrice(selectedUser.purchasedModuleIds?.length || 0).toLocaleString()} F</p>
+                       </div>
+                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Plan d'Engagement</p>
+                          <div className="space-y-4">
+                             {selectedUser.actionPlan && selectedUser.actionPlan.length > 0 ? (
+                                selectedUser.actionPlan.slice(0, 3).map((a, i) => (
+                                   <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/5">
+                                      <p className="text-[8px] font-black text-brand-500 uppercase tracking-widest mb-1">{a.moduleTitle}</p>
+                                      <p className="text-[10px] text-slate-300 italic">"{a.action}"</p>
+                                   </div>
+                                ))
+                             ) : <p className="text-[10px] text-slate-500 italic">Aucun plan d'action.</p>}
+                          </div>
                        </div>
                     </div>
                  </div>
               </div>
 
-              {/* Barre d'Actions de Pilotage - RÉSUMÉ DES DEMANDES */}
               <div className="p-8 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
-                 <button 
-                   onClick={() => handleDelete(selectedUser.uid)}
-                   disabled={processingId === selectedUser.uid}
-                   className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest transition-all p-3 hover:bg-rose-500/10 rounded-xl"
-                 >
-                    {processingId === selectedUser.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Suppression Définitive
+                 <button onClick={() => handleDelete(selectedUser.uid)} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest">
+                    <Trash2 className="w-4 h-4" /> Supprimer Définitivement
                  </button>
-                 
                  <div className="flex gap-4">
                     <button 
-                      onClick={(e) => handleToggleStatus(selectedUser, e)}
-                      disabled={processingId === selectedUser.uid}
-                      className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-3 ${
-                        selectedUser.isActive 
-                          ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' 
-                          : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-xl shadow-emerald-500/20'
-                      }`}
+                      onClick={() => handleToggleStatus(selectedUser)}
+                      className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500 text-white'}`}
                     >
-                       {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                       {selectedUser.isActive ? 'Suspendre l\'Accès' : 'Rétablir l\'Accès'}
+                       {selectedUser.isActive ? 'Suspendre l\'accès' : 'Débloquer le compte'}
                     </button>
-                    {!selectedUser.isAdmin && (
-                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-3">
-                         <MessageCircle className="w-4 h-4" /> WhatsApp
-                      </a>
-                    )}
+                    <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3">
+                       <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
                  </div>
               </div>
-           </div>
-        </div>
-      )}
-
-      {/* Modal Ajout Admin */}
-      {showAddAdmin && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="bg-[#1e293b] w-full max-w-md rounded-[3rem] border border-white/10 shadow-2xl p-10">
-              <div className="text-center mb-10">
-                 <h2 className="text-2xl font-black text-white mb-2">Nouvel Admin</h2>
-                 <p className="text-slate-500 text-xs font-medium">Enregistrement d'un membre de l'équipe.</p>
-              </div>
-
-              <form onSubmit={handleAddAdmin} className="space-y-6">
-                 <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Prénom</label>
-                    <input type="text" required value={adminForm.firstName} onChange={e => setAdminForm({...adminForm, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
-                 </div>
-                 <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Email</label>
-                    <input type="email" required value={adminForm.email} onChange={e => setAdminForm({...adminForm, email: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
-                 </div>
-                 <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Téléphone</label>
-                    <input type="tel" required placeholder="+225..." value={adminForm.phone} onChange={e => setAdminForm({...adminForm, phone: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
-                 </div>
-                 <div className="flex gap-4 pt-4">
-                    <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">
-                       {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Créer le profil Admin"}
-                    </button>
-                    <button type="button" onClick={() => setShowAddAdmin(false)} className="px-6 text-slate-500 font-black text-[10px] uppercase tracking-widest">Annuler</button>
-                 </div>
-              </form>
            </div>
         </div>
       )}
@@ -448,14 +458,8 @@ const StatBox = ({ title, value, icon, color, highlight }: any) => (
 );
 
 const FilterToggle = ({ active, onClick, label, icon }: any) => (
-  <button 
-    onClick={onClick} 
-    className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${
-      active ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/20' : 'text-slate-500 hover:text-slate-300'
-    }`}
-  >
-    {icon}
-    {label}
+  <button onClick={onClick} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${active ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/20' : 'text-slate-500 hover:text-slate-300'}`}>
+    {icon} {label}
   </button>
 );
 
