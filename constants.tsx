@@ -13,7 +13,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Votre téléphone n'est pas un outil, c'est votre première caisse enregistreuse.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<section class="lesson-card"><h2>I. La signature vocale</h2><p>Un expert ne répond jamais par un simple « Allô ». La formule qui rassure est : <strong>« Salon [Nom], [Votre Prénom] à votre écoute, bonjour »</strong>.</p></section>`,
+    lesson_content: `<section class="lesson-card"><h2>I. La signature vocale</h2><p>Un expert ne répond jamais par un simple « Allô ». La formule qui rassure est : <strong>« Salon [Nom], [Votre prénom] à votre écoute, bonjour »</strong>.</p></section>`,
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
     strategic_mantra: "Un appel raté est un client qui part chez le voisin.",
     quiz_questions: [{ question: "Quelle est la phrase d'accueil idéale ?", options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], correctAnswer: 1, explanation: "Cette formule établit immédiatement votre autorité professionnelle." }],
@@ -68,16 +68,16 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_social_media",
     topic: "Visibilité",
-    title: "Réseaux sociaux : attirer des nouveaux clients",
+    title: "Réseaux sociaux : attirer de nouveaux clients",
     description: "Maîtrisez Facebook, Instagram et TikTok pour remplir votre salon sans payer de publicité.",
     mini_course: "Votre page est le premier salon que vos clients visitent virtuellement.",
     price: 500,
     aiCredits: 4,
     lesson_content: `<section class="lesson-card"><h2>I. La photo qui vend</h2><p>La lumière naturelle est votre meilleure amie. Prenez vos photos face à la fenêtre pour montrer la vraie couleur.</p></section>`,
-    coach_tip: "Une vidéo « Avant/Après » réussie vaut plus que mille mots.",
+    coach_tip: "Une vidéo « avant/après » réussie vaut plus que mille mots.",
     strategic_mantra: "Si vous n'êtes pas sur leur téléphone, vous n'existez pas.",
     quiz_questions: [{ question: "Où prendre la meilleure photo au salon ?", options: ["Sous les néons jaunes", "Face à la lumière du jour", "Avec le flash dans le noir"], correctAnswer: 1, explanation: "La lumière du jour respecte les reflets de votre travail." }],
-    exercises: ["Publier une vidéo « Avant/Après » cette semaine."],
+    exercises: ["Publier une vidéo « avant/après » cette semaine."],
     tips: ["Répondez à chaque commentaire poliment."]
   },
   {
@@ -98,7 +98,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_management",
     topic: "Direction",
-    title: "Direction d'équipe : motiver pour gagner",
+    title: "Direction d'équipe : motiver ses collaborateurs",
     description: "Passez du rôle de patron à celui de leader. Apprenez à inspirer votre équipe pour qu'elle produise plus.",
     mini_course: "Votre équipe traitera vos clients comme vous traitez votre équipe.",
     price: 500,
@@ -113,7 +113,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_tarification",
     topic: "Gestion",
-    title: "Tarifs et rentabilité : fixer le juste prix",
+    title: "Tarification : calculer sa rentabilité à la minute",
     description: "Apprenez à calculer vos prix en fonction de vos charges réelles, pas en fonction du voisin.",
     mini_course: "Le chiffre d'affaires flatte l'ego, le bénéfice nourrit la famille.",
     price: 500,
@@ -143,7 +143,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_retail",
     topic: "Vente",
-    title: "Vente de produits : prolonger l'expertise à la maison",
+    title: "Vente de produits : conseiller comme un expert",
     description: "Apprenez à vendre les produits de votre boutique pour augmenter vos revenus sans temps de travail supplémentaire.",
     mini_course: "Si votre client achète son shampoing au supermarché, vous perdez de l'argent.",
     price: 500,
@@ -188,7 +188,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_tresorerie",
     topic: "Gestion",
-    title: "Gestion de la caisse : ne plus jamais être à sec",
+    title: "Mouvements de caisse : ne plus jamais être à sec",
     description: "Apprenez à gérer vos entrées et sorties d'argent au quotidien pour anticiper vos factures.",
     mini_course: "L'argent de la caisse n'est pas votre argent de poche personnel.",
     price: 500,
@@ -218,7 +218,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_booking",
     topic: "Visibilité",
-    title: "Réservation digitale : le salon ouvert 24h/24",
+    title: "Réservation en ligne : le salon ouvert 24h/24",
     description: "Mettez en place la prise de rendez-vous automatique pour ne plus rater d'appels quand vous travaillez.",
     mini_course: "Beaucoup de clientes veulent réserver le soir quand vous dormez.",
     price: 500,

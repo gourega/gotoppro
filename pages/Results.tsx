@@ -184,7 +184,7 @@ const Results: React.FC = () => {
                 <ShoppingBag className="w-6 h-6" />
              </div>
              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-               Boutique de l'Excellence
+               Boutique de l'excellence
              </h1>
           </div>
           <p className="text-slate-500 text-lg font-medium max-w-2xl ml-14">
@@ -207,7 +207,7 @@ const Results: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex-grow space-y-8">
-                  <h2 className="text-3xl font-black text-slate-900 font-serif italic tracking-tight">Audit Stratégique</h2>
+                  <h2 className="text-3xl font-black text-slate-900 font-serif italic tracking-tight">Audit stratégique</h2>
                   <div className="text-slate-700 font-medium text-lg leading-relaxed whitespace-pre-line animate-in fade-in duration-1000">
                     {loadingAdvice ? (
                       <div className="flex flex-col items-center gap-6 py-12">
@@ -231,7 +231,7 @@ const Results: React.FC = () => {
                   <div className="h-12 w-12 bg-brand-500 rounded-2xl flex items-center justify-center text-white shadow-xl">
                     <Zap className="w-6 h-6 fill-current" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recommandations de Coach Kita</h2>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recommandations du mentor</h2>
                 </div>
                 <div className="grid md:grid-cols-2 gap-8">
                   {strategicModules.map((mod) => (
@@ -248,7 +248,7 @@ const Results: React.FC = () => {
                   <div className="h-12 w-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
                     <Plus className="w-6 h-6" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Catalogue de Formation</h2>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Catalogue de formation</h2>
                 </div>
                 <div className="grid md:grid-cols-2 gap-8">
                   {catalogueModules.map((mod) => (
@@ -261,9 +261,9 @@ const Results: React.FC = () => {
             {strategicModules.length === 0 && catalogueModules.length === 0 && (
               <div className="bg-emerald-50 border border-emerald-100 p-16 rounded-[4rem] text-center">
                  <CheckCircle2 className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
-                 <h2 className="text-3xl font-serif font-bold text-emerald-900 mb-4 tracking-tight">Excellence Maximale</h2>
+                 <h2 className="text-3xl font-serif font-bold text-emerald-900 mb-4 tracking-tight">Excellence maximale</h2>
                  <p className="text-emerald-700 text-lg font-medium max-w-xl mx-auto italic">
-                   "Félicitations Expert ! Vous avez déjà acquis l'intégralité de nos modules de masterclass Go'Top Pro."
+                   « Félicitations ! Vous avez déjà acquis l'intégralité de nos modules de masterclass Go'Top Pro. »
                  </p>
               </div>
             )}
@@ -274,7 +274,7 @@ const Results: React.FC = () => {
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-6 h-6 text-brand-600" />
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Mon Panier</h3>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Mon panier</h3>
                 </div>
                 <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
                   {cart.length}
@@ -309,7 +309,7 @@ const Results: React.FC = () => {
                   </div>
                   <div className="border-t border-dashed border-white/20 pt-4"></div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Investissement Net</p>
+                    <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Investissement net</p>
                     <p className="text-4xl font-black text-white tracking-tighter font-mono">{pricingData.total.toLocaleString()} <span className="text-xs font-bold ml-1 opacity-50">FCFA</span></p>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ const Results: React.FC = () => {
                   disabled={cart.length === 0}
                   className="w-full py-6 bg-brand-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-400 transition-all flex items-center justify-center gap-4"
                 >
-                  Valider l'Engagement
+                  Valider l'engagement
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -337,13 +337,13 @@ const Results: React.FC = () => {
                   <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
                     <Users className="w-8 h-8" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 mb-2">Identification Gérant</h2>
+                  <h2 className="text-2xl font-black text-slate-900 mb-2">Identification du gérant</h2>
                   <p className="text-slate-500 font-medium text-xs">Ces informations serviront à générer vos accès.</p>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">WhatsApp (Requis)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">WhatsApp (requis)</label>
                     <input 
                       type="tel"
                       value={phoneInput || user?.phoneNumber || ''}
