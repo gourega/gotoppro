@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   Smartphone,
   Users,
-  History
+  History,
+  Gift,
+  ChevronRight
 } from 'lucide-react';
 
 const Results: React.FC = () => {
@@ -45,11 +47,9 @@ const Results: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. On récupère les résultats du diagnostic s'ils existent
     const raw = localStorage.getItem('temp_quiz_results');
     const results = raw ? JSON.parse(raw) : null;
     
-    // 2. On filtre les modules pour ne garder que ceux que l'utilisateur ne possède pas encore
     const purchasedIds = user?.purchasedModuleIds || [];
     const availableCatalog = TRAINING_CATALOG.filter(m => !purchasedIds.includes(m.id));
 
@@ -74,7 +74,6 @@ const Results: React.FC = () => {
         others = availableCatalog.filter(m => !negativeLinkedIds.includes(m.id));
       }
 
-      // Appel à l'IA pour l'audit
       const getAdvice = async () => {
         const negativeTexts = negativeQuestions.map((r: any) => {
           return DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text;
@@ -85,7 +84,6 @@ const Results: React.FC = () => {
       };
       getAdvice();
     } else {
-      // Pas de diagnostic récent (accès direct depuis Dashboard)
       recommended = [];
       others = availableCatalog;
       setLoadingAdvice(false);
@@ -94,15 +92,32 @@ const Results: React.FC = () => {
     
     setStrategicModules(recommended);
     setCatalogueModules(others);
-    // Panier par défaut : les recommandations
     setCart(recommended);
-
     window.scrollTo(0,0);
   }, [user, navigate]);
 
+  // Plan de réduction en fonction du volume du panier
   const pricingData = useMemo(() => {
+    const count = cart.length;
     const subtotal = cart.reduce((acc, curr) => acc + curr.price, 0);
-    return { subtotal, total: subtotal, count: cart.length };
+    
+    let rate = 0;
+    if (count >= 16) rate = 0.40; // Pack intégral
+    else if (count >= 10) rate = 0.30;
+    else if (count >= 6) rate = 0.20;
+    else if (count >= 3) rate = 0.10;
+
+    const discountAmount = Math.round(subtotal * rate);
+    const total = subtotal - discountAmount;
+    
+    // Calcul du prochain palier
+    let nextTier = null;
+    if (count < 3) nextTier = { count: 3, label: "10 %" };
+    else if (count < 6) nextTier = { count: 6, label: "20 %" };
+    else if (count < 10) nextTier = { count: 10, label: "30 %" };
+    else if (count < 16) nextTier = { count: 16, label: "40 %" };
+
+    return { subtotal, discountAmount, total, count, rate, nextTier };
   }, [cart]);
 
   const toggleCartItem = (mod: TrainingModule) => {
@@ -195,7 +210,7 @@ const Results: React.FC = () => {
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           
           <div className="lg:col-span-8 space-y-16">
-            {/* Coach Kita Advice section */}
+            {/* Audit Section */}
             <section className="bg-white rounded-[3rem] border border-slate-100 p-10 md:p-14 shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                 <Crown className="w-64 h-64" />
@@ -224,7 +239,7 @@ const Results: React.FC = () => {
               </div>
             </section>
 
-            {/* Recommended Modules */}
+            {/* Recommendations */}
             {strategicModules.length > 0 && (
               <section className="space-y-8 animate-in slide-in-from-bottom duration-500">
                 <div className="flex items-center gap-4">
@@ -241,7 +256,7 @@ const Results: React.FC = () => {
               </section>
             )}
 
-            {/* Other Modules */}
+            {/* Catalogue */}
             {catalogueModules.length > 0 && (
               <section className="space-y-8">
                 <div className="flex items-center gap-4">
@@ -257,18 +272,9 @@ const Results: React.FC = () => {
                 </div>
               </section>
             )}
-            
-            {strategicModules.length === 0 && catalogueModules.length === 0 && (
-              <div className="bg-emerald-50 border border-emerald-100 p-16 rounded-[4rem] text-center">
-                 <CheckCircle2 className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
-                 <h2 className="text-3xl font-serif font-bold text-emerald-900 mb-4 tracking-tight">Excellence maximale</h2>
-                 <p className="text-emerald-700 text-lg font-medium max-w-xl mx-auto italic">
-                   « Félicitations ! Vous avez déjà acquis l'intégralité de nos modules de masterclass Go'Top Pro. »
-                 </p>
-              </div>
-            )}
           </div>
 
+          {/* Sidebar Panier avec Plan de réduction */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
@@ -277,9 +283,24 @@ const Results: React.FC = () => {
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Mon panier</h3>
                 </div>
                 <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
-                  {cart.length}
+                  {pricingData.count}
                 </div>
               </div>
+
+              {/* Barre de progression vers la réduction suivante */}
+              {pricingData.nextTier && cart.length > 0 && (
+                <div className="px-10 py-4 bg-emerald-50/50 border-b border-emerald-100">
+                   <div className="flex justify-between items-center mb-2">
+                      <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1">
+                        <Gift className="w-3 h-3" /> Objectif : -{pricingData.nextTier.label}
+                      </span>
+                      <span className="text-[9px] font-bold text-emerald-600 italic">Plus que {pricingData.nextTier.count - cart.length} module(s)</span>
+                   </div>
+                   <div className="w-full h-1 bg-emerald-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${(cart.length / pricingData.nextTier.count) * 100}%` }}></div>
+                   </div>
+                </div>
+              )}
 
               <div className="p-6 max-h-[350px] overflow-y-auto custom-scrollbar flex-grow bg-slate-50/30">
                 {cart.length === 0 ? (
@@ -305,8 +326,18 @@ const Results: React.FC = () => {
                 <div className="space-y-5">
                   <div className="flex justify-between items-center font-mono">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur brute</span>
-                    <span className="text-lg">{pricingData.subtotal.toLocaleString()} FCFA</span>
+                    <span className="text-lg text-slate-300">{pricingData.subtotal.toLocaleString()} FCFA</span>
                   </div>
+                  
+                  {pricingData.discountAmount > 0 && (
+                    <div className="flex justify-between items-center font-mono animate-in slide-in-from-right duration-300">
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                        Remise volume (-{Math.round(pricingData.rate * 100)} %)
+                      </span>
+                      <span className="text-lg text-emerald-400">-{pricingData.discountAmount.toLocaleString()} FCFA</span>
+                    </div>
+                  )}
+
                   <div className="border-t border-dashed border-white/20 pt-4"></div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em]">Investissement net</p>
@@ -319,7 +350,7 @@ const Results: React.FC = () => {
                   disabled={cart.length === 0}
                   className="w-full py-6 bg-brand-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl hover:bg-brand-400 transition-all flex items-center justify-center gap-4"
                 >
-                  Valider l'engagement
+                  Validation de l'engagement
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -328,6 +359,7 @@ const Results: React.FC = () => {
         </div>
       </div>
 
+      {/* Modale de validation */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
@@ -361,7 +393,7 @@ const Results: React.FC = () => {
                 >
                   {loading ? <Loader2 className="animate-spin" /> : "Générer mon accès"}
                 </button>
-                <button onClick={() => setIsModalOpen(false)} className="w-full mt-4 text-slate-400 font-black text-[10px] uppercase tracking-widest">Annuler</button>
+                <button onClick={() => setIsModalOpen(false)} className="w-full mt-4 text-slate-400 font-black text-[10px] uppercase tracking-widest text-center">Annuler</button>
               </div>
             ) : (
               <div className="p-10 text-center">
