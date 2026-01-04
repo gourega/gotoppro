@@ -28,7 +28,9 @@ export interface UserProfile {
   pendingModuleIds: string[];
   actionPlan: UserActionCommitment[];
   progress?: { [moduleId: string]: number };
-  attempts?: { [moduleId: string]: number }; // Suivi des tentatives de quiz
+  attempts?: { [moduleId: string]: number };
+  referredBy?: string; // Téléphone ou UID du parrain
+  referralCount?: number; // Nombre de personnes parrainées
   createdAt: string;
 }
 
