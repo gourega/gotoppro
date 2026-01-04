@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
-import { SUPER_ADMIN_PHONE_NUMBER } from '../constants';
+import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER } from '../constants';
 
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
@@ -101,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firstName: 'Super',
         lastName: 'Admin',
         establishmentName: "Go'Top Pro HQ",
+        photoURL: COACH_KITA_AVATAR,
         role: 'SUPER_ADMIN',
         isActive: true,
         isAdmin: true,

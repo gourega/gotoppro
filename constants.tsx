@@ -2,7 +2,7 @@
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
 // Avatar de Coach Kita (Identité visuelle du Super Admin et du Mentor IA)
-export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80";
+export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
 export const DAILY_CHALLENGES = [
@@ -107,7 +107,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         explanation: "Inutile de proposer une coiffure complexe à quelqu'un qui n'a que 5 minutes pour se préparer chaque jour." 
       },
       { 
-        question: "Comment présenter une prestation technique coûteuse ?", 
+        question: "Comme présenter une prestation technique coûteuse ?", 
         options: ["En annonçant le prix d'abord", "En parlant du résultat et du bénéfice", "En disant que c'est la mode"], 
         correctAnswer: 1, 
         explanation: "Le client accepte le prix quand il comprend la valeur et le changement positif que cela lui apportera." 
@@ -397,7 +397,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Vente",
     title: "Vente additionnelle : augmenter le panier moyen",
     description: "Apprenez à proposer systématiquement le soin ou le massage dont votre client a besoin.",
-    mini_course: "Proposer n'est pas forcer. C'est apporter une solution complète au client.",
+    mini_course: "Proposer n'est pas forcer. C'est apporte une solution complète au client.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
