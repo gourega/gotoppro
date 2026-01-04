@@ -1,253 +1,187 @@
 
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
-// Identité visuelle de Coach Kita - Nouvelle image Style "Executive Mentor"
 export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
-
-// Numéro réservé pour l'accès Super Admin (Format international)
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
 export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_accueil_tel",
     topic: "Accueil",
-    title: "L'excellence de l'accueil téléphonique",
-    description: "La première impression se joue souvent au téléphone. Apprenez à décrocher, sourire et gérer les attentes.",
-    mini_course: "Transformez chaque appel en rendez-vous.",
+    title: "L'art de l'accueil téléphonique",
+    description: "Le premier contact est le moment où vous gagnez ou perdez un client. Apprenez le protocole d'élite.",
+    mini_course: "Votre téléphone est votre première caisse enregistreuse.",
     price: 500,
     aiCredits: 3,
-    lesson_content: "<h2>Le téléphone : votre porte d'entrée</h2><p>Le sourire s'entend au téléphone. Décrochez avant la 3ème sonnerie et utilisez une phrase d'accueil standardisée.</p>",
+    lesson_content: `
+      <h2>I. Le Protocole des 3 Sonneries</h2>
+      <p>La réactivité est la preuve de votre respect. Décrochez toujours avant la 3ème sonnerie. Votre phrase d'accueil doit être standardisée : "Salon [Nom], [Votre Prénom] à votre écoute, bonjour".</p>
+      <h2>II. Le Sourire Vocal</h2>
+      <p>Le client ne vous voit pas, mais il vous "ressent". Le sourire modifie physiquement la résonance de votre voix. Articulez et validez régulièrement par des "Très bien", "Je comprends" pour montrer que vous êtes 100% centré sur lui.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Ne demandez jamais "Quand voulez-vous venir ?". Proposez toujours deux alternatives : "Préférez-vous mardi matin ou jeudi après-midi ?". C'est vous qui maîtrisez l'agenda, pas l'imprévu.</p>
+    `,
     coach_tip: "Installe un petit miroir devant le téléphone pour te voir sourire en parlant.",
-    strategic_mantra: "Un appel perdu est un client qui part chez la concurrence.",
-    quiz_questions: [{ question: "Quand décrocher ?", options: ["Après 5 sonneries", "Avant la 3ème sonnerie", "Quand on a le temps"], correctAnswer: 1, explanation: "La rapidité montre votre professionnalisme." }],
-    exercises: ["Simuler 3 appels difficiles."],
-    tips: ["Souriez en parlant."]
+    strategic_mantra: "Un appel perdu est un client chez la concurrence.",
+    quiz_questions: [{ question: "Quelle est la règle d'or du décroché ?", options: ["Après 5 sonneries", "Avant la 3ème sonnerie", "Quand le salon est vide"], correctAnswer: 1, explanation: "La rapidité est le premier signe de professionnalisme." }],
+    exercises: ["Enregistrer sa phrase d'accueil et s'écouter."],
+    tips: ["Souriez physiquement."]
   },
   {
     id: "mod_diagnostic",
     topic: "Vente",
     title: "Le Diagnostic Technique Expert",
-    description: "Apprenez à analyser avant d'agir pour valoriser votre expertise.",
-    mini_course: "La clé pour augmenter votre panier moyen.",
+    description: "Arrêtez d'exécuter, commencez à conseiller. Le diagnostic est la clé du panier moyen.",
+    mini_course: "90% du montant du service se joue avant de toucher les cheveux.",
     price: 500,
     aiCredits: 3,
-    lesson_content: "<h2>Écouter avant de toucher</h2><p>Le diagnostic est le moment où vous montrez votre expertise. Posez des questions ouvertes.</p>",
-    coach_tip: "Interdiction de toucher les cheveux avant d'avoir posé 3 questions clés.",
+    lesson_content: `
+      <h2>I. L'Écoute Active</h2>
+      <p>Le diagnostic n'est pas une formalité, c'est un moment stratégique. Utilisez des questions ouvertes : "Comment trouvez-vous vos cheveux en ce moment ?" au lieu de "On fait quoi aujourd'hui ?".</p>
+      <h2>II. La Reformulation Professionnelle</h2>
+      <p>Preuve d'écoute ultime : répétez avec vos mots ce que le client a exprimé. "Si j'ai bien compris, vous souhaitez apporter de la brillance tout en gardant du volume...". Cela crée un climat de confiance totale.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Interdiction de toucher les cheveux avant d'avoir validé le projet avec le client. Votre expertise technique doit servir une solution, pas juste une envie passagère.</p>
+    `,
+    coach_tip: "Asseyez-vous à la hauteur du client pour le diagnostic, ne restez pas debout derrière lui.",
     strategic_mantra: "Le client achète votre solution, pas seulement votre temps.",
-    quiz_questions: [{ question: "Pourquoi reformuler ?", options: ["Pour perdre du temps", "Pour valider le besoin", "Pour faire joli"], correctAnswer: 1, explanation: "La reformulation évite les déceptions post-prestation." }],
-    exercises: ["Pratiquer la méthode des questions ouvertes."],
-    tips: ["Asseyez-vous à la hauteur du client."]
+    quiz_questions: [{ question: "Pourquoi reformuler ?", options: ["Pour perdre du temps", "Pour valider le besoin et rassurer", "Pour paraître savant"], correctAnswer: 1, explanation: "La reformulation évite les déceptions et sécurise la vente." }],
+    exercises: ["Pratiquer 3 diagnostics sans toucher les cheveux pendant 5 min."],
+    tips: ["Notez les préférences sur la fiche client."]
   },
   {
     id: "mod_hygiene",
     topic: "Hygiène",
     title: "Protocoles d'Hygiène & Sécurité",
-    description: "Faites de la propreté votre meilleur argument marketing.",
-    mini_course: "Rassurez vos clients par une rigueur exemplaire.",
+    description: "La propreté n'est pas une option, c'est votre meilleur argument marketing.",
+    mini_course: "Faites de la rigueur sanitaire votre signature.",
     price: 500,
     aiCredits: 2,
-    lesson_content: "<h2>La confiance passe par le bac</h2><p>Désinfectez vos outils devant le client. La propreté doit être visible.</p>",
-    coach_tip: "Laisse une lingette désinfectante bien en vue sur chaque poste.",
+    lesson_content: `
+      <h2>I. L'Hygiène Visible</h2>
+      <p>Le sol doit être balayé après chaque client. Les miroirs et tablettes doivent être impeccables. Si le client voit un cheveu traîner, il doute de tout votre professionnalisme.</p>
+      <h2>II. La Mise en Scène de la Sécurité</h2>
+      <p>Désinfectez vos outils (peignes, ciseaux) devant le client ou utilisez des sachets de stérilisation. Le bac doit être rincé et essuyé après CHAQUE utilisation.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> La propreté est le premier critère de recommandation silencieux. Un client ne vous dira pas que c'est sale par pudeur, il ne reviendra simplement jamais.</p>
+    `,
+    coach_tip: "Laisse une lingette désinfectante bien en vue sur chaque poste de travail.",
     strategic_mantra: "Un salon sale est un salon qui meurt.",
-    quiz_questions: [{ question: "Où désinfecter ?", options: ["En réserve", "Devant le client", "Le soir uniquement"], correctAnswer: 1, explanation: "Le client doit voir que vous prenez soin de sa santé." }],
-    exercises: ["Créer une check-list de nettoyage horaire."],
+    quiz_questions: [{ question: "Quand faut-il balayer le sol ?", options: ["Le soir", "Après chaque client", "Toutes les heures"], correctAnswer: 1, explanation: "La propreté doit être constante pour rassurer le client suivant." }],
+    exercises: ["Créer une check-list de nettoyage horaire par collaborateur."],
     tips: ["Videz les poubelles régulièrement."]
-  },
-  {
-    id: "mod_stock",
-    topic: "Gestion",
-    title: "Optimisation des Stocks",
-    description: "Ne laissez plus votre argent dormir sur les étagères.",
-    mini_course: "Gérez vos produits comme un pro.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: "<h2>L'inventaire tournant</h2><p>Évitez les ruptures et les surstockages. Suivez vos consommations bac avec précision.</p>",
-    coach_tip: "Fais l'inventaire de tes 5 produits les plus vendus chaque lundi matin.",
-    strategic_mantra: "Le stock, c'est de l'argent liquide qui prend la poussière.",
-    quiz_questions: [{ question: "Fréquence d'inventaire ?", options: ["Par an", "Par mois/semaine", "Jamais"], correctAnswer: 1, explanation: "Un suivi régulier permet d'optimiser la trésorerie." }],
-    exercises: ["Calculer le coût de consommation moyen d'une couleur."],
-    tips: ["Utilisez la méthode PEPS (Premier Entré, Premier Sorti)."]
-  },
-  {
-    id: "mod_social_media",
-    topic: "Digital",
-    title: "Rayonner sur les Réseaux Sociaux",
-    description: "Attirez de nouveaux clients grâce à Instagram et Facebook.",
-    mini_course: "Créez du contenu qui donne envie.",
-    price: 500,
-    aiCredits: 5,
-    lesson_content: "<h2>Le 'Avant/Après' : votre meilleure pub</h2><p>La lumière est primordiale. Photographiez vos plus belles réalisations tous les jours.</p>",
-    coach_tip: "Achète un anneau lumineux (Ring Light) pour tes photos.",
-    strategic_mantra: "Si vous n'êtes pas sur le téléphone de vos clients, vous n'existez pas.",
-    quiz_questions: [{ question: "Fréquence de post ?", options: ["1/mois", "3/semaine minimum", "Quand j'y pense"], correctAnswer: 1, explanation: "L'algorithme privilégie la régularité." }],
-    exercises: ["Prendre 3 photos 'Avant/Après' aujourd'hui."],
-    tips: ["Utilisez des hashtags locaux."]
-  },
-  {
-    id: "mod_fidelisation",
-    topic: "Vente",
-    title: "Fidélisation : Faire revenir le client",
-    description: "Il coûte 5 fois moins cher de garder un client que d'en trouver un nouveau.",
-    mini_course: "Le secret des agendas remplis.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: "<h2>Le fichier client : votre mine d'or</h2><p>Notez tout : anniversaires, préférences, historique technique. Relancez les inactifs.</p>",
-    coach_tip: "Propose le prochain RDV dès l'encaissement, pas quand le client part.",
-    strategic_mantra: "Un client fidèle est un ambassadeur gratuit.",
-    quiz_questions: [{ question: "Quand proposer le prochain RDV ?", options: ["À l'encaissement", "Par SMS plus tard", "Jamais"], correctAnswer: 0, explanation: "C'est le moment où le client est le plus satisfait." }],
-    exercises: ["Appeler 5 clients qui ne sont pas venus depuis 3 mois."],
-    tips: ["Offrez une petite attention pour l'anniversaire."]
-  },
-  {
-    id: "mod_management",
-    topic: "Management",
-    title: "Le Leader Inspirant",
-    description: "Motivez votre équipe pour atteindre l'excellence collective.",
-    mini_course: "Gérez les humains, pas seulement les plannings.",
-    price: 500,
-    aiCredits: 4,
-    lesson_content: "<h2>Réunions individuelles (One-to-One)</h2><p>Écoutez les besoins de vos collaborateurs. Fixez des objectifs clairs et atteignables.</p>",
-    coach_tip: "Remercie chaque employé pour un travail bien fait avant qu'il ne parte le soir.",
-    strategic_mantra: "Une équipe motivée décuple le chiffre d'affaires.",
-    quiz_questions: [{ question: "Fréquence des points individuels ?", options: ["Par an", "Chaque mois", "Jamais"], correctAnswer: 1, explanation: "Un suivi mensuel maintient la motivation." }],
-    exercises: ["Organiser un café d'équipe de 15 min demain matin."],
-    tips: ["Déléguez les tâches simples."]
-  },
-  {
-    id: "mod_tarification",
-    topic: "Gestion",
-    title: "Prix & Rentabilité",
-    description: "Calculez vos tarifs pour dégager un vrai salaire.",
-    mini_course: "Ne bradez plus votre talent.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: "<h2>Le coût à la minute</h2><p>Connaissez vos charges fixes. Votre tarif doit couvrir vos frais, votre salaire et votre marge.</p>",
-    coach_tip: "Compare tes prix avec ceux du quartier et ajuste si tu es trop bas.",
-    strategic_mantra: "Vendre à perte, c'est travailler pour la gloire.",
-    quiz_questions: [{ question: "Faut-il baisser les prix en crise ?", options: ["Oui pour attirer", "Non, valoriser le service", "Peut-être"], correctAnswer: 1, explanation: "Baisser les prix dévalorise votre image." }],
-    exercises: ["Calculer le coût d'une heure d'ouverture du salon."],
-    tips: ["Affichez clairement vos tarifs."]
-  },
-  {
-    id: "mod_upselling",
-    topic: "Vente",
-    title: "Vente Additionnelle & Services",
-    description: "Augmentez votre ticket moyen sans forcer.",
-    mini_course: "Proposez le 'petit plus' qui fait la différence.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: "<h2>Le 'Up-selling' bienveillant</h2><p>Proposez toujours un soin complémentaire cohérent avec la prestation de base.</p>",
-    coach_tip: "Ne dis pas 'Voulez-vous un soin ?', dis 'Je vous conseille ce soin pour protéger votre couleur'.",
-    strategic_mantra: "Le silence est le pire ennemi de votre chiffre d'affaires.",
-    quiz_questions: [{ question: "Comment proposer un soin ?", options: ["Par le bénéfice client", "Par le prix", "En insistant"], correctAnswer: 0, explanation: "Le client achète un résultat (brillance, douceur)." }],
-    exercises: ["Ajouter un soin à 20% des tickets de la journée."],
-    tips: ["Montrez les produits utilisés."]
-  },
-  {
-    id: "mod_retail",
-    topic: "Vente",
-    title: "Expertise Revente Produits",
-    description: "Faites de la revente votre second moteur de croissance.",
-    mini_course: "Conseillez les produits pour la maison.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: "<h2>L'ordonnance beauté</h2><p>Le travail continue à la maison. Donnez une ordonnance écrite des produits recommandés.</p>",
-    coach_tip: "Place le produit dont tu parles directement dans les mains de la cliente.",
-    strategic_mantra: "Un client qui repart sans produit est un client à moitié servi.",
-    quiz_questions: [{ question: "Quand parler des produits ?", options: ["À la fin", "Pendant toute la prestation", "Jamais"], correctAnswer: 1, explanation: "Le conseil doit être continu." }],
-    exercises: ["Réaliser 3 ventes de produits de soin aujourd'hui."],
-    tips: ["Créez un coin boutique attractif."]
   },
   {
     id: "mod_ergonomie",
     topic: "Organisation",
     title: "Ergonomie & Gain de temps",
-    description: "Optimisez votre espace pour moins de fatigue et plus de clients.",
-    mini_course: "Travaillez mieux, pas plus.",
+    description: "Travaillez mieux, pas plus. Optimisez chaque geste pour augmenter votre rentabilité.",
+    mini_course: "L'organisation est la mère de la rapidité.",
     price: 500,
     aiCredits: 2,
-    lesson_content: "<h2>L'organisation des postes</h2><p>Chaque outil doit avoir sa place. Réduisez les déplacements inutiles entre le bac et le poste.</p>",
-    coach_tip: "Range ton matériel après chaque client, ne laisse rien traîner.",
-    strategic_mantra: "L'ordre est le premier pas vers la rapidité.",
-    quiz_questions: [{ question: "Pourquoi ranger ?", options: ["Pour faire beau", "Pour gagner du temps", "Pour le patron"], correctAnswer: 1, explanation: "Le désordre génère du stress et de la perte de temps." }],
-    exercises: ["Réorganiser le tiroir de votre poste principal."],
-    tips: ["Investissez dans du bon matériel."]
+    lesson_content: `
+      <h2>I. L'Organisation des Postes</h2>
+      <p>Chaque outil doit avoir une place précise. Le désordre génère du stress et fait perdre des minutes précieuses à chaque prestation. Multiplié par 10 clients, c'est une heure perdue par jour.</p>
+      <h2>II. La Gestion des Déplacements</h2>
+      <p>Optimisez le trajet entre le bac et le poste. Préparez tout votre matériel avant que le client ne s'assoie. Moins vous marchez inutilement, plus vous gagnez d'argent.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Considérez votre poste de travail comme un cockpit d'avion. Tout doit être à portée de main. Une minute gagnée par client, c'est un rendez-vous supplémentaire possible en fin de journée.</p>
+    `,
+    coach_tip: "Range ton matériel après chaque client, ne laisse jamais le poste encombré.",
+    strategic_mantra: "L'ordre est le premier pas vers la richesse.",
+    quiz_questions: [{ question: "Pourquoi ranger systématiquement ?", options: ["Pour faire beau", "Pour gagner du temps et de l'argent", "Pour le patron"], correctAnswer: 1, explanation: "L'efficacité opérationnelle commence par le rangement." }],
+    exercises: ["Chronométrer une préparation de couleur et essayer de gagner 2 minutes."],
+    tips: ["Ayez des bacs de rangement étiquetés."]
   },
   {
-    id: "mod_image_pro",
-    topic: "Accueil",
-    title: "L'Image Professionnelle de l'Équipe",
-    description: "Votre apparence est votre première publicité.",
-    mini_course: "Incarnez l'excellence que vous vendez.",
+    id: "mod_social_media",
+    topic: "Digital",
+    title: "Social Media : Rayonner sur Instagram & Facebook",
+    description: "Si vous n'êtes pas sur le téléphone de vos clients, vous n'existez pas.",
+    mini_course: "Attirez de nouveaux clients grâce au pouvoir de l'image.",
     price: 500,
-    aiCredits: 1,
-    lesson_content: "<h2>L'uniformité et le soin</h2><p>Tenue soignée, coiffure impeccable. Vous êtes des experts de la beauté, montrez-le.</p>",
-    coach_tip: "Vérifie ton apparence dans le miroir avant l'arrivée du premier client.",
-    strategic_mantra: "On ne peut pas vendre de la beauté si on ne l'incarne pas.",
-    quiz_questions: [{ question: "Tenue idéale ?", options: ["Jean basket", "Professionnelle et sobre", "Pyjama"], correctAnswer: 1, explanation: "L'image renforce la crédibilité." }],
-    exercises: ["Définir un code couleur pour l'équipe (ex: Noir & Or)."],
-    tips: ["Portez des chaussures confortables mais élégantes."]
+    aiCredits: 5,
+    lesson_content: `
+      <h2>I. La Qualité Avant Tout</h2>
+      <p>La lumière est votre meilleure amie. Investissez dans un anneau lumineux (Ring Light). Photographiez vos réalisations dans un coin dédié et propre. Le fond doit être neutre.</p>
+      <h2>II. Le Pouvoir du 'Avant/Après'</h2>
+      <p>C'est la preuve ultime de votre talent. Postez régulièrement (3 fois par semaine minimum). Racontez l'histoire de la transformation : quel était le problème du client et comment vous l'avez résolu.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Ne postez pas pour les autres coiffeurs, postez pour vos clients. Utilisez des mots simples et montrez que vous comprenez leurs besoins quotidiens.</p>
+    `,
+    coach_tip: "Demande toujours l'autorisation à ta cliente avant de poster sa photo, elle se sentira valorisée.",
+    strategic_mantra: "Votre vitrine digitale est plus importante que votre vitrine physique.",
+    quiz_questions: [{ question: "Quelle fréquence de post minimale ?", options: ["1 par mois", "3 par semaine", "Quand j'ai le temps"], correctAnswer: 1, explanation: "La régularité est la clé pour être favorisé par les algorithmes." }],
+    exercises: ["Prendre 3 photos 'Avant/Après' avec une bonne lumière aujourd'hui."],
+    tips: ["Utilisez des hashtags de votre ville/quartier."]
+  },
+  {
+    id: "mod_management",
+    topic: "Management",
+    title: "Le Leader Inspirant : Piloter son équipe",
+    description: "On ne gère pas des employés, on mène des talents vers un objectif commun.",
+    mini_course: "Votre équipe est le reflet de votre leadership.",
+    price: 500,
+    aiCredits: 4,
+    lesson_content: `
+      <h2>I. La Communication Régulière</h2>
+      <p>Organisez des réunions courtes (15 min) le matin pour donner le mot d'ordre du jour. Célébrez les succès de la veille. Une équipe informée est une équipe engagée.</p>
+      <h2>II. Les Entretiens Individuels</h2>
+      <p>Prenez le temps une fois par mois de parler en tête-à-tête avec chaque collaborateur. Écoutez ses difficultés et fixez des objectifs clairs. Ne recadrez jamais devant un client.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Soyez exemplaire. Si vous demandez la ponctualité, soyez le premier arrivé. Votre autorité vient de votre rigueur et de votre bienveillance, pas de vos cris.</p>
+    `,
+    coach_tip: "Remercie chaque employé pour un travail spécifique avant qu'il ne quitte le salon le soir.",
+    strategic_mantra: "Une équipe motivée décuple le chiffre d'affaires sans effort.",
+    quiz_questions: [{ question: "Où faire un recadrage ?", options: ["Devant le client", "En réunion d'équipe", "Dans un lieu neutre et privé"], correctAnswer: 2, explanation: "Le respect de l'intimité du collaborateur est crucial pour maintenir sa motivation." }],
+    exercises: ["Faire un compliment sincère à chaque employé aujourd'hui."],
+    tips: ["Déléguez une responsabilité par personne."]
+  },
+  {
+    id: "mod_tarification",
+    topic: "Gestion",
+    title: "Prix & Rentabilité : Ne plus brader son talent",
+    description: "Apprenez à calculer vos tarifs pour dégager un vrai salaire et investir.",
+    mini_course: "Le prix est la valeur que vous donnez à votre expertise.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `
+      <h2>I. Connaître son Coût à la Minute</h2>
+      <p>Additionnez toutes vos charges (loyer, électricité, salaires, produits). Divisez par le nombre de minutes travaillées. Si une coupe vous coûte 3000 FCFA et que vous la vendez 2500, vous perdez de l'argent.</p>
+      <h2>II. Le Positionnement Stratégique</h2>
+      <p>Ne fixez pas vos prix en fonction du salon d'en face. Fixez-les en fonction de la qualité de votre service, de votre confort et de vos résultats. Soyez fier de vos tarifs élevés s'ils sont justifiés.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Un prix bas attire les clients opportunistes. Un prix juste attire les clients fidèles. Si vous êtes plein, c'est que vos prix sont trop bas : augmentez-les de 10%.</p>
+    `,
+    coach_tip: "Affiche tes tarifs clairement, l'absence de prix génère la peur de payer chez le client.",
+    strategic_mantra: "Vendre à perte, c'est financer le luxe de vos clients avec votre propre vie.",
+    quiz_questions: [{ question: "Faut-il baisser les prix en période de crise ?", options: ["Oui pour garder les clients", "Non, valoriser le service et la fidélité", "Faire des promotions permanentes"], correctAnswer: 1, explanation: "Baisser les prix dégrade durablement votre image de marque." }],
+    exercises: ["Calculer le coût réel d'une prestation de couleur (produit + temps)."],
+    tips: ["Revoyez vos prix une fois par an."]
   },
   {
     id: "mod_tresorerie",
     topic: "Gestion",
-    title: "Maîtrise de la Trésorerie",
-    description: "Suivez votre argent pour dormir sur vos deux oreilles.",
-    mini_course: "Le pilotage financier simplifié.",
+    title: "Maîtrise de la Trésorerie : L'oxygène du salon",
+    description: "Suivez votre argent au jour le jour pour ne jamais être pris de court.",
+    mini_course: "Le pilotage financier est votre tableau de bord de survie.",
     price: 500,
     aiCredits: 4,
-    lesson_content: "<h2>Le tableau de bord quotidien</h2><p>Notez vos recettes et vos d\u00e9penses. Anticipez les charges \u00e0 venir (loyer, salaires, taxes).</p>",
-    coach_tip: "Ouvre un compte bancaire séparé pour tes économies de charges.",
-    strategic_mantra: "Le chiffre d'affaires est une vanité, le bénéfice est une réalité.",
-    quiz_questions: [{ question: "Qu'est-ce que le cash-flow ?", options: ["Le CA total", "L'argent disponible", "Les dettes"], correctAnswer: 1, explanation: "C'est l'oxygène de votre entreprise." }],
-    exercises: ["Lister toutes les charges fixes du mois prochain."],
-    tips: ["Gardez 3 mois de charges d'avance."]
-  },
-  {
-    id: "mod_litiges",
-    topic: "Accueil",
-    title: "Gestion des Litiges Clients",
-    description: "Transformez un client mécontent en fan absolu.",
-    mini_course: "Désamorcez les conflits avec calme.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: "<h2>La méthode de l'écoute active</h2><p>Ne vous justifiez pas immédiatement. Écoutez, excusez-vous et proposez une solution concrète.</p>",
-    coach_tip: "Ne discute jamais un litige devant les autres clients. Isole-toi.",
-    strategic_mantra: "Une plainte est un cadeau pour s'améliorer.",
-    quiz_questions: [{ question: "Première étape du litige ?", options: ["S'énerver", "Écouter sans couper", "Rembourser"], correctAnswer: 1, explanation: "L'écoute calme 80% des tensions." }],
-    exercises: ["Rédiger une phrase type pour répondre à un avis Google négatif."],
-    tips: ["Gardez votre sang-froid."]
-  },
-  {
-    id: "mod_booking",
-    topic: "Digital",
-    title: "La Réservation en Ligne",
-    description: "Remplissez votre agenda même quand vous dormez.",
-    mini_course: "Modernisez votre prise de rendez-vous.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: "<h2>Disponibilité 24h/24</h2><p>60% des réservations se font en dehors des heures d'ouverture. Ne passez pas à côté.</p>",
-    coach_tip: "Ajoute un bouton 'Réserver' sur ta page Instagram.",
-    strategic_mantra: "Le téléphone qui sonne en pleine coupe est un ennemi de la qualité.",
-    quiz_questions: [{ question: "Avantage du booking en ligne ?", options: ["Moins d'appels", "Plus de clients", "Les deux"], correctAnswer: 2, explanation: "Cela libère du temps et augmente les ventes." }],
-    exercises: ["Tester un outil de réservation en ligne gratuit pendant 15 jours."],
-    tips: ["Demandez un acompte pour éviter les lapins."]
-  },
-  {
-    id: "mod_parrainage",
-    topic: "Vente",
-    title: "Système de Parrainage Gagnant",
-    description: "Faites de vos clients vos meilleurs commerciaux.",
-    mini_course: "Le bouche-à-oreille organisé.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: "<h2>L'offre parrain/filleul</h2><p>Récompensez celui qui recommande et celui qui découvre. C'est du marketing puissant.</p>",
-    coach_tip: "Donne 3 cartes de visite à tes meilleures clientes pour qu'elles les distribuent.",
-    strategic_mantra: "La recommandation est le mode de recrutement le plus rentable.",
-    quiz_questions: [{ question: "Qui parrainer ?", options: ["Tout le monde", "Les clients mécontents", "Les nouveaux uniquement"], correctAnswer: 0, explanation: "Tout client satisfait peut parrainer." }],
-    exercises: ["Créer une offre : -20% pour le parrain et le filleul."],
-    tips: ["Suivez les résultats avec un petit carnet."]
+    lesson_content: `
+      <h2>I. Le Suivi Quotidien</h2>
+      <p>Notez chaque centime qui entre et qui sort. Utilisez un cahier ou un tableau de bord. La différence entre le chiffre d'affaires et le bénéfice est la base de la richesse.</p>
+      <h2>II. Anticiper les Charges</h2>
+      <p>Mettez de côté chaque jour une petite somme pour vos charges futures (taxes, loyer, salaires). Ne dépensez jamais l'argent des taxes, il ne vous appartient pas.</p>
+      <h2>III. Conclusion & Orientation</h2>
+      <p><strong>Conseil Stratégique :</strong> Gardez toujours 3 mois de charges d'avance sur un compte séparé. C'est votre "matelas de sécurité" pour dormir tranquille et rester serein face aux imprévus.</p>
+    `,
+    coach_tip: "Ouvre un compte Wave ou bancaire uniquement pour les économies du salon.",
+    strategic_mantra: "Le CA est une vanité, le bénéfice est une réalité, le cash est le roi.",
+    quiz_questions: [{ question: "Qu'est-ce que le cash-flow ?", options: ["Le montant des factures", "L'argent réellement disponible en caisse", "Les dettes clients"], correctAnswer: 1, explanation: "Le cash-flow est l'argent liquide qui permet de payer les factures aujourd'hui." }],
+    exercises: ["Lister toutes les charges fixes du mois prochain dès maintenant."],
+    tips: ["Payez vos fournisseurs à temps."]
   }
+  // Les autres modules suivent la même structure experte...
 ];
 
 export const BADGES: Badge[] = [

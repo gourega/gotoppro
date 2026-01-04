@@ -1,13 +1,56 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { TRAINING_CATALOG } from '../constants';
+import { TRAINING_CATALOG, COACH_KITA_AVATAR } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
+import { GoogleGenAI, Modality } from "@google/genai";
 import ReactCanvasConfetti from 'react-canvas-confetti';
-// Added Zap and Loader2 to the imports
-import { ChevronLeft, Sparkles, Book, Award, ArrowRight, CheckCircle2, Zap, Loader2 } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Sparkles, 
+  Book, 
+  Award, 
+  ArrowRight, 
+  CheckCircle2, 
+  Zap, 
+  Loader2, 
+  Volume2, 
+  Play, 
+  Pause, 
+  Headphones 
+} from 'lucide-react';
+
+// Helpers for Audio Processing
+function decodeBase64(base64: string) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function decodeAudioData(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
+): Promise<AudioBuffer> {
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
+  }
+  return buffer;
+}
 
 const ModuleView: React.FC = () => {
   const { moduleId } = useParams();
@@ -22,7 +65,11 @@ const ModuleView: React.FC = () => {
   const [commitment, setCommitment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const COACH_AVATAR_URL = "https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&w=400&q=80";
+  // Audio States
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
@@ -31,11 +78,78 @@ const ModuleView: React.FC = () => {
       navigate('/dashboard');
     }
     window.scrollTo(0,0);
+    return () => {
+      stopAudio();
+    };
   }, [moduleId, user, navigate]);
 
   if (!module || !user) return null;
 
   const handleStartQuiz = () => setQuizState('active');
+
+  const stopAudio = () => {
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.stop();
+      sourceNodeRef.current = null;
+    }
+    setIsPlaying(false);
+  };
+
+  const handlePlayAudio = async () => {
+    if (isPlaying) {
+      stopAudio();
+      return;
+    }
+
+    setIsAudioLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // On prépare le texte en retirant les balises HTML pour une meilleure synthèse
+      const plainText = module.lesson_content.replace(/<[^>]*>/g, '');
+      const prompt = `Lisez cette leçon avec enthousiasme et professionnalisme : ${module.title}. ${plainText}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        }
+        
+        const audioBuffer = await decodeAudioData(
+          decodeBase64(base64Audio),
+          audioContextRef.current,
+          24000,
+          1
+        );
+
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current.destination);
+        source.onended = () => setIsPlaying(false);
+        
+        sourceNodeRef.current = source;
+        source.start();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error("TTS Error:", err);
+      alert("Impossible de générer l'audio pour le moment.");
+    } finally {
+      setIsAudioLoading(false);
+    }
+  };
 
   const handleAnswer = (idx: number) => {
     const newAnswers = [...answers, idx];
@@ -103,7 +217,6 @@ const ModuleView: React.FC = () => {
         />
       )}
       
-      {/* Navigation Header */}
       <div className="sticky top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100">
         <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors font-black text-[10px] uppercase tracking-widest group">
@@ -130,16 +243,42 @@ const ModuleView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="max-w-3xl mx-auto px-6 py-20 pb-32">
         {activeTab === 'lesson' ? (
           <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="text-center mb-20">
+            <div className="text-center mb-12">
               <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-5 py-2 rounded-full uppercase tracking-[0.3em] inline-block mb-8">{module.topic}</span>
               <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-tight mb-8">{module.title}</h1>
-              <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto">
+              <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto mb-10">
                 "{module.mini_course}"
               </p>
+
+              {/* Audio Guide Player UI */}
+              <div className="max-w-md mx-auto bg-slate-50 rounded-3xl p-6 border border-slate-100 flex items-center gap-6 group hover:shadow-lg transition-all">
+                <button 
+                  onClick={handlePlayAudio}
+                  disabled={isAudioLoading}
+                  className={`h-14 w-14 rounded-2xl flex items-center justify-center transition-all ${isAudioLoading ? 'bg-slate-200' : isPlaying ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-brand-600 text-white shadow-lg shadow-brand-200 hover:scale-105'}`}
+                >
+                  {isAudioLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                </button>
+                <div className="flex-grow text-left">
+                  <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+                    <Headphones className="w-3 h-3" />
+                    Audio Guide Expert
+                  </p>
+                  <p className="text-xs font-bold text-slate-500">
+                    {isPlaying ? "Lecture de la leçon par Coach Kita..." : isAudioLoading ? "Préparation de l'audio..." : "Écouter la leçon complète"}
+                  </p>
+                  {isPlaying && (
+                    <div className="flex items-end gap-0.5 mt-2 h-4">
+                      {[1,2,3,4,5,6,7,8].map(i => (
+                        <div key={i} className="w-1 bg-brand-500 rounded-full animate-[pulse_1s_infinite]" style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="prose prose-slate prose-xl max-w-none prose-headings:font-serif prose-headings:font-bold prose-p:leading-relaxed prose-strong:text-brand-900 prose-li:text-slate-600">
@@ -153,7 +292,7 @@ const ModuleView: React.FC = () => {
                
                <div className="flex flex-col md:flex-row gap-12 items-center md:items-start relative z-10">
                  <div className="h-32 w-32 rounded-[2.5rem] bg-white shadow-2xl overflow-hidden p-1.5 rotate-3 group-hover:rotate-0 transition-transform flex-shrink-0">
-                   <img src={COACH_AVATAR_URL} alt="Coach Kita" className="w-full h-full object-cover rounded-[2rem]" />
+                   <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover rounded-[2rem]" />
                  </div>
                  <div>
                    <h4 className="font-black text-brand-900 uppercase tracking-[0.4em] text-[10px] mb-6 flex items-center gap-2">
@@ -169,7 +308,7 @@ const ModuleView: React.FC = () => {
 
             <div className="flex justify-center pt-10">
               <button 
-                onClick={() => setActiveTab('quiz')} 
+                onClick={() => { stopAudio(); setActiveTab('quiz'); }} 
                 className="bg-brand-900 text-white px-12 py-7 rounded-[2rem] font-black hover:bg-brand-800 transition shadow-[0_20px_60px_rgba(12,74,110,0.2)] flex items-center gap-4 group uppercase tracking-[0.2em] text-[11px]"
               >
                 Passer la certification
