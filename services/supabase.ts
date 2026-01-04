@@ -1,4 +1,18 @@
 
+/**
+ * 🛠 CONFIGURATION REQUISE DANS SUPABASE (SQL EDITOR) :
+ * 
+ * -- 1. Autoriser l'accès aux profils (Lecture/Écriture pour le login manuel)
+ * ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ * DROP POLICY IF EXISTS "Accès Public Total" ON profiles;
+ * CREATE POLICY "Accès Public Total" ON profiles FOR ALL TO anon USING (true) WITH CHECK (true);
+ * 
+ * -- 2. Autoriser la gestion des photos dans le bucket 'avatars'
+ * DROP POLICY IF EXISTS "Gestion Avatars Public" ON storage.objects;
+ * CREATE POLICY "Gestion Avatars Public" ON storage.objects 
+ * FOR ALL TO anon USING (bucket_id = 'avatars') WITH CHECK (bucket_id = 'avatars');
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, UserRole } from '../types';
 
@@ -10,7 +24,7 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   : null;
 
 if (!supabase) {
-  console.warn("Supabase configuration manquante. Vérifiez vos variables d'environnement.");
+  console.warn("Supabase configuration manquante.");
 }
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
@@ -22,51 +36,54 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       .eq('uid', uid)
       .maybeSingle();
 
-    if (error) {
-      console.error("Erreur profil:", error);
-      return null;
-    }
+    if (error) return null;
     return data as UserProfile;
   } catch (err) {
     return null;
   }
 };
 
-/**
- * Récupère un profil par numéro de téléphone (Utile pour le login manuel sans SMS)
- */
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('phoneNumber', phoneNumber)
-    .maybeSingle();
-    
-  if (error) return null;
-  return data as UserProfile;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('phoneNumber', phoneNumber)
+      .maybeSingle();
+      
+    if (error) return null;
+    return data as UserProfile;
+  } catch (err) {
+    return null;
+  }
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
+  
+  // Utilisation de upsert pour gérer création et mise à jour en un seul appel
   const { error } = await supabase
     .from('profiles')
-    .upsert(profile);
+    .upsert(profile, { onConflict: 'uid' });
   
-  if (error) throw error;
+  if (error) {
+    console.error("Erreur Save Profile:", error);
+    throw error;
+  }
 };
 
 export const uploadProfilePhoto = async (file: File, uid: string): Promise<string> => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // Bucket "avatars" attendu. Assurez-vous qu'il existe et est PUBLIC.
   const bucketName = 'avatars';
   const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const filePath = `${uid}/avatar.${fileExt}`;
+  const filePath = `${uid}/avatar_${Date.now()}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from(bucketName)
     .upload(filePath, file, { 
+      cacheControl: '3600',
       upsert: true,
       contentType: file.type 
     });
@@ -80,11 +97,7 @@ export const uploadProfilePhoto = async (file: File, uid: string): Promise<strin
     .from(bucketName)
     .getPublicUrl(filePath);
 
-  if (!data?.publicUrl) {
-    throw new Error("Impossible de générer l'URL publique de la photo.");
-  }
-
-  return `${data.publicUrl}?t=${Date.now()}`;
+  return data.publicUrl;
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {

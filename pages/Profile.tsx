@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadProfilePhoto } from '../services/supabase';
 import { BADGES } from '../constants';
-import { Loader2, Camera, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, CheckCircle2, X, Database } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshProfile } = useAuth();
@@ -11,6 +11,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showRLSHint, setShowRLSHint] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -24,17 +25,20 @@ const Profile: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setShowRLSHint(false);
     try {
       await saveUserProfile({
         uid: user.uid,
         ...formData
       });
       await refreshProfile();
-      setSuccess("Profil mis à jour avec succès !");
+      setSuccess("Profil mis à jour !");
       setTimeout(() => setSuccess(null), 3000);
       setIsEditing(false);
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la sauvegarde du profil");
+      const isRLS = err.message?.includes('row-level security') || err.code === '42501';
+      setError(isRLS ? "Erreur de Sécurité Base de Données (RLS)" : (err.message || "Erreur sauvegarde"));
+      if (isRLS) setShowRLSHint(true);
     } finally {
       setLoading(false);
     }
@@ -44,7 +48,6 @@ const Profile: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validation simple du fichier
     if (file.size > 2 * 1024 * 1024) {
       setError("La photo est trop lourde (max 2Mo)");
       return;
@@ -52,19 +55,20 @@ const Profile: React.FC = () => {
 
     setLoading(true);
     setError(null);
+    setShowRLSHint(false);
     try {
+      // 1. Upload vers Storage
       const url = await uploadProfilePhoto(file, user.uid);
+      // 2. Mise à jour du profil avec l'URL
       await saveUserProfile({ uid: user.uid, photoURL: url });
       await refreshProfile();
       setSuccess("Photo mise à jour !");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      console.error("Upload Error Details:", err);
-      // Message pédagogique si le bucket manque
-      const msg = err.message === "bucket_not_found" || err.error === "Bucket not found"
-        ? "Le stockage 'avatars' n'est pas configuré dans Supabase."
-        : (err.message || "Erreur lors de l'upload. Vérifiez votre connexion.");
-      setError(msg);
+      console.error("Erreur Upload:", err);
+      const isRLS = err.message?.includes('row-level security') || err.code === '42501';
+      setError(isRLS ? "Permission refusée par Supabase (RLS)" : "Erreur lors de l'upload");
+      if (isRLS) setShowRLSHint(true);
     } finally {
       setLoading(false);
     }
@@ -73,18 +77,29 @@ const Profile: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       {/* Notifications Flottantes */}
-      <div className="fixed top-24 right-6 z-[100] flex flex-col gap-3">
+      <div className="fixed top-24 right-6 z-[100] flex flex-col gap-3 max-w-xs md:max-w-md">
         {error && (
-          <div className="bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 border border-rose-400">
-            <AlertCircle className="w-5 h-5" />
-            <p className="text-xs font-black uppercase tracking-widest">{error}</p>
-            <button onClick={() => setError(null)}><X className="w-4 h-4 opacity-50" /></button>
+          <div className="bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex flex-col gap-3 animate-in slide-in-from-right duration-300 border border-rose-400">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
+              <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4 opacity-50" /></button>
+            </div>
+            {showRLSHint && (
+              <div className="bg-rose-900/30 p-3 rounded-xl border border-rose-400/30">
+                <p className="text-[9px] leading-relaxed font-medium">
+                  <Database className="w-3 h-3 inline mr-1" />
+                  <b>Action requise Admin :</b> Les politiques RLS de Supabase bloquent l'écriture. 
+                  Copiez le script SQL dans <i>services/supabase.ts</i> et lancez-le dans votre <b>SQL Editor</b> Supabase.
+                </p>
+              </div>
+            )}
           </div>
         )}
         {success && (
           <div className="bg-emerald-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 border border-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
-            <p className="text-xs font-black uppercase tracking-widest">{success}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest">{success}</p>
           </div>
         )}
       </div>
