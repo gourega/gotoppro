@@ -41,27 +41,18 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
   }
 };
 
-/**
- * Sauvegarde le profil utilisateur avec gestion de secours si des colonnes sont manquantes.
- */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
   const { uid, ...dataToUpdate } = profile;
 
-  // Tentative de mise à jour complète
   const { error } = await supabase
     .from('profiles')
     .update(dataToUpdate)
     .eq('uid', uid);
   
   if (error) {
-    console.warn("Erreur Supabase (Tentative 1) :", error.message);
-    
-    // Si la colonne 'attempts' ou une autre manque (Code 42703), on tente une sauvegarde restreinte
     if (error.code === '42703' || error.message.includes('column')) {
-      console.log("Tentative de sauvegarde de secours sans les colonnes optionnelles...");
-      
       const essentialData = {
         progress: profile.progress,
         badges: profile.badges,
@@ -69,10 +60,11 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
         actionPlan: profile.actionPlan,
         firstName: profile.firstName,
         lastName: profile.lastName,
-        establishmentName: profile.establishmentName
+        establishmentName: profile.establishmentName,
+        purchasedModuleIds: profile.purchasedModuleIds,
+        attempts: profile.attempts
       };
 
-      // Supprimer les champs undefined pour éviter d'autres erreurs
       Object.keys(essentialData).forEach(key => 
         (essentialData as any)[key] === undefined && delete (essentialData as any)[key]
       );
@@ -100,24 +92,31 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
   return data as UserProfile[];
 };
 
-export const toggleUserStatus = async (uid: string, isActive: boolean) => {
+export const grantModuleAccess = async (uid: string, moduleId: string) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
+  const profile = await getUserProfile(uid);
+  if (!profile) return;
+
+  const newPurchased = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
   const { error } = await supabase
     .from('profiles')
-    .update({ isActive })
+    .update({ purchasedModuleIds: newPurchased, isActive: true })
     .eq('uid', uid);
+  
   if (error) throw error;
 };
 
-export const updateUserRole = async (uid: string, role: UserRole) => {
+export const updateQuizAttempts = async (uid: string, moduleId: string, attempts: number) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
+  const profile = await getUserProfile(uid);
+  if (!profile) return;
+
+  const newAttempts = { ...(profile.attempts || {}), [moduleId]: attempts };
   const { error } = await supabase
     .from('profiles')
-    .update({ 
-      role, 
-      isAdmin: role === 'ADMIN' || role === 'SUPER_ADMIN' 
-    })
+    .update({ attempts: newAttempts })
     .eq('uid', uid);
+  
   if (error) throw error;
 };
 
@@ -160,4 +159,28 @@ export const uploadProfilePhoto = async (file: File, uid: string): Promise<strin
   if (error) throw error;
   const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
   return data.publicUrl;
+};
+
+export const createAdminAccount = async (email: string, firstName: string, phone: string) => {
+  if (!supabase) throw new Error("Client Supabase non initialisé.");
+  // On crée d'abord le profil dans la table profiles. 
+  // L'utilisateur devra ensuite s'inscrire via le footer ou être invité par email Supabase.
+  const newProfile = {
+    uid: `admin_${Date.now()}`,
+    phoneNumber: phone,
+    email: email,
+    firstName: firstName,
+    lastName: 'Admin',
+    role: 'ADMIN',
+    isAdmin: true,
+    isActive: true,
+    badges: [],
+    purchasedModuleIds: [],
+    pendingModuleIds: [],
+    actionPlan: [],
+    createdAt: new Date().toISOString()
+  };
+  const { error } = await supabase.from('profiles').insert(newProfile);
+  if (error) throw error;
+  return newProfile;
 };
