@@ -43,10 +43,10 @@ const Dashboard: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-brand-600 font-black text-[10px] uppercase tracking-[0.3em]">
                 <Sparkles className="w-3 h-3" />
-                Votre Espace Excellence
+                Votre espace excellence
               </div>
               <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 tracking-tight">
-                Bonjour, {user.firstName || 'Gérant'}
+                Bonjour, {user.firstName || 'gérant'}
               </h1>
               <p className="text-slate-500 font-medium text-lg">Prêt à élever les standards de votre salon aujourd'hui ?</p>
             </div>
@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
               <div className="flex justify-between items-center mb-8 px-2">
                 <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-3">
                   <Play className="w-6 h-6 text-brand-500 fill-current" />
-                  Ma Progression
+                  Ma progression
                 </h2>
               </div>
 
@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
                   ))
                 ) : (
                   <div className="md:col-span-2 bg-white rounded-[3rem] p-12 text-center border border-dashed border-slate-200">
-                    <p className="text-slate-400 font-bold italic mb-6">"Le savoir est le seul capital qui ne craint pas l'inflation."</p>
+                    <p className="text-slate-400 font-bold italic mb-6">« Le savoir est le seul capital qui ne craint pas l'inflation. »</p>
                     <Link to="/results" className="inline-flex bg-brand-600 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-700 transition shadow-xl shadow-brand-200">
                        Débloquer mes premiers modules
                     </Link>
@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-between items-center mb-8 px-2">
                   <h2 className="text-2xl font-bold text-amber-600 font-serif flex items-center gap-3">
                     <Clock className="w-6 h-6" />
-                    En attente de validation Wave
+                    En attente de validation
                   </h2>
                 </div>
                 <div className="grid md:grid-cols-2 gap-8">
@@ -114,7 +114,7 @@ const Dashboard: React.FC = () => {
                     <Coins className="w-5 h-5" />
                   </div>
                   <p className="text-xs text-amber-800 font-medium">
-                    Une fois votre paiement reçu par Coach Kita, ces modules seront activés instantanément dans votre espace "Ma Progression".
+                    Une fois votre paiement reçu par Coach Kita, ces modules seront activés instantanément dans votre espace « Ma progression ».
                   </p>
                 </div>
               </section>
@@ -125,7 +125,7 @@ const Dashboard: React.FC = () => {
               <div className="flex justify-between items-center mb-8 px-2">
                 <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-3">
                   <Lock className="w-6 h-6 text-slate-400" />
-                  Catalogue de l'Excellence
+                  Catalogue de l'excellence
                 </h2>
                 <Link to="/results" className="text-brand-600 font-black text-[10px] uppercase tracking-widest hover:underline">Voir tout le catalogue</Link>
               </div>
@@ -162,13 +162,13 @@ const Dashboard: React.FC = () => {
 
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none"><Sparkles className="w-24 h-24" /></div>
-              <h3 className="font-black text-brand-900 mb-6 uppercase text-[10px] tracking-[0.4em] opacity-60">Sagesse du Mentor</h3>
+              <h3 className="font-black text-brand-900 mb-6 uppercase text-[10px] tracking-[0.4em] opacity-60">Sagesse du mentor</h3>
               <p className="text-xl text-brand-900 italic leading-relaxed font-serif font-medium mb-10 relative z-10">
-                "Celui qui déplace la montagne commence par enlever les petites pierres."
+                « Celui qui déplace la montagne commence par enlever les petites pierres. »
               </p>
               <div className="flex items-center gap-4 pt-8 border-t border-slate-100">
                 <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-xl"><img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" /></div>
-                <div><span className="text-[10px] font-black text-brand-900 uppercase tracking-widest block">Coach Kita</span><span className="text-[9px] text-brand-500 font-bold uppercase tracking-widest">Mentor Elite</span></div>
+                <div><span className="text-[10px] font-black text-brand-900 uppercase tracking-widest block">Coach Kita</span><span className="text-[9px] text-brand-500 font-bold uppercase tracking-widest">Mentor élite</span></div>
               </div>
             </div>
           </div>
