@@ -17,6 +17,8 @@ export interface UserProfile {
   lastName?: string;
   establishmentName?: string;
   photoURL?: string;
+  employeeCount?: number;
+  yearsOfExistence?: number;
   role: UserRole;
   isActive: boolean;
   isAdmin: boolean;

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadProfilePhoto } from '../services/supabase';
 import { BADGES } from '../constants';
-import { Loader2, Camera, AlertCircle, CheckCircle2, X, Database } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, CheckCircle2, X, Database, Users, History } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshProfile } = useAuth();
@@ -16,7 +16,9 @@ const Profile: React.FC = () => {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     establishmentName: user?.establishmentName || '',
-    email: user?.email || ''
+    email: user?.email || '',
+    employeeCount: user?.employeeCount || 0,
+    yearsOfExistence: user?.yearsOfExistence || 0
   });
 
   if (!user) return null;
@@ -27,7 +29,6 @@ const Profile: React.FC = () => {
     setError(null);
     setShowRLSHint(false);
     try {
-      // CRITIQUE: On inclut le phoneNumber pour satisfaire les contraintes DB lors de l'upsert
       await saveUserProfile({
         uid: user.uid,
         phoneNumber: user.phoneNumber,
@@ -61,7 +62,6 @@ const Profile: React.FC = () => {
     setShowRLSHint(false);
     try {
       const url = await uploadProfilePhoto(file, user.uid);
-      // On inclut aussi le phoneNumber ici par sécurité
       await saveUserProfile({ 
         uid: user.uid, 
         phoneNumber: user.phoneNumber,
@@ -95,8 +95,7 @@ const Profile: React.FC = () => {
               <div className="bg-rose-900/30 p-3 rounded-xl border border-rose-400/30">
                 <p className="text-[9px] leading-relaxed font-medium">
                   <Database className="w-3 h-3 inline mr-1" />
-                  <b>Configuration Supabase :</b> Votre politique RLS semble bloquer l'écriture.
-                  Vérifiez le SQL Editor.
+                  <b>Configuration Supabase :</b> Vérifiez que les colonnes employeeCount et yearsOfExistence existent.
                 </p>
               </div>
             )}
@@ -194,6 +193,28 @@ const Profile: React.FC = () => {
                       placeholder="Nom de votre entreprise"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Nombre d'employés</label>
+                      <input 
+                        type="number" 
+                        value={formData.employeeCount} 
+                        onChange={e => setFormData({...formData, employeeCount: parseInt(e.target.value) || 0})}
+                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-bold text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Années d'existence</label>
+                      <input 
+                        type="number" 
+                        value={formData.yearsOfExistence} 
+                        onChange={e => setFormData({...formData, yearsOfExistence: parseInt(e.target.value) || 0})}
+                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-bold text-slate-900"
+                      />
+                    </div>
+                  </div>
+
                   <div className="flex gap-4 pt-4">
                     <button type="submit" disabled={loading} className="px-10 py-5 bg-brand-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-700 disabled:opacity-50 shadow-xl shadow-brand-100 flex items-center gap-2">
                       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -210,23 +231,26 @@ const Profile: React.FC = () => {
                       <p className="font-bold text-slate-900 text-xl">{user.establishmentName || 'Non renseigné'}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut Elite</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taille Équipe</p>
                       <p className="font-black text-brand-600 text-xl flex items-center gap-2">
-                        {user.role}
-                        {user.role !== 'CLIENT' && <CheckCircle2 className="w-5 h-5" />}
+                        <Users className="w-5 h-5" />
+                        {user.employeeCount || 0} employés
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vérification</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {user.isActive ? 'Compte Actif' : 'En attente'}
-                        </span>
-                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expérience Salon</p>
+                      <p className="font-black text-slate-900 text-xl flex items-center gap-2">
+                        <History className="w-5 h-5 text-brand-500" />
+                        {user.yearsOfExistence || 0} ans
+                      </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inscription</p>
-                      <p className="font-bold text-slate-600">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut Compte</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {user.isActive ? 'Actif' : 'En attente'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
