@@ -28,8 +28,8 @@ import {
   Coins
 } from 'lucide-react';
 
-// Helpers for Audio Processing
-function decodeBase64(base64: string) {
+// Helpers pour le traitement Audio PCM
+function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -45,7 +45,9 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
+  // Les données PCM de Gemini sont en 16 bits (2 octets par échantillon)
+  // On utilise explicitement le buffer avec l'offset et la longueur divisée par 2
+  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -72,7 +74,7 @@ const ModuleView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
 
-  // Audio States
+  // États Audio
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -97,9 +99,6 @@ const ModuleView: React.FC = () => {
       try { sourceNodeRef.current.stop(); } catch (e) {}
       sourceNodeRef.current = null;
     }
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
     setIsPlaying(false);
   };
 
@@ -114,32 +113,56 @@ const ModuleView: React.FC = () => {
     const fullText = `${module.title}. ${cleanText}`;
 
     try {
+      // Initialisation de l'AudioContext si nécessaire
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      }
+      
+      // Réveil impératif de l'AudioContext (sécurité navigateur)
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Lisez ce cours de coiffure expert avec un ton calme, posé et très inspirant. IMPORTANT : Faites des pauses de 2 secondes après chaque titre et entre chaque paragraphe. Ne prononcez pas les symboles de ponctuation : ${fullText.substring(0, 3500)}`;
+      const prompt = `Agis comme Coach Kita. Lis ce cours de coiffure expert avec un ton calme, posé et très inspirant. IMPORTANT : Fais des pauses naturelles. Ne prononcez pas les symboles de ponctuation ou balises : ${fullText.substring(0, 4000)}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+          speechConfig: { 
+            voiceConfig: { 
+              prebuiltVoiceConfig: { voiceName: 'Kore' } 
+            } 
+          },
         },
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-      if (base64Audio) {
-        if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        const audioBuffer = await decodeAudioData(decodeBase64(base64Audio), audioContextRef.current, 24000, 1);
+      
+      if (base64Audio && audioContextRef.current) {
+        const audioBuffer = await decodeAudioData(
+          decodeBase64(base64Audio), 
+          audioContextRef.current, 
+          24000, 
+          1
+        );
+        
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
         source.onended = () => setIsPlaying(false);
+        
         sourceNodeRef.current = source;
         source.start(0);
         setIsPlaying(true);
+      } else {
+        throw new Error("Aucune donnée audio reçue du modèle.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erreur Masterclass Audio:", err);
+      alert("Impossible de lancer la masterclass audio pour le moment. Veuillez réessayer.");
     } finally {
       setIsAudioLoading(false);
     }
@@ -487,7 +510,7 @@ const ModuleView: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      /* Exhausted 3 attempts and still failed -> Suggest re-purchase */
+                      /* Épuisement des 3 tentatives et toujours en échec -> Suggérer rachat */
                       <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
                         <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
