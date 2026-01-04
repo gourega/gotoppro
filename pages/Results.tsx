@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
-import { supabase, saveUserProfile, getProfileByPhone } from '../services/supabase';
+import { supabase, getProfileByPhone } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 import { 
   ArrowRight, 
@@ -19,7 +19,8 @@ import {
   Info,
   Star,
   Crown,
-  AlertTriangle
+  AlertTriangle,
+  Smartphone
 } from 'lucide-react';
 
 const Results: React.FC = () => {
@@ -135,20 +136,24 @@ const Results: React.FC = () => {
     }
 
     setLoading(true);
-    // Formatage standard Côte d'Ivoire
     const formattedPhone = `+225${digitsOnly.slice(-10)}`;
 
     try {
-      if (!supabase) throw new Error("Connexion base de données impossible.");
+      if (!supabase) throw new Error("Base de données non configurée.");
 
-      // 1. Vérifier si le profil existe déjà
-      let profile = await getProfileByPhone(formattedPhone);
+      // Tentative de récupération ou création
+      let { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('phoneNumber', formattedPhone)
+        .maybeSingle();
+
       const purchasedModuleIds = cart.map(m => m.id);
       
-      // 2. Création/Mise à jour
-      if (!profile) {
-        const newProfile: UserProfile = {
-          uid: `prospect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      if (!existingProfile) {
+        // Création d'un nouveau profil prospect
+        const newProfile = {
+          uid: `p_${Date.now()}`,
           phoneNumber: formattedPhone,
           role: 'CLIENT',
           isActive: false,
@@ -160,23 +165,24 @@ const Results: React.FC = () => {
           createdAt: new Date().toISOString()
         };
         
-        const { error: saveError } = await supabase.from('profiles').insert(newProfile);
-        if (saveError) throw saveError;
+        const { error: insError } = await supabase.from('profiles').insert(newProfile);
+        if (insError) throw insError;
       } else {
-        const { error: updateError } = await supabase
+        // Mise à jour des modules en attente pour un profil existant
+        const { error: updError } = await supabase
           .from('profiles')
           .update({ 
-            pendingModuleIds: [...new Set([...(profile.pendingModuleIds || []), ...purchasedModuleIds])]
+            pendingModuleIds: [...new Set([...(existingProfile.pendingModuleIds || []), ...purchasedModuleIds])]
           })
-          .eq('uid', profile.uid);
-        if (updateError) throw updateError;
+          .eq('uid', existingProfile.uid);
+        if (updError) throw updError;
       }
 
-      // Si on arrive ici, c'est que c'est bien enregistré dans Supabase !
+      // ÉTAPE CRUCIALE : On ne passe à l'étape suivante que si l'API n'a pas renvoyé d'erreur
       setCheckoutStep('payment');
     } catch (err: any) {
-      console.error("Erreur critique d'enregistrement prospect:", err);
-      setDbError("Erreur de connexion. Vérifiez votre connexion internet ou réessayez.");
+      console.error("Erreur base de données:", err);
+      setDbError("Impossible de vous enregistrer. Vérifiez votre connexion ou contactez le support.");
     } finally {
       setLoading(false);
     }
@@ -399,10 +405,10 @@ const Results: React.FC = () => {
               <div className="p-12">
                 <div className="mb-12 text-center">
                   <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                    <ShoppingBag className="w-8 h-8" />
+                    <Smartphone className="w-8 h-8" />
                   </div>
                   <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
-                  <p className="text-slate-500 font-medium text-sm">Entrez votre numéro pour valider votre panier.</p>
+                  <p className="text-slate-500 font-medium text-sm">Votre numéro est votre clé d'accès.</p>
                 </div>
 
                 {dbError && (
@@ -428,11 +434,11 @@ const Results: React.FC = () => {
                   <button 
                     onClick={handleIdentification}
                     disabled={loading}
-                    className="w-full py-6 bg-brand-600 text-white font-black rounded-3xl hover:bg-brand-700 shadow-xl shadow-brand-100 text-[11px] uppercase tracking-widest transition-all"
+                    className="w-full py-6 bg-brand-600 text-white font-black rounded-3xl hover:bg-brand-700 shadow-xl shadow-brand-100 text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-3"
                   >
-                    {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Générer ma facture Wave"}
+                    {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Étape suivante"}
                   </button>
-                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour</button>
+                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour au diagnostic</button>
                 </div>
               </div>
             ) : (
@@ -460,7 +466,8 @@ const Results: React.FC = () => {
                 <div className="mb-8 p-4 bg-brand-50 rounded-2xl flex items-start gap-3 text-left">
                   <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-brand-900 font-medium leading-relaxed">
-                    Une fois le paiement effectué, cliquez sur le bouton ci-dessous. Coach Kita validera votre accès manuellement sous 15 minutes.
+                    Votre paiement sera vérifié par Coach Kita. <br/>
+                    <b>Délai : 15 min max.</b>
                   </p>
                 </div>
                 
@@ -468,7 +475,7 @@ const Results: React.FC = () => {
                   onClick={() => navigate('/login')} 
                   className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] hover:bg-black transition-all shadow-2xl"
                 >
-                  J'ai effectué le paiement
+                  J'ai payé, accéder à mon espace
                 </button>
               </div>
             )}
