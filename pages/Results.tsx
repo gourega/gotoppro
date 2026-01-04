@@ -18,7 +18,8 @@ import {
   ShoppingBag,
   Info,
   Star,
-  Crown
+  Crown,
+  AlertTriangle
 } from 'lucide-react';
 
 const Results: React.FC = () => {
@@ -32,6 +33,7 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
   const [isPerfectScore, setIsPerfectScore] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
   
   const navigate = useNavigate();
 
@@ -124,29 +126,32 @@ const Results: React.FC = () => {
   };
 
   const handleIdentification = async () => {
-    if (phoneInput.length < 8) {
-      alert("Veuillez entrer un numéro valide.");
+    setDbError(null);
+    const digitsOnly = phoneInput.replace(/\D/g, '');
+    
+    if (digitsOnly.length < 10) {
+      alert("Veuillez entrer un numéro à 10 chiffres (ex: 07 08 04 79 14)");
       return;
     }
 
     setLoading(true);
-    // Formatage uniforme
-    const cleanPhone = phoneInput.replace(/\s/g, '');
-    const formattedPhone = cleanPhone.startsWith('0') ? `+225${cleanPhone}` : cleanPhone;
+    // Formatage standard Côte d'Ivoire
+    const formattedPhone = `+225${digitsOnly.slice(-10)}`;
 
     try {
+      if (!supabase) throw new Error("Connexion base de données impossible.");
+
       // 1. Vérifier si le profil existe déjà
       let profile = await getProfileByPhone(formattedPhone);
-      
-      // 2. Créer ou mettre à jour le profil avec les modules choisis
       const purchasedModuleIds = cart.map(m => m.id);
       
+      // 2. Création/Mise à jour
       if (!profile) {
         const newProfile: UserProfile = {
-          uid: `user_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+          uid: `prospect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           phoneNumber: formattedPhone,
           role: 'CLIENT',
-          isActive: false, // Important : attend la validation admin
+          isActive: false,
           isAdmin: false,
           badges: [],
           purchasedModuleIds: purchasedModuleIds,
@@ -154,19 +159,24 @@ const Results: React.FC = () => {
           actionPlan: [],
           createdAt: new Date().toISOString()
         };
-        await saveUserProfile(newProfile);
+        
+        const { error: saveError } = await supabase.from('profiles').insert(newProfile);
+        if (saveError) throw saveError;
       } else {
-        // Mettre à jour les modules demandés
-        await saveUserProfile({
-          uid: profile.uid,
-          pendingModuleIds: [...new Set([...(profile.pendingModuleIds || []), ...purchasedModuleIds])]
-        });
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            pendingModuleIds: [...new Set([...(profile.pendingModuleIds || []), ...purchasedModuleIds])]
+          })
+          .eq('uid', profile.uid);
+        if (updateError) throw updateError;
       }
 
+      // Si on arrive ici, c'est que c'est bien enregistré dans Supabase !
       setCheckoutStep('payment');
     } catch (err: any) {
-      console.error("Setup profile error:", err);
-      setCheckoutStep('payment'); // Fallback pour ne pas bloquer
+      console.error("Erreur critique d'enregistrement prospect:", err);
+      setDbError("Erreur de connexion. Vérifiez votre connexion internet ou réessayez.");
     } finally {
       setLoading(false);
     }
@@ -394,6 +404,13 @@ const Results: React.FC = () => {
                   <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
                   <p className="text-slate-500 font-medium text-sm">Entrez votre numéro pour valider votre panier.</p>
                 </div>
+
+                {dbError && (
+                  <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600 animate-in shake duration-300">
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    <p className="text-[11px] font-bold uppercase tracking-widest">{dbError}</p>
+                  </div>
+                )}
                 
                 <div className="mb-10">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Numéro WhatsApp</label>
@@ -401,7 +418,7 @@ const Results: React.FC = () => {
                     type="tel"
                     value={phoneInput}
                     onChange={(e) => setPhoneInput(e.target.value)}
-                    placeholder="0708047914"
+                    placeholder="07 08 04 79 14"
                     className="w-full px-8 py-6 rounded-[2rem] bg-slate-50 border-none outline-none text-2xl font-black text-slate-900 focus:ring-4 focus:ring-brand-500/10 transition-all text-center"
                     autoFocus
                   />
