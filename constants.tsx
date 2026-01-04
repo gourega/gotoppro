@@ -4,6 +4,24 @@ import { TrainingModule, Badge, ModuleStatus } from './types';
 export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
+export const DAILY_CHALLENGES = [
+  "Nettoyer ses ciseaux devant le prochain client",
+  "Sourire consciemment lors de chaque appel téléphonique",
+  "Proposer un massage crânien à une cliente stressée",
+  "Prendre une photo 'avant/après' avec la lumière du jour",
+  "Demander à une cliente fidèle si elle a une amie à parrainer",
+  "Vérifier le stock de shampoing technique avant midi",
+  "Féliciter un collaborateur pour un détail précis de son travail",
+  "Vérifier la propreté du bac à shampoing après chaque passage",
+  "Peser précisément le mélange de la prochaine coloration",
+  "Noter une préférence personnelle (thé, café) dans un carnet client",
+  "Répondre à un avis ou commentaire sur les réseaux sociaux",
+  "Réorganiser sa desserte de travail pour gagner 1 minute",
+  "Vérifier ses chaussures et sa tenue devant le miroir",
+  "Faire un diagnostic assis à hauteur de la cliente",
+  "Proposer un produit de revente à la fin d'une prestation"
+];
+
 export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_accueil_tel",
@@ -766,7 +784,7 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 2, text: "L'équipe s'entraîne-t-elle à faire un bon diagnostic avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
   { id: 3, text: "Les protocoles d'hygiène sont-ils affichés et respectés scrupuleusement par tous ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
   { id: 4, text: "Avez-vous un inventaire à jour chaque semaine pour éviter les ruptures de stock ?", category: "Gestion", linkedModuleId: "mod_stock" },
-  { id: 5, text: "Publiez-vous régulièrement (au moins 3 fois par semaine) sur vos réseaux sociaux ?", category: "Visibilité", linkedModuleId: "mod_social_media" },
+  { id: 5, text: "Publiez-vous régulièrement (au moins 3 fois par semaine) on vos réseaux sociaux ?", category: "Visibilité", linkedModuleId: "mod_social_media" },
   { id: 6, text: "Utilisez-vous un fichier client pour relancer ceux qui ne sont plus venus depuis 3 mois ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
   { id: 7, text: "Réalisez-vous des entretiens individuels de motivation avec vos employés chaque mois ?", category: "Direction", linkedModuleId: "mod_management" },
   { id: 8, text: "Connaissez-vous précisément votre coût à la minute pour fixer vos tarifs ?", category: "Gestion", linkedModuleId: "mod_tarification" },
