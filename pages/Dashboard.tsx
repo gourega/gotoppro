@@ -21,7 +21,8 @@ import {
   ListTodo,
   Trophy,
   ArrowRight,
-  Circle
+  Circle,
+  BookOpen
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -140,9 +141,14 @@ const Dashboard: React.FC = () => {
                      <Zap className="w-6 h-6 text-brand-gold fill-current" />
                      Défis du jour
                    </h2>
-                   <span className="text-[10px] font-black uppercase tracking-widest bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                     {dailyCompletedCount} / 3 accomplis
-                   </span>
+                   <div className="flex items-center gap-3">
+                     <div className="h-2 w-24 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-gold transition-all duration-500" style={{ width: `${(dailyCompletedCount/3)*100}%` }}></div>
+                     </div>
+                     <span className="text-[10px] font-black uppercase tracking-widest bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                       {dailyCompletedCount} / 3 accomplis
+                     </span>
+                   </div>
                  </div>
                  
                  <div className="space-y-6">
@@ -152,12 +158,12 @@ const Dashboard: React.FC = () => {
                         onClick={() => handleToggleDailyTask(idx)}
                         className={`w-full text-left p-6 rounded-2xl border transition-all flex items-center gap-6 group/btn ${
                           task.completed 
-                            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+                            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 shadow-inner' 
                             : 'bg-white/5 border-white/10 hover:bg-white/10'
                         }`}
                       >
                         <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all ${
-                          task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/20'
+                          task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/20 group-hover/btn:border-white/40'
                         }`}>
                           {task.completed && <CheckCircle2 className="w-4 h-4" />}
                         </div>
@@ -169,9 +175,9 @@ const Dashboard: React.FC = () => {
                  </div>
 
                  {dailyCompletedCount === 3 && (
-                   <div className="mt-8 p-6 bg-emerald-500 text-white rounded-2xl flex items-center gap-4 animate-in zoom-in-95 duration-500">
+                   <div className="mt-8 p-6 bg-emerald-500 text-white rounded-2xl flex items-center gap-4 animate-in zoom-in-95 duration-500 shadow-2xl shadow-emerald-900/40">
                      <Sparkles className="w-6 h-6" />
-                     <p className="font-bold text-sm">Bravo Expert ! Vous avez maintenu le standard d'excellence aujourd'hui.</p>
+                     <p className="font-bold text-sm">Félicitations Expert ! Votre routine d'excellence est maintenue.</p>
                    </div>
                  )}
                </div>
@@ -226,8 +232,8 @@ const Dashboard: React.FC = () => {
             <section>
               <div className="flex justify-between items-center mb-8 px-2">
                 <h2 className="text-2xl font-bold text-slate-900 font-serif flex items-center gap-3">
-                  <Play className="w-6 h-6 text-brand-500 fill-current" />
-                  Formations en cours
+                  <BookOpen className="w-6 h-6 text-brand-500" />
+                  Mes Masterclasses acquises
                 </h2>
               </div>
 
@@ -267,7 +273,7 @@ const Dashboard: React.FC = () => {
             {/* Bouton catalogue discret */}
             <div className="pt-10 flex justify-center">
               <Link to="/results" className="flex items-center gap-3 text-slate-400 font-black text-[11px] uppercase tracking-widest hover:text-brand-600 transition-all group">
-                Explorer tout le catalogue <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                Accéder au catalogue complet <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </div>
@@ -286,7 +292,7 @@ const Dashboard: React.FC = () => {
                 {BADGES.map(badge => {
                   const hasBadge = user.badges.includes(badge.id);
                   return (
-                    <div key={badge.id} title={badge.description} className={`h-16 w-16 rounded-[1.4rem] flex items-center justify-center text-2xl border-2 transition-all duration-700 ${hasBadge ? 'bg-brand-50 border-brand-100' : 'bg-slate-50 border-slate-100 grayscale opacity-20'}`}>
+                    <div key={badge.id} title={badge.description} className={`h-16 w-16 rounded-[1.4rem] flex items-center justify-center text-2xl border-2 transition-all duration-700 ${hasBadge ? 'bg-brand-50 border-brand-100 scale-100' : 'bg-slate-50 border-slate-100 grayscale opacity-20 scale-95'}`}>
                       {badge.icon}
                     </div>
                   );
@@ -301,7 +307,7 @@ const Dashboard: React.FC = () => {
                 « Celui qui déplace la montagne commence par enlever les petites pierres. »
               </p>
               <div className="flex items-center gap-4 pt-8 border-t border-slate-100">
-                <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-xl border-2 border-white"><img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" /></div>
+                <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-xl border-2 border-brand-100"><img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" /></div>
                 <div><span className="text-[10px] font-black text-brand-900 uppercase tracking-widest block">Coach Kita</span><span className="text-[9px] text-brand-500 font-bold uppercase tracking-widest">Mentor élite</span></div>
               </div>
             </div>
@@ -316,12 +322,13 @@ const ModuleDashboardCard: React.FC<{ mod: any, isLocked?: boolean, isPending?: 
   <div className={`bg-white rounded-[2.5rem] shadow-sm border overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group ${
     isPending ? 'border-amber-200 bg-amber-50/20' : 
     isLocked ? 'opacity-50' : 
-    mod.status === ModuleStatus.COMPLETED ? 'border-emerald-100' : 'border-slate-100'
+    mod.status === ModuleStatus.COMPLETED ? 'border-emerald-100 bg-emerald-50/5' : 'border-slate-100'
   }`}>
     <div className="p-8">
       <div className="flex justify-between items-start mb-6">
         <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${
-          isPending ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
+          isPending ? 'bg-amber-100 text-amber-600' : 
+          mod.status === ModuleStatus.COMPLETED ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
         }`}>{mod.topic}</span>
         {isPending ? (
           <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
@@ -339,9 +346,9 @@ const ModuleDashboardCard: React.FC<{ mod: any, isLocked?: boolean, isPending?: 
       
       {!isLocked && !isPending && (
         <div className="flex items-center gap-2 mb-8">
-           <Coins className={`w-3.5 h-3.5 ${mod.status === ModuleStatus.COMPLETED ? 'text-slate-300' : 'text-brand-500'}`} />
-           <span className={`text-[9px] font-black uppercase tracking-widest ${mod.status === ModuleStatus.COMPLETED ? 'text-slate-300' : 'text-slate-400'}`}>
-              {mod.status === ModuleStatus.COMPLETED ? 'Certifié' : `${mod.tokens} jetons restants`}
+           <Coins className={`w-3.5 h-3.5 ${mod.status === ModuleStatus.COMPLETED ? 'text-emerald-300' : 'text-brand-500'}`} />
+           <span className={`text-[9px] font-black uppercase tracking-widest ${mod.status === ModuleStatus.COMPLETED ? 'text-emerald-400' : 'text-slate-400'}`}>
+              {mod.status === ModuleStatus.COMPLETED ? 'Certification Validée' : `${mod.tokens} jetons restants`}
            </span>
         </div>
       )}
@@ -350,14 +357,15 @@ const ModuleDashboardCard: React.FC<{ mod: any, isLocked?: boolean, isPending?: 
         <div className="flex items-center gap-2">
            <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-500' : isLocked ? 'bg-slate-300' : mod.status === ModuleStatus.COMPLETED ? 'bg-emerald-500' : 'bg-brand-500'}`}></div>
            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-             {isPending ? 'En attente' : isLocked ? 'Verrouillé' : mod.status === ModuleStatus.COMPLETED ? 'Master' : 'En cours'}
+             {isPending ? 'En attente' : isLocked ? 'Verrouillé' : mod.status === ModuleStatus.COMPLETED ? 'Expert' : 'En cours'}
            </span>
         </div>
         {!isPending && (
           <Link to={isLocked ? '/results' : `/module/${mod.id}`} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-[0.2em] transition-all ${
-            isLocked ? 'bg-slate-100 text-slate-500' : 'bg-slate-900 text-white hover:bg-brand-600'
+            isLocked ? 'bg-slate-100 text-slate-500' : 
+            mod.status === ModuleStatus.COMPLETED ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-slate-900 text-white hover:bg-brand-600'
           }`}>
-            {isLocked ? 'Débloquer' : 'Entrer'}
+            {isLocked ? 'Débloquer' : mod.status === ModuleStatus.COMPLETED ? 'Réviser' : 'Continuer'}
           </Link>
         )}
       </div>

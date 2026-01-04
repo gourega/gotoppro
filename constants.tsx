@@ -1,7 +1,8 @@
 
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
-export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
+// Avatar de Coach Kita (Identité visuelle du Super Admin et du Mentor IA)
+export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80";
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
 export const DAILY_CHALLENGES = [
