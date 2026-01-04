@@ -27,8 +27,10 @@ const Profile: React.FC = () => {
     setError(null);
     setShowRLSHint(false);
     try {
+      // CRITIQUE: On inclut le phoneNumber pour satisfaire les contraintes DB lors de l'upsert
       await saveUserProfile({
         uid: user.uid,
+        phoneNumber: user.phoneNumber,
         ...formData
       });
       await refreshProfile();
@@ -59,7 +61,12 @@ const Profile: React.FC = () => {
     setShowRLSHint(false);
     try {
       const url = await uploadProfilePhoto(file, user.uid);
-      await saveUserProfile({ uid: user.uid, photoURL: url });
+      // On inclut aussi le phoneNumber ici par sécurité
+      await saveUserProfile({ 
+        uid: user.uid, 
+        phoneNumber: user.phoneNumber,
+        photoURL: url 
+      });
       await refreshProfile();
       setSuccess("Photo mise à jour !");
       setTimeout(() => setSuccess(null), 3000);
