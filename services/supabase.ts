@@ -58,21 +58,31 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 
 export const uploadProfilePhoto = async (file: File, uid: string): Promise<string> => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
+  
+  // Bucket "avatars" attendu. Assurez-vous qu'il existe et est PUBLIC.
+  const bucketName = 'avatars';
   const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const filePath = `${uid}/avatar.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
-    .from('avatars')
+    .from(bucketName)
     .upload(filePath, file, { 
       upsert: true,
       contentType: file.type 
     });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error("Supabase Storage Error:", uploadError);
+    throw uploadError;
+  }
 
   const { data } = supabase.storage
-    .from('avatars')
+    .from(bucketName)
     .getPublicUrl(filePath);
+
+  if (!data?.publicUrl) {
+    throw new Error("Impossible de générer l'URL publique de la photo.");
+  }
 
   return `${data.publicUrl}?t=${Date.now()}`;
 };
