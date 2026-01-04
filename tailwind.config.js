@@ -1,3 +1,4 @@
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -19,6 +20,7 @@ export default {
           500: '#0ea5e9',
           600: '#0284c7',
           900: '#0c4a6e',
+          950: '#082f49',
           gold: '#fbbf24',
         }
       },

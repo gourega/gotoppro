@@ -205,14 +205,12 @@ const ModuleView: React.FC = () => {
         }
       }
 
-      // Sauvegarde optimisée (retry sans colonnes optionnelles en interne si besoin)
       await saveUserProfile(updatedUser);
       await refreshProfile();
       
       setQuizState('results');
     } catch (err: any) {
       console.error("Erreur critique quiz:", err);
-      // On affiche quand même les résultats locaux pour ne pas bloquer l'utilisateur
       setQuizState('results');
       alert("Vos résultats sont affichés mais n'ont pas pu être synchronisés. Raison : " + (err.message || "Erreur serveur"));
     } finally {
@@ -487,7 +485,7 @@ const ModuleView: React.FC = () => {
                                 <div className="absolute -bottom-2 font-black text-[8px] uppercase tracking-widest bg-slate-900 px-3 py-1 rounded-full whitespace-nowrap">Certifié Kita</div>
                               </div>
                               <div className="text-right">
-                                <div className="mb-4"><img src={COACH_KITA_AVATAR} className="h-16 w-16 rounded-2xl mx-auto md:ml-auto grayscale" alt="Kita Sig" /></div>
+                                <div className="mb-4 text-center"><img src={COACH_KITA_AVATAR} className="h-16 w-16 rounded-2xl mx-auto grayscale" alt="Kita Sig" /></div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Signature du Mentor</p>
                               </div>
                             </div>
@@ -499,8 +497,14 @@ const ModuleView: React.FC = () => {
                           <h4 className="text-brand-500 font-black uppercase text-[11px] tracking-[0.5em] mb-12 flex items-center gap-3"><Zap className="w-4 h-4 fill-current" /> Sceller ma réussite par l'action</h4>
                           <p className="text-3xl font-serif mb-16 leading-relaxed italic text-slate-300 opacity-90">"{module.strategic_mantra}"</p>
                           <div className="mb-14">
-                            <label className="block text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Mon premier engagement concret :</label>
-                            <textarea value={commitment} onChange={e => setCommitment(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-white placeholder-slate-700 outline-none ring-4 ring-transparent focus:ring-brand-500/20 focus:bg-white/10 transition text-2xl font-medium" placeholder="Décrivez votre première étape concrète..." rows={4} />
+                            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Mon premier engagement concret :</label>
+                            <textarea 
+                              value={commitment} 
+                              onChange={e => setCommitment(e.target.value)} 
+                              className="w-full bg-black/20 border border-white/10 rounded-[2.5rem] p-10 text-white placeholder-slate-500 outline-none ring-4 ring-transparent focus:ring-brand-gold/40 focus:bg-black/40 transition text-lg font-medium" 
+                              placeholder="Décrivez votre première étape concrète ici..." 
+                              rows={4} 
+                            />
                           </div>
                           <div className="flex flex-col sm:flex-row gap-6">
                             <button onClick={handleCommit} disabled={isSaving || !commitment.trim()} className="flex-grow bg-brand-500 py-8 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-4">
