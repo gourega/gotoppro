@@ -136,24 +136,23 @@ const ModuleView: React.FC = () => {
 
     setIsAudioLoading(true);
     
-    // Optimization: we replace closing heading and paragraph tags by periods
-    // to ensure the TTS engine marks a significant pause between sections.
+    // Improved Cleaning: Avoid multiple dots that cause the TTS to say "point"
+    // Use standard sentence endings which create natural pauses
     const structuredText = module.lesson_content
-      .replace(/<\/h2>/g, '. . ') // Double point for longer pause after titles
-      .replace(/<\/h3>/g, '. . ')
+      .replace(/<\/h2>/g, '. ') 
+      .replace(/<\/h3>/g, '. ')
       .replace(/<\/p>/g, '. ')
       .replace(/<[^>]*>/g, '') // remove remaining tags
-      .replace(/\.+/g, '.') // clean potential multiple dots
       .replace(/\s+/g, ' ')
+      .replace(/\.\s*\./g, '.') // Clean potential double dots
       .trim();
     
-    const cleanText = `${module.title}. . . ${structuredText}`;
+    const cleanText = `${module.title}. ${structuredText}`;
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      // We take a bit more context for the cours (up to 3000 chars if possible)
-      const truncatedText = cleanText.length > 3000 ? cleanText.substring(0, 3000) + "..." : cleanText;
-      const prompt = `Lisez ce cours expert de coiffure avec un ton posé, inspirant et pédagogique. Marquez bien les pauses entre les titres et les paragraphes : ${truncatedText}`;
+      const truncatedText = cleanText.length > 3500 ? cleanText.substring(0, 3500) + "..." : cleanText;
+      const prompt = `Lisez ce cours expert de coiffure avec une élocution parfaite, un ton calme, posé et très pédagogique. Marquez bien la ponctuation pour laisser respirer l'auditeur : ${truncatedText}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -285,7 +284,7 @@ const ModuleView: React.FC = () => {
       <div className="max-w-3xl mx-auto px-6 py-20 pb-32">
         {activeTab === 'lesson' ? (
           <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="text-center mb-12">
+            <div className="text-center mb-20">
               <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-5 py-2 rounded-full uppercase tracking-[0.3em] inline-block mb-8">{module.topic}</span>
               <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-tight mb-8">{module.title}</h1>
               <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto mb-10">"{module.mini_course}"</p>
@@ -319,7 +318,12 @@ const ModuleView: React.FC = () => {
               </div>
             </div>
 
-            <div className="prose prose-slate prose-xl max-w-none prose-headings:font-serif prose-headings:font-bold prose-p:leading-relaxed prose-strong:text-brand-900 prose-li:text-slate-600">
+            {/* Improved Typography and Spacing */}
+            <div className="prose prose-slate prose-xl max-w-none 
+                prose-headings:font-serif prose-headings:font-bold prose-headings:text-slate-900 
+                prose-h2:mt-16 prose-h2:mb-8 
+                prose-p:leading-relaxed prose-p:mb-8 prose-p:text-slate-600
+                prose-strong:text-brand-900 prose-li:text-slate-600 prose-li:mb-4">
                <div dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
             </div>
             
