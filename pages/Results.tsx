@@ -54,7 +54,7 @@ const Results: React.FC = () => {
     if (negativeQuestions.length === 0) {
       perfect = true;
       setIsPerfectScore(true);
-      // Pour les profils parfaits, on sélectionne d'office les 4 piliers de la haute gestion
+      // Profil Elite : 4 modules essentiels pour la domination du marché
       const masteryIds = ["mod_tarification", "mod_social_media", "mod_management", "mod_tresorerie"];
       recommended = TRAINING_CATALOG.filter(m => masteryIds.includes(m.id));
       others = TRAINING_CATALOG.filter(m => !masteryIds.includes(m.id));
@@ -231,14 +231,14 @@ const Results: React.FC = () => {
                     <div className="h-1.5 w-20 bg-brand-500 rounded-full"></div>
                   </div>
                   
-                  <div className="text-slate-700 font-medium text-lg leading-relaxed whitespace-pre-line">
+                  <div className="text-slate-700 font-medium text-lg leading-relaxed whitespace-pre-line animate-in fade-in duration-1000">
                     {loadingAdvice ? (
                       <div className="flex flex-col items-center gap-4 py-10">
                         <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
                         <span className="text-slate-400 font-bold uppercase text-xs tracking-widest">Analyse de vos flux de revenus en cours...</span>
                       </div>
                     ) : (
-                      <div className="animate-in fade-in duration-1000">
+                      <div className="prose prose-slate max-w-none">
                         {aiAdvice || "Préparez-vous à une transformation radicale de votre modèle d'affaires."}
                       </div>
                     )}
@@ -247,8 +247,8 @@ const Results: React.FC = () => {
                   {!loadingAdvice && (
                     <div className="space-y-6 pt-8 border-t border-slate-50">
                       <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Progression de votre offre Pack</span>
-                        <span className="text-brand-600 font-black">RÉDUCTION ACTUELLE: -{pricingData.discount}%</span>
+                        <span>Évolution de votre Pack Formation</span>
+                        <span className="text-brand-600 font-black">PALIER ACTUEL: -{pricingData.discount}%</span>
                       </div>
                       <div className="h-5 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
                         <div 
@@ -265,7 +265,7 @@ const Results: React.FC = () => {
                       {pricingData.remainingForNext > 0 && (
                         <div className="flex items-center gap-3 text-brand-700 font-black text-xs bg-brand-50 p-5 rounded-3xl border border-brand-100 animate-pulse">
                           <Zap className="w-5 h-5 fill-brand-500 text-brand-500" />
-                          <span>Opportunité : Ajoutez {pricingData.remainingForNext} module(s) pour débloquer le palier -{pricingData.nextTierPercent}% !</span>
+                          <span>Opportunité : Ajoutez {pricingData.remainingForNext} module(s) pour économiser -{pricingData.nextTierPercent}% sur l'ensemble !</span>
                         </div>
                       )}
                     </div>
@@ -285,7 +285,7 @@ const Results: React.FC = () => {
                     {isPerfectScore ? "Vos Modules de Maîtrise Elite" : "Vos Recommandations Immédiates"}
                   </h2>
                   <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                    {isPerfectScore ? "Verrouillez votre position de leader" : "Corrigez vos failles pour stopper l'hémorragie"}
+                    {isPerfectScore ? "Sécurisez votre position de n°1" : "Corrigez vos failles pour maximiser vos profits"}
                   </p>
                 </div>
               </div>
@@ -323,7 +323,7 @@ const Results: React.FC = () => {
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-6 h-6 text-brand-600" />
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Plan d'action</h3>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Plan de Formation</h3>
                 </div>
                 <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
                   {cart.length}
@@ -396,7 +396,7 @@ const Results: React.FC = () => {
 
                 <div className="flex items-center justify-center gap-3 pt-2 opacity-50">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Validation via Wave Côte d'Ivoire</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Paiement sécurisé via Wave</span>
                 </div>
               </div>
             </div>
@@ -415,7 +415,7 @@ const Results: React.FC = () => {
                     <Smartphone className="w-8 h-8" />
                   </div>
                   <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
-                  <p className="text-slate-500 font-medium text-sm">Votre numéro est votre clé d'accès.</p>
+                  <p className="text-slate-500 font-medium text-sm">Votre numéro est votre identifiant d'accès.</p>
                 </div>
 
                 {dbError && (
@@ -443,7 +443,7 @@ const Results: React.FC = () => {
                     disabled={loading}
                     className="w-full py-6 bg-brand-600 text-white font-black rounded-3xl hover:bg-brand-700 shadow-xl shadow-brand-100 text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-3"
                   >
-                    {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Étape suivante"}
+                    {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Générer mon accès"}
                   </button>
                   <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour au diagnostic</button>
                 </div>
@@ -473,8 +473,7 @@ const Results: React.FC = () => {
                 <div className="mb-8 p-4 bg-brand-50 rounded-2xl flex items-start gap-3 text-left">
                   <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-brand-900 font-medium leading-relaxed">
-                    Votre paiement sera vérifié par Coach Kita. <br/>
-                    <b>Délai : 15 min max.</b>
+                    Votre accès sera activé par Coach Kita sous 15 minutes dès réception du transfert.
                   </p>
                 </div>
                 

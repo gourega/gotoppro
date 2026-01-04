@@ -62,9 +62,9 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
       
       Structure AIDA à respecter :
       - ATTENTION: Frappe fort. Félicite-le mais préviens-le : "Le danger commence quand on croit avoir tout réussi".
-      - INTÉRÊT: Explique que le marché de la beauté est impitoyable. Ce qui marche aujourd'hui (ses 16 points validés) sera la norme de demain. Il doit garder son avance.
-      - DÉSIR: Peins la vision du gérant-investisseur. Celui qui ne travaille plus "dans" son salon mais "sur" son salon. Parle de domination de marché, de prestige et de sérénité absolue.
-      - ACTION: Incite-le à valider les 4 modules de Maîtrise Elite (Tarification avancée, Social Media, Management & Trésorerie) pour verrouiller sa position de leader.
+      - INTÉRÊT: Explique que le marché de la beauté est impitoyable. Ce qui marche aujourd'hui (ses 16 points validés) sera la norme de demain. Il doit garder son avance technologique et managériale.
+      - DÉSIR: Peins la vision du gérant-investisseur. Celui qui ne travaille plus "dans" son salon mais "sur" son salon. Parle de domination de marché, de prestige et de liberté financière totale.
+      - ACTION: Incite-le à valider les 4 modules de Maîtrise Elite (Tarification avancée, Social Media, Management & Trésorerie) pour verrouiller sa position de leader absolu.
       
       Ton: Prestigieux, inspirant, exigeant. Style "High-End Coaching".
     `;
@@ -72,14 +72,14 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
     const pointsStr = negativePoints.join(", ");
     prompt = `
       Rôle: Coach Kita, le mentor qui transforme les salons en mines d'or.
-      Contexte: Le gérant a échoué sur les points suivants : ${pointsStr}.
+      Contexte: Le gérant a des lacunes sur : ${pointsStr}.
       Tâche: Rédige un audit percutant (env. 250 mots) en suivant la structure AIDA.
       
       Structure AIDA à respecter :
-      - ATTENTION: Accroche choc. "Votre talent mérite mieux que ces fuites de revenus". Ton salon est une machine de guerre qui tourne avec un frein à main serré.
-      - INTÉRÊT: Analyse chirurgicale. Explique comment l'absence de maîtrise sur ${pointsStr} crée une hémorragie invisible de cash-flow et fatigue ses équipes.
-      - DÉSIR: Le futur radieux. Imagine son agenda rempli 3 semaines à l'avance, une équipe autonome qui vend des produits comme des experts, et lui, dégageant enfin un vrai salaire de gérant.
-      - ACTION: Appel pressant. Ne pas choisir ces modules, c'est choisir de perdre de l'argent demain. "Sélectionnez vos modules prioritaires ci-dessous et activons votre croissance."
+      - ATTENTION: Accroche choc. "Votre talent mérite mieux que ces fuites de revenus invisibles". Votre salon tourne avec un frein à main serré.
+      - INTÉRÊT: Analyse chirurgicale. Explique comment l'absence de maîtrise sur ${pointsStr} crée une hémorragie de cash-flow et épuise vos équipes inutilement.
+      - DÉSIR: Le futur radieux. Imaginez votre agenda rempli 3 semaines à l'avance, une équipe autonome qui vend des soins comme des experts, et vous, dégageant enfin le salaire que vous méritez.
+      - ACTION: Appel pressant. Ne pas agir, c'est choisir de stagner pendant que la concurrence avance. "Sélectionnez vos modules prioritaires et activons votre croissance dès aujourd'hui."
       
       Ton: Direct, percutant, terrain, "Real Talk" business.
     `;

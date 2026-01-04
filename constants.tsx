@@ -1,7 +1,8 @@
+
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
-// Identité visuelle de Coach Kita
-export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&w=400&q=80";
+// Identité visuelle de Coach Kita - Nouvelle image Style "Executive Mentor"
+export const COACH_KITA_AVATAR = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
 
 // Numéro réservé pour l'accès Super Admin (Format international)
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
@@ -276,7 +277,7 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 7, text: "Réalisez-vous des entretiens individuels de motivation avec vos employés chaque mois ?", category: "Management", linkedModuleId: "mod_management" },
   { id: 8, text: "Connaissez-vous précisément votre coût à la minute pour fixer vos tarifs ?", category: "Gestion", linkedModuleId: "mod_tarification" },
   { id: 9, text: "Proposez-vous systématiquement un service additionnel (soin, massage) à chaque client ?", category: "Vente", linkedModuleId: "mod_upselling" },
-  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15% de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" },
+  { id: 10, text: "Votre taux de revente de produits représente-t-elle plus de 15% de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" },
   { id: 11, text: "L'organisation de vos postes de travail est-elle optimisée pour éviter les pas inutiles ?", category: "Organisation", linkedModuleId: "mod_ergonomie" },
   { id: 12, text: "L'équipe porte-t-elle une tenue professionnelle harmonieuse reflétant l'image du salon ?", category: "Image", linkedModuleId: "mod_image_pro" },
   { id: 13, text: "Suivez-vous quotidiennement vos entrées/sorties d'argent sur un tableau de bord ?", category: "Gestion", linkedModuleId: "mod_tresorerie" },
