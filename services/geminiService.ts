@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Fix: Defining the quiz schema with explicit property ordering for consistent JSON generation
+// Schema for the quiz remains consistent
 const QUIZ_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -26,31 +26,20 @@ const QUIZ_SCHEMA = {
   propertyOrdering: ["quiz_questions", "exercises"]
 };
 
-/**
- * Generates dynamic quiz content based on salon training topics using the Gemini API.
- */
 export const generateDynamicQuiz = async (topic: string, moduleTitle: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   const prompt = `
-    Rôle: Coach Kita (Mentor bienveillant expert en coiffure/beauté, autoritaire mais encourageant).
-    Sujet: "${topic}" (Module: ${moduleTitle}).
-    Génère 3 nouvelles questions de quiz basées sur des scénarios réels de salon et 2 exercices pratiques.
-    Réponds uniquement en JSON valide selon le schéma fourni.
+    Rôle: Coach Kita. Sujet: "${topic}" (${moduleTitle}).
+    Génère 3 questions de quiz et 2 exercices pratiques.
+    Réponds en JSON uniquement.
   `;
-
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: QUIZ_SCHEMA
-      }
+      config: { responseMimeType: "application/json", responseSchema: QUIZ_SCHEMA }
     });
-    
-    const jsonStr = response.text?.trim();
-    return JSON.parse(jsonStr || '{}');
+    return JSON.parse(response.text?.trim() || '{}');
   } catch (error) {
     console.error("Gemini Error:", error);
     return null;
@@ -58,7 +47,7 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
 };
 
 /**
- * Generates a strategic personalized summary based on diagnostic results.
+ * Generates a high-converting strategic summary using AIDA copywriting model.
  */
 export const generateStrategicAdvice = async (negativePoints: string[], isPerfectScore: boolean = false) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -67,25 +56,32 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
   
   if (isPerfectScore) {
     prompt = `
-      Rôle: Coach Kita, mentor de luxe pour gérants de salons de coiffure.
-      Contexte: Le gérant a répondu "OUI" à tous les points du diagnostic. C'est un profil performant.
-      Tâche: Rédige une analyse (max 180 mots) qui le félicite mais le met au défi. 
-      Argumentaire: "Le plus dur n'est pas de monter, c'est de rester au sommet". Explique que pour passer de "bon" à "légendaire", il doit s'attaquer à la haute gestion et au marketing d'influence.
-      Incite-le à prendre les modules de perfectionnement pour sécuriser son empire.
-      Ton: Très prestigieux, visionnaire, inspirant. Langage élégant.
+      Rôle: Coach Kita, le mentor visionnaire de Go'Top Pro.
+      Contexte: Le gérant a un score parfait de 16/16. C'est un profil "Elite".
+      Tâche: Rédige un audit stratégique magistral (env. 250 mots) en suivant la structure AIDA.
+      
+      Structure AIDA à respecter :
+      - ATTENTION: Frappe fort. Félicite-le mais préviens-le : "Le danger commence quand on croit avoir tout réussi".
+      - INTÉRÊT: Explique que le marché de la beauté est impitoyable. Ce qui marche aujourd'hui (ses 16 points validés) sera la norme de demain. Il doit garder son avance.
+      - DÉSIR: Peins la vision du gérant-investisseur. Celui qui ne travaille plus "dans" son salon mais "sur" son salon. Parle de domination de marché, de prestige et de sérénité absolue.
+      - ACTION: Incite-le à valider les 4 modules de Maîtrise Elite (Tarification avancée, Social Media, Management & Trésorerie) pour verrouiller sa position de leader.
+      
+      Ton: Prestigieux, inspirant, exigeant. Style "High-End Coaching".
     `;
   } else {
     const pointsStr = negativePoints.join(", ");
     prompt = `
-      Rôle: Coach Kita, mentor expert en business de la beauté.
-      Contexte: Un gérant a des lacunes sur: ${pointsStr}.
-      Tâche: Rédige une analyse stratégique (max 180 mots) extrêmement persuasive.
-      Structure:
-      1. Accroche choc: "Votre salon est une mine d'or, mais vous laissez l'argent s'échapper".
-      2. Analyse: Pourquoi ces points précis (${pointsStr}) bloquent sa croissance aujourd'hui. 
-      3. Désir: Peins une image du succès s'il suit ce parcours (agenda plein, équipe autonome, sérénité financière).
-      4. Appel à l'action: Encourage-le à ne pas hésiter, car chaque jour sans formation est un manque à gagner.
-      Ton: Dynamique, "pro", direct, avec l'élégance d'un mentor qui veut la réussite de son poulain.
+      Rôle: Coach Kita, le mentor qui transforme les salons en mines d'or.
+      Contexte: Le gérant a échoué sur les points suivants : ${pointsStr}.
+      Tâche: Rédige un audit percutant (env. 250 mots) en suivant la structure AIDA.
+      
+      Structure AIDA à respecter :
+      - ATTENTION: Accroche choc. "Votre talent mérite mieux que ces fuites de revenus". Ton salon est une machine de guerre qui tourne avec un frein à main serré.
+      - INTÉRÊT: Analyse chirurgicale. Explique comment l'absence de maîtrise sur ${pointsStr} crée une hémorragie invisible de cash-flow et fatigue ses équipes.
+      - DÉSIR: Le futur radieux. Imagine son agenda rempli 3 semaines à l'avance, une équipe autonome qui vend des produits comme des experts, et lui, dégageant enfin un vrai salaire de gérant.
+      - ACTION: Appel pressant. Ne pas choisir ces modules, c'est choisir de perdre de l'argent demain. "Sélectionnez vos modules prioritaires ci-dessous et activons votre croissance."
+      
+      Ton: Direct, percutant, terrain, "Real Talk" business.
     `;
   }
 
@@ -94,8 +90,8 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        temperature: 0.85,
-        thinkingConfig: { thinkingBudget: 0 }
+        temperature: 0.9,
+        topP: 0.95
       }
     });
     return response.text;
@@ -105,9 +101,6 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
   }
 };
 
-/**
- * Chat instance for interactive coaching.
- */
 export const createCoachChat = () => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return ai.chats.create({

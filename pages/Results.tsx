@@ -54,6 +54,7 @@ const Results: React.FC = () => {
     if (negativeQuestions.length === 0) {
       perfect = true;
       setIsPerfectScore(true);
+      // Pour les profils parfaits, on sélectionne d'office les 4 piliers de la haute gestion
       const masteryIds = ["mod_tarification", "mod_social_media", "mod_management", "mod_tresorerie"];
       recommended = TRAINING_CATALOG.filter(m => masteryIds.includes(m.id));
       others = TRAINING_CATALOG.filter(m => !masteryIds.includes(m.id));
@@ -141,7 +142,6 @@ const Results: React.FC = () => {
     try {
       if (!supabase) throw new Error("Base de données non configurée.");
 
-      // 1. Vérifier si l'utilisateur existe
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -153,7 +153,6 @@ const Results: React.FC = () => {
       const purchasedModuleIds = cart.map(m => m.id);
       
       if (!existingProfile) {
-        // 2. Création du profil Prospect
         const newProfile = {
           uid: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
           phoneNumber: formattedPhone,
@@ -170,7 +169,6 @@ const Results: React.FC = () => {
         const { error: insError } = await supabase.from('profiles').insert(newProfile);
         if (insError) throw insError;
       } else {
-        // 3. Mise à jour des modules désirés pour un profil existant
         const updatedPending = [...new Set([...(existingProfile.pendingModuleIds || []), ...purchasedModuleIds])];
         const { error: updError } = await supabase
           .from('profiles')
@@ -210,60 +208,68 @@ const Results: React.FC = () => {
           
           <div className="lg:col-span-8 space-y-16">
             
-            {/* L'Analyse de Coach Kita */}
-            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
+            {/* L'Analyse de Coach Kita - VERSION PERSUASIVE LONGUE */}
+            <section className="bg-white rounded-[3rem] border border-slate-100 p-10 md:p-14 shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-                {isPerfectScore ? <Crown className="w-48 h-48" /> : <TrendingUp className="w-48 h-48" />}
+                {isPerfectScore ? <Crown className="w-64 h-64" /> : <TrendingUp className="w-64 h-64" />}
               </div>
               
-              <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">
+              <div className="flex flex-col md:flex-row gap-12 items-start relative z-10">
                 <div className="shrink-0 mx-auto">
-                  <div className="h-28 w-28 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500 ring-1 ring-slate-100">
+                  <div className="h-32 w-32 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500 ring-1 ring-slate-100">
                     <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="mt-6 text-center">
+                    <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Coach Kita</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Mentor Business</p>
                   </div>
                 </div>
                 
-                <div className="flex-grow space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 mb-2 font-serif italic">L'audit de Coach Kita</h2>
-                    <div className="h-1.5 w-16 bg-brand-500 rounded-full"></div>
+                <div className="flex-grow space-y-8">
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-black text-slate-900 font-serif italic tracking-tight">L'audit stratégique</h2>
+                    <div className="h-1.5 w-20 bg-brand-500 rounded-full"></div>
                   </div>
                   
-                  <div className="text-slate-700 font-medium text-lg leading-relaxed">
+                  <div className="text-slate-700 font-medium text-lg leading-relaxed whitespace-pre-line">
                     {loadingAdvice ? (
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="w-5 h-5 animate-spin text-brand-500" />
-                        <span>Analyse de votre potentiel en cours...</span>
+                      <div className="flex flex-col items-center gap-4 py-10">
+                        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+                        <span className="text-slate-400 font-bold uppercase text-xs tracking-widest">Analyse de vos flux de revenus en cours...</span>
                       </div>
                     ) : (
-                      aiAdvice || "Préparez-vous à une transformation radicale."
+                      <div className="animate-in fade-in duration-1000">
+                        {aiAdvice || "Préparez-vous à une transformation radicale de votre modèle d'affaires."}
+                      </div>
                     )}
                   </div>
 
-                  <div className="space-y-4 pt-4 border-t border-slate-50">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      <span>Réduction progressive</span>
-                      <span className="text-brand-600 font-black">PALIER ACTUEL: -{pricingData.discount}%</span>
-                    </div>
-                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
-                      <div 
-                        className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-1000 ease-out"
-                        style={{ width: `${pricingData.progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-[9px] font-bold text-slate-400">
-                      <span>0%</span>
-                      <span>-20% (5 modules)</span>
-                      <span>-30% (9 modules)</span>
-                      <span>-50% (13 modules)</span>
-                    </div>
-                    {pricingData.remainingForNext > 0 && (
-                      <div className="flex items-center gap-2 text-brand-700 font-black text-xs bg-brand-50 p-4 rounded-2xl border border-brand-100 animate-in fade-in duration-500">
-                        <Star className="w-4 h-4 fill-brand-500 text-brand-500" />
-                        Plus que {pricingData.remainingForNext} module(s) pour économiser -{pricingData.nextTierPercent}% !
+                  {!loadingAdvice && (
+                    <div className="space-y-6 pt-8 border-t border-slate-50">
+                      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <span>Progression de votre offre Pack</span>
+                        <span className="text-brand-600 font-black">RÉDUCTION ACTUELLE: -{pricingData.discount}%</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="h-5 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
+                        <div 
+                          className="h-full bg-gradient-to-r from-brand-500 via-brand-400 to-emerald-500 transition-all duration-1000 ease-out"
+                          style={{ width: `${pricingData.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-[9px] font-bold text-slate-400">
+                        <span>Starter</span>
+                        <span>Expert (-20%)</span>
+                        <span>Premium (-30%)</span>
+                        <span>Master (-50%)</span>
+                      </div>
+                      {pricingData.remainingForNext > 0 && (
+                        <div className="flex items-center gap-3 text-brand-700 font-black text-xs bg-brand-50 p-5 rounded-3xl border border-brand-100 animate-pulse">
+                          <Zap className="w-5 h-5 fill-brand-500 text-brand-500" />
+                          <span>Opportunité : Ajoutez {pricingData.remainingForNext} module(s) pour débloquer le palier -{pricingData.nextTierPercent}% !</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -271,15 +277,15 @@ const Results: React.FC = () => {
             {/* Priorités Stratégiques */}
             <section className="space-y-8">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                  {isPerfectScore ? <Crown className="w-5 h-5" /> : <Zap className="w-5 h-5 fill-current" />}
+                <div className="h-12 w-12 bg-brand-500 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                  {isPerfectScore ? <Crown className="w-6 h-6" /> : <Zap className="w-6 h-6 fill-current" />}
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    {isPerfectScore ? "Vos Modules de Maîtrise Elite" : "Vos Priorités Stratégiques"}
+                    {isPerfectScore ? "Vos Modules de Maîtrise Elite" : "Vos Recommandations Immédiates"}
                   </h2>
                   <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                    {isPerfectScore ? "Sélectionnés pour sécuriser votre position de leader" : "Recommandé par l'IA pour corriger vos points faibles"}
+                    {isPerfectScore ? "Verrouillez votre position de leader" : "Corrigez vos failles pour stopper l'hémorragie"}
                   </p>
                 </div>
               </div>
@@ -294,12 +300,12 @@ const Results: React.FC = () => {
             {/* Catalogue Général */}
             <section className="space-y-8">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-                  <ShoppingBag className="w-5 h-5" />
+                <div className="h-12 w-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                  <ShoppingBag className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Catalogue de Perfectionnement</h2>
-                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Modules complémentaires pour une expertise complète</p>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Parcours de Perfectionnement</h2>
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Complétez votre expertise globale</p>
                 </div>
               </div>
               
@@ -311,13 +317,13 @@ const Results: React.FC = () => {
             </section>
           </div>
 
-          {/* COLONNE DROITE */}
+          {/* COLONNE DROITE - PANIER RÉSUMÉ */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-6 h-6 text-brand-600" />
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Votre Panier</h3>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Plan d'action</h3>
                 </div>
                 <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
                   {cart.length}
@@ -327,7 +333,7 @@ const Results: React.FC = () => {
               <div className="p-6 max-h-[350px] overflow-y-auto custom-scrollbar flex-grow bg-slate-50/30">
                 {cart.length === 0 ? (
                   <div className="py-20 text-center space-y-4">
-                    <p className="text-slate-300 font-bold italic text-sm">Panier vide</p>
+                    <p className="text-slate-300 font-bold italic text-sm">Votre panier est vide</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
