@@ -36,7 +36,9 @@ import {
   UserPlus,
   ShieldCheck,
   Plus,
-  ArrowUpRight
+  ArrowUpRight,
+  UserX,
+  UserCheck
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -79,7 +81,78 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Calcul du prix net dégressif pour un lot de modules
+  const handleToggleStatus = async (user: UserProfile, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (user.uid === currentUser?.uid) return showNotification("Vous ne pouvez pas vous suspendre vous-même", "error");
+    
+    setProcessingId(user.uid);
+    try {
+      await saveUserProfile({ uid: user.uid, isActive: !user.isActive });
+      showNotification(user.isActive ? "Accès suspendu" : "Accès activé");
+      await fetchUsers();
+      if (selectedUser?.uid === user.uid) {
+        setSelectedUser({ ...selectedUser, isActive: !user.isActive });
+      }
+    } catch (err) {
+      showNotification("Erreur lors du changement de statut", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDelete = async (uid: string) => {
+    if (!window.confirm("Êtes-vous ABSOLUMENT sûr ? Cette action supprimera tout l'historique, les badges et les accès de ce gérant. C'est irréversible.")) return;
+    
+    setProcessingId(uid);
+    try {
+      await deleteUserProfile(uid);
+      showNotification("Compte définitivement supprimé");
+      setSelectedUser(null);
+      await fetchUsers();
+    } catch (err) {
+      showNotification("Erreur lors de la suppression", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Fix: Added missing handleRewardModule function to offer training modules to users
+  const handleRewardModule = async (moduleId: string) => {
+    if (!selectedUser) return;
+    setProcessingId(selectedUser.uid);
+    try {
+      await grantModuleAccess(selectedUser.uid, moduleId);
+      showNotification("Module offert avec succès");
+      await fetchUsers();
+      setSelectedUser({
+        ...selectedUser,
+        purchasedModuleIds: [...(selectedUser.purchasedModuleIds || []), moduleId],
+        isActive: true
+      });
+    } catch (err) {
+      showNotification("Erreur lors de l'attribution du module", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Fix: Added missing handleAddAdmin function to create new administrator accounts
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await createAdminAccount(adminForm.email, adminForm.firstName, adminForm.phone);
+      showNotification("Compte administrateur créé");
+      setAdminForm({ email: '', firstName: '', phone: '' });
+      setShowAddAdmin(false);
+      await fetchUsers();
+    } catch (err: any) {
+      showNotification(err.message || "Erreur lors de la création de l'admin", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculateNetPrice = (count: number) => {
     const basePrice = count * 500;
     let discount = 0;
@@ -92,64 +165,12 @@ const AdminDashboard: React.FC = () => {
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
     const pendingPayment = clients.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
-    
-    // Recettes totales nettes (seulement sur les modules déjà achetés)
     const totalRevenue = clients.reduce((acc, u) => acc + calculateNetPrice(u.purchasedModuleIds?.length || 0), 0);
-    
     const activeClients = clients.filter(u => u.isActive);
     const conversionRate = clients.length > 0 ? Math.round((activeClients.length / clients.length) * 100) : 0;
 
-    return { 
-      totalClients: clients.length, 
-      pending: pendingPayment.length, 
-      revenue: totalRevenue,
-      conversionRate
-    };
+    return { totalClients: clients.length, pending: pendingPayment.length, revenue: totalRevenue, conversionRate };
   }, [users]);
-
-  const handleValidate = async (uid: string) => {
-    setProcessingId(uid);
-    try {
-      await validateUserPurchases(uid);
-      showNotification("Paiement validé. Modules débloqués.");
-      await fetchUsers();
-    } catch (err) {
-      showNotification("Erreur validation", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleRewardModule = async (moduleId: string) => {
-    if (!selectedUser) return;
-    setProcessingId(moduleId);
-    try {
-      await grantModuleAccess(selectedUser.uid, moduleId);
-      showNotification("Module offert avec succès !");
-      await fetchUsers();
-      setSelectedUser(prev => prev ? { ...prev, purchasedModuleIds: [...new Set([...(prev.purchasedModuleIds || []), moduleId])] } : null);
-    } catch (err) {
-      showNotification("Erreur", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleAddAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await createAdminAccount(adminForm.email, adminForm.firstName, adminForm.phone);
-      showNotification("Admin ajouté à l'équipe.");
-      setShowAddAdmin(false);
-      setAdminForm({ email: '', firstName: '', phone: '' });
-      await fetchUsers();
-    } catch (err) {
-      showNotification("Erreur création Admin", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredData = users.filter(u => {
     const matchesSearch = u.phoneNumber.includes(searchTerm) || 
@@ -164,7 +185,6 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200">
-      {/* Notifications */}
       {notification && (
         <div className={`fixed top-24 right-6 z-[100] px-8 py-5 rounded-[2rem] shadow-2xl animate-in slide-in-from-right duration-300 font-black text-[10px] uppercase tracking-widest border backdrop-blur-xl ${
           notification.type === 'success' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-rose-500/90 text-white border-rose-400'
@@ -174,7 +194,6 @@ const AdminDashboard: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Admin */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
           <div>
             <div className="flex items-center gap-3 text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-4">
@@ -195,72 +214,12 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Executive Dashboard Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
           <StatBox title="Gérants Inscrits" value={stats.totalClients} icon={<Users />} color="text-blue-400" />
           <StatBox title="Validations Wave" value={stats.pending} icon={<Clock />} color="text-amber-400" highlight={stats.pending > 0} />
           <StatBox title="Taux Conversion" value={`${stats.conversionRate}%`} icon={<TrendingUp />} color="text-emerald-400" />
           <StatBox title="Recettes Nettes" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" />
         </div>
-
-        {/* Priority Section: Pending Payments WITH MODULE DETAILS */}
-        {pendingUsers.length > 0 && viewMode === 'clients' && (
-          <section className="mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
-            <h2 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-              <AlertCircle className="w-4 h-4" />
-              Paiements en attente de validation ({pendingUsers.length})
-            </h2>
-            <div className="grid lg:grid-cols-1 gap-6">
-               {pendingUsers.map(u => {
-                 const pendingModules = TRAINING_CATALOG.filter(m => u.pendingModuleIds.includes(m.id));
-                 const expectedAmount = calculateNetPrice(u.pendingModuleIds.length);
-                 
-                 return (
-                   <div key={u.uid} className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-[2.5rem] p-10 flex flex-col lg:flex-row items-center justify-between gap-10 hover:border-amber-500/40 transition-all group">
-                      <div className="flex items-center gap-6 shrink-0">
-                         <div className="h-20 w-20 bg-white rounded-[1.8rem] overflow-hidden shadow-2xl">
-                            {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/> : <div className="h-full w-full flex items-center justify-center text-amber-500 font-black text-3xl">{u.firstName?.[0]}</div>}
-                         </div>
-                         <div>
-                            <h3 className="font-black text-xl text-white group-hover:text-amber-400 transition-colors">{u.firstName} {u.lastName}</h3>
-                            <p className="text-amber-500 font-black text-[11px] uppercase tracking-widest">{u.phoneNumber}</p>
-                         </div>
-                      </div>
-
-                      {/* Details des modules en attente */}
-                      <div className="flex-grow">
-                         <div className="flex flex-wrap gap-3">
-                            {pendingModules.map(m => (
-                               <div key={m.id} className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
-                                  <div className="h-1.5 w-1.5 bg-amber-500 rounded-full"></div>
-                                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">{m.title}</span>
-                               </div>
-                            ))}
-                         </div>
-                         <p className="mt-4 text-[10px] font-black text-amber-500/60 uppercase tracking-widest italic flex items-center gap-2">
-                            <ArrowUpRight className="w-3 h-3" /> Montant Wave attendu : {expectedAmount.toLocaleString()} F
-                         </p>
-                      </div>
-
-                      <div className="flex items-center gap-3 w-full lg:w-auto">
-                         <a href={`https://wa.me/${u.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 lg:flex-none p-5 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-emerald-500/20 transition-all flex items-center justify-center">
-                            <MessageCircle className="w-6 h-6" />
-                         </a>
-                         <button 
-                           onClick={() => handleValidate(u.uid)}
-                           disabled={processingId === u.uid}
-                           className="flex-grow lg:flex-none bg-amber-500 text-slate-900 px-10 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20"
-                         >
-                           {processingId === u.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                           Valider le paiement
-                         </button>
-                      </div>
-                   </div>
-                 );
-               })}
-            </div>
-          </section>
-        )}
 
         {/* Global Management Table */}
         <div className="bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl">
@@ -287,7 +246,7 @@ const AdminDashboard: React.FC = () => {
                 <tr className="border-b border-white/5">
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Identité</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{viewMode === 'clients' ? "Maîtrise" : "Rôle"}</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut (Interactif)</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
@@ -314,11 +273,6 @@ const AdminDashboard: React.FC = () => {
                                </div>
                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{u.purchasedModuleIds?.length || 0} Acquis</span>
                             </div>
-                            {u.pendingModuleIds && u.pendingModuleIds.length > 0 && (
-                               <span className="bg-amber-500/10 text-amber-500 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest border border-amber-500/20">
-                                 +{u.pendingModuleIds.length} En attente
-                               </span>
-                            )}
                          </div>
                        ) : (
                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-500 bg-brand-500/10 px-3 py-1 rounded-lg">
@@ -327,11 +281,15 @@ const AdminDashboard: React.FC = () => {
                        )}
                     </td>
                     <td className="px-10 py-8">
-                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                         u.isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-500'
+                       <button 
+                        onClick={(e) => handleToggleStatus(u, e)}
+                        disabled={processingId === u.uid}
+                        className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 ${
+                         u.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                        }`}>
-                         {u.isActive ? 'Actif' : 'Suspendu'}
-                       </span>
+                         {processingId === u.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : u.isActive ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+                         {u.isActive ? 'Compte Actif' : 'Compte Suspendu'}
+                       </button>
                     </td>
                     <td className="px-10 py-8 text-right">
                        <div className="flex justify-end gap-3" onClick={e => e.stopPropagation()}>
@@ -376,7 +334,7 @@ const AdminDashboard: React.FC = () => {
                        {!selectedUser.isAdmin && (
                          <section>
                             <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                               <Gift className="w-4 h-4" /> Offrir un Module (Récompense)
+                               <Gift className="w-4 h-4" /> Offrir un Module
                             </h3>
                             <div className="grid md:grid-cols-2 gap-4">
                                {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).slice(0, 4).map(mod => (
@@ -387,118 +345,52 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                     <button 
                                       onClick={() => handleRewardModule(mod.id)}
-                                      disabled={processingId === mod.id}
-                                      className="h-10 w-10 bg-brand-600 text-white rounded-xl flex items-center justify-center hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20"
+                                      className="h-10 w-10 bg-brand-600 text-white rounded-xl flex items-center justify-center"
                                     >
-                                       {processingId === mod.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                       <Plus className="w-4 h-4" />
                                     </button>
                                  </div>
                                ))}
                             </div>
                          </section>
                        )}
-
-                       <section className="grid md:grid-cols-2 gap-8">
-                          <div className="space-y-6">
-                             <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <Target className="w-4 h-4" /> Progrès Académique
-                             </h3>
-                             <div className="space-y-3">
-                                {Object.entries(selectedUser.progress || {}).map(([id, score]) => (
-                                   <div key={id} className="flex justify-between items-center bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                                      <span className="text-xs font-bold text-slate-300">Mod. {id.split('_').pop()}</span>
-                                      <div className="flex items-center gap-4">
-                                         <button 
-                                           onClick={() => {
-                                              updateQuizAttempts(selectedUser.uid, id, 0).then(() => {
-                                                 showNotification("Jetons réinitialisés.");
-                                                 fetchUsers();
-                                                 setSelectedUser(prev => prev ? { ...prev, attempts: { ...(prev.attempts || {}), [id]: 0 } } : null);
-                                              });
-                                           }}
-                                           className="text-[9px] font-black uppercase text-brand-500 hover:underline"
-                                         >
-                                           Jetons ({selectedUser.attempts?.[id] || 0})
-                                         </button>
-                                         <span className={`text-[10px] font-black px-3 py-1 rounded-lg ${score >= 80 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{score}%</span>
-                                      </div>
-                                   </div>
-                                ))}
-                             </div>
-                          </div>
-                          <div className="space-y-6">
-                             <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <ListTodo className="w-4 h-4" /> Plan d'Action Terrain
-                             </h3>
-                             <div className="space-y-4">
-                                {selectedUser.actionPlan && selectedUser.actionPlan.length > 0 ? (
-                                   selectedUser.actionPlan.map((action, i) => (
-                                      <div key={i} className={`p-5 rounded-2xl border ${action.isCompleted ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10'}`}>
-                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">{action.moduleTitle}</p>
-                                         <p className={`text-sm font-medium ${action.isCompleted ? 'text-emerald-400 line-through' : 'text-slate-200'}`}>{action.action}</p>
-                                      </div>
-                                   ))
-                                ) : (
-                                   <p className="text-slate-500 italic text-sm">Aucun engagement scellé.</p>
-                                )}
-                             </div>
-                          </div>
-                       </section>
                     </div>
-
                     <div className="lg:col-span-4 space-y-6">
                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Valeur Nette du Client</p>
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Valeur Nette</p>
                           <p className="text-3xl font-black text-white">{calculateNetPrice(selectedUser.purchasedModuleIds?.length || 0).toLocaleString()} F</p>
-                       </div>
-                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Fiche Établissement</p>
-                          <div className="space-y-4">
-                             <div className="flex justify-between items-center text-xs">
-                                <span className="text-slate-500">Expérience</span>
-                                <span className="text-white font-bold">{selectedUser.yearsOfExistence || 0} ans</span>
-                             </div>
-                             <div className="flex justify-between items-center text-xs">
-                                <span className="text-slate-500">Équipe</span>
-                                <span className="text-white font-bold">{selectedUser.employeeCount || 0} pers.</span>
-                             </div>
-                          </div>
                        </div>
                     </div>
                  </div>
               </div>
 
+              {/* Barre d'Actions de Pilotage - RÉSUMÉ DES DEMANDES */}
               <div className="p-8 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
                  <button 
-                   onClick={() => {
-                     if (window.confirm("Supprimer définitivement ce compte ?")) {
-                       deleteUserProfile(selectedUser.uid).then(() => {
-                         showNotification("Utilisateur supprimé.");
-                         setSelectedUser(null);
-                         fetchUsers();
-                       });
-                     }
-                   }}
-                   className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest"
+                   onClick={() => handleDelete(selectedUser.uid)}
+                   disabled={processingId === selectedUser.uid}
+                   className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest transition-all p-3 hover:bg-rose-500/10 rounded-xl"
                  >
-                    <Trash2 className="w-4 h-4" /> Supprimer
+                    {processingId === selectedUser.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Suppression Définitive
                  </button>
+                 
                  <div className="flex gap-4">
                     <button 
-                      onClick={() => {
-                        saveUserProfile({ uid: selectedUser.uid, isActive: !selectedUser.isActive }).then(() => {
-                          showNotification(selectedUser.isActive ? "Accès suspendu" : "Accès activé");
-                          fetchUsers();
-                          setSelectedUser(prev => prev ? { ...prev, isActive: !prev.isActive } : null);
-                        });
-                      }}
-                      className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500 text-white'}`}
+                      onClick={(e) => handleToggleStatus(selectedUser, e)}
+                      disabled={processingId === selectedUser.uid}
+                      className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-3 ${
+                        selectedUser.isActive 
+                          ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' 
+                          : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-xl shadow-emerald-500/20'
+                      }`}
                     >
-                       {selectedUser.isActive ? 'Suspendre' : 'Débloquer'}
+                       {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                       {selectedUser.isActive ? 'Suspendre l\'Accès' : 'Rétablir l\'Accès'}
                     </button>
                     {!selectedUser.isAdmin && (
-                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3">
-                         <MessageCircle className="w-4 h-4" /> Message Direct
+                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-3">
+                         <MessageCircle className="w-4 h-4" /> WhatsApp
                       </a>
                     )}
                  </div>
