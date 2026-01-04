@@ -23,7 +23,8 @@ import {
   ArrowRight,
   Circle,
   BookOpen,
-  LayoutDashboard
+  LayoutDashboard,
+  AlertCircle
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -74,7 +75,7 @@ const Dashboard: React.FC = () => {
 
   const enrichedCatalog = TRAINING_CATALOG.map(m => {
     const isPurchased = user.purchasedModuleIds.includes(m.id);
-    const isPending = user.pendingModuleIds.includes(m.id);
+    const isPending = user.pendingModuleIds?.includes(m.id) || false;
     const score = user.progress?.[m.id];
     const attempts = user.attempts?.[m.id] || 0;
     const tokens = Math.max(0, 3 - attempts);
@@ -87,7 +88,7 @@ const Dashboard: React.FC = () => {
   });
 
   const myModules = enrichedCatalog.filter(m => m.isPurchased);
-  const pendingModules = enrichedCatalog.filter(m => m.isPending);
+  const pendingCount = user.pendingModuleIds?.length || 0;
   const suggestedModules = enrichedCatalog.filter(m => !m.isPurchased && !m.isPending).slice(0, 2);
   const completedModules = myModules.filter(m => m.status === ModuleStatus.COMPLETED);
   const progress = Math.round((completedModules.length / (myModules.length || 1)) * 100);
@@ -132,6 +133,30 @@ const Dashboard: React.FC = () => {
           {/* Main Content Area */}
           <div className="lg:col-span-8 space-y-12">
             
+            {/* 0. Pending Validation Notification (New) */}
+            {pendingCount > 0 && (
+              <section className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[2.5rem] p-8 border border-amber-200 shadow-xl shadow-amber-900/5 animate-in slide-in-from-top-4 duration-500 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-amber-900 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                  <Clock className="w-32 h-32" />
+                </div>
+                <div className="flex items-start gap-6 relative z-10">
+                  <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-lg shadow-amber-200/50 shrink-0">
+                    <Clock className="w-7 h-7 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-amber-900 uppercase tracking-widest mb-1 flex items-center gap-2">
+                      Validation en cours
+                      <span className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-md">{pendingCount}</span>
+                    </h3>
+                    <p className="text-amber-800/80 font-medium leading-relaxed">
+                      Coach Kita traite actuellement vos nouveaux accès. Vos {pendingCount} modules seront activés dès confirmation de votre paiement Wave. 
+                      <span className="block mt-2 font-black text-[10px] uppercase tracking-widest text-amber-600">Délai moyen constaté : 15 minutes.</span>
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* 1. Daily Discipline Bar */}
             <section className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-2xl shadow-slate-200/50 relative overflow-hidden group">
                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
