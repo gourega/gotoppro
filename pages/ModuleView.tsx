@@ -135,17 +135,25 @@ const ModuleView: React.FC = () => {
     }
 
     setIsAudioLoading(true);
-    const plainText = module.lesson_content
-      .replace(/<[^>]*>/g, ' ')
+    
+    // Optimization: we replace closing heading and paragraph tags by periods
+    // to ensure the TTS engine marks a significant pause between sections.
+    const structuredText = module.lesson_content
+      .replace(/<\/h2>/g, '. . ') // Double point for longer pause after titles
+      .replace(/<\/h3>/g, '. . ')
+      .replace(/<\/p>/g, '. ')
+      .replace(/<[^>]*>/g, '') // remove remaining tags
+      .replace(/\.+/g, '.') // clean potential multiple dots
       .replace(/\s+/g, ' ')
       .trim();
     
-    const cleanText = `${module.title}. ${plainText}`;
+    const cleanText = `${module.title}. . . ${structuredText}`;
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const truncatedText = cleanText.length > 1500 ? cleanText.substring(0, 1500) + "..." : cleanText;
-      const prompt = `Lisez cette leçon de coiffure avec un ton expert, calme et encourageant : ${truncatedText}`;
+      // We take a bit more context for the cours (up to 3000 chars if possible)
+      const truncatedText = cleanText.length > 3000 ? cleanText.substring(0, 3000) + "..." : cleanText;
+      const prompt = `Lisez ce cours expert de coiffure avec un ton posé, inspirant et pédagogique. Marquez bien les pauses entre les titres et les paragraphes : ${truncatedText}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
