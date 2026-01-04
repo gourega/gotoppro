@@ -1,17 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, HelpCircle } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showTroubleshoot, setShowTroubleshoot] = useState(false);
+
+  // Sécurité : Si l'utilisateur est détecté comme Admin par le contexte alors que la modale est ouverte et en train de ramer
+  useEffect(() => {
+    if (isAdminModalOpen && loading && authUser?.isAdmin) {
+      console.log("Watchdog: Admin détecté via AuthContext, fermeture forcée de la modale.");
+      setIsAdminModalOpen(false);
+      setLoading(false);
+      navigate('/admin');
+    }
+  }, [authUser, isAdminModalOpen, loading, navigate]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +39,6 @@ const Footer: React.FC = () => {
       return;
     }
 
-    // Création d'un contrôleur d'abandon pour éviter les attentes infinies
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      if (loading) {
-        setLoading(false);
-        setError("Le serveur met trop de temps à répondre. Vérifiez votre connexion.");
-      }
-    }, 12000); // 12 secondes max
-
     try {
       console.log("Tentative de connexion admin...");
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
@@ -44,28 +46,21 @@ const Footer: React.FC = () => {
         password: password.trim(),
       });
 
-      clearTimeout(timeoutId);
-
       if (loginError) {
         throw loginError;
       }
 
+      // Si la promesse répond tout de suite
       if (data?.user) {
-        console.log("Connexion réussie, redirection...");
+        console.log("Promesse résolue, redirection...");
         setIsAdminModalOpen(false);
-        // On attend un tout petit peu pour laisser le temps au AuthContext de se mettre à jour
-        setTimeout(() => {
-          navigate('/admin');
-          setLoading(false);
-        }, 500);
+        setLoading(false);
+        navigate('/admin');
       }
     } catch (err: any) {
-      clearTimeout(timeoutId);
       console.error("Erreur Auth Admin:", err);
       
-      if (err.name === 'AbortError') {
-        setError("Délai d'attente dépassé. Réessayez.");
-      } else if (err.message === "Email not confirmed") {
+      if (err.message === "Email not confirmed") {
         setError("Email non confirmé dans Supabase.");
         setShowTroubleshoot(true);
       } else if (err.message === "Invalid login credentials") {
@@ -156,6 +151,7 @@ const Footer: React.FC = () => {
               onClick={() => {
                 setIsAdminModalOpen(false);
                 setShowTroubleshoot(false);
+                setLoading(false);
               }}
               className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white transition"
             >

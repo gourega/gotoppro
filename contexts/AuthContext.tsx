@@ -63,7 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth State Change:", event);
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-        await handleUserSetup(session.user);
+        // Lancer le setup sans forcément "await" si on veut éviter de bloquer l'event loop
+        handleUserSetup(session.user);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setLoading(false);
@@ -74,58 +75,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
-    // Si on a déjà l'utilisateur en mémoire et qu'il correspond, on ne refait pas tout
-    if (user && user.uid === authUser.id) {
+    const uid = authUser.id;
+    const phone = authUser.phone || '';
+    const email = (authUser.email || '').toLowerCase();
+    const masterEmail = MASTER_ADMIN_EMAIL.toLowerCase();
+
+    // Vérification immédiate si c'est l'admin maître
+    const isMaster = email === masterEmail || phone === SUPER_ADMIN_PHONE_NUMBER;
+
+    if (isMaster) {
+      console.log("Master Admin détecté, accès prioritaire activé.");
+      // On définit un profil minimal immédiatement pour débloquer l'UI
+      const adminProfile: UserProfile = {
+        uid,
+        phoneNumber: phone,
+        email: email,
+        firstName: 'Super',
+        lastName: 'Admin',
+        establishmentName: "Go'Top Pro HQ",
+        role: 'SUPER_ADMIN',
+        isActive: true,
+        isAdmin: true,
+        badges: [],
+        purchasedModuleIds: [],
+        pendingModuleIds: [],
+        actionPlan: [],
+        createdAt: new Date().toISOString()
+      };
+      setUser(adminProfile);
       setLoading(false);
+      
+      // On tente quand même de synchroniser avec la DB en arrière-plan sans bloquer
+      getUserProfile(uid).then(async (dbProfile) => {
+        if (!dbProfile) {
+          await saveUserProfile(adminProfile).catch(e => console.warn("Background save failed:", e));
+        } else {
+          setUser(dbProfile);
+        }
+      });
       return;
     }
 
+    // Pour les autres utilisateurs, on garde la logique standard mais avec un timeout plus court
     setLoading(true);
-
     const setupTimeout = setTimeout(() => {
-      console.warn("User setup timeout reached");
+      console.warn("User setup timeout reached - Fallback to current state");
       setLoading(false);
-    }, 8000);
+    }, 5000);
 
     try {
-      const uid = authUser.id;
-      const phone = authUser.phone || '';
-      const email = authUser.email || '';
-
-      const isMaster = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || phone === SUPER_ADMIN_PHONE_NUMBER;
-      
       let profile = await getUserProfile(uid);
-
-      if (!profile || isMaster) {
+      if (!profile) {
         const newProfile: UserProfile = {
           uid,
           phoneNumber: phone,
           email: email,
-          firstName: profile?.firstName || (isMaster ? 'Super' : ''),
-          lastName: profile?.lastName || (isMaster ? 'Admin' : ''),
-          establishmentName: profile?.establishmentName || (isMaster ? "Go'Top Pro HQ" : ''),
-          role: isMaster ? 'SUPER_ADMIN' : (profile?.role || 'CLIENT'),
-          isActive: isMaster ? true : (profile?.isActive || false),
-          isAdmin: isMaster ? true : (profile?.isAdmin || false),
-          badges: profile?.badges || [],
-          purchasedModuleIds: profile?.purchasedModuleIds || [],
-          pendingModuleIds: profile?.pendingModuleIds || [],
-          actionPlan: profile?.actionPlan || [],
-          createdAt: profile?.createdAt || new Date().toISOString()
+          firstName: '',
+          lastName: '',
+          establishmentName: '',
+          role: 'CLIENT',
+          isActive: false,
+          isAdmin: false,
+          badges: [],
+          purchasedModuleIds: [],
+          pendingModuleIds: [],
+          actionPlan: [],
+          createdAt: new Date().toISOString()
         };
-        
-        try {
-          await saveUserProfile(newProfile);
-          profile = newProfile;
-        } catch (saveErr) {
-          console.warn("Profil non sauvegardé en base, utilisation mémoire:", saveErr);
-          profile = newProfile;
-        }
+        await saveUserProfile(newProfile);
+        profile = newProfile;
       }
-      
       setUser(profile);
     } catch (err) {
-      console.error("Erreur critique setup utilisateur:", err);
+      console.error("Erreur setup utilisateur:", err);
     } finally {
       clearTimeout(setupTimeout);
       setLoading(false);
