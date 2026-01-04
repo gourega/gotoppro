@@ -16,10 +16,9 @@ import {
   CheckCircle2, 
   Zap, 
   Loader2, 
-  Volume2, 
   Play, 
   Pause, 
-  Headphones 
+  Headphones
 } from 'lucide-react';
 
 // Helpers for Audio Processing
@@ -39,8 +38,7 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  // Use byteOffset and byteLength to safely access the underlying buffer
-  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
+  const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -69,8 +67,10 @@ const ModuleView: React.FC = () => {
   // Audio States
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [useNativeFallback, setUseNativeFallback] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const nativeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
@@ -86,18 +86,46 @@ const ModuleView: React.FC = () => {
 
   if (!module || !user) return null;
 
-  const handleStartQuiz = () => setQuizState('active');
-
   const stopAudio = () => {
+    // Stop Gemini Audio
     if (sourceNodeRef.current) {
-      try {
-        sourceNodeRef.current.stop();
-      } catch (e) {
-        // Already stopped or not started
-      }
+      try { sourceNodeRef.current.stop(); } catch (e) {}
       sourceNodeRef.current = null;
     }
+    // Stop Native Browser TTS
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsPlaying(false);
+  };
+
+  const playNativeFallback = (text: string) => {
+    if (!window.speechSynthesis) return;
+    
+    stopAudio();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.95; 
+    utterance.pitch = 1;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.includes('fr') && v.name.toLowerCase().includes('thomas')) 
+                        || voices.find(v => v.lang.includes('fr'));
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    utterance.onstart = () => {
+      setIsPlaying(true);
+      setIsAudioLoading(false);
+      setUseNativeFallback(true);
+    };
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => {
+      setIsPlaying(false);
+      setIsAudioLoading(false);
+    };
+
+    nativeUtteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
   };
 
   const handlePlayAudio = async () => {
@@ -107,23 +135,17 @@ const ModuleView: React.FC = () => {
     }
 
     setIsAudioLoading(true);
+    const plainText = module.lesson_content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const cleanText = `${module.title}. ${plainText}`;
+
     try {
-      if (!process.env.API_KEY) {
-        throw new Error("Clé API manquante dans l'environnement.");
-      }
-
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      // Nettoyage strict du texte pour la lecture
-      const plainText = module.lesson_content
-        .replace(/<[^>]*>/g, ' ') // Retire HTML
-        .replace(/\s+/g, ' ')     // Espace unique
-        .trim();
-
-      // On limite le texte pour éviter les erreurs de timeout (max ~1500 chars pour le TTS)
-      const truncatedText = plainText.length > 2000 ? plainText.substring(0, 2000) + "..." : plainText;
-      
-      const prompt = `Lisez cette leçon avec un ton expert, calme et encourageant : ${module.title}. Contenu : ${truncatedText}`;
+      const truncatedText = cleanText.length > 1500 ? cleanText.substring(0, 1500) + "..." : cleanText;
+      const prompt = `Lisez cette leçon de coiffure avec un ton expert, calme et encourageant : ${truncatedText}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -131,9 +153,7 @@ const ModuleView: React.FC = () => {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
-            },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
           },
           thinkingConfig: { thinkingBudget: 0 }
         },
@@ -145,19 +165,11 @@ const ModuleView: React.FC = () => {
         if (!audioContextRef.current) {
           audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         }
-        
-        // Re-activation indispensable pour les navigateurs modernes
         if (audioContextRef.current.state === 'suspended') {
           await audioContextRef.current.resume();
         }
         
-        const audioBuffer = await decodeAudioData(
-          decodeBase64(base64Audio),
-          audioContextRef.current,
-          24000,
-          1
-        );
-
+        const audioBuffer = await decodeAudioData(decodeBase64(base64Audio), audioContextRef.current, 24000, 1);
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
@@ -166,15 +178,21 @@ const ModuleView: React.FC = () => {
         sourceNodeRef.current = source;
         source.start(0);
         setIsPlaying(true);
+        setIsAudioLoading(false);
+        setUseNativeFallback(false);
       } else {
-        throw new Error("Aucune donnée audio reçue du modèle.");
+        throw new Error("No data");
       }
     } catch (err: any) {
-      console.error("Erreur Audio détaillée:", err);
-      alert(`Erreur Audio : ${err.message || "Impossible de générer la voix"}`);
-    } finally {
-      setIsAudioLoading(false);
+      console.log("Gemini TTS indisponible ou quota atteint, basculement voix système...");
+      playNativeFallback(cleanText);
     }
+  };
+
+  const handleStartQuiz = () => {
+    setQuizState('active');
+    setCurrentIdx(0);
+    setAnswers([]);
   };
 
   const handleAnswer = (idx: number) => {
@@ -232,12 +250,7 @@ const ModuleView: React.FC = () => {
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
           onInit={({ confetti }) => {
-            confetti({
-              particleCount: 200,
-              spread: 100,
-              origin: { y: 0.6 },
-              colors: ['#0ea5e9', '#0c4a6e', '#fbbf24']
-            });
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#0ea5e9', '#0c4a6e', '#fbbf24'] });
             setShouldFire(false);
           }}
         />
@@ -251,19 +264,11 @@ const ModuleView: React.FC = () => {
           </button>
           
           <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-            <button 
-              onClick={() => setActiveTab('lesson')} 
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'lesson' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Book className="w-3 h-3" />
-              La Leçon
+            <button onClick={() => setActiveTab('lesson')} className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'lesson' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}>
+              <Book className="w-3 h-3" /> La Leçon
             </button>
-            <button 
-              onClick={() => setActiveTab('quiz')} 
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quiz' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Award className="w-3 h-3" />
-              Certification
+            <button onClick={() => setActiveTab('quiz')} className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quiz' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}>
+              <Award className="w-3 h-3" /> Certification
             </button>
           </div>
         </div>
@@ -275,11 +280,9 @@ const ModuleView: React.FC = () => {
             <div className="text-center mb-12">
               <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-5 py-2 rounded-full uppercase tracking-[0.3em] inline-block mb-8">{module.topic}</span>
               <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 leading-tight mb-8">{module.title}</h1>
-              <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto mb-10">
-                "{module.mini_course}"
-              </p>
+              <p className="text-xl md:text-2xl text-slate-500 font-serif italic max-w-xl mx-auto mb-10">"{module.mini_course}"</p>
 
-              {/* Audio Guide Player UI */}
+              {/* Audio Guide Player UI - Hybrid Mode */}
               <div className="max-w-md mx-auto bg-slate-50 rounded-3xl p-6 border border-slate-100 flex items-center gap-6 group hover:shadow-lg transition-all">
                 <button 
                   onClick={handlePlayAudio}
@@ -292,14 +295,15 @@ const ModuleView: React.FC = () => {
                   <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1 flex items-center gap-2">
                     <Headphones className="w-3 h-3" />
                     Audio Guide Expert
+                    {useNativeFallback && isPlaying && <span className="ml-2 bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[8px]">Mode Standard</span>}
                   </p>
                   <p className="text-xs font-bold text-slate-500">
-                    {isPlaying ? "Lecture en cours..." : isAudioLoading ? "Préparation de l'audio..." : "Écouter la leçon"}
+                    {isPlaying ? "Lecture en cours..." : isAudioLoading ? "Préparation de l'audio..." : "Écouter la leçon complète"}
                   </p>
                   {isPlaying && (
                     <div className="flex items-end gap-0.5 mt-2 h-4">
                       {[1,2,3,4,5,6,7,8].map(i => (
-                        <div key={i} className="w-1 bg-brand-500 rounded-full animate-[pulse_1s_infinite]" style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}></div>
+                        <div key={i} className={`w-1 rounded-full animate-[pulse_1s_infinite] ${useNativeFallback ? 'bg-slate-400' : 'bg-brand-500'}`} style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s` }}></div>
                       ))}
                     </div>
                   )}
@@ -322,12 +326,9 @@ const ModuleView: React.FC = () => {
                  </div>
                  <div>
                    <h4 className="font-black text-brand-900 uppercase tracking-[0.4em] text-[10px] mb-6 flex items-center gap-2">
-                     <div className="w-6 h-px bg-brand-900"></div>
-                     Conseil de Coach Kita
+                     <div className="w-6 h-px bg-brand-900"></div> Conseil de Coach Kita
                    </h4>
-                   <p className="text-brand-950 font-serif italic leading-relaxed text-2xl">
-                     "{module.coach_tip}"
-                   </p>
+                   <p className="text-brand-950 font-serif italic leading-relaxed text-2xl">"{module.coach_tip}"</p>
                  </div>
                </div>
             </div>
@@ -337,8 +338,7 @@ const ModuleView: React.FC = () => {
                 onClick={() => { stopAudio(); setActiveTab('quiz'); }} 
                 className="bg-brand-900 text-white px-12 py-7 rounded-[2rem] font-black hover:bg-brand-800 transition shadow-[0_20px_60px_rgba(12,74,110,0.2)] flex items-center gap-4 group uppercase tracking-[0.2em] text-[11px]"
               >
-                Passer la certification
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                Passer la certification <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
           </article>
@@ -379,8 +379,7 @@ const ModuleView: React.FC = () => {
                       onClick={() => handleAnswer(i)} 
                       className="w-full text-left p-8 rounded-[2rem] border-2 border-slate-50 bg-slate-50/50 hover:border-brand-500 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 font-bold text-slate-800 text-lg group flex items-center justify-between"
                     >
-                      {opt}
-                      <div className="h-6 w-6 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
+                      {opt} <div className="h-6 w-6 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
                     </button>
                   ))}
                 </div>
@@ -400,27 +399,16 @@ const ModuleView: React.FC = () => {
                 <div className="bg-[#0c4a6e] rounded-[4rem] p-12 md:p-16 text-white text-left shadow-[0_40px_100px_rgba(12,74,110,0.2)] relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] pointer-events-none italic font-serif">Action</div>
                   <h4 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-8 flex items-center gap-2">
-                    <Zap className="w-3 h-3 fill-current" />
-                    Engagement Immédiat
+                    <Zap className="w-3 h-3 fill-current" /> Engagement Immédiat
                   </h4>
                   <p className="text-2xl font-serif mb-12 leading-relaxed italic text-slate-200">"{module.strategic_mantra}"</p>
                   
                   <div className="mb-10">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Décidez de votre première action concrète :</label>
-                    <textarea 
-                      value={commitment} 
-                      onChange={e => setCommitment(e.target.value)} 
-                      className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-8 text-white placeholder-slate-600 outline-none ring-2 ring-transparent focus:ring-brand-500/30 focus:bg-white/10 transition text-xl font-medium" 
-                      placeholder="Ex: Demain à 9h, je brief l'équipe sur..." 
-                      rows={3} 
-                    />
+                    <textarea value={commitment} onChange={e => setCommitment(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-8 text-white placeholder-slate-600 outline-none ring-2 ring-transparent focus:ring-brand-500/30 focus:bg-white/10 transition text-xl font-medium" placeholder="Ex: Demain à 9h, je brief l'équipe sur..." rows={3} />
                   </div>
                   
-                  <button 
-                    onClick={handleCommit} 
-                    disabled={isSaving || !commitment.trim()} 
-                    className="w-full bg-brand-500 py-7 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3"
-                  >
+                  <button onClick={handleCommit} disabled={isSaving || !commitment.trim()} className="w-full bg-brand-500 py-7 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3">
                     {isSaving ? <Loader2 className="animate-spin" /> : "Sceller mon engagement"}
                     {!isSaving && <ArrowRight className="w-5 h-5" />}
                   </button>
