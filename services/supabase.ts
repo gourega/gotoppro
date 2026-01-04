@@ -41,36 +41,27 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
   }
 };
 
+/**
+ * Sauvegarde le profil utilisateur.
+ * Utilise 'update' au lieu de 'upsert' pour éviter les erreurs de droits RLS (Row Level Security)
+ * car le profil est déjà créé lors de la phase de diagnostic.
+ */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // CRITIQUE : On récupère d'abord l'état actuel pour ne jamais perdre de données vitales
-  const { data: current, error: fetchError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('uid', profile.uid)
-    .maybeSingle();
+  // On retire les champs potentiellement problématiques ou inutiles à renvoyer tel quel
+  const { uid, ...dataToUpdate } = profile;
 
-  if (fetchError) console.error("Fetch before save error:", fetchError);
-
-  // Fusion intelligente : on donne priorité aux nouvelles données mais on garde l'ancien si le nouveau est vide
-  const mergedProfile = {
-    ...current,
-    ...profile,
-    purchasedModuleIds: [...new Set([...(current?.purchasedModuleIds || []), ...(profile.purchasedModuleIds || [])])],
-    pendingModuleIds: [...new Set([...(current?.pendingModuleIds || []), ...(profile.pendingModuleIds || [])])],
-    badges: [...new Set([...(current?.badges || []), ...(profile.badges || [])])],
-    progress: { ...(current?.progress || {}), ...(profile.progress || {}) },
-    attempts: { ...(current?.attempts || {}), ...(profile.attempts || {}) },
-    actionPlan: profile.actionPlan || current?.actionPlan || []
-  };
-
+  // On effectue une mise à jour directe sur la ligne correspondant à l'UID
   const { error } = await supabase
     .from('profiles')
-    .upsert(mergedProfile, { onConflict: 'uid' });
+    .update(dataToUpdate)
+    .eq('uid', uid);
   
   if (error) {
-    console.error("Détails Erreur Upsert:", error);
+    console.error("Erreur de mise à jour Supabase :", error);
+    // Si l'erreur est liée à une ligne inexistante (rare ici), on pourrait tenter un insert,
+    // mais dans notre flux, le profil existe TOUJOURS avant d'arriver au module.
     throw new Error(error.message);
   }
 };
@@ -86,7 +77,6 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
   return data as UserProfile[];
 };
 
-// Fix: Implement toggleUserStatus to enable/disable user accounts
 export const toggleUserStatus = async (uid: string, isActive: boolean) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   const { error } = await supabase
@@ -96,7 +86,6 @@ export const toggleUserStatus = async (uid: string, isActive: boolean) => {
   if (error) throw error;
 };
 
-// Fix: Implement updateUserRole to modify user permissions
 export const updateUserRole = async (uid: string, role: UserRole) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   const { error } = await supabase
@@ -120,7 +109,6 @@ export const validateUserPurchases = async (uid: string) => {
 
   if (!user) return;
 
-  // Transfert des modules en attente vers les modules achetés
   const newPurchased = [...new Set([...(user.purchasedModuleIds || []), ...(user.pendingModuleIds || [])])];
   
   const { error } = await supabase
@@ -128,7 +116,7 @@ export const validateUserPurchases = async (uid: string) => {
     .update({ 
       purchasedModuleIds: newPurchased,
       pendingModuleIds: [],
-      isActive: true // On active le compte automatiquement s'il y a un achat validé
+      isActive: true
     })
     .eq('uid', uid);
 

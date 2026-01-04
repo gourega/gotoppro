@@ -28,7 +28,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
     strategic_mantra: "Un appel raté est un client qui part chez le voisin.",
-    quiz_questions: [{ question: "Quelle est la phrase d'accueil idéale ?", options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], correctAnswer: 1, explanation: "Cette formule établit immédiatement votre autorité professionnelle." }],
+    quiz_questions: [
+      { 
+        question: "Quelle est la phrase d'accueil idéale ?", 
+        options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], 
+        correctAnswer: 1, 
+        explanation: "Cette formule établit immédiatement votre autorité professionnelle et rassure le client sur l'identité du salon." 
+      },
+      { 
+        question: "Un client appelle pendant que vous êtes en prestation, que faites-vous ?", 
+        options: ["Vous ignorez l'appel", "Vous décrochez et prenez le rendez-vous vite", "Vous vous excusez et proposez de rappeler"], 
+        correctAnswer: 2, 
+        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la personne sur le fauteuil." 
+      },
+      { 
+        question: "Quelle information est la plus critique lors d'un rendez-vous ?", 
+        options: ["Le nom, la prestation et le numéro", "La couleur de ses yeux", "La marque de sa voiture"], 
+        correctAnswer: 0, 
+        explanation: "Ces trois piliers permettent de préparer le poste, de confirmer le créneau et de relancer en cas de besoin." 
+      }
+    ],
     exercises: ["Pratiquer la signature vocale sur les 10 prochains appels.", "Noter le nombre d'appels transformés en rendez-vous."],
     tips: ["Restez calme et notez le nom du client dès le début."]
   },
@@ -55,7 +74,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
-    quiz_questions: [{ question: "Quelle est la meilleure position pour un diagnostic ?", options: ["Debout derrière le client", "Assis à sa hauteur", "Au bac à shampoing"], correctAnswer: 1, explanation: "Le contact visuel direct à la même hauteur crée la confiance." }],
+    quiz_questions: [
+      { 
+        question: "Quelle est la meilleure position pour un diagnostic ?", 
+        options: ["Debout derrière le client", "Assis à sa hauteur", "Au bac à shampoing"], 
+        correctAnswer: 1, 
+        explanation: "Se mettre à la hauteur du client humanise l'échange et renforce votre statut de conseiller." 
+      },
+      { 
+        question: "Que signifie analyser le style de vie du client ?", 
+        options: ["Savoir s'il a une voiture", "Connaître le temps qu'il a le matin", "Demander son métier"], 
+        correctAnswer: 1, 
+        explanation: "Inutile de proposer une coiffure complexe à quelqu'un qui n'a que 5 minutes pour se préparer chaque jour." 
+      },
+      { 
+        question: "Comment présenter une prestation technique coûteuse ?", 
+        options: ["En annonçant le prix d'abord", "En parlant du résultat et du bénéfice", "En disant que c'est la mode"], 
+        correctAnswer: 1, 
+        explanation: "Le client accepte le prix quand il comprend la valeur et le changement positif que cela lui apportera." 
+      }
+    ],
     exercises: ["Réaliser 3 diagnostics en étant assis face au client.", "Identifier le type de cheveu avant de toucher."],
     tips: ["Observez la forme du visage et la texture du cheveu."]
   },
@@ -82,7 +120,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Un bac à shampoing mal nettoyé fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
-    quiz_questions: [{ question: "Quand faut-il nettoyer ses outils ?", options: ["Le soir après la fermeture", "Une fois par semaine", "Devant chaque client"], correctAnswer: 2, explanation: "La visibilité de la propreté rassure immédiatement le client." }],
+    quiz_questions: [
+      { 
+        question: "Quand faut-il nettoyer ses outils ?", 
+        options: ["Le soir après la fermeture", "Une fois par semaine", "Devant chaque client"], 
+        correctAnswer: 2, 
+        explanation: "La visibilité de l'hygiène est un acte de marketing puissant qui justifie vos prix." 
+      },
+      { 
+        question: "À quelle fréquence faut-il balayer les cheveux au sol ?", 
+        options: ["Toutes les heures", "Dès que le client se lève", "À la pause déjeuner"], 
+        correctAnswer: 1, 
+        explanation: "Voir les cheveux des autres au sol casse l'image de luxe et de propreté du salon." 
+      },
+      { 
+        question: "Pourquoi l'odeur des textiles est-elle importante ?", 
+        options: ["Pour masquer les odeurs de produits", "Pour créer une expérience de luxe", "Ce n'est pas important"], 
+        correctAnswer: 1, 
+        explanation: "L'odorat est lié à l'émotion. Une serviette qui sent le frais crée un souvenir positif immédiat." 
+      }
+    ],
     exercises: ["Mettre en place une fiche de contrôle hygiène quotidienne.", "Vérifier l'état des peignoirs toutes les 2 heures."],
     tips: ["Changez de serviette après chaque client, sans exception."]
   },
@@ -109,7 +166,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Pesez vos bols de préparation. Le surplus jeté tue votre bénéfice.",
     strategic_mantra: "Vos étagères sont des comptes bancaires de produits.",
-    quiz_questions: [{ question: "Quelle est la fréquence idéale d'inventaire ?", options: ["Tous les mois", "Toutes les semaines", "Une fois par an"], correctAnswer: 1, explanation: "Un suivi hebdomadaire permet de réagir avant la rupture." }],
+    quiz_questions: [
+      { 
+        question: "Quelle est la fréquence idéale d'inventaire ?", 
+        options: ["Tous les mois", "Toutes les semaines", "Une fois par an"], 
+        correctAnswer: 1, 
+        explanation: "Un suivi hebdomadaire permet de réagir avant que la rupture ne bloque votre chiffre d'affaires." 
+      },
+      { 
+        question: "Qu'est-ce qu'un seuil d'alerte ?", 
+        options: ["Le stock maximum autorisé", "Le stock qui déclenche une commande", "Le prix du produit"], 
+        correctAnswer: 1, 
+        explanation: "Il garantit que vous ne manquerez jamais du produit indispensable à vos prestations techniques." 
+      },
+      { 
+        question: "Comment réduire le gaspillage de coloration ?", 
+        options: ["Utiliser moins de produit", "Peser au gramme près", "Acheter des produits moins chers"], 
+        correctAnswer: 1, 
+        explanation: "La balance est l'outil de rentabilité numéro 1 au laboratoire technique." 
+      }
+    ],
     exercises: ["Créer un cahier de suivi des entrées et sorties de produits.", "Peser systématiquement 5 bols de couleur aujourd'hui."],
     tips: ["Utilisez les produits les plus anciens en premier."]
   },
@@ -136,7 +212,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Une vidéo « avant/après » réussie vaut plus que mille mots.",
     strategic_mantra: "Si vous n'êtes pas sur leur téléphone, vous n'existez pas.",
-    quiz_questions: [{ question: "Où prendre la meilleure photo au salon ?", options: ["Sous les néons jaunes", "Face à la lumière du jour", "Avec le flash dans le noir"], correctAnswer: 1, explanation: "La lumière du jour respecte les reflets de votre travail." }],
+    quiz_questions: [
+      { 
+        question: "Où prendre la meilleure photo au salon ?", 
+        options: ["Sous les néons jaunes", "Face à la lumière du jour", "Avec le flash"], 
+        correctAnswer: 1, 
+        explanation: "La lumière du jour est la seule qui respecte la vérité de vos reflets et la brillance des cheveux." 
+      },
+      { 
+        question: "Quel contenu génère le plus de nouveaux clients ?", 
+        options: ["Les photos de l'équipe", "Les vidéos de transformations", "Les photos de produits"], 
+        correctAnswer: 1, 
+        explanation: "L'effet 'wow' d'un changement radical prouve votre expertise et déclenche le désir chez l'audience." 
+      },
+      { 
+        question: "Pourquoi répondre aux commentaires rapidement ?", 
+        options: ["Pour être poli", "Pour humaniser et rassurer", "Ce n'est pas utile"], 
+        correctAnswer: 1, 
+        explanation: "Un client qui commente est un client prêt à acheter. Votre réactivité prouve votre sérieux." 
+      }
+    ],
     exercises: ["Publier une vidéo « avant/après » cette semaine.", "Répondre à tous les commentaires en retard."],
     tips: ["Répondez à chaque commentaire poliment."]
   },
@@ -163,7 +258,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Notez les préférences de vos clientes. Se souvenir de son thé préféré crée l'émotion.",
     strategic_mantra: "Un client fidèle est votre meilleur ambassadeur.",
-    quiz_questions: [{ question: "Quand faut-il relancer un client absent ?", options: ["Après 1 mois", "Après 3 mois", "Après 1 an"], correctAnswer: 1, explanation: "C'est le cycle moyen de renouvellement des prestations techniques." }],
+    quiz_questions: [
+      { 
+        question: "Quand faut-il relancer un client absent ?", 
+        options: ["Après 1 mois", "Après 3 mois", "Après 1 an"], 
+        correctAnswer: 1, 
+        explanation: "C'est le cycle moyen de renouvellement des prestations techniques en coiffure." 
+      },
+      { 
+        question: "Pourquoi proposer la pré-réservation ?", 
+        options: ["Pour forcer le client", "Pour stabiliser son chiffre futur", "Pour faire plaisir"], 
+        correctAnswer: 1, 
+        explanation: "Un agenda rempli à 50% pour le mois suivant réduit le stress et sécurise vos revenus." 
+      },
+      { 
+        question: "Quelle information noter dans le carnet client ?", 
+        options: ["Seulement le prix payé", "La technique et les préférences", "Rien, j'ai de la mémoire"], 
+        correctAnswer: 1, 
+        explanation: "L'expertise se base sur des données précises, pas sur des suppositions ou des souvenirs flous." 
+      }
+    ],
     exercises: ["Envoyer 10 messages de relance personnalisés cette semaine.", "Proposer la pré-réservation à chaque client demain."],
     tips: ["Proposez le prochain rendez-vous dès la fin de la prestation actuelle."]
   },
@@ -190,7 +304,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Félicitez vos employés devant tout le monde, recadrez-les en tête-à-tête.",
     strategic_mantra: "Seul on va vite, ensemble on construit un empire.",
-    quiz_questions: [{ question: "Quel est le meilleur moment pour motiver son équipe ?", options: ["Le soir en partant", "Le matin avant le premier client", "Pendant la pause déjeuner"], correctAnswer: 1, explanation: "Le matin lance l'énergie positive pour toute la journée." }],
+    quiz_questions: [
+      { 
+        question: "Quel est le meilleur moment pour motiver son équipe ?", 
+        options: ["Le soir en partant", "Le matin avant le premier client", "Pendant la pause"], 
+        correctAnswer: 1, 
+        explanation: "Le briefing matinal lance l'énergie de toute la journée de travail." 
+      },
+      { 
+        question: "Comment gérer un retard répété ?", 
+        options: ["Crier devant l'équipe", "Entretien privé pour comprendre", "Ignorer le problème"], 
+        correctAnswer: 1, 
+        explanation: "Le leadership exige du calme et de la fermeté en tête-à-tête pour préserver la dignité." 
+      },
+      { 
+        question: "Quel est le but de la délégation ?", 
+        options: ["Travailler moins", "Responsabiliser l'équipe", "Se débarrasser des tâches sales"], 
+        correctAnswer: 1, 
+        explanation: "Un collaborateur responsable est un collaborateur plus engagé et productif." 
+      }
+    ],
     exercises: ["Organiser un entretien de 15 minutes avec chaque employé cette semaine.", "Déléguer une tâche de gestion aujourd'hui."],
     tips: ["Écoutez les idées de vos collaborateurs."]
   },
@@ -217,7 +350,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Si vous bradez vos prix, vous bradez votre talent et votre avenir.",
     strategic_mantra: "On ne gère bien que ce que l'on mesure.",
-    quiz_questions: [{ question: "Comment fixer un nouveau prix ?", options: ["Regarder les prix du quartier", "Calculer ses charges plus sa marge", "Demander l'avis des clients"], correctAnswer: 1, explanation: "C'est la seule méthode mathématique qui garantit votre salaire." }],
+    quiz_questions: [
+      { 
+        question: "Comment fixer un nouveau prix ?", 
+        options: ["Regarder le quartier", "Calculer charges + marge", "Demander aux clients"], 
+        correctAnswer: 1, 
+        explanation: "C'est la seule méthode mathématique qui garantit votre survie et votre salaire." 
+      },
+      { 
+        question: "Pourquoi le prix du voisin est-il dangereux ?", 
+        options: ["Il a peut-être moins de charges", "Il est plus connu", "Il utilise de meilleurs produits"], 
+        correctAnswer: 0, 
+        explanation: "Copier le voisin sans connaître ses charges peut vous mener directement à la faillite." 
+      },
+      { 
+        question: "Qu'est-ce que le coût minute ?", 
+        options: ["Le prix payé par le client", "Le coût de fonctionnement du salon", "Le prix d'une coupe"], 
+        correctAnswer: 1, 
+        explanation: "C'est la base de tout calcul de rentabilité : combien me coûte une minute d'ouverture." 
+      }
+    ],
     exercises: ["Calculer le coût total de fonctionnement du salon par heure.", "Vérifier la marge sur votre prestation la plus vendue."],
     tips: ["Affichez vos prix clairement à l'entrée."]
   },
@@ -244,7 +396,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Un soin offert au bac aujourd'hui est une vente de soin garantie pour demain.",
     strategic_mantra: "Le meilleur moment pour proposer est quand le client est détendu au bac.",
-    quiz_questions: [{ question: "Quelle phrase fait vendre le mieux ?", options: ["Vous voulez un soin ?", "Pour vos pointes abîmées, je préconise ce rituel", "Rien d'autre ?"], correctAnswer: 1, explanation: "L'expert préconise une solution au lieu de poser une question fermée." }],
+    quiz_questions: [
+      { 
+        question: "Quelle phrase fait vendre le mieux ?", 
+        options: ["Voulez-vous un soin ?", "Je préconise ce rituel pour vos pointes", "Rien d'autre ?"], 
+        correctAnswer: 1, 
+        explanation: "L'expert préconise une solution technique au lieu de poser une question fermée." 
+      },
+      { 
+        question: "Où se font la majorité des ventes additionnelles ?", 
+        options: ["À la caisse", "Au bac à shampoing", "Au téléphone"], 
+        correctAnswer: 1, 
+        explanation: "La détente du bac est propice à l'acceptation de services de soin et de bien-être." 
+      },
+      { 
+        question: "Comment réagir à un refus ?", 
+        options: ["Faire la tête", "Accepter et noter pour plus tard", "Essayer de forcer"], 
+        correctAnswer: 1, 
+        explanation: "Le non fait partie du processus. Restez professionnel pour préserver la relation." 
+      }
+    ],
     exercises: ["Réussir 5 ventes de services additionnels en une journée.", "Apprendre 3 phrases d'introduction de soins."],
     tips: ["Expliquez toujours le bénéfice pour le client."]
   },
@@ -266,12 +437,32 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <p>Vos produits ne doivent pas prendre la poussière. Disposez-les à hauteur des yeux, avec des étiquettes de prix claires et des descriptions de bénéfices. Changez la mise en avant chaque mois pour créer de la nouveauté.</p>
       </section>
       <section class="lesson-card">
+        ines
         <h2>III. L'éducation pendant le service</h2>
         <p>Expliquez chaque produit que vous utilisez pendant que vous le manipulez. « Je mets ce sérum pour éviter les frisottis dus à l'humidité ». Le client teste ainsi le produit en temps réel et comprend son utilité avant même de passer à la caisse.</p>
       </section>`,
     coach_tip: "Vos bacs à shampoing sont votre meilleure salle d'exposition de produits.",
     strategic_mantra: "Vendre un produit, c'est prendre soin du client jusque dans sa douche.",
-    quiz_questions: [{ question: "Quand faut-il parler des produits ?", options: ["À la caisse au moment de payer", "Pendant toute la prestation", "Uniquement si le client demande"], correctAnswer: 1, explanation: "L'éducation du client se fait par étape pendant qu'il teste le produit." }],
+    quiz_questions: [
+      { 
+        question: "Quand faut-il parler des produits ?", 
+        options: ["À la caisse", "Pendant toute la prestation", "Uniquement si on demande"], 
+        correctAnswer: 1, 
+        explanation: "L'éducation du client se fait par étapes pendant qu'il teste le produit entre vos mains." 
+      },
+      { 
+        question: "Pourquoi le client doit-il acheter chez vous ?", 
+        options: ["Pour vous aider", "Pour garantir son résultat technique", "Parce que c'est moins cher"], 
+        correctAnswer: 1, 
+        explanation: "Seul l'expert peut garantir que la couleur ou la coupe durera avec les produits adaptés." 
+      },
+      { 
+        question: "Où placer les produits prioritaires ?", 
+        options: ["En bas des étagères", "À hauteur des yeux", "Dans la réserve"], 
+        correctAnswer: 1, 
+        explanation: "Le merchandising suit le regard du client. Ce qui est visible est ce qui est vendu." 
+      }
+    ],
     exercises: ["Vendre au moins un produit à 3 clientes consécutives.", "Nettoyer et réorganiser l'espace boutique."],
     tips: ["Faites sentir les textures et les parfums."]
   },
@@ -298,8 +489,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Un poste de travail bien rangé réduit votre stress et celui de votre client.",
     strategic_mantra: "Moins vous bougez vos pieds, plus vos mains produisent de la valeur.",
-    quiz_questions: [{ question: "Où doivent être vos outils principaux ?", options: ["Sur une étagère au fond", "Dans un rayon de 60 cm autour de vous", "Dans le placard fermé"], correctAnswer: 1, explanation: "C'est la zone d'efficacité maximale pour éviter la fatigue." }],
-    exercises: ["Réorganiser sa desserte de travail pour ne plus avoir à se déplacer inutilement.", "Nettoyer les filtres de tous les séchoirs aujourd'hui."],
+    quiz_questions: [
+      { 
+        question: "Où doivent être vos outils principaux ?", 
+        options: ["Sur une étagère", "Dans un rayon de 60 cm", "Dans le placard"], 
+        correctAnswer: 1, 
+        explanation: "C'est la zone d'efficacité maximale qui évite les pas inutiles et la fatigue dorsale." 
+      },
+      { 
+        question: "Pourquoi séparer les zones de travail ?", 
+        options: ["Pour faire joli", "Pour optimiser le temps et le matériel", "C'est inutile"], 
+        correctAnswer: 1, 
+        explanation: "Chaque zone spécialisée évite les embouteillages de collaborateurs et le manque d'outils." 
+      },
+      { 
+        question: "À quelle fréquence huiler sa tondeuse ?", 
+        options: ["Une fois par mois", "Tous les soirs", "Quand elle fait du bruit"], 
+        correctAnswer: 1, 
+        explanation: "L'entretien quotidien prolonge la vie de vos outils et garantit une coupe nette sans douleur." 
+      }
+    ],
+    exercises: ["Réorganiser sa desserte de travail.", "Nettoyer les filtres des séchoirs."],
     tips: ["Utilisez des dessertes à roulettes de qualité."]
   },
   {
@@ -325,8 +535,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Regardez vos chaussures. Les clientes les remarquent quand elles sont allongées au bac.",
     strategic_mantra: "Vous êtes votre première publicité.",
-    quiz_questions: [{ question: "Pourquoi imposer un code vestimentaire ?", options: ["Pour faire joli", "Pour justifier des tarifs haut de gamme", "Parce que c'est la règle"], correctAnswer: 1, explanation: "L'image de l'équipe fixe la valeur perçue de la prestation." }],
-    exercises: ["Définir une tenue commune (couleur ou uniforme) pour tout le salon.", "Inspecter les badges de l'équipe demain matin."],
+    quiz_questions: [
+      { 
+        question: "Pourquoi imposer un code vestimentaire ?", 
+        options: ["Pour contrôler les gens", "Pour justifier des tarifs hauts", "C'est plus simple"], 
+        correctAnswer: 1, 
+        explanation: "L'image cohérente de l'équipe augmente la valeur perçue du salon." 
+      },
+      { 
+        question: "Quel est l'impact du sourire ?", 
+        options: ["Aucun", "C'est un outil de vente", "C'est fatiguant"], 
+        correctAnswer: 1, 
+        explanation: "Le sourire s'entend et se voit. Il désamorce les tensions et crée un lien immédiat." 
+      },
+      { 
+        question: "Quel détail les clients remarquent-ils souvent ?", 
+        options: ["La couleur des murs", "Vos chaussures au bac", "La marque de vos ciseaux"], 
+        correctAnswer: 1, 
+        explanation: "Au bac, le client a le temps d'observer les détails. Des chaussures propres prouvent votre rigueur." 
+      }
+    ],
+    exercises: ["Définir une tenue commune.", "Inspecter les badges demain."],
     tips: ["Portez un badge avec votre prénom."]
   },
   {
@@ -352,9 +581,28 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Mettez de côté votre loyer et vos taxes un peu chaque jour.",
     strategic_mantra: "La caisse est le cœur du salon, si elle s'arrête, tout s'arrête.",
-    quiz_questions: [{ question: "Que faire de la recette du jour ?", options: ["Payer ses courses personnelles", "La déposer sur le compte professionnel du salon", "La garder dans le tiroir sans compter"], correctAnswer: 1, explanation: "La rigueur bancaire est le début de la richesse." }],
-    exercises: ["Vérifier le solde de sa caisse chaque matin avant l'ouverture.", "Mettre en place un tableau de bord des charges."],
-    tips: ["Utilisez un petit cahier de caisse pour chaque dépense, même minime."]
+    quiz_questions: [
+      { 
+        question: "Que faire de la recette du jour ?", 
+        options: ["Acheter des courses", "Déposer sur le compte pro", "Garder dans le tiroir"], 
+        correctAnswer: 1, 
+        explanation: "La séparation stricte entre argent personnel et professionnel est la base de la richesse." 
+      },
+      { 
+        question: "Pourquoi faire la caisse tous les soirs ?", 
+        options: ["Parce que c'est la loi", "Pour détecter les écarts", "Pour compter ses billets"], 
+        correctAnswer: 1, 
+        explanation: "Un écart non identifié est une fuite de bénéfice qui se répétera si elle n'est pas stoppée." 
+      },
+      { 
+        question: "Comment gérer les petits frais ?", 
+        options: ["Prendre dans la caisse", "Noter et garder le ticket", "C'est négligeable"], 
+        correctAnswer: 1, 
+        explanation: "Le cumul des petites dépenses non contrôlées peut représenter plusieurs milliers de francs par mois." 
+      }
+    ],
+    exercises: ["Vérifier le solde de caisse chaque matin.", "Mettre en place un tableau de bord."],
+    tips: ["Utilisez un petit cahier de caisse pour chaque dépense."]
   },
   {
     id: "mod_litiges",
@@ -379,8 +627,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Un client qui se plaint est un client qui vous donne une chance de vous améliorer.",
     strategic_mantra: "Le client mécontent veut surtout être entendu.",
-    quiz_questions: [{ question: "Quelle est la première chose à faire face à une réclamation ?", options: ["Expliquer pourquoi il a tort", "Écouter en restant calme", "Lui demander de partir"], correctAnswer: 1, explanation: "L'écoute active désamorce 80 % des conflits." }],
-    exercises: ["S'entraîner à répondre calmement à une critique imaginaire.", "Répertorier les 3 dernières plaintes et trouver une solution préventive."],
+    quiz_questions: [
+      { 
+        question: "Quelle est la première chose à faire face à une plainte ?", 
+        options: ["Se justifier", "Écouter en restant calme", "Appeler la police"], 
+        correctAnswer: 1, 
+        explanation: "L'écoute active désamorce la colère et permet de comprendre la vraie cause du problème." 
+      },
+      { 
+        question: "Faut-il offrir une prestation correctrice ?", 
+        options: ["Jamais", "Seulement si c'est mérité", "Oui, pour sauver la relation"], 
+        correctAnswer: 2, 
+        explanation: "Le coût d'une retouche est bien moindre que la perte définitive d'un client et d'une réputation." 
+      },
+      { 
+        question: "Comment répondre à un avis négatif en ligne ?", 
+        options: ["En insultant", "Poliment avec une solution", "En ignorant"], 
+        correctAnswer: 1, 
+        explanation: "Votre réponse publique est lue par des milliers de prospects. Elle doit respirer l'excellence." 
+      }
+    ],
+    exercises: ["S'entraîner à répondre calmement.", "Analyser les 3 derniers litiges."],
     tips: ["Cherchez toujours une solution « gagnant-gagnant »."]
   },
   {
@@ -406,8 +673,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Un rappel automatique par message réduit les rendez-vous oubliés de 70 %.",
     strategic_mantra: "Gagnez du temps pour ce qui compte : la beauté.",
-    quiz_questions: [{ question: "Pourquoi automatiser ses rendez-vous ?", options: ["Pour faire moderne", "Pour ne plus rater de clients le soir", "Pour ne plus parler aux gens"], correctAnswer: 1, explanation: "Cela permet de capter les clients au moment où ils y pensent, même la nuit." }],
-    exercises: ["Tester un lien de réservation simple sur son profil WhatsApp.", "Calculer le temps moyen perdu par les clients absents."],
+    quiz_questions: [
+      { 
+        question: "Pourquoi automatiser ses rendez-vous ?", 
+        options: ["Pour faire moderne", "Pour ne plus rater de clients", "Pour renvoyer son équipe"], 
+        correctAnswer: 1, 
+        explanation: "Capter le désir du client au moment où il y pense (souvent le soir) remplit votre agenda." 
+      },
+      { 
+        question: "Quel est l'avantage du SMS de rappel ?", 
+        options: ["C'est poli", "Réduire les absences", "Faire de la pub"], 
+        correctAnswer: 1, 
+        explanation: "Un client qui reçoit un rappel oublie rarement son rendez-vous. Votre temps est ainsi respecté." 
+      },
+      { 
+        question: "Faut-il afficher les tarifs en ligne ?", 
+        options: ["Non, c'est secret", "Oui, pour la transparence", "Uniquement les promotions"], 
+        correctAnswer: 1, 
+        explanation: "Afficher ses prix installe la confiance et évite les malentendus au moment du paiement." 
+      }
+    ],
+    exercises: ["Tester un lien de réservation.", "Calculer le temps perdu par les absents."],
     tips: ["Mettez votre lien de réservation sur Facebook."]
   },
   {
@@ -433,8 +719,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>`,
     coach_tip: "Le parrainage fonctionne mieux quand la récompense est un service de beauté plutôt que de l'argent.",
     strategic_mantra: "Le bouche-à-oreille se cultive avec générosité.",
-    quiz_questions: [{ question: "À qui proposer de parrainer ?", options: ["À tout le monde sans distinction", "Uniquement à vos clientes les plus satisfaites", "À personne, c'est gênant"], correctAnswer: 1, explanation: "Vos clients satisfaits sont les seuls capables de bien vous vendre." }],
-    exercises: ["Lancer son offre de parrainage cette semaine.", "Identifier 5 clients ambassadeurs."],
+    quiz_questions: [
+      { 
+        question: "À qui proposer de parrainer ?", 
+        options: ["À tout le monde", "Aux clients satisfaits", "Personne"], 
+        correctAnswer: 1, 
+        explanation: "Seuls les ambassadeurs convaincus par votre talent sauront attirer d'autres clients qualifiés." 
+      },
+      { 
+        question: "Quel est le meilleur moment pour proposer ?", 
+        options: ["À la caisse", "Devant le miroir à la fin", "Au shampoing"], 
+        correctAnswer: 1, 
+        explanation: "La joie du client face à son nouveau look est le moment d'influence maximal." 
+      },
+      { 
+        question: "Quelle est la meilleure récompense ?", 
+        options: ["De l'argent liquide", "Un service offert", "Rien"], 
+        correctAnswer: 1, 
+        explanation: "Offrir un service permet de faire découvrir une nouvelle prestation et renforce l'attachement au salon." 
+      }
+    ],
+    exercises: ["Lancer son offre de parrainage.", "Identifier 5 clients ambassadeurs."],
     tips: ["Remerciez toujours chaleureusement la personne qui vous a recommandé."]
   }
 ];

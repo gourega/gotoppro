@@ -45,8 +45,6 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  // Les données PCM de Gemini sont en 16 bits (2 octets par échantillon)
-  // On utilise explicitement le buffer avec l'offset et la longueur divisée par 2
   const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
@@ -113,12 +111,10 @@ const ModuleView: React.FC = () => {
     const fullText = `${module.title}. ${cleanText}`;
 
     try {
-      // Initialisation de l'AudioContext si nécessaire
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       }
       
-      // Réveil impératif de l'AudioContext (sécurité navigateur)
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
@@ -175,6 +171,7 @@ const ModuleView: React.FC = () => {
     if (currentIdx < module.quiz_questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
+      // Pour les modules à question unique ou la dernière question
       finishQuiz(newAnswers);
     }
   };
@@ -182,10 +179,13 @@ const ModuleView: React.FC = () => {
   const finishQuiz = async (finalAnswers: number[]) => {
     setIsFinishingQuiz(true);
     let score = 0;
-    finalAnswers.forEach((ans, i) => { if (ans === module.quiz_questions[i].correctAnswer) score++; });
+    finalAnswers.forEach((ans, i) => { 
+      if (ans === module.quiz_questions[i].correctAnswer) score++; 
+    });
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     
     try {
+      // Cloner l'utilisateur pour éviter les mutations directes
       const updatedUser = { ...user };
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
@@ -207,12 +207,16 @@ const ModuleView: React.FC = () => {
         }
       }
 
+      // Appel au service Supabase (maintenant optimisé avec 'update')
       await saveUserProfile(updatedUser);
+      
+      // Rafraîchir le contexte global
       await refreshProfile();
+      
       setQuizState('results');
-    } catch (err) {
-      console.error("Erreur quiz:", err);
-      alert("Une erreur est survenue lors de l'enregistrement de vos résultats. Veuillez réessayer.");
+    } catch (err: any) {
+      console.error("Erreur sauvegarde quiz:", err);
+      alert("Une erreur est survenue lors de l'enregistrement de vos résultats : " + (err.message || "Erreur technique"));
     } finally {
       setIsFinishingQuiz(false);
     }
@@ -510,7 +514,6 @@ const ModuleView: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      /* Épuisement des 3 tentatives et toujours en échec -> Suggérer rachat */
                       <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
                         <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
