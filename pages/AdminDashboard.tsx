@@ -2,15 +2,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getAllUsers, toggleUserStatus, updateUserRole, deleteUserProfile } from '../services/supabase';
+import { getAllUsers, toggleUserStatus, updateUserRole, deleteUserProfile, validateUserPurchases } from '../services/supabase';
 import { UserProfile, UserRole } from '../types';
-import { Loader2, ShieldAlert, RefreshCcw, Users, Clock, Banknote, Search, Check, Square, Trash2 } from 'lucide-react';
+import { Loader2, ShieldAlert, RefreshCcw, Users, Clock, Banknote, Search, Check, Square, Trash2, ShoppingCart } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'active'>('all');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -41,9 +42,21 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleValidatePurchases = async (uid: string) => {
+    setProcessingId(uid);
+    try {
+      await validateUserPurchases(uid);
+      showNotification("Achats validés avec succès !");
+      await fetchUsers(); // Refresh
+    } catch (err) {
+      showNotification("Erreur lors de la validation", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleDeleteUser = async (uid: string, name: string) => {
     if (!window.confirm(`⚠️ Action irréversible : Supprimer le profil de ${name} ?`)) return;
-    
     try {
       setLoading(true);
       await deleteUserProfile(uid);
@@ -66,46 +79,30 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleRoleChange = async (uid: string, newRole: UserRole) => {
-    if (currentUser?.role !== 'SUPER_ADMIN') return;
-    try {
-      await updateUserRole(uid, newRole);
-      setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole, isAdmin: newRole !== 'CLIENT' } : u));
-      showNotification(`Rôle mis à jour : ${newRole}`);
-    } catch (err) {
-      showNotification("Erreur de rôle", "error");
-    }
-  };
-
   const stats = useMemo(() => {
     const active = users.filter(u => u.isActive);
-    const pending = users.filter(u => !u.isActive);
+    const pendingPayment = users.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
     const estimatedRevenue = active.reduce((acc, u) => acc + (u.purchasedModuleIds?.length || 0) * 500, 0);
 
-    return { total: users.length, active: active.length, pending: pending.length, revenue: estimatedRevenue };
+    return { 
+      total: users.length, 
+      active: active.length, 
+      pending: pendingPayment.length, 
+      revenue: estimatedRevenue 
+    };
   }, [users]);
 
   const filteredUsers = users.filter(u => {
-    const nameMatch = (u.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                     (u.lastName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSearch = u.phoneNumber.includes(searchTerm) || nameMatch;
+    const matchesSearch = u.phoneNumber.includes(searchTerm) || 
+      (u.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (u.lastName || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'pending' && !u.isActive) || 
+      (filterStatus === 'pending' && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0))) || 
       (filterStatus === 'active' && u.isActive);
     
     return matchesSearch && matchesStatus;
   });
-
-  if (!currentUser?.isAdmin) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6">
-        <ShieldAlert className="w-16 h-16 text-rose-500 mb-6" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Accès Restreint</h2>
-        <p className="text-slate-500">Vous n'avez pas les permissions nécessaires pour accéder à cette console.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -123,134 +120,111 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-4xl font-serif font-bold text-slate-900 tracking-tight">Console d'Administration</h1>
             <p className="text-slate-500 mt-2 font-medium">Pilotage stratégique de Go'Top Pro.</p>
           </div>
-          <button 
-            onClick={fetchUsers}
-            disabled={loading}
-            className="p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm text-slate-400 disabled:opacity-50"
-          >
-            <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          <button onClick={fetchUsers} disabled={loading} className="p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition shadow-sm">
+            <RefreshCcw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard title="Total Clients" value={stats.total} icon={<Users />} color="bg-blue-50 text-blue-600" />
-          <StatCard title="Attente Wave" value={stats.pending} icon={<Clock />} color="bg-amber-50 text-amber-600" pulse={stats.pending > 0} />
-          <StatCard title="Revenus Réels" value={`${stats.revenue.toLocaleString()} FCFA`} icon={<Banknote />} color="bg-emerald-50 text-emerald-600" />
+          <StatCard title="Attente Validation" value={stats.pending} icon={<Clock />} color="bg-amber-50 text-amber-600" pulse={stats.pending > 0} />
+          <StatCard title="Chiffre d'Affaires" value={`${stats.revenue.toLocaleString()} FCFA`} icon={<Banknote />} color="bg-emerald-50 text-emerald-600" />
         </div>
       </div>
 
       <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden">
         <div className="p-8 border-b border-slate-100 bg-slate-50/30 flex flex-col lg:flex-row justify-between gap-6">
           <div className="relative flex-grow max-w-xl">
-            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300">
-              <Search className="w-5 h-5" />
-            </span>
-            <input 
-              type="text" 
-              placeholder="Rechercher un gérant ou un numéro..." 
-              className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-slate-200 outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-medium"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300"><Search className="w-5 h-5" /></span>
+            <input type="text" placeholder="Rechercher par nom ou numéro..." className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white border border-slate-200 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
-          <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 self-start">
+          <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200">
             <FilterBtn active={filterStatus === 'all'} onClick={() => setFilterStatus('all')} label="Tous" />
-            <FilterBtn active={filterStatus === 'pending'} onClick={() => setFilterStatus('pending')} label="En attente" count={stats.pending} />
+            <FilterBtn active={filterStatus === 'pending'} onClick={() => setFilterStatus('pending')} label="Attente" count={stats.pending} />
             <FilterBtn active={filterStatus === 'active'} onClick={() => setFilterStatus('active')} label="Actifs" />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          {loading && users.length === 0 ? (
-            <div className="py-20 text-center flex flex-col items-center">
-              <Loader2 className="w-10 h-10 animate-spin text-brand-500 mb-4" />
-              <p className="text-slate-400 font-medium">Chargement des clients...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-slate-400 font-medium">Aucun client trouvé.</p>
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50/50 border-b border-slate-100">
-                <tr>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveau</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paiement</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredUsers.map(u => (
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50/50 border-b border-slate-100">
+              <tr>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Modules / Attente</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredUsers.map(u => {
+                const pendingCount = u.pendingModuleIds?.length || 0;
+                return (
                   <tr key={u.uid} className="group hover:bg-slate-50/80 transition-all">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="h-11 w-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center font-bold text-slate-400 shadow-sm overflow-hidden">
-                          {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/> : (u.firstName?.[0] || 'U')}
+                        <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-400">
+                          {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover rounded-xl"/> : (u.firstName?.[0] || 'U')}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900">{u.firstName} {u.lastName || ''}</p>
+                          <p className="font-bold text-slate-900">{u.firstName} {u.lastName}</p>
                           <p className="text-xs font-bold text-slate-400">{u.phoneNumber}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <select 
-                        disabled={currentUser?.role !== 'SUPER_ADMIN'}
-                        value={u.role}
-                        onChange={(e) => handleRoleChange(u.uid, e.target.value as UserRole)}
-                        className="text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border-none ring-1 ring-slate-200 outline-none bg-white cursor-pointer"
-                      >
-                        <option value="CLIENT">Client</option>
-                        <option value="ADMIN">Admin</option>
-                        <option value="SUPER_ADMIN">Super Admin</option>
-                      </select>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                        u.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-700'
-                      }`}>
-                        {u.isActive ? 'Payé' : 'À valider'}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleToggleStatus(u.uid, u.isActive)}
-                          className={`p-2.5 rounded-xl transition-all ${
-                            u.isActive ? 'text-slate-400 hover:bg-slate-100' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-100'
-                          }`}
-                          title={u.isActive ? "Désactiver" : "Activer & Valider"}
-                        >
-                          {u.isActive ? <Square className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                        </button>
-                        {currentUser?.role === 'SUPER_ADMIN' && (
-                          <button 
-                            onClick={() => handleDeleteUser(u.uid, `${u.firstName} ${u.lastName}`)}
-                            className="p-2.5 rounded-xl text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
-                            title="Supprimer définitivement"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{u.purchasedModuleIds?.length || 0} Acquis</span>
+                        {pendingCount > 0 && (
+                          <span className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-1 rounded-lg flex items-center gap-1 animate-pulse">
+                            <ShoppingCart className="w-3 h-3" /> {pendingCount} Nouveau(x)
+                          </span>
                         )}
                       </div>
                     </td>
+                    <td className="px-8 py-6">
+                      <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        u.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {u.isActive ? 'Actif' : 'Bloqué'}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        {pendingCount > 0 && (
+                          <button 
+                            onClick={() => handleValidatePurchases(u.uid)}
+                            disabled={processingId === u.uid}
+                            className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 hover:bg-emerald-600 disabled:opacity-50 transition-all flex items-center gap-2"
+                          >
+                            {processingId === u.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            Valider Achats
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleToggleStatus(u.uid, u.isActive)}
+                          className="p-2.5 rounded-xl text-slate-400 hover:bg-slate-100"
+                        >
+                          <Square className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteUser(u.uid, `${u.firstName} ${u.lastName}`)} className="p-2.5 rounded-xl text-rose-400 hover:bg-rose-50">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 };
 
-const StatCard: React.FC<{ title: string, value: string | number, icon: React.ReactNode, color: string, pulse?: boolean }> = ({ title, value, icon, color, pulse }) => (
-  <div className={`bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 ${pulse ? 'ring-2 ring-amber-400 animate-pulse' : ''}`}>
-    <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl ${color}`}>
-      {icon}
-    </div>
+const StatCard = ({ title, value, icon, color, pulse }: any) => (
+  <div className={`bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 ${pulse ? 'ring-2 ring-amber-400' : ''}`}>
+    <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
     <div>
       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
       <p className="text-xl font-black text-slate-900">{value}</p>
@@ -258,15 +232,10 @@ const StatCard: React.FC<{ title: string, value: string | number, icon: React.Re
   </div>
 );
 
-const FilterBtn: React.FC<{ active: boolean, onClick: () => void, label: string, count?: number }> = ({ active, onClick, label, count }) => (
-  <button 
-    onClick={onClick}
-    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-      active ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'
-    }`}
-  >
+const FilterBtn = ({ active, onClick, label, count }: any) => (
+  <button onClick={onClick} className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${active ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>
     {label}
-    {count !== undefined && count > 0 && <span className={`px-1.5 py-0.5 rounded-md text-[8px] ${active ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{count}</span>}
+    {count !== undefined && count > 0 && <span className={`px-1.5 py-0.5 rounded-md text-[8px] ${active ? 'bg-brand-500' : 'bg-slate-100'}`}>{count}</span>}
   </button>
 );
 

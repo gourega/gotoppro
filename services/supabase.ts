@@ -44,62 +44,35 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // Sécurité renforcée : on récupère le profil actuel pour fusionner au lieu d'écraser aveuglément
-  const { data: currentProfile } = await supabase
+  // CRITIQUE : On récupère d'abord l'état actuel pour ne jamais perdre de données vitales
+  const { data: current, error: fetchError } = await supabase
     .from('profiles')
-    .select('purchasedModuleIds, pendingModuleIds, badges, actionPlan')
+    .select('*')
     .eq('uid', profile.uid)
     .maybeSingle();
 
-  const cleanProfile = {
+  if (fetchError) console.error("Fetch before save error:", fetchError);
+
+  // Fusion intelligente : on donne priorité aux nouvelles données mais on garde l'ancien si le nouveau est vide
+  const mergedProfile = {
+    ...current,
     ...profile,
-    // On s'assure de ne jamais écraser ces listes par du vide si elles existent déjà en base
-    purchasedModuleIds: profile.purchasedModuleIds && profile.purchasedModuleIds.length > 0 
-      ? profile.purchasedModuleIds 
-      : (currentProfile?.purchasedModuleIds || []),
-    pendingModuleIds: profile.pendingModuleIds && profile.pendingModuleIds.length > 0 
-      ? profile.pendingModuleIds 
-      : (currentProfile?.pendingModuleIds || []),
-    badges: profile.badges && profile.badges.length > 0 
-      ? profile.badges 
-      : (currentProfile?.badges || []),
-    actionPlan: profile.actionPlan && profile.actionPlan.length > 0 
-      ? profile.actionPlan 
-      : (currentProfile?.actionPlan || [])
+    purchasedModuleIds: [...new Set([...(current?.purchasedModuleIds || []), ...(profile.purchasedModuleIds || [])])],
+    pendingModuleIds: [...new Set([...(current?.pendingModuleIds || []), ...(profile.pendingModuleIds || [])])],
+    badges: [...new Set([...(current?.badges || []), ...(profile.badges || [])])],
+    progress: { ...(current?.progress || {}), ...(profile.progress || {}) },
+    attempts: { ...(current?.attempts || {}), ...(profile.attempts || {}) },
+    actionPlan: profile.actionPlan || current?.actionPlan || []
   };
 
   const { error } = await supabase
     .from('profiles')
-    .upsert(cleanProfile, { onConflict: 'uid' });
+    .upsert(mergedProfile, { onConflict: 'uid' });
   
   if (error) {
-    console.error("Détails Erreur Save Profile:", error);
-    throw new Error(error.message || "Erreur de base de données");
+    console.error("Détails Erreur Upsert:", error);
+    throw new Error(error.message);
   }
-};
-
-export const uploadProfilePhoto = async (file: File, uid: string): Promise<string> => {
-  if (!supabase) throw new Error("Client Supabase non initialisé.");
-  
-  const bucketName = 'avatars';
-  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const filePath = `${uid}/avatar_${Date.now()}.${fileExt}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucketName)
-    .upload(filePath, file, { 
-      cacheControl: '3600',
-      upsert: true,
-      contentType: file.type 
-    });
-
-  if (uploadError) throw new Error(uploadError.message || "Erreur de stockage");
-
-  const { data } = supabase.storage
-    .from(bucketName)
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
@@ -113,22 +86,50 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
   return data as UserProfile[];
 };
 
+// Fix: Implement toggleUserStatus to enable/disable user accounts
 export const toggleUserStatus = async (uid: string, isActive: boolean) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   const { error } = await supabase
     .from('profiles')
     .update({ isActive })
     .eq('uid', uid);
-
   if (error) throw error;
 };
 
+// Fix: Implement updateUserRole to modify user permissions
 export const updateUserRole = async (uid: string, role: UserRole) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
-  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
   const { error } = await supabase
     .from('profiles')
-    .update({ role, isAdmin })
+    .update({ 
+      role, 
+      isAdmin: role === 'ADMIN' || role === 'SUPER_ADMIN' 
+    })
+    .eq('uid', uid);
+  if (error) throw error;
+};
+
+export const validateUserPurchases = async (uid: string) => {
+  if (!supabase) throw new Error("Client Supabase non initialisé.");
+  
+  const { data: user } = await supabase
+    .from('profiles')
+    .select('purchasedModuleIds, pendingModuleIds')
+    .eq('uid', uid)
+    .single();
+
+  if (!user) return;
+
+  // Transfert des modules en attente vers les modules achetés
+  const newPurchased = [...new Set([...(user.purchasedModuleIds || []), ...(user.pendingModuleIds || [])])];
+  
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      purchasedModuleIds: newPurchased,
+      pendingModuleIds: [],
+      isActive: true // On active le compte automatiquement s'il y a un achat validé
+    })
     .eq('uid', uid);
 
   if (error) throw error;
@@ -136,10 +137,16 @@ export const updateUserRole = async (uid: string, role: UserRole) => {
 
 export const deleteUserProfile = async (uid: string) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('uid', uid);
-
+  const { error } = await supabase.from('profiles').delete().eq('uid', uid);
   if (error) throw error;
+};
+
+export const uploadProfilePhoto = async (file: File, uid: string): Promise<string> => {
+  if (!supabase) throw new Error("Client Supabase non initialisé.");
+  const bucketName = 'avatars';
+  const filePath = `${uid}/avatar_${Date.now()}.${file.name.split('.').pop()}`;
+  const { error } = await supabase.storage.from(bucketName).upload(filePath, file);
+  if (error) throw error;
+  const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+  return data.publicUrl;
 };
