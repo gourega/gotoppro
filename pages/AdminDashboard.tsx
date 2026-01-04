@@ -35,13 +35,12 @@ import {
   Coins,
   UserPlus,
   ShieldCheck,
-  MoreVertical,
-  // Fix: Add missing Plus icon import
-  Plus
+  Plus,
+  ArrowUpRight
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
-  const { user: currentUser, refreshProfile } = useAuth();
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +50,6 @@ const AdminDashboard: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  // States for adding admin
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [adminForm, setAdminForm] = useState({ email: '', firstName: '', phone: '' });
 
@@ -75,64 +73,63 @@ const AdminDashboard: React.FC = () => {
       setUsers(data);
     } catch (err) {
       console.error(err);
-      showNotification("Erreur lors de la récupération des données", "error");
+      showNotification("Erreur de synchronisation", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateNetRevenue = (purchasedModuleIds: string[]) => {
-    const count = purchasedModuleIds?.length || 0;
+  // Calcul du prix net dégressif pour un lot de modules
+  const calculateNetPrice = (count: number) => {
     const basePrice = count * 500;
     let discount = 0;
     if (count >= 13) discount = 0.50;
     else if (count >= 9) discount = 0.30;
     else if (count >= 5) discount = 0.20;
-    return basePrice * (1 - discount);
+    return Math.round(basePrice * (1 - discount));
   };
 
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
     const pendingPayment = clients.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
-    const revenue = clients.reduce((acc, u) => acc + calculateNetRevenue(u.purchasedModuleIds), 0);
+    
+    // Recettes totales nettes (seulement sur les modules déjà achetés)
+    const totalRevenue = clients.reduce((acc, u) => acc + calculateNetPrice(u.purchasedModuleIds?.length || 0), 0);
+    
     const activeClients = clients.filter(u => u.isActive);
     const conversionRate = clients.length > 0 ? Math.round((activeClients.length / clients.length) * 100) : 0;
 
     return { 
       totalClients: clients.length, 
       pending: pendingPayment.length, 
-      revenue,
+      revenue: totalRevenue,
       conversionRate
     };
   }, [users]);
+
+  const handleValidate = async (uid: string) => {
+    setProcessingId(uid);
+    try {
+      await validateUserPurchases(uid);
+      showNotification("Paiement validé. Modules débloqués.");
+      await fetchUsers();
+    } catch (err) {
+      showNotification("Erreur validation", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const handleRewardModule = async (moduleId: string) => {
     if (!selectedUser) return;
     setProcessingId(moduleId);
     try {
       await grantModuleAccess(selectedUser.uid, moduleId);
-      showNotification("Récompense envoyée : Module débloqué !");
+      showNotification("Module offert avec succès !");
       await fetchUsers();
-      // Update selectedUser local state
-      setSelectedUser(prev => prev ? { ...prev, purchasedModuleIds: [...new Set([...prev.purchasedModuleIds, moduleId])] } : null);
+      setSelectedUser(prev => prev ? { ...prev, purchasedModuleIds: [...new Set([...(prev.purchasedModuleIds || []), moduleId])] } : null);
     } catch (err) {
-      showNotification("Erreur lors de l'octroi", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleResetTokens = async (moduleId: string) => {
-    if (!selectedUser) return;
-    setProcessingId(`tokens_${moduleId}`);
-    try {
-      await updateQuizAttempts(selectedUser.uid, moduleId, 0);
-      showNotification("Jetons réinitialisés pour ce module.");
-      await fetchUsers();
-      // Update selectedUser local state
-      setSelectedUser(prev => prev ? { ...prev, attempts: { ...(prev.attempts || {}), [moduleId]: 0 } } : null);
-    } catch (err) {
-      showNotification("Erreur réinitialisation", "error");
+      showNotification("Erreur", "error");
     } finally {
       setProcessingId(null);
     }
@@ -143,7 +140,7 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     try {
       await createAdminAccount(adminForm.email, adminForm.firstName, adminForm.phone);
-      showNotification("Nouvel administrateur ajouté à l'équipe.");
+      showNotification("Admin ajouté à l'équipe.");
       setShowAddAdmin(false);
       setAdminForm({ email: '', firstName: '', phone: '' });
       await fetchUsers();
@@ -206,47 +203,61 @@ const AdminDashboard: React.FC = () => {
           <StatBox title="Recettes Nettes" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" />
         </div>
 
-        {/* Priority Section: Pending Payments */}
+        {/* Priority Section: Pending Payments WITH MODULE DETAILS */}
         {pendingUsers.length > 0 && viewMode === 'clients' && (
           <section className="mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
             <h2 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
               <AlertCircle className="w-4 h-4" />
-              Paiements en attente de traitement ({pendingUsers.length})
+              Paiements en attente de validation ({pendingUsers.length})
             </h2>
-            <div className="grid lg:grid-cols-2 gap-6">
-               {pendingUsers.map(u => (
-                 <div key={u.uid} className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-amber-500/40 transition-all group">
-                    <div className="flex items-center gap-6">
-                       <div className="h-16 w-16 bg-white rounded-2xl overflow-hidden shadow-lg">
-                          {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/> : <div className="h-full w-full flex items-center justify-center text-amber-500 font-black text-2xl">{u.firstName?.[0]}</div>}
-                       </div>
-                       <div>
-                          <h3 className="font-black text-lg text-white group-hover:text-amber-400 transition-colors">{u.firstName} {u.lastName}</h3>
-                          <p className="text-amber-500/70 font-black text-[10px] uppercase tracking-widest">{u.phoneNumber}</p>
-                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                       <a href={`https://wa.me/${u.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 md:flex-none p-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
-                          <MessageCircle className="w-5 h-5" />
-                       </a>
-                       <button 
-                         onClick={() => {
-                            setProcessingId(u.uid);
-                            validateUserPurchases(u.uid).then(() => {
-                               showNotification("Accès validés !");
-                               fetchUsers();
-                               setProcessingId(null);
-                            });
-                         }}
-                         disabled={processingId === u.uid}
-                         className="flex-grow md:flex-none bg-amber-500 text-slate-900 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-amber-500/10"
-                       >
-                         {processingId === u.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                         Valider le paiement
-                       </button>
-                    </div>
-                 </div>
-               ))}
+            <div className="grid lg:grid-cols-1 gap-6">
+               {pendingUsers.map(u => {
+                 const pendingModules = TRAINING_CATALOG.filter(m => u.pendingModuleIds.includes(m.id));
+                 const expectedAmount = calculateNetPrice(u.pendingModuleIds.length);
+                 
+                 return (
+                   <div key={u.uid} className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-[2.5rem] p-10 flex flex-col lg:flex-row items-center justify-between gap-10 hover:border-amber-500/40 transition-all group">
+                      <div className="flex items-center gap-6 shrink-0">
+                         <div className="h-20 w-20 bg-white rounded-[1.8rem] overflow-hidden shadow-2xl">
+                            {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/> : <div className="h-full w-full flex items-center justify-center text-amber-500 font-black text-3xl">{u.firstName?.[0]}</div>}
+                         </div>
+                         <div>
+                            <h3 className="font-black text-xl text-white group-hover:text-amber-400 transition-colors">{u.firstName} {u.lastName}</h3>
+                            <p className="text-amber-500 font-black text-[11px] uppercase tracking-widest">{u.phoneNumber}</p>
+                         </div>
+                      </div>
+
+                      {/* Details des modules en attente */}
+                      <div className="flex-grow">
+                         <div className="flex flex-wrap gap-3">
+                            {pendingModules.map(m => (
+                               <div key={m.id} className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
+                                  <div className="h-1.5 w-1.5 bg-amber-500 rounded-full"></div>
+                                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">{m.title}</span>
+                               </div>
+                            ))}
+                         </div>
+                         <p className="mt-4 text-[10px] font-black text-amber-500/60 uppercase tracking-widest italic flex items-center gap-2">
+                            <ArrowUpRight className="w-3 h-3" /> Montant Wave attendu : {expectedAmount.toLocaleString()} F
+                         </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full lg:w-auto">
+                         <a href={`https://wa.me/${u.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 lg:flex-none p-5 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:bg-emerald-500/20 transition-all flex items-center justify-center">
+                            <MessageCircle className="w-6 h-6" />
+                         </a>
+                         <button 
+                           onClick={() => handleValidate(u.uid)}
+                           disabled={processingId === u.uid}
+                           className="flex-grow lg:flex-none bg-amber-500 text-slate-900 px-10 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20"
+                         >
+                           {processingId === u.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                           Valider le paiement
+                         </button>
+                      </div>
+                   </div>
+                 );
+               })}
             </div>
           </section>
         )}
@@ -275,7 +286,7 @@ const AdminDashboard: React.FC = () => {
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Identité</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{viewMode === 'clients' ? "Modules" : "Rôle"}</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">{viewMode === 'clients' ? "Maîtrise" : "Rôle"}</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
                 </tr>
@@ -296,11 +307,18 @@ const AdminDashboard: React.FC = () => {
                     </td>
                     <td className="px-10 py-8">
                        {viewMode === 'clients' ? (
-                         <div className="flex items-center gap-3">
-                            <div className="h-1.5 w-24 bg-white/10 rounded-full overflow-hidden">
-                               <div className="h-full bg-brand-500" style={{ width: `${Math.round((u.purchasedModuleIds?.length || 0)/16 * 100)}%` }}></div>
+                         <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
+                               <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden">
+                                  <div className="h-full bg-brand-500" style={{ width: `${Math.round((u.purchasedModuleIds?.length || 0)/16 * 100)}%` }}></div>
+                               </div>
+                               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{u.purchasedModuleIds?.length || 0} Acquis</span>
                             </div>
-                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{u.purchasedModuleIds?.length || 0} Acquis</span>
+                            {u.pendingModuleIds && u.pendingModuleIds.length > 0 && (
+                               <span className="bg-amber-500/10 text-amber-500 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest border border-amber-500/20">
+                                 +{u.pendingModuleIds.length} En attente
+                               </span>
+                            )}
                          </div>
                        ) : (
                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-500 bg-brand-500/10 px-3 py-1 rounded-lg">
@@ -354,16 +372,14 @@ const AdminDashboard: React.FC = () => {
 
               <div className="p-10 overflow-y-auto flex-grow custom-scrollbar">
                  <div className="grid lg:grid-cols-12 gap-10">
-                    
-                    {/* Infos Colonne Gauche */}
                     <div className="lg:col-span-8 space-y-12">
                        {!selectedUser.isAdmin && (
                          <section>
                             <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                               <Gift className="w-4 h-4" /> Octroyer une Récompense
+                               <Gift className="w-4 h-4" /> Offrir un Module (Récompense)
                             </h3>
                             <div className="grid md:grid-cols-2 gap-4">
-                               {TRAINING_CATALOG.filter(m => !selectedUser.purchasedModuleIds.includes(m.id)).slice(0, 4).map(mod => (
+                               {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).slice(0, 4).map(mod => (
                                  <div key={mod.id} className="p-6 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-brand-500 transition-all">
                                     <div className="max-w-[180px]">
                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{mod.topic}</p>
@@ -385,7 +401,7 @@ const AdminDashboard: React.FC = () => {
                        <section className="grid md:grid-cols-2 gap-8">
                           <div className="space-y-6">
                              <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <Target className="w-4 h-4" /> Diagnostic Actuel
+                                <Target className="w-4 h-4" /> Progrès Académique
                              </h3>
                              <div className="space-y-3">
                                 {Object.entries(selectedUser.progress || {}).map(([id, score]) => (
@@ -393,7 +409,13 @@ const AdminDashboard: React.FC = () => {
                                       <span className="text-xs font-bold text-slate-300">Mod. {id.split('_').pop()}</span>
                                       <div className="flex items-center gap-4">
                                          <button 
-                                           onClick={() => handleResetTokens(id)}
+                                           onClick={() => {
+                                              updateQuizAttempts(selectedUser.uid, id, 0).then(() => {
+                                                 showNotification("Jetons réinitialisés.");
+                                                 fetchUsers();
+                                                 setSelectedUser(prev => prev ? { ...prev, attempts: { ...(prev.attempts || {}), [id]: 0 } } : null);
+                                              });
+                                           }}
                                            className="text-[9px] font-black uppercase text-brand-500 hover:underline"
                                          >
                                            Jetons ({selectedUser.attempts?.[id] || 0})
@@ -406,7 +428,7 @@ const AdminDashboard: React.FC = () => {
                           </div>
                           <div className="space-y-6">
                              <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <ListTodo className="w-4 h-4" /> Plan d'Action Engagé
+                                <ListTodo className="w-4 h-4" /> Plan d'Action Terrain
                              </h3>
                              <div className="space-y-4">
                                 {selectedUser.actionPlan && selectedUser.actionPlan.length > 0 ? (
@@ -417,21 +439,20 @@ const AdminDashboard: React.FC = () => {
                                       </div>
                                    ))
                                 ) : (
-                                   <p className="text-slate-500 italic text-sm">Aucun engagement stratégique pris.</p>
+                                   <p className="text-slate-500 italic text-sm">Aucun engagement scellé.</p>
                                 )}
                              </div>
                           </div>
                        </section>
                     </div>
 
-                    {/* Stats Colonne Droite */}
                     <div className="lg:col-span-4 space-y-6">
                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Investissement Net Estimé</p>
-                          <p className="text-3xl font-black text-white">{calculateNetRevenue(selectedUser.purchasedModuleIds).toLocaleString()} F</p>
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Valeur Nette du Client</p>
+                          <p className="text-3xl font-black text-white">{calculateNetPrice(selectedUser.purchasedModuleIds?.length || 0).toLocaleString()} F</p>
                        </div>
                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Détails Salon</p>
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Fiche Établissement</p>
                           <div className="space-y-4">
                              <div className="flex justify-between items-center text-xs">
                                 <span className="text-slate-500">Expérience</span>
@@ -440,10 +461,6 @@ const AdminDashboard: React.FC = () => {
                              <div className="flex justify-between items-center text-xs">
                                 <span className="text-slate-500">Équipe</span>
                                 <span className="text-white font-bold">{selectedUser.employeeCount || 0} pers.</span>
-                             </div>
-                             <div className="flex justify-between items-center text-xs">
-                                <span className="text-slate-500">Salon</span>
-                                <span className="text-white font-bold truncate max-w-[120px]">{selectedUser.establishmentName || '-'}</span>
                              </div>
                           </div>
                        </div>
@@ -454,7 +471,7 @@ const AdminDashboard: React.FC = () => {
               <div className="p-8 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
                  <button 
                    onClick={() => {
-                     if (window.confirm("Voulez-vous vraiment supprimer définitivement ce profil ?")) {
+                     if (window.confirm("Supprimer définitivement ce compte ?")) {
                        deleteUserProfile(selectedUser.uid).then(() => {
                          showNotification("Utilisateur supprimé.");
                          setSelectedUser(null);
@@ -462,26 +479,26 @@ const AdminDashboard: React.FC = () => {
                        });
                      }
                    }}
-                   className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest transition-colors"
+                   className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest"
                  >
-                    <Trash2 className="w-4 h-4" /> Supprimer définitivement
+                    <Trash2 className="w-4 h-4" /> Supprimer
                  </button>
                  <div className="flex gap-4">
                     <button 
                       onClick={() => {
                         saveUserProfile({ uid: selectedUser.uid, isActive: !selectedUser.isActive }).then(() => {
-                          showNotification(selectedUser.isActive ? "Compte suspendu" : "Compte activé");
+                          showNotification(selectedUser.isActive ? "Accès suspendu" : "Accès activé");
                           fetchUsers();
                           setSelectedUser(prev => prev ? { ...prev, isActive: !prev.isActive } : null);
                         });
                       }}
                       className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500 text-white'}`}
                     >
-                       {selectedUser.isActive ? 'Suspendre' : 'Activer'}
+                       {selectedUser.isActive ? 'Suspendre' : 'Débloquer'}
                     </button>
                     {!selectedUser.isAdmin && (
-                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-3">
-                         <MessageCircle className="w-4 h-4" /> WhatsApp
+                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3">
+                         <MessageCircle className="w-4 h-4" /> Message Direct
                       </a>
                     )}
                  </div>
@@ -490,53 +507,31 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Add Admin Modal */}
+      {/* Modal Ajout Admin */}
       {showAddAdmin && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="bg-[#1e293b] w-full max-w-md rounded-[3rem] border border-white/10 shadow-2xl p-10 animate-in zoom-in-95 duration-300">
+           <div className="bg-[#1e293b] w-full max-w-md rounded-[3rem] border border-white/10 shadow-2xl p-10">
               <div className="text-center mb-10">
-                 <div className="h-16 w-16 bg-brand-500/10 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <UserPlus className="w-8 h-8" />
-                 </div>
-                 <h2 className="text-2xl font-black text-white mb-2">Nouvel Administrateur</h2>
-                 <p className="text-slate-500 text-xs font-medium">L'accès à la tour de contrôle est sensible.</p>
+                 <h2 className="text-2xl font-black text-white mb-2">Nouvel Admin</h2>
+                 <p className="text-slate-500 text-xs font-medium">Enregistrement d'un membre de l'équipe.</p>
               </div>
 
               <form onSubmit={handleAddAdmin} className="space-y-6">
                  <div>
                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Prénom</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={adminForm.firstName}
-                      onChange={e => setAdminForm({...adminForm, firstName: e.target.value})}
-                      className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white"
-                    />
+                    <input type="text" required value={adminForm.firstName} onChange={e => setAdminForm({...adminForm, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
                  </div>
                  <div>
                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Email</label>
-                    <input 
-                      type="email" 
-                      required
-                      value={adminForm.email}
-                      onChange={e => setAdminForm({...adminForm, email: e.target.value})}
-                      className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white"
-                    />
+                    <input type="email" required value={adminForm.email} onChange={e => setAdminForm({...adminForm, email: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
                  </div>
                  <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Téléphone WhatsApp</label>
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="+225..."
-                      value={adminForm.phone}
-                      onChange={e => setAdminForm({...adminForm, phone: e.target.value})}
-                      className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white"
-                    />
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Téléphone</label>
+                    <input type="tel" required placeholder="+225..." value={adminForm.phone} onChange={e => setAdminForm({...adminForm, phone: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500 text-white" />
                  </div>
                  <div className="flex gap-4 pt-4">
-                    <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-500 transition-all">
-                       {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Créer le compte Admin"}
+                    <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest">
+                       {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Créer le profil Admin"}
                     </button>
                     <button type="button" onClick={() => setShowAddAdmin(false)} className="px-6 text-slate-500 font-black text-[10px] uppercase tracking-widest">Annuler</button>
                  </div>
