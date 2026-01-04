@@ -1,18 +1,4 @@
 
-/**
- * 🛠 CONFIGURATION REQUISE DANS SUPABASE (SQL EDITOR) :
- * 
- * -- 1. Autoriser l'accès aux profils (Lecture/Écriture pour le login manuel)
- * ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
- * DROP POLICY IF EXISTS "Accès Public Total" ON profiles;
- * CREATE POLICY "Accès Public Total" ON profiles FOR ALL TO anon USING (true) WITH CHECK (true);
- * 
- * -- 2. Autoriser la gestion des photos dans le bucket 'avatars'
- * DROP POLICY IF EXISTS "Gestion Avatars Public" ON storage.objects;
- * CREATE POLICY "Gestion Avatars Public" ON storage.objects 
- * FOR ALL TO anon USING (bucket_id = 'avatars') WITH CHECK (bucket_id = 'avatars');
- */
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, UserRole } from '../types';
 
@@ -62,14 +48,14 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // Utilisation de upsert pour gérer création et mise à jour en un seul appel
+  // Correction: On laisse Supabase identifier la clé de conflit (uid) automatiquement
   const { error } = await supabase
     .from('profiles')
-    .upsert(profile, { onConflict: 'uid' });
+    .upsert(profile);
   
   if (error) {
-    console.error("Erreur Save Profile:", error);
-    throw error;
+    console.error("Détails Erreur Save Profile:", error);
+    throw new Error(error.message || "Erreur de base de données");
   }
 };
 
@@ -89,8 +75,8 @@ export const uploadProfilePhoto = async (file: File, uid: string): Promise<strin
     });
 
   if (uploadError) {
-    console.error("Supabase Storage Error:", uploadError);
-    throw uploadError;
+    console.error("Détails Erreur Storage:", uploadError);
+    throw new Error(uploadError.message || "Erreur de stockage");
   }
 
   const { data } = supabase.storage

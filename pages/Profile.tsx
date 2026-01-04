@@ -36,8 +36,9 @@ const Profile: React.FC = () => {
       setTimeout(() => setSuccess(null), 3000);
       setIsEditing(false);
     } catch (err: any) {
-      const isRLS = err.message?.includes('row-level security') || err.code === '42501';
-      setError(isRLS ? "Erreur de Sécurité Base de Données (RLS)" : (err.message || "Erreur sauvegarde"));
+      console.error("Erreur Save Profile:", err);
+      const isRLS = err.message?.includes('row-level security') || err.message?.includes('policy');
+      setError(err.message || "Erreur lors de la sauvegarde");
       if (isRLS) setShowRLSHint(true);
     } finally {
       setLoading(false);
@@ -57,17 +58,15 @@ const Profile: React.FC = () => {
     setError(null);
     setShowRLSHint(false);
     try {
-      // 1. Upload vers Storage
       const url = await uploadProfilePhoto(file, user.uid);
-      // 2. Mise à jour du profil avec l'URL
       await saveUserProfile({ uid: user.uid, photoURL: url });
       await refreshProfile();
       setSuccess("Photo mise à jour !");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      console.error("Erreur Upload:", err);
-      const isRLS = err.message?.includes('row-level security') || err.code === '42501';
-      setError(isRLS ? "Permission refusée par Supabase (RLS)" : "Erreur lors de l'upload");
+      console.error("Erreur Upload Process:", err);
+      const isRLS = err.message?.includes('row-level security') || err.message?.includes('policy');
+      setError(err.message || "Erreur lors de l'upload");
       if (isRLS) setShowRLSHint(true);
     } finally {
       setLoading(false);
@@ -82,15 +81,15 @@ const Profile: React.FC = () => {
           <div className="bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex flex-col gap-3 animate-in slide-in-from-right duration-300 border border-rose-400">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest leading-tight">{error}</p>
               <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4 opacity-50" /></button>
             </div>
             {showRLSHint && (
               <div className="bg-rose-900/30 p-3 rounded-xl border border-rose-400/30">
                 <p className="text-[9px] leading-relaxed font-medium">
                   <Database className="w-3 h-3 inline mr-1" />
-                  <b>Action requise Admin :</b> Les politiques RLS de Supabase bloquent l'écriture. 
-                  Copiez le script SQL dans <i>services/supabase.ts</i> et lancez-le dans votre <b>SQL Editor</b> Supabase.
+                  <b>Configuration Supabase :</b> Votre politique RLS semble bloquer l'écriture.
+                  Vérifiez le SQL Editor.
                 </p>
               </div>
             )}
