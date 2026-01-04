@@ -39,7 +39,8 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
+  // Use byteOffset and byteLength to safely access the underlying buffer
+  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -89,7 +90,11 @@ const ModuleView: React.FC = () => {
 
   const stopAudio = () => {
     if (sourceNodeRef.current) {
-      sourceNodeRef.current.stop();
+      try {
+        sourceNodeRef.current.stop();
+      } catch (e) {
+        // Already stopped or not started
+      }
       sourceNodeRef.current = null;
     }
     setIsPlaying(false);
@@ -103,10 +108,22 @@ const ModuleView: React.FC = () => {
 
     setIsAudioLoading(true);
     try {
+      if (!process.env.API_KEY) {
+        throw new Error("Clé API manquante dans l'environnement.");
+      }
+
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      // On prépare le texte en retirant les balises HTML pour une meilleure synthèse
-      const plainText = module.lesson_content.replace(/<[^>]*>/g, '');
-      const prompt = `Lisez cette leçon avec enthousiasme et professionnalisme : ${module.title}. ${plainText}`;
+      
+      // Nettoyage strict du texte pour la lecture
+      const plainText = module.lesson_content
+        .replace(/<[^>]*>/g, ' ') // Retire HTML
+        .replace(/\s+/g, ' ')     // Espace unique
+        .trim();
+
+      // On limite le texte pour éviter les erreurs de timeout (max ~1500 chars pour le TTS)
+      const truncatedText = plainText.length > 2000 ? plainText.substring(0, 2000) + "..." : plainText;
+      
+      const prompt = `Lisez cette leçon avec un ton expert, calme et encourageant : ${module.title}. Contenu : ${truncatedText}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -118,13 +135,20 @@ const ModuleView: React.FC = () => {
               prebuiltVoiceConfig: { voiceName: 'Kore' },
             },
           },
+          thinkingConfig: { thinkingBudget: 0 }
         },
       });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const base64Audio = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+      
       if (base64Audio) {
         if (!audioContextRef.current) {
           audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        }
+        
+        // Re-activation indispensable pour les navigateurs modernes
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
         }
         
         const audioBuffer = await decodeAudioData(
@@ -140,12 +164,14 @@ const ModuleView: React.FC = () => {
         source.onended = () => setIsPlaying(false);
         
         sourceNodeRef.current = source;
-        source.start();
+        source.start(0);
         setIsPlaying(true);
+      } else {
+        throw new Error("Aucune donnée audio reçue du modèle.");
       }
-    } catch (err) {
-      console.error("TTS Error:", err);
-      alert("Impossible de générer l'audio pour le moment.");
+    } catch (err: any) {
+      console.error("Erreur Audio détaillée:", err);
+      alert(`Erreur Audio : ${err.message || "Impossible de générer la voix"}`);
     } finally {
       setIsAudioLoading(false);
     }
@@ -268,7 +294,7 @@ const ModuleView: React.FC = () => {
                     Audio Guide Expert
                   </p>
                   <p className="text-xs font-bold text-slate-500">
-                    {isPlaying ? "Lecture de la leçon par Coach Kita..." : isAudioLoading ? "Préparation de l'audio..." : "Écouter la leçon complète"}
+                    {isPlaying ? "Lecture en cours..." : isAudioLoading ? "Préparation de l'audio..." : "Écouter la leçon"}
                   </p>
                   {isPlaying && (
                     <div className="flex items-end gap-0.5 mt-2 h-4">
