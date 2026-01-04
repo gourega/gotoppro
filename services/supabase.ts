@@ -9,9 +9,12 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-if (!supabase) {
-  console.warn("Supabase configuration manquante.");
-}
+/**
+ * 💡 NOTE IMPORTANTE :
+ * Si vous obtenez une erreur "Column not found", assurez-vous d'avoir exécuté 
+ * le script ALTER TABLE dans le SQL Editor de Supabase pour ajouter 
+ * les colonnes : "firstName", "lastName", "establishmentName", "photoURL", etc.
+ */
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
@@ -48,14 +51,19 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // Correction: On laisse Supabase identifier la clé de conflit (uid) automatiquement
+  // On s'assure que l'on n'envoie pas de champs undefined qui pourraient faire planter l'upsert
+  const cleanProfile = Object.fromEntries(
+    Object.entries(profile).filter(([_, v]) => v !== undefined)
+  );
+
   const { error } = await supabase
     .from('profiles')
-    .upsert(profile);
+    .upsert(cleanProfile, { onConflict: 'uid' });
   
   if (error) {
     console.error("Détails Erreur Save Profile:", error);
-    throw new Error(error.message || "Erreur de base de données");
+    // Si l'erreur persiste, c'est que la colonne n'existe pas en base
+    throw new Error(error.message || "Erreur de base de données (Vérifiez les colonnes)");
   }
 };
 
