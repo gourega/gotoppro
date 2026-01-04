@@ -42,27 +42,50 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 };
 
 /**
- * Sauvegarde le profil utilisateur.
- * Utilise 'update' au lieu de 'upsert' pour éviter les erreurs de droits RLS (Row Level Security)
- * car le profil est déjà créé lors de la phase de diagnostic.
+ * Sauvegarde le profil utilisateur avec gestion de secours si des colonnes sont manquantes.
  */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // On retire les champs potentiellement problématiques ou inutiles à renvoyer tel quel
   const { uid, ...dataToUpdate } = profile;
 
-  // On effectue une mise à jour directe sur la ligne correspondant à l'UID
+  // Tentative de mise à jour complète
   const { error } = await supabase
     .from('profiles')
     .update(dataToUpdate)
     .eq('uid', uid);
   
   if (error) {
-    console.error("Erreur de mise à jour Supabase :", error);
-    // Si l'erreur est liée à une ligne inexistante (rare ici), on pourrait tenter un insert,
-    // mais dans notre flux, le profil existe TOUJOURS avant d'arriver au module.
-    throw new Error(error.message);
+    console.warn("Erreur Supabase (Tentative 1) :", error.message);
+    
+    // Si la colonne 'attempts' ou une autre manque (Code 42703), on tente une sauvegarde restreinte
+    if (error.code === '42703' || error.message.includes('column')) {
+      console.log("Tentative de sauvegarde de secours sans les colonnes optionnelles...");
+      
+      const essentialData = {
+        progress: profile.progress,
+        badges: profile.badges,
+        isActive: profile.isActive,
+        actionPlan: profile.actionPlan,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        establishmentName: profile.establishmentName
+      };
+
+      // Supprimer les champs undefined pour éviter d'autres erreurs
+      Object.keys(essentialData).forEach(key => 
+        (essentialData as any)[key] === undefined && delete (essentialData as any)[key]
+      );
+
+      const { error: retryError } = await supabase
+        .from('profiles')
+        .update(essentialData)
+        .eq('uid', uid);
+
+      if (retryError) throw new Error(retryError.message);
+    } else {
+      throw new Error(error.message);
+    }
   }
 };
 

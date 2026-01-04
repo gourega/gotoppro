@@ -171,7 +171,6 @@ const ModuleView: React.FC = () => {
     if (currentIdx < module.quiz_questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
-      // Pour les modules à question unique ou la dernière question
       finishQuiz(newAnswers);
     }
   };
@@ -185,7 +184,6 @@ const ModuleView: React.FC = () => {
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     
     try {
-      // Cloner l'utilisateur pour éviter les mutations directes
       const updatedUser = { ...user };
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
@@ -207,16 +205,16 @@ const ModuleView: React.FC = () => {
         }
       }
 
-      // Appel au service Supabase (maintenant optimisé avec 'update')
+      // Sauvegarde optimisée (retry sans colonnes optionnelles en interne si besoin)
       await saveUserProfile(updatedUser);
-      
-      // Rafraîchir le contexte global
       await refreshProfile();
       
       setQuizState('results');
     } catch (err: any) {
-      console.error("Erreur sauvegarde quiz:", err);
-      alert("Une erreur est survenue lors de l'enregistrement de vos résultats : " + (err.message || "Erreur technique"));
+      console.error("Erreur critique quiz:", err);
+      // On affiche quand même les résultats locaux pour ne pas bloquer l'utilisateur
+      setQuizState('results');
+      alert("Vos résultats sont affichés mais n'ont pas pu être synchronisés. Raison : " + (err.message || "Erreur serveur"));
     } finally {
       setIsFinishingQuiz(false);
     }
