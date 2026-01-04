@@ -134,22 +134,22 @@ const ModuleView: React.FC = () => {
 
     setIsAudioLoading(true);
     
-    // Final text cleaning: Simple punctuation is enough
+    // Cleaning text properly for TTS: Only natural punctuation
     const cleanText = module.lesson_content
       .replace(/<[^>]*>/g, ' ') 
       .replace(/\s+/g, ' ')
       .trim();
     
-    const fullText = `${module.title}. . ${cleanText}`;
+    const fullText = `${module.title}. ${cleanText}`;
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const truncatedText = fullText.length > 4000 ? fullText.substring(0, 4000) + "..." : fullText;
+      const truncatedText = fullText.length > 3500 ? fullText.substring(0, 3500) + "..." : fullText;
       
-      // We instruct the model via the prompt to handle pauses naturally.
-      const prompt = `Lisez ce cours de coiffure expert. Parlez avec calme, autorité et bienveillance. 
-      IMPORTANT : Marquez une pause de 2 secondes après chaque titre de chapitre et entre chaque paragraphe pour laisser l'auditeur assimiler. 
-      Voici le texte : ${truncatedText}`;
+      // We instruct the model to pause via system prompt instructions
+      const prompt = `Lisez ce cours de coiffure expert avec un ton calme, posé et très inspirant. 
+      IMPORTANT : Faites des pauses de 2 secondes après chaque titre (numérotés I, II, III...) et entre chaque paragraphe. 
+      Ne prononcez pas les symboles de ponctuation, utilisez-les simplement pour le rythme : ${truncatedText}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -246,7 +246,7 @@ const ModuleView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
+    <div className="min-h-screen bg-slate-50/50">
       {shouldFire && (
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
@@ -295,15 +295,14 @@ const ModuleView: React.FC = () => {
                   <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
                     <Headphones className="w-3.5 h-3.5" />
                     Audio Guide Masterclass
-                    {useNativeFallback && isPlaying && <span className="ml-2 bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[8px] border border-slate-200">Mode Standard</span>}
                   </p>
                   <p className="text-sm font-bold text-slate-500">
-                    {isPlaying ? "Écoute immersive..." : isAudioLoading ? "Génération de l'expertise..." : "Écouter la leçon complète"}
+                    {isPlaying ? "Écoute en cours..." : isAudioLoading ? "Génération de l'audio..." : "Écouter la leçon complète"}
                   </p>
                   {isPlaying && (
                     <div className="flex items-end gap-1 mt-3 h-5">
                       {[1,2,3,4,5,6,7,8,9,10].map(i => (
-                        <div key={i} className={`w-1 rounded-full animate-[pulse_0.8s_infinite] ${useNativeFallback ? 'bg-slate-300' : 'bg-brand-500'}`} style={{ height: `${30 + Math.random() * 70}%`, animationDelay: `${i * 0.08}s` }}></div>
+                        <div key={i} className="w-1 rounded-full animate-[pulse_0.8s_infinite] bg-brand-500" style={{ height: `${30 + Math.random() * 70}%`, animationDelay: `${i * 0.08}s` }}></div>
                       ))}
                     </div>
                   )}
@@ -311,16 +310,17 @@ const ModuleView: React.FC = () => {
               </div>
             </header>
 
-            {/* Editorial Section Layout */}
-            <div className="space-y-12">
-               <div className="prose prose-slate prose-xl max-w-none 
+            {/* Structured Editorial Layout */}
+            <div className="lesson-content-container">
+               <div 
+                  className="prose prose-slate prose-xl max-w-none 
                   prose-headings:font-serif prose-headings:font-bold prose-headings:text-brand-900 
                   prose-h2:text-4xl prose-h2:mt-0 prose-h2:mb-10 prose-h2:tracking-tight
-                  prose-p:leading-[1.8] prose-p:text-slate-600 prose-p:mb-10 prose-p:font-medium
+                  prose-p:leading-[2] prose-p:text-slate-600 prose-p:mb-10 prose-p:font-medium
                   prose-strong:text-brand-900 prose-strong:font-black
-                  [&>section]:bg-white [&>section]:p-12 [&>section]:md:p-20 [&>section]:rounded-[4rem] [&>section]:border [&>section]:border-slate-100 [&>section]:shadow-sm">
-                 <div dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
-               </div>
+                  [&_.lesson-card]:bg-white [&_.lesson-card]:p-12 [&_.lesson-card]:md:p-20 [&_.lesson-card]:rounded-[4rem] [&_.lesson-card]:border [&_.lesson-card]:border-slate-100 [&_.lesson-card]:shadow-sm [&_.lesson-card]:mb-20 last:[&_.lesson-card]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: module.lesson_content }} 
+                />
             </div>
             
             <div className="my-24 bg-brand-900 rounded-[5rem] p-16 md:p-24 text-white relative overflow-hidden group shadow-2xl shadow-brand-900/20">
