@@ -70,6 +70,7 @@ const ModuleView: React.FC = () => {
   const [shouldFire, setShouldFire] = useState(false);
   const [commitment, setCommitment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
 
   // Audio States
   const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -145,6 +146,7 @@ const ModuleView: React.FC = () => {
   };
 
   const handleAnswer = (idx: number) => {
+    if (isFinishingQuiz) return;
     const newAnswers = [...answers, idx];
     setAnswers(newAnswers);
     if (currentIdx < module.quiz_questions.length - 1) {
@@ -155,42 +157,46 @@ const ModuleView: React.FC = () => {
   };
 
   const finishQuiz = async (finalAnswers: number[]) => {
+    setIsFinishingQuiz(true);
     let score = 0;
     finalAnswers.forEach((ans, i) => { if (ans === module.quiz_questions[i].correctAnswer) score++; });
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     
-    const updatedUser = { ...user };
-    if (!updatedUser.progress) updatedUser.progress = {};
-    if (!updatedUser.attempts) updatedUser.attempts = {};
+    try {
+      const updatedUser = { ...user };
+      if (!updatedUser.progress) updatedUser.progress = {};
+      if (!updatedUser.attempts) updatedUser.attempts = {};
 
-    // Increment attempts
-    const currentAttempts = (updatedUser.attempts[module.id] || 0) + 1;
-    updatedUser.attempts[module.id] = currentAttempts;
-    
-    // Update progress only if it's a better score
-    const prevBest = updatedUser.progress[module.id] || 0;
-    if (percentage > prevBest) {
-      updatedUser.progress[module.id] = percentage;
-    }
-
-    // Badge Logic
-    if (percentage >= 80) {
-      setShouldFire(true);
-      if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
-      const completedModulesCount = Object.values(updatedUser.progress).filter(p => p >= 80).length;
-      if (completedModulesCount >= 5 && !updatedUser.badges.includes('dedicated')) {
-        updatedUser.badges.push('dedicated');
+      const currentAttempts = (updatedUser.attempts[module.id] || 0) + 1;
+      updatedUser.attempts[module.id] = currentAttempts;
+      
+      const prevBest = updatedUser.progress[module.id] || 0;
+      if (percentage > prevBest) {
+        updatedUser.progress[module.id] = percentage;
       }
-    }
 
-    await saveUserProfile(updatedUser);
-    await refreshProfile();
-    setQuizState('results');
+      if (percentage >= 80) {
+        setShouldFire(true);
+        if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
+        const completedModulesCount = Object.values(updatedUser.progress).filter(p => p >= 80).length;
+        if (completedModulesCount >= 5 && !updatedUser.badges.includes('dedicated')) {
+          updatedUser.badges.push('dedicated');
+        }
+      }
+
+      await saveUserProfile(updatedUser);
+      await refreshProfile();
+      setQuizState('results');
+    } catch (err) {
+      console.error("Erreur quiz:", err);
+      alert("Une erreur est survenue lors de l'enregistrement de vos résultats. Veuillez réessayer.");
+    } finally {
+      setIsFinishingQuiz(false);
+    }
   };
 
-  // Fix: Adding handleCommit function to save user action commitment
   const handleCommit = async () => {
-    if (!commitment.trim() || !user || !module) return;
+    if (!commitment.trim() || !user || !module || isSaving) return;
 
     setIsSaving(true);
     try {
@@ -257,6 +263,15 @@ const ModuleView: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-20 pb-32">
+        {isFinishingQuiz && (
+          <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+            <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 text-center space-y-6">
+              <Loader2 className="w-12 h-12 animate-spin text-brand-600 mx-auto" />
+              <p className="font-serif font-bold text-xl text-brand-900">Calcul de votre excellence...</p>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'lesson' ? (
           <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
             <header className="text-center mb-24">

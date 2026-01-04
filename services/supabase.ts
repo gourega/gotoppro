@@ -9,13 +9,6 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-/**
- * 💡 NOTE IMPORTANTE :
- * Si vous obtenez une erreur "Column not found", assurez-vous d'avoir exécuté 
- * le script ALTER TABLE dans le SQL Editor de Supabase pour ajouter 
- * les colonnes : "firstName", "lastName", "establishmentName", "photoURL", etc.
- */
-
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   try {
@@ -51,10 +44,29 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
-  // On s'assure que l'on n'envoie pas de champs undefined qui pourraient faire planter l'upsert
-  const cleanProfile = Object.fromEntries(
-    Object.entries(profile).filter(([_, v]) => v !== undefined)
-  );
+  // Sécurité renforcée : on récupère le profil actuel pour fusionner au lieu d'écraser aveuglément
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('purchasedModuleIds, pendingModuleIds, badges, actionPlan')
+    .eq('uid', profile.uid)
+    .maybeSingle();
+
+  const cleanProfile = {
+    ...profile,
+    // On s'assure de ne jamais écraser ces listes par du vide si elles existent déjà en base
+    purchasedModuleIds: profile.purchasedModuleIds && profile.purchasedModuleIds.length > 0 
+      ? profile.purchasedModuleIds 
+      : (currentProfile?.purchasedModuleIds || []),
+    pendingModuleIds: profile.pendingModuleIds && profile.pendingModuleIds.length > 0 
+      ? profile.pendingModuleIds 
+      : (currentProfile?.pendingModuleIds || []),
+    badges: profile.badges && profile.badges.length > 0 
+      ? profile.badges 
+      : (currentProfile?.badges || []),
+    actionPlan: profile.actionPlan && profile.actionPlan.length > 0 
+      ? profile.actionPlan 
+      : (currentProfile?.actionPlan || [])
+  };
 
   const { error } = await supabase
     .from('profiles')
@@ -62,8 +74,7 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
   
   if (error) {
     console.error("Détails Erreur Save Profile:", error);
-    // Si l'erreur persiste, c'est que la colonne n'existe pas en base
-    throw new Error(error.message || "Erreur de base de données (Vérifiez les colonnes)");
+    throw new Error(error.message || "Erreur de base de données");
   }
 };
 
@@ -82,10 +93,7 @@ export const uploadProfilePhoto = async (file: File, uid: string): Promise<strin
       contentType: file.type 
     });
 
-  if (uploadError) {
-    console.error("Détails Erreur Storage:", uploadError);
-    throw new Error(uploadError.message || "Erreur de stockage");
-  }
+  if (uploadError) throw new Error(uploadError.message || "Erreur de stockage");
 
   const { data } = supabase.storage
     .from(bucketName)
