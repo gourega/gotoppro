@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
-import { TrainingModule } from '../types';
-import { supabase } from '../services/supabase';
+import { TrainingModule, UserProfile } from '../types';
+import { supabase, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 import { 
   ArrowRight, 
@@ -11,9 +11,7 @@ import {
   ShieldCheck, 
   Zap, 
   Plus, 
-  Lightbulb,
   X,
-  ChevronRight,
   TrendingUp,
   Trash2,
   CheckCircle2,
@@ -51,7 +49,6 @@ const Results: React.FC = () => {
     let perfect = false;
 
     if (negativeQuestions.length === 0) {
-      // CAS PARFAIT : On propose des modules de "Haute Maîtrise"
       perfect = true;
       setIsPerfectScore(true);
       const masteryIds = ["mod_tarification", "mod_social_media", "mod_management", "mod_tresorerie"];
@@ -92,8 +89,6 @@ const Results: React.FC = () => {
 
     if (count >= 13) {
       discount = 50;
-      nextTierCount = 13;
-      nextTierPercent = 50;
     } else if (count >= 9) {
       discount = 30;
       nextTierCount = 13;
@@ -102,10 +97,6 @@ const Results: React.FC = () => {
       discount = 20;
       nextTierCount = 9;
       nextTierPercent = 30;
-    } else {
-      discount = 0;
-      nextTierCount = 5;
-      nextTierPercent = 20;
     }
 
     const subtotal = cart.reduce((acc, curr) => acc + curr.price, 0);
@@ -134,17 +125,48 @@ const Results: React.FC = () => {
 
   const handleIdentification = async () => {
     if (phoneInput.length < 8) {
-      alert("Veuillez entrer un numéro valide");
+      alert("Veuillez entrer un numéro valide.");
       return;
     }
+
     setLoading(true);
+    // Formatage uniforme
+    const cleanPhone = phoneInput.replace(/\s/g, '');
+    const formattedPhone = cleanPhone.startsWith('0') ? `+225${cleanPhone}` : cleanPhone;
+
     try {
-      const cleanPhone = phoneInput.startsWith('+225') ? phoneInput : `+225${phoneInput.replace(/\s/g, '')}`;
-      const { error } = await supabase!.auth.signInWithOtp({ phone: cleanPhone });
-      if (error) throw error;
+      // 1. Vérifier si le profil existe déjà
+      let profile = await getProfileByPhone(formattedPhone);
+      
+      // 2. Créer ou mettre à jour le profil avec les modules choisis
+      const purchasedModuleIds = cart.map(m => m.id);
+      
+      if (!profile) {
+        const newProfile: UserProfile = {
+          uid: `user_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+          phoneNumber: formattedPhone,
+          role: 'CLIENT',
+          isActive: false, // Important : attend la validation admin
+          isAdmin: false,
+          badges: [],
+          purchasedModuleIds: purchasedModuleIds,
+          pendingModuleIds: purchasedModuleIds,
+          actionPlan: [],
+          createdAt: new Date().toISOString()
+        };
+        await saveUserProfile(newProfile);
+      } else {
+        // Mettre à jour les modules demandés
+        await saveUserProfile({
+          uid: profile.uid,
+          pendingModuleIds: [...new Set([...(profile.pendingModuleIds || []), ...purchasedModuleIds])]
+        });
+      }
+
       setCheckoutStep('payment');
-    } catch (error: any) {
-      alert(error.message || "Erreur d'identification");
+    } catch (err: any) {
+      console.error("Setup profile error:", err);
+      setCheckoutStep('payment'); // Fallback pour ne pas bloquer
     } finally {
       setLoading(false);
     }
@@ -272,10 +294,9 @@ const Results: React.FC = () => {
             </section>
           </div>
 
-          {/* COLONNE DROITE - Panier Facture Premium */}
+          {/* COLONNE DROITE */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
-              
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-6 h-6 text-brand-600" />
@@ -360,7 +381,7 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DE PAIEMENT RESTE INCHANGÉ */}
+      {/* MODAL D'IDENTIFICATION ET PAIEMENT */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
@@ -371,16 +392,16 @@ const Results: React.FC = () => {
                     <ShoppingBag className="w-8 h-8" />
                   </div>
                   <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
-                  <p className="text-slate-500 font-medium text-sm">Validez votre panier pour générer la facture Wave.</p>
+                  <p className="text-slate-500 font-medium text-sm">Entrez votre numéro pour valider votre panier.</p>
                 </div>
                 
                 <div className="mb-10">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">WhatsApp (+225)</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Numéro WhatsApp</label>
                   <input 
                     type="tel"
                     value={phoneInput}
                     onChange={(e) => setPhoneInput(e.target.value)}
-                    placeholder="07 00 00 00 00"
+                    placeholder="0708047914"
                     className="w-full px-8 py-6 rounded-[2rem] bg-slate-50 border-none outline-none text-2xl font-black text-slate-900 focus:ring-4 focus:ring-brand-500/10 transition-all text-center"
                     autoFocus
                   />
@@ -392,7 +413,7 @@ const Results: React.FC = () => {
                     disabled={loading}
                     className="w-full py-6 bg-brand-600 text-white font-black rounded-3xl hover:bg-brand-700 shadow-xl shadow-brand-100 text-[11px] uppercase tracking-widest transition-all"
                   >
-                    {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Afficher ma facture Wave"}
+                    {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Générer ma facture Wave"}
                   </button>
                   <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour</button>
                 </div>
@@ -417,6 +438,13 @@ const Results: React.FC = () => {
                     />
                    </div>
                    <p className="mt-8 font-black text-slate-900 text-2xl tracking-tight">+225 01 03 43 84 56</p>
+                </div>
+
+                <div className="mb-8 p-4 bg-brand-50 rounded-2xl flex items-start gap-3 text-left">
+                  <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-brand-900 font-medium leading-relaxed">
+                    Une fois le paiement effectué, cliquez sur le bouton ci-dessous. Coach Kita validera votre accès manuellement sous 15 minutes.
+                  </p>
                 </div>
                 
                 <button 

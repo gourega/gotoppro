@@ -32,6 +32,21 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   }
 };
 
+/**
+ * Récupère un profil par numéro de téléphone (Utile pour le login manuel sans SMS)
+ */
+export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('phoneNumber', phoneNumber)
+    .maybeSingle();
+    
+  if (error) return null;
+  return data as UserProfile;
+};
+
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   const { error } = await supabase
