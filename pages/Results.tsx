@@ -54,7 +54,7 @@ const Results: React.FC = () => {
     if (negativeQuestions.length === 0) {
       perfect = true;
       setIsPerfectScore(true);
-      // Profil Elite : 4 modules essentiels pour la domination du marché
+      // Profil Elite : On force les 4 piliers de la rentabilité haute performance
       const masteryIds = ["mod_tarification", "mod_social_media", "mod_management", "mod_tresorerie"];
       recommended = TRAINING_CATALOG.filter(m => masteryIds.includes(m.id));
       others = TRAINING_CATALOG.filter(m => !masteryIds.includes(m.id));
@@ -189,18 +189,32 @@ const Results: React.FC = () => {
 
   const isInCart = (id: string) => cart.some(item => item.id === id);
 
+  // Helper to simple render markdown-ish bold text from Gemini
+  const renderFormattedText = (text: string) => {
+    return text.split('\n').map((line, i) => {
+      // Basic bolding replace **text** with <b>text</b>
+      const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-black">$1</strong>');
+      return <p key={i} className="mb-4" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#fcfdfe] pb-24 pt-12">
       <div className="max-w-7xl mx-auto px-6">
         
         <header className="mb-14">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-            {isPerfectScore ? "Parcours Maîtrise Elite" : "Optimisation Stratégique"}
-          </h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl">
+          <div className="flex items-center gap-4 mb-4">
+             <div className="bg-brand-500 p-2 rounded-xl text-white">
+                {isPerfectScore ? <Crown className="w-6 h-6" /> : <TrendingUp className="w-6 h-6" />}
+             </div>
+             <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+               {isPerfectScore ? "Parcours Maîtrise Elite" : "Optimisation Stratégique"}
+             </h1>
+          </div>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl ml-14">
             {isPerfectScore 
               ? "Vos bases sont solides. Passons maintenant à la vitesse supérieure pour dominer votre marché."
-              : "Votre plan de transformation est prêt. Sélectionnez les modules pour activer votre croissance."}
+              : "Votre plan de transformation est prêt. Voici l'analyse chirurgicale de votre salon."}
           </p>
         </header>
 
@@ -216,12 +230,12 @@ const Results: React.FC = () => {
               
               <div className="flex flex-col md:flex-row gap-12 items-start relative z-10">
                 <div className="shrink-0 mx-auto">
-                  <div className="h-32 w-32 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500 ring-1 ring-slate-100">
+                  <div className="h-40 w-40 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500 ring-1 ring-slate-100">
                     <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
                   </div>
                   <div className="mt-6 text-center">
                     <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Coach Kita</p>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Mentor Business</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Mentor Business Elite</p>
                   </div>
                 </div>
                 
@@ -233,13 +247,16 @@ const Results: React.FC = () => {
                   
                   <div className="text-slate-700 font-medium text-lg leading-relaxed whitespace-pre-line animate-in fade-in duration-1000">
                     {loadingAdvice ? (
-                      <div className="flex flex-col items-center gap-4 py-10">
-                        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
-                        <span className="text-slate-400 font-bold uppercase text-xs tracking-widest">Analyse de vos flux de revenus en cours...</span>
+                      <div className="flex flex-col items-center gap-6 py-12">
+                        <div className="relative">
+                          <Loader2 className="w-12 h-12 animate-spin text-brand-500" />
+                          <Zap className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-brand-500" />
+                        </div>
+                        <span className="text-slate-400 font-black uppercase text-xs tracking-widest animate-pulse">Calcul de votre rentabilité potentielle...</span>
                       </div>
                     ) : (
                       <div className="prose prose-slate max-w-none">
-                        {aiAdvice || "Préparez-vous à une transformation radicale de votre modèle d'affaires."}
+                        {aiAdvice ? renderFormattedText(aiAdvice) : "Préparez-vous à une transformation radicale de votre modèle d'affaires."}
                       </div>
                     )}
                   </div>
@@ -247,12 +264,12 @@ const Results: React.FC = () => {
                   {!loadingAdvice && (
                     <div className="space-y-6 pt-8 border-t border-slate-50">
                       <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Évolution de votre Pack Formation</span>
+                        <span>Évolution de votre Offre Pack</span>
                         <span className="text-brand-600 font-black">PALIER ACTUEL: -{pricingData.discount}%</span>
                       </div>
-                      <div className="h-5 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
+                      <div className="h-6 bg-slate-100 rounded-full overflow-hidden relative shadow-inner border border-slate-200">
                         <div 
-                          className="h-full bg-gradient-to-r from-brand-500 via-brand-400 to-emerald-500 transition-all duration-1000 ease-out"
+                          className="h-full bg-gradient-to-r from-brand-900 via-brand-500 to-emerald-500 transition-all duration-1000 ease-out"
                           style={{ width: `${pricingData.progress}%` }}
                         ></div>
                       </div>
@@ -263,9 +280,9 @@ const Results: React.FC = () => {
                         <span>Master (-50%)</span>
                       </div>
                       {pricingData.remainingForNext > 0 && (
-                        <div className="flex items-center gap-3 text-brand-700 font-black text-xs bg-brand-50 p-5 rounded-3xl border border-brand-100 animate-pulse">
+                        <div className="flex items-center gap-3 text-brand-700 font-black text-xs bg-brand-50 p-6 rounded-[2.5rem] border border-brand-100 animate-pulse shadow-sm">
                           <Zap className="w-5 h-5 fill-brand-500 text-brand-500" />
-                          <span>Opportunité : Ajoutez {pricingData.remainingForNext} module(s) pour économiser -{pricingData.nextTierPercent}% sur l'ensemble !</span>
+                          <span>Attention : Plus que {pricingData.remainingForNext} module(s) pour débloquer le pack Expert (-{pricingData.nextTierPercent}%) !</span>
                         </div>
                       )}
                     </div>
@@ -282,10 +299,10 @@ const Results: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    {isPerfectScore ? "Vos Modules de Maîtrise Elite" : "Vos Recommandations Immédiates"}
+                    {isPerfectScore ? "Modules de Domination Elite" : "Piliers de Croissance Prioritaires"}
                   </h2>
                   <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                    {isPerfectScore ? "Sécurisez votre position de n°1" : "Corrigez vos failles pour maximiser vos profits"}
+                    {isPerfectScore ? "Passez de gérant à investisseur multi-salons" : "Stoppez les fuites de revenus dès maintenant"}
                   </p>
                 </div>
               </div>
@@ -304,8 +321,8 @@ const Results: React.FC = () => {
                   <ShoppingBag className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Parcours de Perfectionnement</h2>
-                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Complétez votre expertise globale</p>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Bibliothèque de Perfectionnement</h2>
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Complétez votre arsenal business</p>
                 </div>
               </div>
               
@@ -323,7 +340,7 @@ const Results: React.FC = () => {
               <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-6 h-6 text-brand-600" />
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Plan de Formation</h3>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Plan d'Action</h3>
                 </div>
                 <div className="h-8 w-8 bg-brand-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-brand-100">
                   {cart.length}
@@ -333,7 +350,7 @@ const Results: React.FC = () => {
               <div className="p-6 max-h-[350px] overflow-y-auto custom-scrollbar flex-grow bg-slate-50/30">
                 {cart.length === 0 ? (
                   <div className="py-20 text-center space-y-4">
-                    <p className="text-slate-300 font-bold italic text-sm">Votre panier est vide</p>
+                    <p className="text-slate-300 font-bold italic text-sm">Votre sélection est vide</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -358,7 +375,7 @@ const Results: React.FC = () => {
               <div className="p-10 bg-slate-900 text-white rounded-t-[3.5rem] space-y-8 relative">
                 <div className="space-y-5">
                   <div className="flex justify-between items-center font-mono">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur totale</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur brute</span>
                     <span className="text-lg">{pricingData.subtotal.toLocaleString()} FCFA</span>
                   </div>
                   
@@ -366,7 +383,7 @@ const Results: React.FC = () => {
                     <div className="flex justify-between items-center text-emerald-400 font-mono">
                       <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                         <Zap className="w-4 h-4 fill-current" />
-                        Économie Pack (-{pricingData.discount}%)
+                        Remise Avantage Pack (-{pricingData.discount}%)
                       </span>
                       <span className="text-lg">-{pricingData.savings.toLocaleString()} FCFA</span>
                     </div>
@@ -390,13 +407,13 @@ const Results: React.FC = () => {
                   disabled={cart.length === 0}
                   className="w-full py-6 bg-brand-500 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-900/40 hover:bg-brand-400 hover:-translate-y-1 active:scale-95 disabled:opacity-30 disabled:translate-y-0 transition-all flex items-center justify-center gap-4 group"
                 >
-                  Démarrer mon parcours
+                  Activer ma transformation
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
 
                 <div className="flex items-center justify-center gap-3 pt-2 opacity-50">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Paiement sécurisé via Wave</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Sécurisation Wave Côte d'Ivoire</span>
                 </div>
               </div>
             </div>
@@ -414,8 +431,8 @@ const Results: React.FC = () => {
                   <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
                     <Smartphone className="w-8 h-8" />
                   </div>
-                  <h2 className="text-3xl font-black text-slate-900 mb-2">Identification</h2>
-                  <p className="text-slate-500 font-medium text-sm">Votre numéro est votre identifiant d'accès.</p>
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">Compte Client</h2>
+                  <p className="text-slate-500 font-medium text-sm">Saisissez votre numéro WhatsApp pour vos accès.</p>
                 </div>
 
                 {dbError && (
@@ -445,7 +462,7 @@ const Results: React.FC = () => {
                   >
                     {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Générer mon accès"}
                   </button>
-                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour au diagnostic</button>
+                  <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-colors">Retour à l'audit</button>
                 </div>
               </div>
             ) : (
@@ -453,13 +470,13 @@ const Results: React.FC = () => {
                 <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-lg">
                    <Zap className="w-10 h-10 fill-current" />
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Paiement Wave CI</h2>
+                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Validation Wave</h2>
                 <p className="text-slate-500 mb-10 font-medium">
                   Réglez <b className="text-slate-900 text-2xl font-mono block mt-2">{pricingData.total.toLocaleString()} FCFA</b>
                 </p>
                 
                 <div className="bg-slate-50 p-10 rounded-[3rem] mb-10 border border-slate-100 shadow-inner">
-                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Scannez le code QR ci-dessous</div>
+                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Scannez via l'application Wave</div>
                    <div className="p-6 bg-white rounded-[2.5rem] shadow-xl inline-block group border border-slate-100">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pay.wave.com/m/M_ci_tl569RJDWLXi/c/ci/`} 
@@ -473,13 +490,13 @@ const Results: React.FC = () => {
                 <div className="mb-8 p-4 bg-brand-50 rounded-2xl flex items-start gap-3 text-left">
                   <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-brand-900 font-medium leading-relaxed">
-                    Votre accès sera activé par Coach Kita sous 15 minutes dès réception du transfert.
+                    Un administrateur Go'Top Pro activera manuellement vos accès sous 15 minutes après réception.
                   </p>
                 </div>
                 
                 <button 
                   onClick={() => navigate('/login')} 
-                  className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] hover:bg-black transition-all shadow-2xl"
+                  className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] hover:bg-brand-500 transition-all shadow-2xl"
                 >
                   J'ai payé, accéder à mon espace
                 </button>
@@ -527,7 +544,7 @@ const ModuleCard: React.FC<{
     
     <div className="flex items-center justify-between pt-6 border-t border-slate-50">
       <div className="space-y-0.5">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Prix Module</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Investissement</p>
         <span className="text-xl font-black text-brand-600 font-mono">{mod.price.toLocaleString()} FCFA</span>
       </div>
       <button 

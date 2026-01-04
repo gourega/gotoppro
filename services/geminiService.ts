@@ -48,6 +48,7 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
 
 /**
  * Generates a high-converting strategic summary using AIDA copywriting model.
+ * Focused on professional transformation and profit maximization.
  */
 export const generateStrategicAdvice = async (negativePoints: string[], isPerfectScore: boolean = false) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -56,32 +57,32 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
   
   if (isPerfectScore) {
     prompt = `
-      Rôle: Coach Kita, le mentor visionnaire de Go'Top Pro.
-      Contexte: Le gérant a un score parfait de 16/16. C'est un profil "Elite".
-      Tâche: Rédige un audit stratégique magistral (env. 250 mots) en suivant la structure AIDA.
+      Rôle: Coach Kita, mentor d'élite de Go'Top Pro. 
+      Situation: Gérant de salon avec un score parfait de 16/16.
+      Objectif: Le convaincre que l'excellence d'aujourd'hui est le danger de demain (stagnation) et le pousser vers le scaling.
       
-      Structure AIDA à respecter :
-      - ATTENTION: Frappe fort. Félicite-le mais préviens-le : "Le danger commence quand on croit avoir tout réussi".
-      - INTÉRÊT: Explique que le marché de la beauté est impitoyable. Ce qui marche aujourd'hui (ses 16 points validés) sera la norme de demain. Il doit garder son avance technologique et managériale.
-      - DÉSIR: Peins la vision du gérant-investisseur. Celui qui ne travaille plus "dans" son salon mais "sur" son salon. Parle de domination de marché, de prestige et de liberté financière totale.
-      - ACTION: Incite-le à valider les 4 modules de Maîtrise Elite (Tarification avancée, Social Media, Management & Trésorerie) pour verrouiller sa position de leader absolu.
+      Structure de ton audit (Utilise Markdown pour le formatage) :
+      1. **ATTENTION**: Une phrase choc sur le danger du succès. Ex: "Le succès est le pire ennemi du progrès."
+      2. **INTÉRÊT**: Analyse pourquoi il est au top mais souligne que le marché africain de la beauté explose et que de nouveaux concurrents "digitaux native" arrivent.
+      3. **DÉSIR**: Peins la vision du gérant-investisseur. Plus de mains dans les cheveux, mais une tête dans les chiffres et le développement d'un deuxième ou troisième salon. Parle de "Liberté totale" et de "Prestige local".
+      4. **ACTION**: Recommande impérativement les 4 modules piliers : **Tarification Avancée, Social Media Mastery, Management de Leader et Maîtrise de la Trésorerie**.
       
-      Ton: Prestigieux, inspirant, exigeant. Style "High-End Coaching".
+      Ton: Prestigieux, exigeant, visionnaire. Environ 350 mots.
     `;
   } else {
     const pointsStr = negativePoints.join(", ");
     prompt = `
-      Rôle: Coach Kita, le mentor qui transforme les salons en mines d'or.
-      Contexte: Le gérant a des lacunes sur : ${pointsStr}.
-      Tâche: Rédige un audit percutant (env. 250 mots) en suivant la structure AIDA.
+      Rôle: Coach Kita, le mentor qui transforme les salons en empires.
+      Situation: Le gérant a échoué sur : ${pointsStr}.
+      Objectif: Créer un sentiment d'urgence (hémorragie de cash) et un désir brûlant de correction.
       
-      Structure AIDA à respecter :
-      - ATTENTION: Accroche choc. "Votre talent mérite mieux que ces fuites de revenus invisibles". Votre salon tourne avec un frein à main serré.
-      - INTÉRÊT: Analyse chirurgicale. Explique comment l'absence de maîtrise sur ${pointsStr} crée une hémorragie de cash-flow et épuise vos équipes inutilement.
-      - DÉSIR: Le futur radieux. Imaginez votre agenda rempli 3 semaines à l'avance, une équipe autonome qui vend des soins comme des experts, et vous, dégageant enfin le salaire que vous méritez.
-      - ACTION: Appel pressant. Ne pas agir, c'est choisir de stagner pendant que la concurrence avance. "Sélectionnez vos modules prioritaires et activons votre croissance dès aujourd'hui."
+      Structure de ton audit (Utilise Markdown pour le formatage avec du GRAS pour les mots clés) :
+      1. **ATTENTION**: Accroche violente sur les pertes financières. Ex: "Votre salon est une mine d'or, mais vous creusez avec une cuillère." ou "L'hémorragie de cash-flow est réelle."
+      2. **INTÉRÊT**: Explique techniquement comment l'absence de maîtrise sur ${pointsStr} détruit sa marge et fatigue ses équipes. Utilise des termes comme "marge brute", "taux d'occupation", "panier moyen".
+      3. **DÉSIR**: Décris la vie d'un gérant Go'Top Pro : Un salon qui tourne sans lui, une équipe qui vend des produits comme des experts, et un compte bancaire qui respire enfin.
+      4. **ACTION**: Appel à l'action immédiat. "Ne pas choisir ces modules, c'est choisir de financer vos concurrents." Incite à cliquer sur les boutons ci-dessous.
       
-      Ton: Direct, percutant, terrain, "Real Talk" business.
+      Ton: Direct, sans filtre, "Business Partner". Environ 350 mots.
     `;
   }
 
@@ -90,14 +91,15 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        temperature: 0.9,
-        topP: 0.95
+        temperature: 1.0,
+        topP: 0.95,
+        thinkingConfig: { thinkingBudget: 0 }
       }
     });
     return response.text;
   } catch (error) {
     console.error("Strategic Advice Error:", error);
-    return "L'excellence vous attend. Chaque module choisi est une pierre posée pour bâtir votre empire de la beauté.";
+    return "**L'excellence vous attend.** Votre diagnostic montre un potentiel immense. Chaque module choisi est une pierre posée pour bâtir votre **empire de la beauté**.";
   }
 };
 
@@ -106,7 +108,7 @@ export const createCoachChat = () => {
   return ai.chats.create({
     model: 'gemini-3-flash-preview',
     config: {
-      systemInstruction: "Tu es Coach Kita, l'expert mentor de Go'Top Pro. Ton ton est celui d'un coach de haut niveau : exigeant, visionnaire, mais profondément bienveillant envers les gérants de salon de coiffure en Afrique. Tu aides sur la gestion, le management, le marketing et la technique. Sois concis et percutant.",
+      systemInstruction: "Tu es Coach Kita, l'expert mentor de Go'Top Pro. Ton ton est celui d'un coach de haut niveau : exigeant, visionnaire, mais profondément bienveillant. Tu aides sur la gestion, le management, le marketing et la technique. Sois concis et percutant.",
     },
   });
 };
