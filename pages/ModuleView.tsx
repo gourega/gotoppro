@@ -134,7 +134,6 @@ const ModuleView: React.FC = () => {
 
     setIsAudioLoading(true);
     
-    // Cleaning text properly for TTS: Only natural punctuation
     const cleanText = module.lesson_content
       .replace(/<[^>]*>/g, ' ') 
       .replace(/\s+/g, ' ')
@@ -146,7 +145,6 @@ const ModuleView: React.FC = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const truncatedText = fullText.length > 3500 ? fullText.substring(0, 3500) + "..." : fullText;
       
-      // We instruct the model to pause via system prompt instructions
       const prompt = `Lisez ce cours de coiffure expert avec un ton calme, posé et très inspirant. 
       IMPORTANT : Faites des pauses de 2 secondes après chaque titre (numérotés I, II, III...) et entre chaque paragraphe. 
       Ne prononcez pas les symboles de ponctuation, utilisez-les simplement pour le rythme : ${truncatedText}`;
@@ -310,18 +308,11 @@ const ModuleView: React.FC = () => {
               </div>
             </header>
 
-            {/* Structured Editorial Layout */}
-            <div className="lesson-content-container">
-               <div 
-                  className="prose prose-slate prose-xl max-w-none 
-                  prose-headings:font-serif prose-headings:font-bold prose-headings:text-brand-900 
-                  prose-h2:text-4xl prose-h2:mt-0 prose-h2:mb-10 prose-h2:tracking-tight
-                  prose-p:leading-[2] prose-p:text-slate-600 prose-p:mb-10 prose-p:font-medium
-                  prose-strong:text-brand-900 prose-strong:font-black
-                  [&_.lesson-card]:bg-white [&_.lesson-card]:p-12 [&_.lesson-card]:md:p-20 [&_.lesson-card]:rounded-[4rem] [&_.lesson-card]:border [&_.lesson-card]:border-slate-100 [&_.lesson-card]:shadow-sm [&_.lesson-card]:mb-20 last:[&_.lesson-card]:mb-0"
-                  dangerouslySetInnerHTML={{ __html: module.lesson_content }} 
-                />
-            </div>
+            {/* Structured Editorial Layout with CSS Overrides */}
+            <div 
+              className="lesson-content-container"
+              dangerouslySetInnerHTML={{ __html: module.lesson_content }} 
+            />
             
             <div className="my-24 bg-brand-900 rounded-[5rem] p-16 md:p-24 text-white relative overflow-hidden group shadow-2xl shadow-brand-900/20">
                <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000">
