@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadProfilePhoto } from '../services/supabase';
 import { BADGES } from '../constants';
-import { Loader2, Camera, AlertCircle, CheckCircle2, X, Database, Users, History } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, CheckCircle2, X, Database, Users, History, Quote } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, refreshProfile } = useAuth();
@@ -17,6 +17,7 @@ const Profile: React.FC = () => {
     lastName: user?.lastName || '',
     establishmentName: user?.establishmentName || '',
     email: user?.email || '',
+    bio: user?.bio || '',
     employeeCount: user?.employeeCount || 0,
     yearsOfExistence: user?.yearsOfExistence || 0
   });
@@ -95,7 +96,7 @@ const Profile: React.FC = () => {
               <div className="bg-rose-900/30 p-3 rounded-xl border border-rose-400/30">
                 <p className="text-[9px] leading-relaxed font-medium">
                   <Database className="w-3 h-3 inline mr-1" />
-                  <b>Configuration Supabase :</b> Vérifiez que les colonnes employeeCount et yearsOfExistence existent.
+                  <b>Config Supabase :</b> Vérifiez que la colonne "bio" existe bien.
                 </p>
               </div>
             )}
@@ -137,11 +138,19 @@ const Profile: React.FC = () => {
                 </label>
               </div>
             </div>
-            <div className="pb-4 text-center md:text-left">
+            <div className="pb-4 text-center md:text-left flex-grow">
               <h1 className="text-3xl font-serif font-bold text-slate-900 leading-tight">
                 {user.firstName || 'Utilisateur'} {user.lastName}
               </h1>
-              <p className="text-brand-600 font-black tracking-widest text-sm mt-1">{user.phoneNumber}</p>
+              <p className="text-brand-600 font-black tracking-widest text-sm mt-1 mb-3">{user.phoneNumber}</p>
+              
+              {!isEditing && (
+                <div className="max-w-md">
+                   <p className="text-slate-500 text-xs font-serif italic leading-relaxed">
+                     {user.bio ? `"${user.bio}"` : "Ajoutez une bio pour personnaliser vos partages WhatsApp."}
+                   </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -169,7 +178,6 @@ const Profile: React.FC = () => {
                         value={formData.firstName} 
                         onChange={e => setFormData({...formData, firstName: e.target.value})}
                         className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-bold text-slate-900"
-                        placeholder="Ex: Jean"
                       />
                     </div>
                     <div>
@@ -179,10 +187,26 @@ const Profile: React.FC = () => {
                         value={formData.lastName} 
                         onChange={e => setFormData({...formData, lastName: e.target.value})}
                         className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-bold text-slate-900"
-                        placeholder="Ex: Kouassi"
                       />
                     </div>
                   </div>
+                  
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Bio Professionnelle (Max 180 car.)</label>
+                    <div className="relative">
+                      <textarea 
+                        value={formData.bio} 
+                        onChange={e => setFormData({...formData, bio: e.target.value.slice(0, 180)})}
+                        rows={3}
+                        placeholder="Ex: Expert en colorimétrie passionné par l'innovation capillaire depuis 10 ans."
+                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-medium text-slate-700 resize-none"
+                      />
+                      <span className="absolute bottom-4 right-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                        {formData.bio.length}/180
+                      </span>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Enseigne du Salon / Institut</label>
                     <input 
@@ -190,7 +214,6 @@ const Profile: React.FC = () => {
                       value={formData.establishmentName} 
                       onChange={e => setFormData({...formData, establishmentName: e.target.value})}
                       className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-brand-500 transition-all font-bold text-slate-900"
-                      placeholder="Nom de votre entreprise"
                     />
                   </div>
 

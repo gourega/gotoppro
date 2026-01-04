@@ -17,6 +17,7 @@ export interface UserProfile {
   lastName?: string;
   establishmentName?: string;
   photoURL?: string;
+  bio?: string;
   employeeCount?: number;
   yearsOfExistence?: number;
   role: UserRole;
