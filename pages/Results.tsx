@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
-import { supabase, getProfileByPhone } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 import { 
   ArrowRight, 
@@ -141,19 +141,21 @@ const Results: React.FC = () => {
     try {
       if (!supabase) throw new Error("Base de données non configurée.");
 
-      // Tentative de récupération ou création
-      let { data: existingProfile } = await supabase
+      // 1. Vérifier si l'utilisateur existe
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('phoneNumber', formattedPhone)
         .maybeSingle();
 
+      if (fetchError) throw fetchError;
+
       const purchasedModuleIds = cart.map(m => m.id);
       
       if (!existingProfile) {
-        // Création d'un nouveau profil prospect
+        // 2. Création du profil Prospect
         const newProfile = {
-          uid: `p_${Date.now()}`,
+          uid: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
           phoneNumber: formattedPhone,
           role: 'CLIENT',
           isActive: false,
@@ -168,21 +170,20 @@ const Results: React.FC = () => {
         const { error: insError } = await supabase.from('profiles').insert(newProfile);
         if (insError) throw insError;
       } else {
-        // Mise à jour des modules en attente pour un profil existant
+        // 3. Mise à jour des modules désirés pour un profil existant
+        const updatedPending = [...new Set([...(existingProfile.pendingModuleIds || []), ...purchasedModuleIds])];
         const { error: updError } = await supabase
           .from('profiles')
-          .update({ 
-            pendingModuleIds: [...new Set([...(existingProfile.pendingModuleIds || []), ...purchasedModuleIds])]
-          })
+          .update({ pendingModuleIds: updatedPending })
           .eq('uid', existingProfile.uid);
+        
         if (updError) throw updError;
       }
 
-      // ÉTAPE CRUCIALE : On ne passe à l'étape suivante que si l'API n'a pas renvoyé d'erreur
       setCheckoutStep('payment');
     } catch (err: any) {
-      console.error("Erreur base de données:", err);
-      setDbError("Impossible de vous enregistrer. Vérifiez votre connexion ou contactez le support.");
+      console.error("Erreur d'enregistrement:", err);
+      setDbError(`Erreur technique : ${err.message || "Vérifiez votre script SQL dans Supabase"}`);
     } finally {
       setLoading(false);
     }
@@ -414,7 +415,7 @@ const Results: React.FC = () => {
                 {dbError && (
                   <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600 animate-in shake duration-300">
                     <AlertTriangle className="w-5 h-5 shrink-0" />
-                    <p className="text-[11px] font-bold uppercase tracking-widest">{dbError}</p>
+                    <p className="text-[11px] font-bold leading-tight">{dbError}</p>
                   </div>
                 )}
                 
