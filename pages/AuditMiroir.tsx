@@ -16,12 +16,14 @@ import {
   Award,
   ArrowRight,
   Quote,
-  AlertCircle
+  Target,
+  Trophy
 } from 'lucide-react';
 
 const AuditMiroir: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [step, setStep] = useState<'intro' | 'interact' | 'results'>('intro');
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -101,20 +103,20 @@ const AuditMiroir: React.FC = () => {
         model: 'gemini-3-flash-preview',
         contents,
         config: {
-          systemInstruction: `Tu es Coach Kita, mentor d'élite. Un gérant se confie à toi dans ton cabinet privé (Audit Miroir).
-          1. Analyse son problème avec empathie et autorité.
-          2. Structure ton diagnostic en 3 parties : [L'URGENCE] (ce qui lui fait perdre de l'argent), [L'OPPORTUNITÉ] (ce qu'il peut gagner), [L'ACTION CONCRÈTE].
-          3. Recommande UN SEUL module du catalogue Go'Top Pro à la fin (mentionne son ID ou titre précis).
+          systemInstruction: `Tu es Coach Kita, mentor d'élite. Un gérant se confie à toi dans ton cabinet privé (Le Miroir du Succès).
+          1. Analyse son problème avec empathie et autorité stratégique.
+          2. Structure ton diagnostic en 3 parties claires : [L'URGENCE] (ce qui bloque son CA), [L'OPPORTUNITÉ] (le gain potentiel), [LE PLAN D'ACTION].
+          3. Recommande UN SEUL module du catalogue Go'Top Pro à la fin (mentionne son titre exact).
           
-          TON : Prestigieux, direct, sans filtre. 300 mots max. Utilise Markdown.
-          Interdiction d'anglicismes techniques.`,
+          TON : Prestigieux, inspirant, direct. Utilise Markdown. 
+          Important : Ne pas utiliser d'anglicismes comme "Retail" ou "Dashboard".`,
         }
       });
 
       const result = response.text || "Coach Kita réfléchit à votre situation...";
       setDiagnostic(result);
+      setStep('results');
 
-      // Tentative de détection du module suggéré
       const detectedModule = TRAINING_CATALOG.find(m => 
         result.toLowerCase().includes(m.title.toLowerCase()) || 
         result.toLowerCase().includes(m.id.toLowerCase())
@@ -123,44 +125,83 @@ const AuditMiroir: React.FC = () => {
 
     } catch (err) {
       console.error(err);
-      setDiagnostic("Désolé, la connexion avec le mentor a été interrompue. Veuillez réessayer.");
+      setDiagnostic("La connexion avec le mentor a été interrompue. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0c4a6e] flex flex-col items-center py-20 px-6">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-[#0c4a6e] flex flex-col items-center py-20 px-6 relative overflow-hidden">
+      
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-full h-full opacity-[0.05] pointer-events-none select-none italic font-serif text-[30rem] flex items-center justify-center">Go'Top</div>
+      <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-brand-500/20 rounded-full blur-[120px]"></div>
+
+      <div className="max-w-4xl w-full relative z-10">
         
-        {/* Header Suite Privée */}
+        {/* Navigation Exit */}
         <div className="text-center mb-16 animate-in fade-in slide-in-from-top duration-700">
           <button onClick={() => navigate('/')} className="mb-8 text-white/40 hover:text-white transition-colors flex items-center gap-2 mx-auto font-black text-[10px] uppercase tracking-widest group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Quitter la salle
+            Sortir du cabinet
           </button>
           
           <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-brand-500 text-[10px] font-black uppercase tracking-[0.4em] mb-8">
             <Sparkles className="w-4 h-4" />
-            L'Audit Miroir
+            Le Miroir du Succès
           </div>
-          
-          <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6 tracking-tight">
-            Consultation Privée <br/>avec <span className="text-brand-500 italic">Coach Kita</span>
-          </h1>
-          <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed opacity-80">
-            Confiez-moi vos doutes, vos pertes ou vos ambitions. Je vais scanner votre réalité et vous donner la clé du succès.
-          </p>
         </div>
 
-        {/* Espace de Saisie / Interaction */}
-        {!diagnostic && !loading && (
-          <div className="bg-white/5 backdrop-blur-3xl rounded-[4rem] border border-white/10 p-10 md:p-20 shadow-2xl relative overflow-hidden group">
+        {/* STEP 1: INTRO */}
+        {step === 'intro' && (
+          <div className="text-center space-y-12 animate-in fade-in zoom-in-95 duration-700">
+            <h1 className="text-5xl md:text-7xl font-serif font-bold text-white tracking-tight leading-tight">
+              Regardez votre salon <br/> dans <span className="text-brand-500 italic">la vérité.</span>
+            </h1>
+            <p className="text-slate-300 text-xl md:text-2xl font-medium max-w-2xl mx-auto leading-relaxed opacity-80 font-serif italic">
+              "Confiez-moi vos doutes ou vos ambitions. Je vais scanner votre réalité et vous donner la clé de votre prochaine étape."
+            </p>
+            
+            <div className="pt-10">
+              <button 
+                onClick={() => setStep('interact')}
+                className="group relative bg-brand-500 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-xs shadow-[0_20px_60px_rgba(14,165,233,0.3)] hover:bg-brand-400 hover:scale-105 transition-all flex items-center gap-6 mx-auto"
+              >
+                Commencer mon diagnostic
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-8 pt-20 max-w-2xl mx-auto opacity-40">
+               <div className="flex flex-col items-center gap-3">
+                  <Mic className="w-6 h-6 text-white" />
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Analyse Vocale</span>
+               </div>
+               <div className="flex flex-col items-center gap-3">
+                  <Target className="w-6 h-6 text-white" />
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Précision IA</span>
+               </div>
+               <div className="flex flex-col items-center gap-3">
+                  <Trophy className="w-6 h-6 text-white" />
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Plan de Succès</span>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: INTERACTION */}
+        {step === 'interact' && !loading && (
+          <div className="bg-white/5 backdrop-blur-3xl rounded-[4rem] border border-white/10 p-10 md:p-20 shadow-2xl relative overflow-hidden group animate-in slide-in-from-bottom-10 duration-700">
             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Quote className="w-48 h-48 text-white" />
             </div>
 
             <div className="relative z-10 flex flex-col items-center">
+              <div className="text-center mb-12">
+                <h2 className="text-white text-2xl font-serif font-bold mb-4">Parlez-moi à cœur ouvert</h2>
+                <p className="text-slate-400 text-sm">Choisissez votre mode de confidence</p>
+              </div>
               
               <div className="flex bg-white/5 p-1 rounded-2xl mb-16">
                 <button onClick={() => setInputMode('voice')} className={`px-8 py-3 rounded-xl flex items-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-brand-500 text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}>
@@ -209,26 +250,26 @@ const AuditMiroir: React.FC = () => {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* LOADING STATE */}
         {loading && (
-          <div className="bg-white/5 backdrop-blur-2xl rounded-[4rem] p-24 text-center border border-white/10 flex flex-col items-center gap-10">
+          <div className="bg-white/5 backdrop-blur-2xl rounded-[4rem] p-24 text-center border border-white/10 flex flex-col items-center gap-10 animate-in fade-in duration-500">
             <div className="relative">
               <Loader2 className="w-20 h-20 text-brand-500 animate-spin" />
               <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full"></div>
             </div>
             <div className="space-y-4">
-              <p className="text-2xl font-serif font-bold text-white tracking-tight">Le mentor analyse votre situation...</p>
+              <p className="text-2xl font-serif font-bold text-white tracking-tight">Le mentor analyse votre réalité...</p>
               <p className="text-slate-400 font-medium uppercase text-[10px] tracking-[0.4em] animate-pulse">Scan stratégique en cours</p>
             </div>
           </div>
         )}
 
-        {/* Résultat du Diagnostic */}
-        {diagnostic && !loading && (
+        {/* STEP 3: RESULTS */}
+        {step === 'results' && diagnostic && !loading && (
           <div className="space-y-12 animate-in fade-in zoom-in-95 duration-700">
             
             <section className="bg-white rounded-[4rem] p-12 md:p-20 shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none group-hover:scale-110 transition-transform duration-1000">Audit</div>
+               <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none group-hover:scale-110 transition-transform duration-1000">Succès</div>
                
                <div className="flex flex-col md:flex-row gap-12 items-start relative z-10">
                  <div className="shrink-0 mx-auto md:mx-0">
@@ -277,7 +318,7 @@ const AuditMiroir: React.FC = () => {
             </section>
 
             <button 
-              onClick={() => setDiagnostic(null)}
+              onClick={() => { setStep('intro'); setDiagnostic(null); }}
               className="text-white/40 hover:text-white transition-colors text-center w-full font-black text-[9px] uppercase tracking-widest"
             >
               Refaire un audit sur un autre sujet
@@ -286,7 +327,7 @@ const AuditMiroir: React.FC = () => {
         )}
       </div>
 
-      {/* Ambiance sonore / Visuelle - Grain subtil */}
+      {/* Grain Effet */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <filter id="noiseFilter">

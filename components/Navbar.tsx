@@ -39,7 +39,7 @@ const Navbar: React.FC = () => {
             <NavLink to="/" label="Accueil" active={location.pathname === '/'} />
             <NavLink to="/vision" label="Vision" active={location.pathname === '/vision'} />
             <NavLink to="/avantages" label="Avantages" active={location.pathname === '/avantages'} />
-            <NavLink to="/audit-miroir" label="Audit Miroir" highlight active={location.pathname === '/audit-miroir'} />
+            <NavLink to="/audit-miroir" label="Miroir du Succès" highlight active={location.pathname === '/audit-miroir'} />
             <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
             
             {user ? (
@@ -91,7 +91,7 @@ const Navbar: React.FC = () => {
           <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Accueil</Link>
           <Link to="/vision" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/vision' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Notre Vision</Link>
           <Link to="/avantages" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/avantages' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Avantages</Link>
-          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/audit-miroir' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>Audit Miroir <Sparkles className="w-4 h-4" /></Link>
+          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/audit-miroir' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>Miroir du Succès <Sparkles className="w-4 h-4" /></Link>
           <Link to="/quiz" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/quiz' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Diagnostic</Link>
           {user && (
             <>
