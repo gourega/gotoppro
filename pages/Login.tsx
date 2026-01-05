@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getProfileByPhone, saveUserProfile } from '../services/supabase';
-import { AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { AlertCircle, Clock, Loader2, Info } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
@@ -18,11 +18,12 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extraction du parrain depuis l'URL
+  // Extraction et stockage du parrain depuis l'URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ref = params.get('ref');
     if (ref) {
+      console.log("Parrainage détecté : ", ref);
       localStorage.setItem('gotop_temp_ref', ref);
     }
   }, [location]);
@@ -47,12 +48,13 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Attribution automatique du parrain si stocké
+      // Attribution automatique du parrain si stocké localement
       const tempRefPhone = localStorage.getItem('gotop_temp_ref');
       if (tempRefPhone && !profile.referredBy && tempRefPhone !== formattedPhone) {
         const parrain = await getProfileByPhone(tempRefPhone);
         if (parrain) {
           await saveUserProfile({ uid: profile.uid, referredBy: parrain.uid });
+          console.log("Parrainage appliqué avec succès !");
           localStorage.removeItem('gotop_temp_ref');
         }
       }
@@ -67,7 +69,7 @@ const Login: React.FC = () => {
       if (success) navigate('/dashboard');
       else setError("Erreur de connexion.");
     } catch (err) {
-      setError("Erreur technique.");
+      setError("Erreur technique de connexion.");
     } finally {
       setLoading(false);
     }
@@ -106,6 +108,13 @@ const Login: React.FC = () => {
           <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2">Espace Client</h2>
           <p className="text-slate-500 font-medium text-sm">Accédez à vos modules de formation.</p>
         </div>
+
+        {localStorage.getItem('gotop_temp_ref') && (
+           <div className="mb-6 p-4 bg-brand-50 rounded-2xl border border-brand-100 flex items-center gap-3 animate-in fade-in duration-500">
+              <Info className="w-5 h-5 text-brand-500" />
+              <p className="text-[10px] font-black text-brand-700 uppercase tracking-widest leading-relaxed">Invitation acceptée ! Connectez-vous pour finaliser le parrainage.</p>
+           </div>
+        )}
 
         {error && (
           <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl mb-8 text-xs font-bold border border-rose-100 flex items-center gap-3">
