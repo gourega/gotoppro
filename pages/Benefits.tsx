@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown } from 'lucide-react';
 
 const Benefits: React.FC = () => {
   return (
@@ -39,6 +39,64 @@ const Benefits: React.FC = () => {
             title="Accompagnement 24h/7j"
             desc="L'IA Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace."
           />
+        </div>
+      </section>
+
+      {/* Pricing Tiers Section */}
+      <section className="py-32 bg-brand-900 text-white overflow-hidden relative">
+        <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-4">Investissement Stratégique</h2>
+            <h3 className="text-4xl md:text-5xl font-serif font-bold mb-6">Des tarifs adaptés à votre ambition</h3>
+            <p className="text-slate-400 max-w-2xl mx-auto font-medium">Pas d'abonnement. Vous achetez vos modules une fois, vous les gardez pour toujours. Plus vous apprenez, moins vous payez.</p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-6">
+            <PriceCard 
+              tier="Solo" 
+              price="500" 
+              unit="par module" 
+              discount="Tarif standard" 
+              desc="Idéal pour résoudre un problème précis immédiatement." 
+              icon={<Star className="w-6 h-6" />}
+            />
+            <PriceCard 
+              tier="Ambition" 
+              price="400" 
+              unit="par module" 
+              discount="-20% dès 5 modules" 
+              desc="Pour ceux qui veulent stabiliser les bases du salon." 
+              icon={<TrendingUp className="w-6 h-6" />}
+              highlight
+            />
+            <PriceCard 
+              tier="Performance" 
+              price="350" 
+              unit="par module" 
+              discount="-30% dès 9 modules" 
+              desc="Le choix des gérants qui visent la croissance rapide." 
+              icon={<Zap className="w-6 h-6" />}
+            />
+            <PriceCard 
+              tier="Empire" 
+              price="250" 
+              unit="par module" 
+              discount="-50% dès 13 modules" 
+              desc="L'accès total pour dominer votre marché local." 
+              icon={<Crown className="w-6 h-6" />}
+            />
+          </div>
+
+          <div className="mt-16 text-center">
+            <div className="inline-flex items-center gap-4 bg-white/5 border border-white/10 p-6 rounded-[2.5rem] backdrop-blur-xl">
+              <Gift className="text-brand-500 w-8 h-8" />
+              <p className="text-sm font-medium text-slate-300 text-left">
+                <span className="text-white font-bold block">Paiement unique via Wave CI</span>
+                Activation manuelle par Coach Kita sous 15 minutes.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -87,6 +145,33 @@ const BenefitCard = ({ icon, title, desc }: any) => (
     </div>
     <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6">{title}</h3>
     <p className="text-slate-500 font-medium leading-relaxed text-lg">{desc}</p>
+  </div>
+);
+
+const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight }: any) => (
+  <div className={`p-10 rounded-[3rem] border transition-all duration-500 flex flex-col h-full ${
+    highlight 
+    ? 'bg-brand-500 border-brand-400 shadow-2xl shadow-brand-500/20 -translate-y-4 text-white' 
+    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+  }`}>
+    <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-8 ${highlight ? 'bg-white text-brand-500' : 'bg-white/10 text-brand-500'}`}>
+      {icon}
+    </div>
+    <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-2 ${highlight ? 'text-brand-900' : 'text-brand-500'}`}>{tier}</h4>
+    <div className="flex items-baseline gap-1 mb-6">
+      <span className="text-4xl font-black">{price}</span>
+      <span className="text-xs font-bold opacity-60">FCFA</span>
+      <span className="text-[10px] font-medium opacity-40 ml-1">{unit}</span>
+    </div>
+    <p className={`text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1.5 rounded-lg inline-block w-fit ${highlight ? 'bg-brand-600' : 'bg-emerald-500/20 text-emerald-400'}`}>
+      {discount}
+    </p>
+    <p className="text-sm font-medium leading-relaxed mb-8 flex-grow opacity-80">{desc}</p>
+    <Link to="/quiz" className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center transition-all ${
+      highlight ? 'bg-white text-brand-900 hover:bg-slate-100' : 'bg-white/10 text-white hover:bg-white/20'
+    }`}>
+      Choisir ce pack
+    </Link>
   </div>
 );
 
