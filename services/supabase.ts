@@ -1,4 +1,10 @@
 
+/**
+ * ATTENTION : Pour activer le parrainage, exécutez ce SQL dans Supabase :
+ * ALTER TABLE profiles ADD COLUMN IF NOT EXISTS "referredBy" TEXT;
+ * ALTER TABLE profiles ADD COLUMN IF NOT EXISTS "referralCount" INTEGER DEFAULT 0;
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, UserRole } from '../types';
 
@@ -43,12 +49,20 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('referredBy', uid);
-  if (error) return [];
-  return data as UserProfile[];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('referredBy', uid);
+    
+    if (error) {
+      console.warn("Colonne referredBy absente ou erreur:", error.message);
+      return [];
+    }
+    return data as UserProfile[];
+  } catch (err) {
+    return [];
+  }
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
@@ -58,10 +72,14 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 
   // Si on met à jour le parrain, on incrémente aussi le compteur du parrain
   if (dataToUpdate.referredBy) {
-    const parrain = await getUserProfile(dataToUpdate.referredBy);
-    if (parrain) {
-      const newCount = (parrain.referralCount || 0) + 1;
-      await supabase.from('profiles').update({ referralCount: newCount }).eq('uid', parrain.uid);
+    try {
+      const parrain = await getUserProfile(dataToUpdate.referredBy);
+      if (parrain) {
+        const newCount = (parrain.referralCount || 0) + 1;
+        await supabase.from('profiles').update({ referralCount: newCount }).eq('uid', parrain.uid);
+      }
+    } catch (e) {
+      console.warn("Impossible de mettre à jour le compteur du parrain (colonne peut-être absente)");
     }
   }
 
@@ -75,13 +93,18 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('createdAt', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('createdAt', { ascending: false });
 
-  if (error) throw error;
-  return data as UserProfile[];
+    if (error) throw error;
+    return data as UserProfile[];
+  } catch (err) {
+    console.error("Erreur lors de la récupération des utilisateurs:", err);
+    return [];
+  }
 };
 
 export const grantModuleAccess = async (uid: string, moduleId: string) => {

@@ -15,7 +15,8 @@ import {
   Copy,
   Check,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Info
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -61,14 +62,19 @@ const Profile: React.FC = () => {
 
   const fetchFilleuls = async () => {
     if (user) {
-      const data = await getReferrals(user.uid);
-      setFilleuls(data);
+      try {
+        const data = await getReferrals(user.uid);
+        setFilleuls(data);
+      } catch (err) {
+        console.warn("Impossible de charger les filleuls (colonne peut-être manquante)");
+      }
     }
   };
 
   const fetchSponsors = async () => {
     try {
       const data = await getAllUsers();
+      // On filtre pour ne pas se parrainer soi-même et ne pas proposer les admins
       setAllPotentialSponsors(data.filter(u => u.uid !== user?.uid && !u.isAdmin));
     } catch (err) {
       console.error("Erreur chargement parrains", err);
@@ -91,7 +97,11 @@ const Profile: React.FC = () => {
       showNotification("Profil mis à jour !");
       setIsEditing(false);
     } catch (err: any) {
-      showNotification(err.message || "Erreur sauvegarde", "error");
+      if (err.message?.includes('referredBy')) {
+        showNotification("Erreur base de données : La colonne 'referredBy' est manquante.", "error");
+      } else {
+        showNotification(err.message || "Erreur sauvegarde", "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -104,10 +114,14 @@ const Profile: React.FC = () => {
     setTimeout(() => setCopying(false), 2000);
   };
 
-  const filteredSponsors = allPotentialSponsors.filter(s => 
-    (s.firstName || '').toLowerCase().includes(sponsorSearch.toLowerCase()) || 
-    s.phoneNumber.includes(sponsorSearch)
-  ).slice(0, 3);
+  // On nettoie la recherche pour être plus flexible
+  const filteredSponsors = allPotentialSponsors.filter(s => {
+    const search = sponsorSearch.toLowerCase().replace(/\s/g, '');
+    const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase().replace(/\s/g, '');
+    const phone = (s.phoneNumber || '').replace(/\s/g, '');
+    
+    return fullName.includes(search) || phone.includes(search);
+  }).slice(0, 3);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -192,7 +206,7 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Barre de Recherche de Parrain (S'affiche si pas de parrain) */}
+                  {/* Barre de Recherche de Parrain */}
                   {!user.referredBy && (
                     <div className="p-8 bg-brand-50/30 rounded-[2.5rem] border border-brand-100 relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none"><Handshake className="w-20 h-20" /></div>
@@ -231,7 +245,10 @@ const Profile: React.FC = () => {
                             </button>
                           ))}
                           {filteredSponsors.length === 0 && (
-                            <p className="text-center py-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">Aucun gérant trouvé</p>
+                            <div className="bg-white/50 p-4 rounded-xl text-center space-y-2">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Aucun gérant trouvé</p>
+                              <p className="text-[8px] text-slate-400 italic">Astuce : Vous ne pouvez pas vous parrainer vous-même.</p>
+                            </div>
                           )}
                         </div>
                       )}
