@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getProfileByPhone } from '../services/supabase';
-import { AlertCircle, ShieldCheck, Clock, Loader2 } from 'lucide-react';
+import { getProfileByPhone, saveUserProfile } from '../services/supabase';
+import { AlertCircle, Clock, Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
@@ -14,8 +14,18 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'pending' | 'denied'>('idle');
   
-  const { loginManually, loginAdmin, loading: authLoading } = useAuth() as any;
+  const { loginManually } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extraction du parrain depuis l'URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('gotop_temp_ref', ref);
+    }
+  }, [location]);
 
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,16 +36,25 @@ const Login: React.FC = () => {
     
     setLoading(true);
     try {
-      // Nettoyage du numéro pour la recherche
       const cleanPhone = phone.replace(/\s/g, '');
       const formattedPhone = cleanPhone.startsWith('0') ? `+225${cleanPhone}` : cleanPhone;
       
       const profile = await getProfileByPhone(formattedPhone);
       
       if (!profile) {
-        setError("Aucun compte associé à ce numéro. Veuillez d'abord effectuer un diagnostic.");
+        setError("Aucun compte associé. Faites d'abord le diagnostic.");
         setLoading(false);
         return;
+      }
+
+      // Attribution automatique du parrain si stocké
+      const tempRefPhone = localStorage.getItem('gotop_temp_ref');
+      if (tempRefPhone && !profile.referredBy && tempRefPhone !== formattedPhone) {
+        const parrain = await getProfileByPhone(tempRefPhone);
+        if (parrain) {
+          await saveUserProfile({ uid: profile.uid, referredBy: parrain.uid });
+          localStorage.removeItem('gotop_temp_ref');
+        }
       }
 
       if (!profile.isActive) {
@@ -44,15 +63,11 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Si actif, on connecte manuellement (stockage local du numéro)
       const success = await loginManually(formattedPhone);
-      if (success) {
-        navigate('/dashboard');
-      } else {
-        setError("Erreur lors de la connexion. Réessayez.");
-      }
+      if (success) navigate('/dashboard');
+      else setError("Erreur de connexion.");
     } catch (err) {
-      setError("Une erreur technique est survenue.");
+      setError("Erreur technique.");
     } finally {
       setLoading(false);
     }
@@ -93,89 +108,43 @@ const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl mb-8 text-xs font-bold border border-rose-100 flex items-center gap-3 animate-in shake duration-300">
+          <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl mb-8 text-xs font-bold border border-rose-100 flex items-center gap-3">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {status === 'pending' && (
-          <div className="bg-amber-50 text-amber-700 p-6 rounded-[2rem] mb-8 border border-amber-100 animate-in zoom-in-95 duration-300">
+          <div className="bg-amber-50 text-amber-700 p-6 rounded-[2rem] mb-8 border border-amber-100">
             <div className="flex items-center gap-4 mb-3">
               <Clock className="w-6 h-6 text-amber-500 animate-pulse" />
               <p className="font-black uppercase text-[10px] tracking-widest">Paiement en attente</p>
             </div>
-            <p className="text-xs font-medium leading-relaxed">
-              Votre accès est en cours de validation par nos services. Dès réception de votre paiement Wave, Coach Kita activera vos modules. 
-              <br/><br/>
-              <b>Délai moyen : 15 minutes.</b>
-            </p>
+            <p className="text-xs font-medium leading-relaxed italic">Coach Kita valide votre accès après réception de votre paiement Wave.</p>
           </div>
         )}
 
         <div className="flex bg-slate-100 p-1 rounded-2xl mb-8 relative z-10">
-          <button 
-            onClick={() => { setMethod('phone'); setError(''); setStatus('idle'); }}
-            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${method === 'phone' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
-          >
-            N° Téléphone
-          </button>
-          <button 
-            onClick={() => { setMethod('email'); setError(''); setStatus('idle'); }}
-            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${method === 'email' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
-          >
-            Admin
-          </button>
+          <button onClick={() => setMethod('phone')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${method === 'phone' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>N° Téléphone</button>
+          <button onClick={() => setMethod('email')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${method === 'email' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>Admin</button>
         </div>
 
         <form onSubmit={method === 'phone' ? handlePhoneLogin : handleEmailLogin} className="space-y-6 relative z-10">
           {method === 'phone' ? (
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Votre numéro WhatsApp</label>
-              <input 
-                type="tel" 
-                placeholder="0708047914"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-brand-500/10 outline-none transition font-black text-xl text-center"
-              />
+              <input type="tel" placeholder="0708047914" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-black text-xl text-center" />
             </div>
           ) : (
             <>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Email Admin</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-brand-500/10 outline-none transition font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mot de passe</label>
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-brand-500/10 outline-none transition font-bold"
-                />
-              </div>
+              <input type="email" placeholder="Email Admin" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold" />
+              <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none font-bold" />
             </>
           )}
 
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-600 text-white py-5 rounded-2xl font-black hover:bg-brand-700 shadow-xl shadow-brand-200 disabled:opacity-50 transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-3"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : method === 'phone' ? 'Accéder à mon espace' : 'S\'identifier'}
+          <button type="submit" disabled={loading} className="w-full bg-brand-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrer'}
           </button>
-          
-          {method === 'phone' && (
-            <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-              Une fois activé par l'admin, votre numéro devient votre clé d'accès permanente.
-            </p>
-          )}
         </form>
       </div>
     </div>

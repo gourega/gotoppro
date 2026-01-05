@@ -41,44 +41,36 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
   }
 };
 
+export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('referredBy', uid);
+  if (error) return [];
+  return data as UserProfile[];
+};
+
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   
   const { uid, ...dataToUpdate } = profile;
+
+  // Si on met à jour le parrain, on incrémente aussi le compteur du parrain
+  if (dataToUpdate.referredBy) {
+    const parrain = await getUserProfile(dataToUpdate.referredBy);
+    if (parrain) {
+      const newCount = (parrain.referralCount || 0) + 1;
+      await supabase.from('profiles').update({ referralCount: newCount }).eq('uid', parrain.uid);
+    }
+  }
 
   const { error } = await supabase
     .from('profiles')
     .update(dataToUpdate)
     .eq('uid', uid);
   
-  if (error) {
-    if (error.code === '42703' || error.message.includes('column')) {
-      const essentialData = {
-        progress: profile.progress,
-        badges: profile.badges,
-        isActive: profile.isActive,
-        actionPlan: profile.actionPlan,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        establishmentName: profile.establishmentName,
-        purchasedModuleIds: profile.purchasedModuleIds,
-        attempts: profile.attempts
-      };
-
-      Object.keys(essentialData).forEach(key => 
-        (essentialData as any)[key] === undefined && delete (essentialData as any)[key]
-      );
-
-      const { error: retryError } = await supabase
-        .from('profiles')
-        .update(essentialData)
-        .eq('uid', uid);
-
-      if (retryError) throw new Error(retryError.message);
-    } else {
-      throw new Error(error.message);
-    }
-  }
+  if (error) throw new Error(error.message);
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
@@ -120,31 +112,6 @@ export const updateQuizAttempts = async (uid: string, moduleId: string, attempts
   if (error) throw error;
 };
 
-export const validateUserPurchases = async (uid: string) => {
-  if (!supabase) throw new Error("Client Supabase non initialisé.");
-  
-  const { data: user } = await supabase
-    .from('profiles')
-    .select('purchasedModuleIds, pendingModuleIds')
-    .eq('uid', uid)
-    .single();
-
-  if (!user) return;
-
-  const newPurchased = [...new Set([...(user.purchasedModuleIds || []), ...(user.pendingModuleIds || [])])];
-  
-  const { error } = await supabase
-    .from('profiles')
-    .update({ 
-      purchasedModuleIds: newPurchased,
-      pendingModuleIds: [],
-      isActive: true
-    })
-    .eq('uid', uid);
-
-  if (error) throw error;
-};
-
 export const deleteUserProfile = async (uid: string) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
@@ -163,8 +130,6 @@ export const uploadProfilePhoto = async (file: File, uid: string): Promise<strin
 
 export const createAdminAccount = async (email: string, firstName: string, phone: string) => {
   if (!supabase) throw new Error("Client Supabase non initialisé.");
-  // On crée d'abord le profil dans la table profiles. 
-  // L'utilisateur devra ensuite s'inscrire via le footer ou être invité par email Supabase.
   const newProfile = {
     uid: `admin_${Date.now()}`,
     phoneNumber: phone,
