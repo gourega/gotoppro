@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BRAND_LOGO } from '../constants';
-import { LogOut, User, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -36,8 +36,8 @@ const Navbar: React.FC = () => {
           {/* Desktop Navigation */}
           <div className="hidden sm:flex sm:items-center sm:space-x-8">
             <NavLink to="/" label="Accueil" />
-            <NavLink to="/vision" label="Notre Vision" />
-            <NavLink to="/avantages" label="Avantages" />
+            <NavLink to="/vision" label="Vision" />
+            <NavLink to="/audit-miroir" label="Audit Miroir" highlight />
             <NavLink to="/quiz" label="Diagnostic" />
             
             {user ? (
@@ -86,7 +86,7 @@ const Navbar: React.FC = () => {
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
           <Link to="/" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Accueil</Link>
           <Link to="/vision" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Notre Vision</Link>
-          <Link to="/avantages" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Avantages</Link>
+          <Link to="/audit-miroir" className="block text-brand-600 font-bold p-4 hover:bg-slate-50 rounded-2xl flex items-center gap-2">Audit Miroir <Sparkles className="w-4 h-4" /></Link>
           <Link to="/quiz" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Diagnostic</Link>
           {user && (
             <>
@@ -107,10 +107,11 @@ const Navbar: React.FC = () => {
   );
 };
 
-const NavLink = ({ to, label }: { to: string, label: string }) => (
-  <Link to={to} className="text-slate-500 hover:text-brand-900 font-black text-[10px] uppercase tracking-widest transition-colors relative group">
+const NavLink = ({ to, label, highlight = false }: { to: string, label: string, highlight?: boolean }) => (
+  <Link to={to} className={`font-black text-[10px] uppercase tracking-widest transition-colors relative group flex items-center gap-2 ${highlight ? 'text-brand-600' : 'text-slate-500 hover:text-brand-900'}`}>
     {label}
-    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all group-hover:w-full"></span>
+    {highlight && <Sparkles className="w-3 h-3 animate-pulse" />}
+    <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all group-hover:w-full ${highlight ? 'bg-brand-600 w-full' : 'bg-brand-500'}`}></span>
   </Link>
 );
 

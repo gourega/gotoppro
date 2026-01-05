@@ -11,6 +11,7 @@ import ModuleView from './pages/ModuleView';
 import Profile from './pages/Profile';
 import Vision from './pages/Vision';
 import Benefits from './pages/Benefits';
+import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -51,6 +52,7 @@ const AppContent: React.FC = () => {
           <Route path="/vision" element={<Vision />} />
           <Route path="/avantages" element={<Benefits />} />
           <Route path="/quiz" element={<Diagnostic />} />
+          <Route path="/audit-miroir" element={<AuditMiroir />} />
           <Route path="/results" element={<Results />} />
           
           <Route path="/dashboard" element={
