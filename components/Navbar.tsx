@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BRAND_LOGO } from '../constants';
 import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles } from 'lucide-react';
@@ -9,6 +9,7 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
@@ -34,27 +35,29 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden sm:flex sm:items-center sm:space-x-8">
-            <NavLink to="/" label="Accueil" />
-            <NavLink to="/vision" label="Vision" />
-            <NavLink to="/avantages" label="Avantages" />
-            <NavLink to="/audit-miroir" label="Audit Miroir" highlight />
-            <NavLink to="/quiz" label="Diagnostic" />
+          <div className="hidden sm:flex sm:items-center sm:space-x-6 lg:space-x-8">
+            <NavLink to="/" label="Accueil" active={location.pathname === '/'} />
+            <NavLink to="/vision" label="Vision" active={location.pathname === '/vision'} />
+            <NavLink to="/avantages" label="Avantages" active={location.pathname === '/avantages'} />
+            <NavLink to="/audit-miroir" label="Audit Miroir" highlight active={location.pathname === '/audit-miroir'} />
+            <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
             
             {user ? (
               <div className="flex items-center gap-4 ml-4">
-                <Link to="/dashboard" className="flex items-center gap-2 text-slate-600 hover:text-brand-600 transition-colors p-2 rounded-xl" title="Mon Espace">
+                <Link to="/dashboard" className={`flex items-center gap-2 transition-colors p-2 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-brand-600'}`} title="Mon Espace">
                   <LayoutDashboard className="w-5 h-5" />
                 </Link>
-                <Link to="/profile" className="h-10 w-10 rounded-xl bg-brand-100 flex items-center justify-center border-2 border-white overflow-hidden shadow-sm hover:border-brand-500 transition-all">
+                <Link to="/profile" className={`h-10 w-10 rounded-xl flex items-center justify-center border-2 overflow-hidden shadow-sm transition-all ${location.pathname === '/profile' ? 'border-brand-500 ring-2 ring-brand-100' : 'border-white hover:border-brand-500'}`}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="P" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-brand-700 font-black text-xs">{user.firstName?.[0] || 'U'}</span>
+                    <div className="bg-brand-100 w-full h-full flex items-center justify-center">
+                      <span className="text-brand-700 font-black text-xs">{user.firstName?.[0] || 'U'}</span>
+                    </div>
                   )}
                 </Link>
                 {user.isAdmin && (
-                  <Link to="/admin" className="text-brand-600 hover:text-brand-700 p-2" title="Administration">
+                  <Link to="/admin" className={`p-2 transition-colors ${location.pathname === '/admin' ? 'text-brand-600' : 'text-slate-400 hover:text-brand-600'}`} title="Administration">
                     <ShieldCheck className="w-6 h-6" />
                   </Link>
                 )}
@@ -85,21 +88,21 @@ const Navbar: React.FC = () => {
       {/* Mobile Navigation */}
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
-          <Link to="/" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Accueil</Link>
-          <Link to="/vision" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Notre Vision</Link>
-          <Link to="/avantages" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Avantages</Link>
-          <Link to="/audit-miroir" className="block text-brand-600 font-bold p-4 hover:bg-slate-50 rounded-2xl flex items-center gap-2">Audit Miroir <Sparkles className="w-4 h-4" /></Link>
-          <Link to="/quiz" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Diagnostic</Link>
+          <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Accueil</Link>
+          <Link to="/vision" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/vision' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Notre Vision</Link>
+          <Link to="/avantages" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/avantages' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Avantages</Link>
+          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/audit-miroir' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>Audit Miroir <Sparkles className="w-4 h-4" /></Link>
+          <Link to="/quiz" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/quiz' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Diagnostic</Link>
           {user && (
             <>
               <div className="h-px bg-slate-100 my-2"></div>
-              <Link to="/dashboard" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Espace</Link>
-              <Link to="/profile" className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Profil</Link>
-              {user.isAdmin && <Link to="/admin" className="block text-brand-600 font-bold p-4 hover:bg-slate-50 rounded-2xl">Administration</Link>}
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Espace</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Profil</Link>
+              {user.isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block text-brand-600 font-bold p-4 hover:bg-slate-50 rounded-2xl">Administration</Link>}
             </>
           )}
           {!user ? (
-            <Link to="/login" className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest">Connexion</Link>
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest">Connexion</Link>
           ) : (
             <button onClick={handleLogout} className="w-full text-rose-500 font-black uppercase text-[10px] tracking-widest p-4 text-left border-t border-slate-100">Déconnexion</button>
           )}
@@ -109,11 +112,11 @@ const Navbar: React.FC = () => {
   );
 };
 
-const NavLink = ({ to, label, highlight = false }: { to: string, label: string, highlight?: boolean }) => (
-  <Link to={to} className={`font-black text-[10px] uppercase tracking-widest transition-colors relative group flex items-center gap-2 ${highlight ? 'text-brand-600' : 'text-slate-500 hover:text-brand-900'}`}>
+const NavLink = ({ to, label, highlight = false, active = false }: { to: string, label: string, highlight?: boolean, active?: boolean }) => (
+  <Link to={to} className={`font-black text-[10px] uppercase tracking-widest transition-colors relative group flex items-center gap-2 ${active ? 'text-brand-900' : highlight ? 'text-brand-600' : 'text-slate-500 hover:text-brand-900'}`}>
     {label}
     {highlight && <Sparkles className="w-3 h-3 animate-pulse" />}
-    <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all group-hover:w-full ${highlight ? 'bg-brand-600 w-full' : 'bg-brand-50'}`}></span>
+    <span className={`absolute -bottom-1 left-0 h-0.5 transition-all group-hover:w-full group-hover:bg-brand-500 ${active ? 'w-full bg-brand-900' : 'w-0'}`}></span>
   </Link>
 );
 
