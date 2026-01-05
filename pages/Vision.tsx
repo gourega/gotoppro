@@ -72,7 +72,7 @@ const Vision: React.FC = () => {
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="h-px w-12 bg-brand-500"></div>
-                  <span className="font-black text-xs uppercase tracking-widest text-brand-900">Coach Kita — Fondatrice & Mentor d'Élite</span>
+                  <span className="font-black text-xs uppercase tracking-widest text-brand-900">Coach Kita — Fondateur & Mentor d'Élite</span>
                 </div>
               </div>
             </div>
