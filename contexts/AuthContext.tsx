@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
-import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER } from '../constants';
+import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, BADGES } from '../constants';
 
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
@@ -98,14 +98,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid,
         phoneNumber: phone,
         email: email,
-        firstName: 'Super',
-        lastName: 'Admin',
+        firstName: 'Coach',
+        lastName: 'Kita',
         establishmentName: "Go'Top Pro HQ",
         photoURL: COACH_KITA_AVATAR,
+        bio: "Mentor d’élite avec 25 ans d'expertise terrain en Afrique de l’Ouest, j’ai consacré ma vie à l’émancipation des professionnels de la beauté. Héritier direct de l’aventure APB lancée en 2014, je fusionne aujourd'hui l'exigence des traditions d'excellence avec la puissance de l'IA. Ma mission est claire : transformer votre talent brut en un empire structuré, rentable et prestigieux.",
         role: 'SUPER_ADMIN',
         isActive: true,
         isAdmin: true,
-        badges: [],
+        badges: BADGES.map(b => b.id), // Tous les trophées activés pour le Super Admin
         purchasedModuleIds: [],
         pendingModuleIds: [],
         actionPlan: [],
@@ -115,7 +116,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       getUserProfile(uid).then(dbProfile => {
         if (!dbProfile) saveUserProfile(adminProfile);
-        else setUser(dbProfile);
+        else {
+          // On s'assure que même si chargé de la DB, le Super Admin garde ses badges et sa bio par défaut
+          setUser({
+            ...dbProfile,
+            badges: BADGES.map(b => b.id),
+            role: 'SUPER_ADMIN',
+            isAdmin: true
+          });
+        }
       });
       return;
     }
