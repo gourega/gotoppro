@@ -24,13 +24,18 @@ import {
   Circle,
   BookOpen,
   LayoutDashboard,
-  AlertCircle
+  AlertCircle,
+  Smartphone,
+  Download,
+  Users,
+  Share2
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -48,10 +53,33 @@ const Dashboard: React.FC = () => {
         localStorage.setItem(`daily_date_${user.uid}`, today);
       }
       setLoadingTasks(false);
+
+      if (window.matchMedia('(display-mode: standalone)').matches || localStorage.getItem('hide_install_banner')) {
+        setShowInstallBanner(false);
+      }
     }
   }, [user]);
 
   if (!user) return null;
+
+  const handleShareReferral = async () => {
+    const shareData = {
+      title: "Rejoins Go'Top Pro",
+      text: `Salut ! En tant que gérant, je me forme avec Coach Kita sur Go'Top Pro. Rejoins le réseau des élites ici :`,
+      url: `${window.location.origin}/#/login?ref=${user.phoneNumber}`
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("Lien de parrainage copié ! Partagez-le sur WhatsApp.");
+      }
+    } catch (err) {
+      console.error("Erreur de partage:", err);
+    }
+  };
 
   const handleToggleDailyTask = (index: number) => {
     const updated = [...dailyTasks];
@@ -96,6 +124,28 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#fcfdfe]">
+      {showInstallBanner && (
+        <div className="bg-brand-600 p-4 text-white flex items-center justify-between animate-in slide-in-from-top duration-500 sticky top-20 z-50">
+           <div className="flex items-center gap-3">
+              <Smartphone className="w-5 h-5" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-white">Installer Go'Top Pro sur mon écran</p>
+           </div>
+           <div className="flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  alert("Sur iPhone: Cliquez sur l'icône Partager (carré avec flèche) puis sur 'Sur l'écran d'accueil'. \n\nSur Android: Cliquez sur les 3 points du navigateur puis 'Installer l'application'.");
+                }}
+                className="bg-white text-brand-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2"
+              >
+                <Download className="w-3 h-3" /> Comment ?
+              </button>
+              <button onClick={() => { setShowInstallBanner(false); localStorage.setItem('hide_install_banner', 'true'); }} className="opacity-50">
+                 <Circle className="w-4 h-4" />
+              </button>
+           </div>
+        </div>
+      )}
+
       {/* Hero Section Prestige */}
       <div className="bg-brand-900 pt-20 pb-40 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-500/10 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none"></div>
@@ -133,7 +183,6 @@ const Dashboard: React.FC = () => {
           {/* Main Content Area */}
           <div className="lg:col-span-8 space-y-12">
             
-            {/* 0. Pending Validation Notification (New) */}
             {pendingCount > 0 && (
               <section className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[2.5rem] p-8 border border-amber-200 shadow-xl shadow-amber-900/5 animate-in slide-in-from-top-4 duration-500 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-amber-900 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -203,7 +252,7 @@ const Dashboard: React.FC = () => {
                </div>
             </section>
 
-            {/* 2. My Masterclasses (The Owned Empire) */}
+            {/* 2. My Masterclasses */}
             <section>
               <div className="flex justify-between items-center mb-8 px-4">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -231,7 +280,7 @@ const Dashboard: React.FC = () => {
               </div>
             </section>
 
-            {/* 3. Action Plan (Strategic Commitments) */}
+            {/* 3. Action Plan */}
             <section className="bg-slate-900 rounded-[4rem] p-10 md:p-16 text-white shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-16 opacity-5 pointer-events-none italic font-serif text-8xl">Action</div>
               <div className="flex justify-between items-center mb-12 relative z-10">
@@ -281,8 +330,22 @@ const Dashboard: React.FC = () => {
             </section>
           </div>
 
-          {/* Right Sidebar - Prestige & Coach */}
+          {/* Right Sidebar */}
           <div className="lg:col-span-4 space-y-10">
+            {/* Rapid Referral (New) */}
+            <button 
+              onClick={handleShareReferral}
+              className="w-full bg-brand-500 text-white p-8 rounded-[3rem] shadow-xl shadow-brand-500/10 flex flex-col items-center text-center gap-4 group hover:bg-brand-600 transition-all border border-brand-400"
+            >
+               <div className="h-14 w-14 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Share2 className="w-7 h-7" />
+               </div>
+               <div>
+                  <h3 className="text-lg font-black uppercase tracking-widest mb-1">Recruter un filleul</h3>
+                  <p className="text-[10px] font-medium text-white/80">Partagez votre succès et gagnez des bonus d'ambassadeur.</p>
+               </div>
+            </button>
+
             {/* Certifications Card */}
             <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-10">
               <div className="flex items-center justify-between mb-10">
@@ -307,6 +370,24 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Ranking Teaser */}
+            <div className="bg-emerald-50 rounded-[3rem] p-10 border border-emerald-100 shadow-xl overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-8 opacity-5 text-emerald-900 pointer-events-none group-hover:scale-110 transition-transform"><Trophy className="w-24 h-24" /></div>
+              <div className="flex items-center gap-3 mb-6">
+                 <Users className="w-4 h-4 text-emerald-600" />
+                 <h3 className="font-black text-emerald-900 text-[10px] uppercase tracking-widest">Réseau des élites</h3>
+              </div>
+              <p className="text-emerald-800 font-bold text-sm leading-relaxed mb-6">Vous êtes dans le **Top 15%** des gérants les plus actifs de Côte d'Ivoire cette semaine.</p>
+              <div className="flex items-center gap-2">
+                 {[1,2,3,4].map(i => (
+                   <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+                      <img src={`https://i.pravatar.cc/100?u=kita${i}`} className="w-full h-full object-cover" alt="" />
+                   </div>
+                 ))}
+                 <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest ml-2">+42 experts</span>
+              </div>
+            </div>
+
             {/* Coach Kita Card */}
             <div className="bg-brand-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.05] text-white pointer-events-none"><Sparkles className="w-24 h-24" /></div>
@@ -324,23 +405,6 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Next Steps / Suggested Modules */}
-            {suggestedModules.length > 0 && (
-              <div className="space-y-6">
-                 <h3 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.4em] px-4">Prochaines Étapes</h3>
-                 {suggestedModules.map(mod => (
-                   <Link key={mod.id} to="/results" className="block bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
-                      <p className="text-[9px] font-black text-brand-500 uppercase tracking-widest mb-3">{mod.topic}</p>
-                      <h4 className="font-bold text-slate-900 mb-6 font-serif group-hover:text-brand-600 transition-colors">{mod.title}</h4>
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Masterclass Expert</span>
-                         <PlusIcon className="w-5 h-5 text-slate-300 group-hover:text-brand-500 group-hover:rotate-90 transition-all" />
-                      </div>
-                   </Link>
-                 ))}
-              </div>
-            )}
           </div>
         </div>
       </div>

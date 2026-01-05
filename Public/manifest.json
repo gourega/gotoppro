@@ -1,0 +1,17 @@
+
+{
+  "short_name": "Go'Top Pro",
+  "name": "Go'Top Pro - Excellence & Beauté",
+  "icons": [
+    {
+      "src": "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "theme_color": "#0c4a6e",
+  "background_color": "#fcfdfe"
+}

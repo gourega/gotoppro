@@ -6,6 +6,12 @@
 - **Base de données** : Supabase (PostgreSQL).
 - **IA Native** : Google Gemini 2.5/3 (Mode Billing Activé).
 
+## Gestion des Assets de Marque
+1. **Dossier Centralisé** : Bucket `assets` sur Supabase.
+2. **Logo** : Fichier `logo.png` (512x512 recommandé).
+3. **Usage** : Le logo est utilisé comme Favicon, Icône d'App (PWA) et dans la barre de navigation.
+   - *Note : Si le logo n'est pas trouvé dans Supabase, une icône de secours (SVG) est affichée automatiquement.*
+
 ## État de la Production (Haute Disponibilité)
 - **Facturation Google Cloud** : ✅ OPÉRATIONNELLE.
 - **Statut Quota** : Levée des limites "Free Tier" (15 RPM).
@@ -21,7 +27,7 @@
 
 ## Recommandations Techniques Immédiates
 1. **Clés API** : Assurez-vous que `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont bien présentes dans Cloudflare.
-2. **CORS** : Dans Supabase > Settings > API, ajoutez l'URL de votre domaine `gotop-pro.pages.dev` dans la "Allow list" pour éviter les blocages de requêtes.
+2. **CORS** : Dans Supabase > Settings > API, ajoutez l'URL de votre domaine `gotop-pro.pages.dev` dans la "Allow list".
 3. **Optimisation Audio** : Le cache implémenté dans `ModuleView.tsx` permet de ne payer qu'une seule fois la génération audio par utilisateur/session.
 
 ---
