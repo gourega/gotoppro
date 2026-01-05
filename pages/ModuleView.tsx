@@ -45,8 +45,6 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  // PCM 16-bit : 2 octets par échantillon. 
-  // On s'assure que le buffer est aligné en créant une copie si nécessaire.
   const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
   const dataInt16 = new Int16Array(arrayBuffer);
   const frameCount = dataInt16.length / numChannels;
@@ -75,11 +73,12 @@ const ModuleView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
 
-  // États Audio
+  // États Audio & Cache
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const cachedAudioBufferRef = useRef<AudioBuffer | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
@@ -103,29 +102,49 @@ const ModuleView: React.FC = () => {
     setIsPlaying(false);
   };
 
+  const playBuffer = (buffer: AudioBuffer) => {
+    if (!audioContextRef.current) return;
+    
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContextRef.current.destination);
+    source.onended = () => setIsPlaying(false);
+    
+    sourceNodeRef.current = source;
+    source.start(0);
+    setIsPlaying(true);
+  };
+
   const handlePlayAudio = async () => {
+    // Si déjà en lecture, on arrête
     if (isPlaying) {
       stopAudio();
       return;
     }
 
+    // Initialisation AudioContext si nécessaire
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    }
+    
+    if (audioContextRef.current.state === 'suspended') {
+      await audioContextRef.current.resume();
+    }
+
+    // Utilisation du cache si disponible (évite l'appel API et préserve le quota)
+    if (cachedAudioBufferRef.current) {
+      playBuffer(cachedAudioBufferRef.current);
+      return;
+    }
+
     setIsAudioLoading(true);
-    // On nettoie le texte pour le TTS
+
     const cleanText = module.lesson_content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const fullText = `Coach Kita présente : ${module.title}. ${cleanText}`;
 
     try {
-      // Initialisation différée de l'AudioContext pour respecter les politiques navigateurs
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      }
-      
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Agis comme Coach Kita, mentor d'élite. Lis ce cours de manière inspirante et professionnelle. Fais des pauses naturelles entre les sections : ${fullText.substring(0, 4000)}`;
+      const prompt = `Agis comme Coach Kita, mentor d'élite. Lis ce cours de manière inspirante et professionnelle : ${fullText.substring(0, 4000)}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -151,20 +170,21 @@ const ModuleView: React.FC = () => {
           1
         );
         
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
-        source.onended = () => setIsPlaying(false);
-        
-        sourceNodeRef.current = source;
-        source.start(0);
-        setIsPlaying(true);
+        // Stockage en cache pour cette session de vue du module
+        cachedAudioBufferRef.current = audioBuffer;
+        playBuffer(audioBuffer);
       } else {
-        throw new Error("Données audio non trouvées dans la réponse.");
+        throw new Error("Impossible de récupérer le flux audio.");
       }
     } catch (err: any) {
       console.error("Erreur Masterclass Audio:", err);
-      alert(`Erreur Audio : ${err.message || "Impossible de générer la masterclass pour le moment."}`);
+      
+      // Gestion spécifique de l'erreur de quota (429)
+      if (err.message?.includes("429") || err.message?.includes("quota")) {
+        alert("Coach Kita est très sollicité en ce moment (limite de quota atteinte). Veuillez réessayer dans quelques minutes ou passer à la lecture du texte ci-dessous.");
+      } else {
+        alert(`Masterclass indisponible : ${err.message || "Erreur de connexion"}`);
+      }
     } finally {
       setIsAudioLoading(false);
     }
