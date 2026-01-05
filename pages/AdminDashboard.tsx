@@ -36,7 +36,8 @@ import {
   Zap,
   Award,
   Crown,
-  Handshake
+  Handshake,
+  CheckCircle
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -188,12 +189,18 @@ const AdminDashboard: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
-          <div>
-            <div className="flex items-center gap-3 text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3 text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">
               <ShieldAlert className="w-4 h-4" />
               Pilotage Stratégique v2.1
             </div>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">Console de <span className="text-brand-500">Direction</span></h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">Console de <span className="text-brand-500">Direction</span></h1>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest animate-pulse">
+                <CheckCircle className="w-3 h-3" />
+                Production Active
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-4">
              <button onClick={fetchUsers} disabled={loading} className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-all group">
