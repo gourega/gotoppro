@@ -28,7 +28,7 @@ import {
   Coins
 } from 'lucide-react';
 
-// Helpers pour le traitement Audio PCM
+// Fonctions de décodage conformes aux directives Google GenAI
 function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -45,7 +45,10 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
+  // PCM 16-bit : 2 octets par échantillon. 
+  // On s'assure que le buffer est aligné en créant une copie si nécessaire.
+  const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+  const dataInt16 = new Int16Array(arrayBuffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -107,10 +110,12 @@ const ModuleView: React.FC = () => {
     }
 
     setIsAudioLoading(true);
+    // On nettoie le texte pour le TTS
     const cleanText = module.lesson_content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const fullText = `${module.title}. ${cleanText}`;
+    const fullText = `Coach Kita présente : ${module.title}. ${cleanText}`;
 
     try {
+      // Initialisation différée de l'AudioContext pour respecter les politiques navigateurs
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       }
@@ -120,7 +125,7 @@ const ModuleView: React.FC = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Agis comme Coach Kita. Lis ce cours de coiffure expert avec un ton calme, posé et très inspirant. IMPORTANT : Fais des pauses naturelles. Ne prononcez pas les symboles de ponctuation ou balises : ${fullText.substring(0, 4000)}`;
+      const prompt = `Agis comme Coach Kita, mentor d'élite. Lis ce cours de manière inspirante et professionnelle. Fais des pauses naturelles entre les sections : ${fullText.substring(0, 4000)}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -135,7 +140,8 @@ const ModuleView: React.FC = () => {
         },
       });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+      const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      const base64Audio = audioPart?.inlineData?.data;
       
       if (base64Audio && audioContextRef.current) {
         const audioBuffer = await decodeAudioData(
@@ -154,11 +160,11 @@ const ModuleView: React.FC = () => {
         source.start(0);
         setIsPlaying(true);
       } else {
-        throw new Error("Aucune donnée audio reçue du modèle.");
+        throw new Error("Données audio non trouvées dans la réponse.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur Masterclass Audio:", err);
-      alert("Impossible de lancer la masterclass audio pour le moment. Veuillez réessayer.");
+      alert(`Erreur Audio : ${err.message || "Impossible de générer la masterclass pour le moment."}`);
     } finally {
       setIsAudioLoading(false);
     }
@@ -212,7 +218,7 @@ const ModuleView: React.FC = () => {
     } catch (err: any) {
       console.error("Erreur critique quiz:", err);
       setQuizState('results');
-      alert("Vos résultats sont affichés mais n'ont pas pu être synchronisés. Raison : " + (err.message || "Erreur serveur"));
+      alert("Vos résultats sont affichés mais n'ont pas pu être synchronisés.");
     } finally {
       setIsFinishingQuiz(false);
     }
