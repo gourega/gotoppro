@@ -52,27 +52,45 @@ const Vision: React.FC = () => {
         </div>
       </section>
 
-      {/* La Méthode Kita */}
-      <section className="py-24 bg-slate-50 border-y border-slate-100">
+      {/* La Méthode Kita - Design Aligné sur l'image fournie */}
+      <section className="py-24 bg-slate-50 border-y border-slate-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
             <h3 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-4">L'Origine de l'Excellence</h3>
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900">La Méthode Coach Kita</h2>
           </div>
-          <div className="bg-white rounded-[4rem] p-12 md:p-24 shadow-2xl relative overflow-hidden group border border-slate-100">
-            <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] pointer-events-none italic font-serif group-hover:scale-110 transition-transform duration-1000">K</div>
-            <div className="flex flex-col lg:flex-row gap-16 items-center">
-              <div className="h-64 w-64 rounded-[4rem] overflow-hidden shadow-2xl border-4 border-brand-500 flex-shrink-0 rotate-3 group-hover:rotate-0 transition-transform duration-700">
-                <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+          
+          <div className="bg-white rounded-[3.5rem] p-10 md:p-20 shadow-2xl relative overflow-hidden group border border-slate-100 max-w-5xl mx-auto">
+            {/* Watermark "K" aligned to the right like in the image */}
+            <div className="absolute top-1/2 -right-12 -translate-y-1/2 opacity-[0.03] text-[25rem] pointer-events-none italic font-serif select-none transition-transform duration-1000 group-hover:scale-110 leading-none">K</div>
+            
+            <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-center relative z-10">
+              {/* Avatar with blue border like in the image */}
+              <div className="relative shrink-0">
+                <div className="h-56 w-56 rounded-[3rem] overflow-hidden border-[6px] border-brand-500 shadow-xl transition-transform duration-700 group-hover:scale-105">
+                  <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+                </div>
               </div>
-              <div className="space-y-8">
-                <Quote className="w-12 h-12 text-brand-200" />
-                <p className="text-2xl md:text-3xl text-slate-700 font-serif italic leading-relaxed">
-                  "Après 15 ans à observer les salons d'Afrique de l'Ouest, j'ai identifié 16 points de rupture qui séparent ceux qui survivent de ceux qui règnent. Go'Top Pro est la synthèse de ces solutions."
+              
+              <div className="space-y-10 flex-grow text-center md:text-left">
+                {/* Quotation Icon like in the image */}
+                <div className="flex justify-center md:justify-start">
+                  <svg className="w-12 h-12 text-slate-900" viewBox="0 0 40 32" fill="currentColor">
+                    <path d="M11.111 0C4.975 0 0 4.975 0 11.111v11.111c0 6.136 4.975 11.111 11.111 11.111h4.444V22.222h-4.444v-11.111h8.889V0h-8.889zm20 0c-6.136 0-11.111 4.975-11.111 11.111v11.111c0 6.136 4.975 11.111 11.111 11.111h4.444V22.222h-4.444v-11.111h8.889V0h-8.889z" />
+                  </svg>
+                </div>
+                
+                {/* Quote Text updated to 25 years */}
+                <p className="text-2xl md:text-3xl text-slate-700 font-serif italic leading-[1.6]">
+                  "Après 25 ans à observer les salons d'Afrique de l'Ouest, j'ai identifié 16 points de rupture qui séparent ceux qui survivent de ceux qui règnent. Go'Top Pro est la synthèse de ces solutions."
                 </p>
-                <div className="flex items-center gap-4">
-                  <div className="h-px w-12 bg-brand-500"></div>
-                  <span className="font-black text-xs uppercase tracking-widest text-brand-900">Coach Kita — Fondateur & Mentor d'Élite</span>
+                
+                {/* Signature with blue line like in the image */}
+                <div className="flex items-center justify-center md:justify-start gap-5">
+                  <div className="h-1.5 w-12 bg-brand-500 rounded-full"></div>
+                  <span className="font-black text-[11px] uppercase tracking-[0.3em] text-brand-900">
+                    Coach Kita — Fondateur & Mentor d'Élite
+                  </span>
                 </div>
               </div>
             </div>
