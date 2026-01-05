@@ -16,7 +16,8 @@ import {
   Check,
   ChevronRight,
   UserPlus,
-  Info
+  Info,
+  Quote
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -266,6 +267,17 @@ const Profile: React.FC = () => {
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Établissement</label>
                     <input type="text" placeholder="Nom du Salon" value={formData.establishmentName} onChange={e => setFormData({...formData, establishmentName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Ma Bio / Mon Histoire</label>
+                    <textarea 
+                      placeholder="Racontez votre parcours ou votre vision..." 
+                      value={formData.bio} 
+                      onChange={e => setFormData({...formData, bio: e.target.value})} 
+                      rows={4}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none resize-none" 
+                    />
+                  </div>
                   
                   <div className="flex gap-4 pt-4">
                     <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-brand-200 hover:bg-brand-700 transition-all flex items-center justify-center gap-3">
@@ -277,6 +289,18 @@ const Profile: React.FC = () => {
                 </form>
               ) : (
                 <div className="space-y-12 animate-in fade-in duration-500">
+                  {/* Bio Display Section */}
+                  {user.bio && (
+                    <div className="relative p-10 bg-brand-50/20 rounded-[3rem] border border-brand-100/30 overflow-hidden group">
+                      <div className="absolute top-6 left-6 opacity-10 text-brand-500 pointer-events-none group-hover:scale-110 transition-transform">
+                        <Quote className="w-12 h-12" />
+                      </div>
+                      <p className="text-xl font-serif italic text-slate-700 leading-relaxed pl-6 relative z-10">
+                        {user.bio}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-slate-50/80 p-10 rounded-[3rem] grid grid-cols-2 gap-10 border border-slate-100 shadow-sm">
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Établissement</p>
