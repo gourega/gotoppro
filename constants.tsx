@@ -277,7 +277,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <h2>III. La relance des inactifs</h2>
         <p>Identifiez les clients qui ne sont pas revenus depuis plus de 3 mois. Envoyez-leur un message de courtoisie personnalisé : « Bonjour [Nom], vos cheveux nous manquent... ». Un simple rappel réactive souvent 20 % de votre base perdue.</p>
       </section>`,
-    coach_tip: "Notez les préférences de vos clientes. Se souvenir de son thé préféré crée l'émotion.",
+    coach_tip: "Notez les préférences de vos constantes. Se souvenir de son thé préféré crée l'émotion.",
     strategic_mantra: "Un client fidèle est votre meilleur ambassadeur.",
     quiz_questions: [
       { 
@@ -399,7 +399,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Vente",
     title: "Vente additionnelle : augmenter le panier moyen",
     description: "Apprenez à proposer systématiquement le soin ou le massage dont votre client a besoin.",
-    mini_course: "Proposer n'est pas forcer. C'est apporte une solution complète au client.",
+    mini_course: "Proposer n'est pas forcer. C'est apporter une solution complète au client.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
@@ -554,7 +554,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <h2>III. Les détails qui font la différence</h2>
         <p>Vérifiez quotidiennement les détails : chaussures propres, maquillage ou barbe soignés, badge avec prénom. Le client vous confie son image, vous devez donc être l'exemple parfait de ce que vous vendez.</p>
       </section>`,
-    coach_tip: "Regardez vos chaussures. Les clientes les remarquent quand elles sont allongées au bac.",
+    coach_tip: "Regardez vos chaussures. Les constantes les remarquent quand elles sont allongées au bac.",
     strategic_mantra: "Vous êtes votre première publicité.",
     quiz_questions: [
       { 
@@ -708,7 +708,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         explanation: "Un client qui reçoit un rappel oublie rarement son rendez-vous. Votre temps est ainsi respecté." 
       },
       { 
-        question: "Faut-ih afficher les tarifs en ligne ?", 
+        question: "Faut-il afficher les tarifs en ligne ?", 
         options: ["Non, c'est secret", "Oui, pour la transparence", "Uniquement les promotions"], 
         correctAnswer: 1, 
         explanation: "Afficher ses prix installe la confiance et évite les malentendus au moment du paiement." 
@@ -721,8 +721,8 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_parrainage",
     topic: "Vente",
     title: "Cercle de recommandation : le bouche-à-oreille",
-    description: "Transformez vos clientes actuelles en une équipe de vente qui vous ramène leurs amies.",
-    mini_course: "Vos meilleures clientes connaissent vos futurs meilleures clientes.",
+    description: "Transformez vos constantes actuelles en une équipe de vente qui vous ramène leurs amies.",
+    mini_course: "Vos meilleures constantes connaissent vos futures meilleures constantes.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
@@ -732,7 +732,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       </section>
       <section class="lesson-card">
         <h2>II. Quand et comment proposer ?</h2>
-        <p>Ne proposez pas au moment de payer. Le meilleur moment est quand le client se regarde dans le miroir à la fin de la prestation et exprime sa satisfaction. Dites : <strong>« Si vous êtes contente de votre look, n'hésitez pas à partager l'adresse avec vos amies »</strong>.</p>
+        <p>Ne proposez pas au moment de payer. Le meilleur moment est quand le client se regarde dans le miroir à la fin de la prestation et exprime sa satisfaction. Dites : <strong>« Si vous êtes contente de votre look, n'hésitez pas à partager l'adresse avec vos amies »</strong>. Le parrainage commence par votre talent.</p>
       </section>
       <section class="lesson-card">
         <h2>III. Le suivi et la récompense</h2>
@@ -774,11 +774,40 @@ export const BADGES: Badge[] = [
     condition: (u, mods) => mods.some(m => m.status === ModuleStatus.COMPLETED)
   },
   {
+    id: "ambassador",
+    name: "Ambassadeur",
+    icon: "🤝",
+    description: "A parrainé au moins 1 gérant avec succès.",
+    condition: (u) => (u.referralCount || 0) >= 1
+  },
+  {
     id: "dedicated",
-    name: "Maître du salon",
+    name: "Maître du Salon",
     icon: "🏆",
     description: "5 modules terminés.",
     condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 5
+  },
+  {
+    id: "visionary",
+    name: "Visionnaire",
+    icon: "👁️",
+    description: "Modules Direction et Tarification validés.",
+    condition: (u, mods) => mods.some(m => m.id === 'mod_management' && m.status === ModuleStatus.COMPLETED) && 
+                           mods.some(m => m.id === 'mod_tarification' && m.status === ModuleStatus.COMPLETED)
+  },
+  {
+    id: "perfectionist",
+    name: "Perfectionniste",
+    icon: "✨",
+    description: "A obtenu 100% à au moins un quiz.",
+    condition: (u) => Object.values(u.progress || {}).some(p => p === 100)
+  },
+  {
+    id: "legend",
+    name: "Légende du Salon",
+    icon: "👑",
+    description: "12 modules ou plus terminés avec succès.",
+    condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 12
   }
 ];
 
