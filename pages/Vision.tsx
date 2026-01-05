@@ -120,8 +120,8 @@ const Vision: React.FC = () => {
 
               <div className="pt-10 border-t border-slate-100 flex items-center gap-6">
                 <Heart className="w-8 h-8 text-rose-500 fill-current" />
-                <p className="text-sm italic font-serif">
-                  "Merci au Président de l'APB, **M. Raymond Kouami Koffi**, pour la fraternité et la confiance depuis plus de 25 ans."
+                <p className="text-sm italic font-serif leading-relaxed">
+                  "Merci au Président de l'APB, M. Raymond Kouami Koffi - Propriétaire du <a href="https://web.facebook.com/salondecoiffurechezraymond" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline font-bold">Salon de coiffure Chez Raymond</a>, pour la fraternité et la confiance depuis plus de 25 ans."
                 </p>
               </div>
             </div>
