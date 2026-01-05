@@ -17,7 +17,9 @@ import {
   ArrowRight,
   Quote,
   Target,
-  Trophy
+  Trophy,
+  CheckCircle2,
+  ListChecks
 } from 'lucide-react';
 
 const AuditMiroir: React.FC = () => {
@@ -27,9 +29,11 @@ const AuditMiroir: React.FC = () => {
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [hasRecorded, setHasRecorded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [diagnostic, setDiagnostic] = useState<string | null>(null);
   const [suggestedModule, setSuggestedModule] = useState<any>(null);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -40,14 +44,17 @@ const AuditMiroir: React.FC = () => {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+      setHasRecorded(false);
+      setRecordedBlob(null);
 
       mediaRecorder.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await processDiagnostic(audioBlob);
+        setRecordedBlob(audioBlob);
+        setHasRecorded(true);
       };
 
       mediaRecorder.start();
@@ -132,7 +139,7 @@ const AuditMiroir: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c4a6e] flex flex-col items-center py-20 px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0c4a6e] flex flex-col items-center py-20 px-6 relative overflow-hidden font-sans">
       
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-full h-full opacity-[0.05] pointer-events-none select-none italic font-serif text-[30rem] flex items-center justify-center">Go'Top</div>
@@ -168,7 +175,7 @@ const AuditMiroir: React.FC = () => {
                 onClick={() => setStep('interact')}
                 className="group relative bg-brand-500 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-xs shadow-[0_20px_60px_rgba(14,165,233,0.3)] hover:bg-brand-400 hover:scale-105 transition-all flex items-center gap-6 mx-auto"
               >
-                Commencer mon diagnostic
+                J'écoute mon Coach Kita
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
@@ -176,7 +183,7 @@ const AuditMiroir: React.FC = () => {
             <div className="grid grid-cols-3 gap-8 pt-20 max-w-2xl mx-auto opacity-40">
                <div className="flex flex-col items-center gap-3">
                   <Mic className="w-6 h-6 text-white" />
-                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Analyse Vocale</span>
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Confidence Vocale</span>
                </div>
                <div className="flex flex-col items-center gap-3">
                   <Target className="w-6 h-6 text-white" />
@@ -200,21 +207,21 @@ const AuditMiroir: React.FC = () => {
             <div className="relative z-10 flex flex-col items-center">
               <div className="text-center mb-12">
                 <h2 className="text-white text-2xl font-serif font-bold mb-4">Parlez-moi à cœur ouvert</h2>
-                <p className="text-slate-400 text-sm">Choisissez votre mode de confidence</p>
+                <p className="text-slate-400 text-sm">Votre message restera confidentiel entre nous</p>
               </div>
               
               <div className="flex bg-white/5 p-1 rounded-2xl mb-16">
-                <button onClick={() => setInputMode('voice')} className={`px-8 py-3 rounded-xl flex items-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-brand-500 text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}>
-                  <Mic className="w-4 h-4" /> Message Vocal
+                <button onClick={() => { setInputMode('voice'); setHasRecorded(false); }} className={`px-8 py-3 rounded-xl flex items-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-brand-500 text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}>
+                  <Mic className="w-4 h-4" /> Mode Vocal
                 </button>
                 <button onClick={() => setInputMode('text')} className={`px-8 py-3 rounded-xl flex items-center gap-3 font-black text-[10px] uppercase tracking-widest transition-all ${inputMode === 'text' ? 'bg-brand-500 text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}>
-                  <MessageSquare className="w-4 h-4" /> Message Écrit
+                  <MessageSquare className="w-4 h-4" /> Mode Écrit
                 </button>
               </div>
 
               {inputMode === 'voice' ? (
-                <div className="text-center space-y-10">
-                  <div className="relative">
+                <div className="text-center space-y-12 w-full">
+                  <div className="relative mx-auto w-fit">
                     {isRecording && (
                       <div className="absolute inset-0 -m-8 rounded-full bg-rose-500/20 animate-ping"></div>
                     )}
@@ -225,12 +232,34 @@ const AuditMiroir: React.FC = () => {
                       {isRecording ? <Square className="w-10 h-10 text-white" /> : <Mic className="w-12 h-12 text-white" />}
                     </button>
                   </div>
-                  <p className="text-white font-black uppercase text-[11px] tracking-widest animate-pulse">
-                    {isRecording ? "Le mentor vous écoute..." : "Appuyez pour parler au mentor"}
-                  </p>
+                  
+                  <div className="min-h-[40px]">
+                    <p className={`text-white font-black uppercase text-[11px] tracking-widest ${isRecording ? 'animate-pulse text-rose-400' : 'opacity-60'}`}>
+                      {isRecording ? "Le mentor vous écoute..." : hasRecorded ? "Enregistrement terminé" : "Appuyez pour parler au mentor"}
+                    </p>
+                  </div>
+
+                  {/* Bouton de validation post-enregistrement */}
+                  {hasRecorded && !isRecording && recordedBlob && (
+                    <div className="animate-in slide-in-from-top-4 duration-500 pt-4">
+                      <button 
+                        onClick={() => processDiagnostic(recordedBlob)}
+                        className="group relative bg-emerald-500 text-white px-12 py-6 rounded-3xl font-black uppercase tracking-[0.25em] text-[11px] shadow-[0_15px_40px_rgba(16,185,129,0.3)] hover:bg-emerald-400 hover:-translate-y-1 transition-all flex items-center gap-4 mx-auto"
+                      >
+                        J'écoute mon Coach Kita
+                        <CheckCircle2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      </button>
+                      <button 
+                        onClick={() => { setHasRecorded(false); setRecordedBlob(null); }}
+                        className="mt-6 text-white/30 hover:text-white/60 text-[9px] font-black uppercase tracking-widest transition-colors"
+                      >
+                        Recommencer l'enregistrement
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="w-full space-y-8">
+                <div className="w-full space-y-8 animate-in fade-in duration-500">
                   <textarea 
                     value={textInput}
                     onChange={e => setTextInput(e.target.value)}
@@ -242,7 +271,7 @@ const AuditMiroir: React.FC = () => {
                     disabled={!textInput.trim()}
                     className="w-full bg-brand-500 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-4 hover:bg-brand-400 transition-all shadow-xl shadow-brand-500/20 disabled:opacity-20"
                   >
-                    Envoyer au Mentor <Send className="w-5 h-5" />
+                    J'écoute mon Coach Kita <Send className="w-5 h-5" />
                   </button>
                 </div>
               )}
@@ -289,22 +318,34 @@ const AuditMiroir: React.FC = () => {
                         <p key={i} className="mb-4" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900 font-black">$1</strong>') }} />
                       ))}
                     </div>
+
+                    {/* Nouveau CTA vers le diagnostic complet */}
+                    <div className="pt-8 border-t border-slate-100">
+                       <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest mb-6">Étape recommandée par Coach Kita :</p>
+                       <button 
+                        onClick={() => navigate('/quiz')}
+                        className="bg-brand-900 text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center gap-4 hover:bg-brand-800 transition-all shadow-xl shadow-slate-200 group/diag"
+                       >
+                          Commencer mon diagnostic complet
+                          <ListChecks className="w-5 h-5 group-hover/diag:scale-110 transition-transform" />
+                       </button>
+                    </div>
                  </div>
                </div>
             </section>
 
             {/* CTA Vers Module Suggéré */}
-            <section className="bg-brand-900 rounded-[3rem] p-10 md:p-16 text-white shadow-2xl border border-white/5 relative overflow-hidden group">
+            <section className="bg-brand-500/10 rounded-[3rem] p-10 md:p-16 text-white border border-brand-500/20 relative overflow-hidden group">
                <div className="absolute inset-0 bg-brand-500/5 blur-[100px] -mr-40 -mt-40 pointer-events-none"></div>
                <div className="flex flex-col md:flex-row justify-between items-center gap-10 relative z-10">
                  <div className="space-y-4 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-3 text-brand-500 font-black text-[10px] uppercase tracking-widest">
-                      <Award className="w-4 h-4" /> Solution Recommandée
+                      <Award className="w-4 h-4" /> Solution Prioritaire
                     </div>
-                    <h3 className="text-2xl font-bold font-serif">
+                    <h3 className="text-2xl font-bold font-serif text-white">
                       {suggestedModule ? suggestedModule.title : "Accéder à ma formation prioritaire"}
                     </h3>
-                    <p className="text-slate-400 max-w-sm">Ce module contient les outils exacts pour corriger votre problème aujourd'hui.</p>
+                    <p className="text-slate-300 max-w-sm">Ce module contient les outils exacts pour corriger votre problème aujourd'hui.</p>
                  </div>
                  
                  <button 
@@ -318,10 +359,10 @@ const AuditMiroir: React.FC = () => {
             </section>
 
             <button 
-              onClick={() => { setStep('intro'); setDiagnostic(null); }}
+              onClick={() => { setStep('intro'); setDiagnostic(null); setHasRecorded(false); }}
               className="text-white/40 hover:text-white transition-colors text-center w-full font-black text-[9px] uppercase tracking-widest"
             >
-              Refaire un audit sur un autre sujet
+              Refaire une consultation sur un autre sujet
             </button>
           </div>
         )}
