@@ -24,21 +24,23 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="hidden sm:flex sm:items-center sm:space-x-8">
-            <Link to="/" className="text-slate-600 hover:text-brand-600 font-medium">Accueil</Link>
-            <Link to="/quiz" className="text-slate-600 hover:text-brand-600 font-medium">Diagnostic</Link>
+            <Link to="/" className="text-slate-600 hover:text-brand-600 font-medium text-sm">Accueil</Link>
+            <Link to="/vision" className="text-slate-600 hover:text-brand-600 font-medium text-sm">Notre Vision</Link>
+            <Link to="/avantages" className="text-slate-600 hover:text-brand-600 font-medium text-sm">Pourquoi Go'Top ?</Link>
+            <Link to="/quiz" className="text-slate-600 hover:text-brand-600 font-medium text-sm">Diagnostic</Link>
             {user ? (
               <>
-                <Link to="/dashboard" className="text-slate-600 hover:text-brand-600 font-medium">Mon Espace</Link>
-                {user.isAdmin && <Link to="/admin" className="text-brand-600 font-bold">Admin</Link>}
-                <div className="flex items-center gap-3">
-                  <Link to="/profile" className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center border-2 border-brand-200 overflow-hidden">
-                    {user.photoURL ? <img src={user.photoURL} alt="P" className="w-full h-full object-cover" /> : <span className="text-brand-700 font-bold">{user.firstName?.[0] || 'U'}</span>}
+                <Link to="/dashboard" className="text-slate-600 hover:text-brand-600 font-medium text-sm">Mon Espace</Link>
+                {user.isAdmin && <Link to="/admin" className="text-brand-600 font-bold text-sm">Admin</Link>}
+                <div className="flex items-center gap-3 ml-4">
+                  <Link to="/profile" className="h-9 w-9 rounded-full bg-brand-100 flex items-center justify-center border-2 border-brand-200 overflow-hidden">
+                    {user.photoURL ? <img src={user.photoURL} alt="P" className="w-full h-full object-cover" /> : <span className="text-brand-700 font-bold text-xs">{user.firstName?.[0] || 'U'}</span>}
                   </Link>
-                  <button onClick={handleLogout} className="text-slate-500 hover:text-red-600 text-sm font-medium">Déconnexion</button>
+                  <button onClick={handleLogout} className="text-slate-500 hover:text-red-600 text-[10px] font-black uppercase tracking-widest">Déconnexion</button>
                 </div>
               </>
             ) : (
-              <Link to="/login" className="bg-brand-600 text-white px-6 py-2 rounded-lg font-medium shadow-md hover:bg-brand-700 transition">Connexion</Link>
+              <Link to="/login" className="bg-brand-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-brand-700 transition">Connexion</Link>
             )}
           </div>
 
@@ -53,12 +55,14 @@ const Navbar: React.FC = () => {
       </div>
 
       {menuOpen && (
-        <div className="sm:hidden bg-white border-t border-slate-100 p-4 space-y-2">
-          <Link to="/" onClick={() => setMenuOpen(false)} className="block text-slate-700 py-2">Accueil</Link>
-          <Link to="/quiz" onClick={() => setMenuOpen(false)} className="block text-slate-700 py-2">Diagnostic</Link>
-          {user && <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block text-slate-700 py-2">Mon Espace</Link>}
-          {!user && <Link to="/login" onClick={() => setMenuOpen(false)} className="block text-brand-600 font-bold py-2">Connexion</Link>}
-          {user && <button onClick={handleLogout} className="block text-red-500 py-2">Déconnexion</button>}
+        <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
+          <Link to="/" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold">Accueil</Link>
+          <Link to="/vision" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold">Notre Vision</Link>
+          <Link to="/avantages" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold">Pourquoi Go'Top ?</Link>
+          <Link to="/quiz" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold">Diagnostic</Link>
+          {user && <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold">Mon Espace</Link>}
+          {!user && <Link to="/login" onClick={() => setMenuOpen(false)} className="block text-brand-600 font-black">Connexion</Link>}
+          {user && <button onClick={handleLogout} className="block text-red-500 font-black uppercase text-[10px] tracking-widest">Déconnexion</button>}
         </div>
       )}
     </nav>

@@ -9,6 +9,8 @@ import Diagnostic from './pages/Diagnostic';
 import Results from './pages/Results';
 import ModuleView from './pages/ModuleView';
 import Profile from './pages/Profile';
+import Vision from './pages/Vision';
+import Benefits from './pages/Benefits';
 import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -46,6 +48,8 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/vision" element={<Vision />} />
+          <Route path="/avantages" element={<Benefits />} />
           <Route path="/quiz" element={<Diagnostic />} />
           <Route path="/results" element={<Results />} />
           
