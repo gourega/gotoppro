@@ -57,7 +57,7 @@ const Navbar: React.FC = () => {
                   )}
                 </Link>
                 {user.isAdmin && (
-                  <Link to="/admin" className={`p-2 transition-colors ${location.pathname === '/admin' ? 'text-brand-600' : 'text-slate-400 hover:text-brand-600'}`} title="Administration">
+                  <Link to="/admin" className={`p-2 transition-colors ${location.pathname === '/admin' ? 'text-brand-600 bg-brand-50 rounded-xl' : 'text-slate-400 hover:text-brand-600'}`} title="Administration">
                     <ShieldCheck className="w-6 h-6" />
                   </Link>
                 )}
@@ -74,8 +74,13 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex items-center sm:hidden">
+          {/* Mobile menu button & Quick Admin Access */}
+          <div className="flex items-center sm:hidden gap-2">
+            {user?.isAdmin && (
+              <Link to="/admin" className={`p-2 rounded-xl transition-all ${location.pathname === '/admin' ? 'text-brand-600 bg-brand-50 ring-1 ring-brand-100' : 'text-slate-400 bg-slate-50'}`} title="Administration">
+                <ShieldCheck className="w-6 h-6" />
+              </Link>
+            )}
             <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-slate-400 hover:text-slate-500 bg-slate-50 rounded-xl">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
@@ -96,9 +101,13 @@ const Navbar: React.FC = () => {
           {user && (
             <>
               <div className="h-px bg-slate-100 my-2"></div>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Espace</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block text-slate-700 font-bold p-4 hover:bg-slate-50 rounded-2xl">Mon Profil</Link>
-              {user.isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block text-brand-600 font-bold p-4 hover:bg-slate-50 rounded-2xl">Administration</Link>}
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/dashboard' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Espace</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/profile' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Profil</Link>
+              {user.isAdmin && (
+                <Link to="/admin" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/admin' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>
+                  Administration <ShieldCheck className="w-4 h-4" />
+                </Link>
+              )}
             </>
           )}
           {!user ? (
