@@ -120,7 +120,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* HERO SECTION */}
-      <div className="bg-brand-900 pt-16 pb-32 px-6 relative overflow-hidden">
+      <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
@@ -133,7 +133,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           
-          <div className="bg-white/5 backdrop-blur-3xl p-3 rounded-[2.5rem] border border-white/10 flex items-center gap-4 shadow-2xl">
+          <div className="bg-white/5 backdrop-blur-3xl p-3 rounded-[2.5rem] border border-white/10 flex items-center gap-4 shadow-2xl mb-4">
             <div className="bg-white p-6 rounded-[2rem] text-center min-w-[120px]">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Maîtrise</p>
               <p className="text-3xl font-black text-brand-900">{progress}%</p>
@@ -145,14 +145,14 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENU PRINCIPAL - Espacement Ajusté à mt-12 au lieu de -mt-12 */}
-      <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20">
+      {/* CONTENU PRINCIPAL - Espacement Ajusté à mt-20 pour une meilleure lisibilité desktop */}
+      <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-16 relative z-20">
         
         {/* RITUEL DU MATIN & RÉCOMPENSES (COLONNES) */}
-        <div className="grid lg:grid-cols-12 gap-8 items-stretch">
+        <div className="grid lg:grid-cols-12 gap-10 items-stretch">
            
            {/* GAUCHE : DISCIPLINE DU JOUR */}
-           <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col justify-between">
+           <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col justify-between hover:shadow-brand-900/5 transition-all duration-500">
               <div className="flex justify-between items-center mb-8">
                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
                     <Flame className="w-5 h-5 text-amber-500 fill-current" /> Discipline du Jour
@@ -189,7 +189,7 @@ const Dashboard: React.FC = () => {
            </div>
 
            {/* DROITE : TABLEAU D'HONNEUR */}
-           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col text-center">
+           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col text-center hover:shadow-brand-900/5 transition-all duration-500">
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center justify-center gap-3">
                  <Medal className="w-5 h-5 text-brand-500" /> Tableau d'Honneur
               </h2>
@@ -215,17 +215,17 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* SECTION MON RÉSEAU D'ÉLITE (BANDEAU FILLEULS) */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-              <Users className="w-32 h-32" />
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500">
+           <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+              <Users className="w-48 h-48" />
            </div>
            
-           <div className="flex flex-col md:flex-row justify-between items-center gap-10 mb-10 relative z-10">
+           <div className="flex flex-col md:flex-row justify-between items-center gap-10 mb-12 relative z-10">
               <div>
                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
                     <Handshake className="text-amber-500 w-6 h-6" /> Mon Réseau d'Élite
                  </h2>
-                 <p className="text-slate-500 font-medium text-sm mt-1">{filleuls.length} gérant(s) parrainé(s)</p>
+                 <p className="text-slate-500 font-medium text-sm mt-1">{filleuls.length} gérant(s) parrainé(s) avec succès</p>
               </div>
               <div className="flex gap-4">
                  <button onClick={shareOnWhatsApp} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-600 flex items-center gap-3 transition-all">
@@ -240,27 +240,29 @@ const Dashboard: React.FC = () => {
            {loadingFilleuls ? (
              <div className="flex justify-center py-10"><Loader2 className="animate-spin text-brand-500" /></div>
            ) : filleuls.length > 0 ? (
-             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
+             <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-6 relative z-10">
                 {filleuls.map(f => (
-                  <div key={f.uid} className="flex flex-col items-center text-center gap-3 group">
-                     <div className="h-16 w-16 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden group-hover:border-brand-500 transition-all">
+                  <div key={f.uid} className="flex flex-col items-center text-center gap-3 group/item">
+                     <div className="h-16 w-16 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden group-hover/item:border-brand-500 group-hover/item:scale-105 transition-all">
                         {f.photoURL ? <img src={f.photoURL} alt="" className="w-full h-full object-cover" /> : <span className="font-black text-brand-900">{f.firstName?.[0]}</span>}
                      </div>
-                     <p className="text-[10px] font-bold text-slate-600 truncate w-full">{f.firstName} {f.lastName}</p>
+                     <p className="text-[10px] font-bold text-slate-600 truncate w-full px-1">{f.firstName}</p>
                   </div>
                 ))}
-                <button onClick={shareOnWhatsApp} className="flex flex-col items-center text-center gap-3 group">
-                   <div className="h-16 w-16 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-brand-500 group-hover:text-brand-500 transition-all">
+                <button onClick={shareOnWhatsApp} className="flex flex-col items-center text-center gap-3 group/add">
+                   <div className="h-16 w-16 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 group-hover/add:border-brand-500 group-hover/add:text-brand-500 group-hover/add:bg-brand-50 transition-all">
                       <Plus className="w-6 h-6" />
                    </div>
                    <p className="text-[10px] font-bold text-slate-400">Ajouter</p>
                 </button>
              </div>
            ) : (
-             <div className="bg-slate-50 rounded-[2.5rem] p-10 text-center border border-dashed border-slate-200">
-                <UserPlus className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="text-sm font-medium text-slate-400 max-w-sm mx-auto">Votre réseau est encore vide. Parrainez vos confrères pour bâtir votre empire !</p>
-                <button onClick={shareOnWhatsApp} className="mt-6 bg-brand-900 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-all">
+             <div className="bg-slate-50/50 rounded-[2.5rem] p-12 text-center border border-dashed border-slate-200">
+                <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <UserPlus className="w-8 h-8 text-slate-300" />
+                </div>
+                <p className="text-sm font-bold text-slate-400 max-w-sm mx-auto mb-8 leading-relaxed italic">"Votre empire grandit avec ceux que vous élevez. Parrainez vos confrères pour bâtir votre réseau."</p>
+                <button onClick={shareOnWhatsApp} className="bg-brand-900 text-white px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">
                   Inviter un confrère
                 </button>
              </div>
@@ -268,7 +270,7 @@ const Dashboard: React.FC = () => {
         </section>
 
         {/* SECTION MES FORMATIONS */}
-        <section className="space-y-6">
+        <section className="space-y-8">
           <div className="flex justify-between items-end">
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
@@ -277,7 +279,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {purchasedModules.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {purchasedModules.map(mod => {
                 const score = user.progress?.[mod.id] || 0;
                 const isCertified = score >= 80;
@@ -338,7 +340,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <Target className="text-rose-500 w-6 h-6" /> Mes Engagements de Transformation
             </h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
                {user.actionPlan.slice(0, 4).map((plan, idx) => (
                  <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-start gap-6 group hover:border-brand-500 transition-all">
                     <div className="bg-brand-50 p-4 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
