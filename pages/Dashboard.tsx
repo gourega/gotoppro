@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getReferrals } from '../services/supabase';
-import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES } from '../constants';
+import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, KITA_LOGO } from '../constants';
 import { UserProfile } from '../types';
 import { 
   CheckCircle2, 
@@ -108,11 +108,13 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       
-      {/* BANDEAU KITA */}
+      {/* BANDEAU KITA - Intégration du Sceau */}
       <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400">
          <div className="flex items-center gap-4">
-            <div className="bg-white/20 p-2 rounded-xl"><AlertCircle className="w-5 h-5" /></div>
-            <h3 className="text-sm font-bold">Votre cockpit de gestion KITA est prêt.</h3>
+            <div className="bg-white p-1 rounded-xl shadow-inner">
+               <img src={KITA_LOGO} alt="KITA Seal" className="w-8 h-8 object-contain" />
+            </div>
+            <h3 className="text-sm font-bold">Votre cockpit de gestion KITA est prêt pour l'excellence.</h3>
          </div>
          <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-3">
            <Wallet className="w-4 h-4" /> OUVRIR MA CAISSE
@@ -145,7 +147,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENU PRINCIPAL - Espacement Ajusté à mt-20 pour une meilleure lisibilité desktop */}
+      {/* CONTENU PRINCIPAL - Espacement Ajusté */}
       <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-16 relative z-20">
         
         {/* RITUEL DU MATIN & RÉCOMPENSES (COLONNES) */}
@@ -313,12 +315,15 @@ const Dashboard: React.FC = () => {
           )}
         </section>
 
-        {/* BLOC CAISSE KITA */}
+        {/* BLOC CAISSE KITA - Intégration du Sceau */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
-                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">MA GESTION QUOTIDIENNE (KITA)</h2>
-                 <p className="text-slate-500 font-medium max-w-md m-0">L'outil indispensable pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
+                 <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
+                    <img src={KITA_LOGO} alt="KITA" className="h-10 w-10 object-contain" />
+                    <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">GESTION KITA</h2>
+                 </div>
+                 <p className="text-slate-500 font-medium max-w-md m-0">Le standard d'excellence pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3">
                        <Plus className="w-4 h-4" /> Nouvelle vente

@@ -3,6 +3,7 @@ import { TrainingModule, Badge, ModuleStatus } from './types';
 
 // Ressources Visuelles
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
+export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";

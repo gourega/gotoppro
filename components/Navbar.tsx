@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BRAND_LOGO } from '../constants';
+import { BRAND_LOGO, KITA_LOGO } from '../constants';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -45,7 +45,10 @@ const Navbar: React.FC = () => {
           <div className="flex flex-col">
             <span className="text-lg font-black text-brand-900 leading-none flex items-center gap-2">
               Go'Top Pro
-              <span className="bg-emerald-500 text-white text-[7px] px-1.5 py-0.5 rounded-full animate-pulse">V2.5 KITA</span>
+              <div className="flex items-center bg-emerald-500 px-2 py-0.5 rounded-full gap-1 animate-pulse">
+                <img src={KITA_LOGO} className="h-2.5 w-2.5 object-contain brightness-0 invert" alt="K" />
+                <span className="text-white text-[7px] font-black">KITA V2.5</span>
+              </div>
             </span>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Excellence & Beauté</span>
           </div>
@@ -74,8 +77,8 @@ const Navbar: React.FC = () => {
               to="/caisse" 
               className="hidden lg:flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-amber-400 text-brand-900 shadow-lg shadow-amber-200 hover:scale-105 transition-all"
             >
-              <Wallet className="w-4 h-4" />
-              Ma Caisse
+              <img src={KITA_LOGO} className="h-4 w-4 object-contain" alt="" />
+              Ma Caisse KITA
             </Link>
           )}
 
@@ -93,7 +96,6 @@ const Navbar: React.FC = () => {
                 />
               </Link>
 
-              {/* RESTAURATION BOUTON ADMIN */}
               {user.isAdmin && (
                 <Link to="/admin" title="Administration" className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-all">
                   <ShieldAlert className="w-5 h-5" />
@@ -125,7 +127,7 @@ const Navbar: React.FC = () => {
           <div className="bg-white w-full shadow-2xl p-8 flex flex-col gap-6 rounded-b-[3rem]">
             {user && (
               <Link to="/caisse" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-4 p-6 bg-amber-400 text-brand-900 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl">
-                <Wallet className="w-6 h-6" /> MA CAISSE KITA
+                <img src={KITA_LOGO} className="h-6 w-6 object-contain" alt="" /> MA CAISSE KITA
               </Link>
             )}
             <div className="grid grid-cols-1 gap-2">
