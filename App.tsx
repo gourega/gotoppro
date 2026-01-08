@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -14,6 +14,7 @@ import Benefits from './pages/Benefits';
 import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
 import Caisse from './pages/Caisse';
+import PilotagePerformance from './pages/PilotagePerformance';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -62,6 +63,12 @@ const AppContent: React.FC = () => {
               <Caisse />
             </ProtectedRoute>
           } />
+
+          <Route path="/pilotage" element={
+            <ProtectedRoute>
+              <PilotagePerformance />
+            </ProtectedRoute>
+          } />
           
           <Route path="/module/:moduleId" element={
             <ProtectedRoute>
@@ -93,9 +100,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router>
+      <BrowserRouter>
         <AppContent />
-      </Router>
+      </BrowserRouter>
     </AuthProvider>
   );
 };

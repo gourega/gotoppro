@@ -28,7 +28,9 @@ import {
   Sparkles,
   UserPlus,
   Handshake,
-  Loader2
+  Loader2,
+  TrendingUp,
+  Lock
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -41,7 +43,6 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Chargement des tâches quotidiennes
       const today = new Date().toLocaleDateString('fr-FR');
       const savedTasksRaw = localStorage.getItem(`daily_tasks_${user.uid}`);
       const savedDate = localStorage.getItem(`daily_date_${user.uid}`);
@@ -55,8 +56,6 @@ const Dashboard: React.FC = () => {
         localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(selected));
         localStorage.setItem(`daily_date_${user.uid}`, today);
       }
-
-      // Chargement du réseau (filleuls)
       loadNetwork();
     }
   }, [user]);
@@ -108,20 +107,24 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       
-      {/* BANDEAU KITA - Intégration du Sceau */}
+      {/* BANDEAU KITA */}
       <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400">
          <div className="flex items-center gap-4">
             <div className="bg-white p-1 rounded-xl shadow-inner">
                <img src={KITA_LOGO} alt="KITA Seal" className="w-8 h-8 object-contain" />
             </div>
-            <h3 className="text-sm font-bold">Votre cockpit de gestion KITA est prêt pour l'excellence.</h3>
+            <h3 className="text-sm font-bold">Pilotez votre salon avec le standard d'excellence KITA.</h3>
          </div>
-         <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-3">
-           <Wallet className="w-4 h-4" /> OUVRIR MA CAISSE
-         </button>
+         <div className="flex gap-3">
+            <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> MA CAISSE
+            </button>
+            <button onClick={() => navigate('/pilotage')} className="bg-brand-900 text-white px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-brand-400" /> PERFORMANCE+
+            </button>
+         </div>
       </div>
 
-      {/* HERO SECTION */}
       <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
@@ -147,13 +150,35 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* CONTENU PRINCIPAL - Espacement Ajusté */}
       <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-16 relative z-20">
         
-        {/* RITUEL DU MATIN & RÉCOMPENSES (COLONNES) */}
+        {/* PACK PERFORMANCE & DISCIPLINE */}
         <div className="grid lg:grid-cols-12 gap-10 items-stretch">
            
-           {/* GAUCHE : DISCIPLINE DU JOUR */}
+           {/* PACK PERFORMANCE (NOUVEAU) */}
+           <div className="lg:col-span-5 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl border border-white/5 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
+                 <TrendingUp className="w-32 h-32 text-brand-500" />
+              </div>
+              <div className="relative z-10 h-full flex flex-col">
+                 <h2 className="text-brand-400 font-black text-[11px] uppercase tracking-[0.3em] mb-4">Module Expert</h2>
+                 <h3 className="text-2xl font-serif font-bold text-white mb-6">Pilotage Expert & Staff</h3>
+                 <p className="text-slate-400 text-sm leading-relaxed mb-10 flex-grow">
+                   Gérez vos collaborateurs, leurs commissions et votre base clients VIP pour multiplier votre CA par 2.
+                 </p>
+                 {user.hasPerformancePack ? (
+                    <button onClick={() => navigate('/pilotage')} className="w-full bg-brand-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-400 transition-all flex items-center justify-center gap-3">
+                       Accéder au Cockpit <ArrowRight className="w-4 h-4" />
+                    </button>
+                 ) : (
+                    <button onClick={() => navigate('/results')} className="w-full bg-white/10 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-3">
+                       <Lock className="w-4 h-4 text-amber-500" /> Débloquer le Pack Expert
+                    </button>
+                 )}
+              </div>
+           </div>
+
+           {/* DISCIPLINE DU JOUR */}
            <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col justify-between hover:shadow-brand-900/5 transition-all duration-500">
               <div className="flex justify-between items-center mb-8">
                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
@@ -189,34 +214,9 @@ const Dashboard: React.FC = () => {
                  ></div>
               </div>
            </div>
-
-           {/* DROITE : TABLEAU D'HONNEUR */}
-           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col text-center hover:shadow-brand-900/5 transition-all duration-500">
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center justify-center gap-3">
-                 <Medal className="w-5 h-5 text-brand-500" /> Tableau d'Honneur
-              </h2>
-              {earnedBadges.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 flex-grow content-center">
-                   {earnedBadges.slice(0, 4).map(badge => (
-                     <div key={badge.id} title={badge.description} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-3 group hover:scale-105 transition-transform shadow-sm">
-                        <span className="text-4xl group-hover:rotate-12 transition-transform">{badge.icon}</span>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{badge.name}</p>
-                     </div>
-                   ))}
-                </div>
-              ) : (
-                <div className="flex-grow flex flex-col items-center justify-center gap-6 py-10">
-                   <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                      <Trophy className="w-10 h-10" />
-                   </div>
-                   <p className="text-xs font-medium text-slate-400 italic">Terminez votre premier module pour débloquer vos trophées.</p>
-                </div>
-              )}
-              <Link to="/profile" className="mt-10 text-[10px] font-black text-brand-600 uppercase tracking-widest hover:underline">Voir tous mes succès</Link>
-           </div>
         </div>
 
-        {/* SECTION MON RÉSEAU D'ÉLITE (BANDEAU FILLEULS) */}
+        {/* SECTION MON RÉSEAU D'ÉLITE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500">
            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Users className="w-48 h-48" />
@@ -315,7 +315,7 @@ const Dashboard: React.FC = () => {
           )}
         </section>
 
-        {/* BLOC CAISSE KITA - Intégration du Sceau */}
+        {/* BLOC CAISSE KITA */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
@@ -338,31 +338,6 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
         </section>
-
-        {/* SECTION MES ENGAGEMENTS (ACTION PLAN) */}
-        {user.actionPlan && user.actionPlan.length > 0 && (
-          <section className="space-y-6">
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-              <Target className="text-rose-500 w-6 h-6" /> Mes Engagements de Transformation
-            </h2>
-            <div className="grid md:grid-cols-2 gap-8">
-               {user.actionPlan.slice(0, 4).map((plan, idx) => (
-                 <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-start gap-6 group hover:border-brand-500 transition-all">
-                    <div className="bg-brand-50 p-4 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
-                       <Zap className="w-6 h-6 fill-current" />
-                    </div>
-                    <div className="space-y-2">
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                          <Calendar className="w-3 h-3" /> {plan.date} • {plan.moduleTitle}
-                       </p>
-                       <p className="text-slate-800 font-bold leading-relaxed">{plan.action}</p>
-                    </div>
-                 </div>
-               ))}
-            </div>
-          </section>
-        )}
-
       </div>
     </div>
   );

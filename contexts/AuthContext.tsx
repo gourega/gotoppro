@@ -93,6 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: true,
           isKitaPremium: true,
           kitaPremiumUntil: '2099-01-01',
+          // Fix: Add missing required property 'hasPerformancePack'
+          hasPerformancePack: true,
           badges: [],
           purchasedModuleIds: TRAINING_CATALOG.map(m => m.id), // L'admin garde tout pour test
           pendingModuleIds: [],

@@ -20,13 +20,15 @@ export interface KitaTransaction {
   date: string;
   clientId?: string;
   productId?: string;
+  staffName?: string;
+  commissionRate?: number;
 }
 
 export interface KitaDebt {
   id: string;
   personName: string;
   amount: number;
-  type: 'CREDIT' | 'DEBT'; // CREDIT = on me doit, DEBT = je dois
+  type: 'CREDIT' | 'DEBT';
   dueDate?: string;
   isPaid: boolean;
   createdAt: string;
@@ -55,9 +57,11 @@ export interface UserProfile {
   isActive: boolean;
   isAdmin: boolean;
   
-  // Statut KITA (Indispensable pour corriger les erreurs de Dashboard/Caisse/Profile)
+  // Statut KITA
   isKitaPremium: boolean;
-  kitaPremiumUntil?: string; // Date ISO
+  kitaPremiumUntil?: string; 
+  monthlyRentGoal?: number;
+  hasPerformancePack: boolean; // Nouveau : Pack additionnel
   
   badges: string[];
   purchasedModuleIds: string[];
