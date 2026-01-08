@@ -15,7 +15,8 @@ import {
   addKitaProduct,
   updateKitaProduct
 } from '../services/supabase';
-import { KITA_LOGO } from '../constants';
+import { KITA_LOGO, COACH_KITA_AVATAR } from '../constants';
+import { GoogleGenAI } from "@google/genai";
 import { 
   ChevronLeft, 
   Plus, 
@@ -35,7 +36,11 @@ import {
   Tag,
   ArrowRight,
   PackageSearch,
-  Filter
+  Filter,
+  BarChart3,
+  Lightbulb,
+  Sparkles,
+  PieChart
 } from 'lucide-react';
 
 type Timeframe = 'day' | 'week' | 'month' | 'year';
@@ -52,6 +57,8 @@ const Caisse: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
 
   // Form states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -123,6 +130,7 @@ const Caisse: React.FC = () => {
       setShowAddModal(false);
       setAmount('');
       setLabel('');
+      setAiAdvice(null); // Reset advice when data changes
     } catch (err) {
       alert("Erreur lors de l'enregistrement.");
     } finally {
@@ -141,6 +149,7 @@ const Caisse: React.FC = () => {
       const updated = transactions.filter(t => t.id !== id);
       setTransactions(updated);
       localStorage.setItem(`kita_trans_${user.uid}`, JSON.stringify(updated));
+      setAiAdvice(null);
     } catch (err) {
       alert("Erreur suppression.");
     } finally {
@@ -153,37 +162,55 @@ const Caisse: React.FC = () => {
     
     const filtered = transactions.filter(t => {
       const tDate = new Date(t.date);
-      
-      if (timeframe === 'day') {
-        return tDate.toDateString() === now.toDateString();
-      }
-      
+      if (timeframe === 'day') return tDate.toDateString() === now.toDateString();
       if (timeframe === 'week') {
-        // Calculer le début de la semaine (Lundi)
         const startOfWeek = new Date(now);
         const day = startOfWeek.getDay() || 7;
         if (day !== 1) startOfWeek.setHours(-24 * (day - 1));
         startOfWeek.setHours(0, 0, 0, 0);
         return tDate >= startOfWeek;
       }
-      
-      if (timeframe === 'month') {
-        return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
-      }
-      
-      if (timeframe === 'year') {
-        return tDate.getFullYear() === now.getFullYear();
-      }
-      
+      if (timeframe === 'month') return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
+      if (timeframe === 'year') return tDate.getFullYear() === now.getFullYear();
       return false;
     });
 
     const income = filtered.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
     const expense = filtered.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
     const balance = income - expense;
-    
-    return { income, expense, balance };
+
+    // Calcul de la répartition par catégorie
+    const categories: { [key: string]: number } = {};
+    filtered.filter(t => t.type === 'INCOME').forEach(t => {
+      categories[t.category] = (categories[t.category] || 0) + t.amount;
+    });
+
+    return { income, expense, balance, categories, filteredCount: filtered.length };
   }, [transactions, timeframe]);
+
+  const handleGetAIAnalysis = async () => {
+    if (analyzing || stats.filteredCount === 0) return;
+    setAnalyzing(true);
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const dataSummary = `Recettes: ${stats.income} F, Dépenses: ${stats.expense} F, Balance: ${stats.balance} F. Répartition: ${JSON.stringify(stats.categories)}. Période: ${timeframe}.`;
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `En tant que Coach Kita, analyse ces chiffres financiers de mon salon de coiffure : ${dataSummary}. 
+        Donne 3 conseils stratégiques très courts et percutants pour améliorer ma rentabilité. 
+        Utilise un ton d'expert mentor. Pas d'anglicismes. Formate en Markdown avec des tirets.`,
+      });
+
+      setAiAdvice(response.text || "Continuez votre rigueur de gestion.");
+    } catch (err) {
+      console.error(err);
+      setAiAdvice("Erreur lors de l'analyse. Concentrez-vous sur la réduction des charges.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const timeframeLabels = {
     day: "aujourd'hui",
@@ -269,6 +296,75 @@ const Caisse: React.FC = () => {
             <p className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Balance Nette</p>
             <p className="text-2xl font-black">{stats.balance.toLocaleString()} FCFA</p>
           </div>
+        </div>
+
+        {/* SECTION ANALYSE & GRAPHIQUES */}
+        <div className="mt-8 grid md:grid-cols-2 gap-8">
+           {/* Graphique de Répartition */}
+           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl">
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="bg-brand-50 p-2 rounded-lg text-brand-600"><PieChart className="w-4 h-4"/></div>
+                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Postes de revenus</h3>
+              </div>
+              <div className="space-y-4">
+                 {Object.entries(stats.categories).length === 0 ? (
+                   <p className="text-xs text-slate-400 italic">Données insuffisantes pour le graphique.</p>
+                 ) : (
+                   Object.entries(stats.categories)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([cat, val]) => {
+                      const percentage = Math.round((val / stats.income) * 100);
+                      return (
+                        <div key={cat} className="space-y-1">
+                           <div className="flex justify-between text-[10px] font-bold">
+                              <span className="text-slate-500 uppercase tracking-tighter">{cat}</span>
+                              <span className="text-brand-600">{val.toLocaleString()} F ({percentage}%)</span>
+                           </div>
+                           <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                              <div className="h-full bg-brand-500 rounded-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
+                           </div>
+                        </div>
+                      )
+                    })
+                 )}
+              </div>
+           </div>
+
+           {/* Analyse Coach Kita */}
+           <div className="bg-brand-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden group border border-white/5 shadow-2xl">
+              <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><Sparkles className="w-20 h-20 text-brand-500" /></div>
+              <div className="relative z-10 h-full flex flex-col">
+                 <div className="flex items-center gap-3 mb-6">
+                    <img src={COACH_KITA_AVATAR} className="h-8 w-8 rounded-full border border-brand-500" alt="" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-400">Analyse de Coach Kita</h3>
+                 </div>
+                 
+                 <div className="flex-grow">
+                    {aiAdvice ? (
+                      <div className="text-sm font-medium leading-relaxed text-slate-300 italic animate-in fade-in slide-in-from-bottom-2 duration-500">
+                         {aiAdvice.split('\n').map((line, i) => (
+                           <p key={i} className="mb-2">{line}</p>
+                         ))}
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col justify-center items-center text-center space-y-4">
+                         <p className="text-xs text-slate-400 font-medium">Laissez Coach Kita optimiser votre salon grâce à l'IA.</p>
+                         <button 
+                           onClick={handleGetAIAnalysis}
+                           disabled={analyzing || stats.filteredCount === 0}
+                           className="bg-brand-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-brand-400 transition-all flex items-center gap-2 shadow-lg disabled:opacity-30"
+                         >
+                            {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
+                            Générer mon audit stratégique
+                         </button>
+                      </div>
+                    )}
+                 </div>
+                 {aiAdvice && (
+                   <button onClick={() => setAiAdvice(null)} className="mt-4 text-[8px] font-black uppercase text-brand-500 hover:text-brand-400 tracking-widest">Réinitialiser l'audit</button>
+                 )}
+              </div>
+           </div>
         </div>
 
         {/* Navigation Onglets */}
