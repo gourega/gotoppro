@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BRAND_LOGO } from '../constants';
-import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles, CreditCard } from 'lucide-react';
+import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles, CreditCard, Wallet } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -41,13 +41,17 @@ const Navbar: React.FC = () => {
             <NavLink to="/audit-miroir" label="Miroir du Succès" highlight active={location.pathname === '/audit-miroir'} />
             <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
             
-            {/* ACCÈS DIRECT MA CAISSE DANS LE MENU PRINCIPAL SI CONNECTÉ */}
-            {user && (
-              <NavLink to="/caisse" label="Ma Caisse" active={location.pathname === '/caisse'} highlight />
-            )}
-            
             {user ? (
               <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-100">
+                {/* BOUTON MA CAISSE - PRIORITÉ VISUELLE MAXIMALE */}
+                <Link 
+                  to="/caisse" 
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${location.pathname === '/caisse' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'}`}
+                >
+                  <Wallet className="w-4 h-4" />
+                  Ma Caisse
+                </Link>
+
                 <Link 
                   to="/dashboard" 
                   className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} 
@@ -87,8 +91,8 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center sm:hidden gap-2">
             {user && (
-              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-white bg-brand-600 shadow-lg' : 'text-brand-600 bg-brand-50'}`}>
-                <CreditCard className="w-5 h-5" />
+              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-white bg-emerald-600 shadow-lg' : 'text-emerald-600 bg-emerald-50'}`}>
+                <Wallet className="w-5 h-5" />
               </Link>
             )}
             <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-slate-400 hover:text-slate-500 bg-slate-50 rounded-xl">
@@ -103,8 +107,8 @@ const Navbar: React.FC = () => {
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
           {user && (
-            <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-black p-4 rounded-2xl flex items-center gap-3 border-2 ${location.pathname === '/caisse' ? 'bg-brand-600 text-white border-brand-600 shadow-lg' : 'bg-brand-50 text-brand-600 border-brand-100'}`}>
-              <CreditCard className="w-5 h-5" /> MA CAISSE KITA
+            <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-black p-4 rounded-2xl flex items-center gap-3 border-2 ${location.pathname === '/caisse' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+              <Wallet className="w-5 h-5" /> MA CAISSE KITA
             </Link>
           )}
           

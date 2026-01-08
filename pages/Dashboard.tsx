@@ -21,7 +21,10 @@ import {
   Wallet,
   Cloud,
   CloudOff,
-  CreditCard
+  CreditCard,
+  History,
+  // Fix: add missing Plus icon import from lucide-react
+  Plus
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -69,19 +72,23 @@ const Dashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-brand-400 font-black text-[10px] uppercase tracking-[0.4em]"><LayoutDashboard className="w-4 h-4" />Tableau de bord stratégique</div>
               <h1 className="text-4xl md:text-6xl font-serif font-bold text-white tracking-tight">Propulsez votre <span className="text-brand-500">empire</span></h1>
-              
-              {/* BOUTON CAISSE DANS LE HERO - IMPOSSIBLE A RATER */}
-              <button 
-                onClick={() => navigate('/caisse')}
-                className="mt-6 bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] flex items-center gap-4 shadow-2xl shadow-emerald-500/20 transition-all transform hover:-translate-y-1 active:scale-95"
-              >
-                <CreditCard className="w-5 h-5" />
-                Gérer ma caisse maintenant
-              </button>
+              <p className="text-white/60 text-lg md:text-xl font-medium max-w-xl">Prenez le contrôle total de vos finances et de votre stock avec l'outil Ma Caisse KITA.</p>
             </div>
+
+            {/* CARTE HERO AVEC ACCÈS CAISSE ET BOUTIQUE */}
             <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl p-3 rounded-[2.5rem] border border-white/10 shadow-2xl">
-              <div className="px-10 py-5 bg-white rounded-[1.8rem] text-brand-900 shadow-xl"><p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Maitrise</p><span className="text-4xl font-black">{progress}%</span></div>
-              <Link to="/results" className="bg-brand-500 text-white px-8 py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-brand-400 transition-all shadow-xl">Boutique <ArrowRight className="w-4 h-4" /></Link>
+              <div className="px-10 py-5 bg-white rounded-[1.8rem] text-brand-900 shadow-xl">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Maitrise</p>
+                <span className="text-4xl font-black">{progress}%</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Link to="/caisse" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-400 transition-all shadow-xl">
+                  <Wallet className="w-4 h-4" /> Ma Caisse <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link to="/results" className="bg-brand-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-brand-400 transition-all shadow-xl">
+                  Boutique <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -90,21 +97,36 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 -mt-20 pb-32">
         <div className="grid lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-12">
-            <section className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><CreditCard className="w-48 h-48" /></div>
+            
+            {/* BLOC MA CAISSE - SECTION PRINCIPALE */}
+            <section className="bg-white rounded-[3rem] p-8 md:p-12 border-2 border-emerald-100 shadow-2xl relative overflow-hidden group">
+               <div className="absolute top-6 right-6 z-20">
+                 <span className="flex h-3 w-3 relative">
+                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                   <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                 </span>
+               </div>
+               <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Wallet className="w-48 h-48" /></div>
                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
                        <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase text-[14px]">Ma Caisse KITA</h2>
+                       <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">Nouveau</div>
                        {user.isKitaPremium ? <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-emerald-100"><Cloud className="w-3 h-3" /> Cloud Actif</div> : <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-amber-100"><CloudOff className="w-3 h-3" /> Mode Local</div>}
                     </div>
-                    <p className="text-slate-500 font-medium leading-relaxed max-w-md">Gérez vos recettes, dépenses et stock en temps réel. Protégez vos chiffres avec la sauvegarde Elite.</p>
+                    <p className="text-slate-500 font-medium leading-relaxed max-w-md">Pilotez votre salon comme une entreprise. Saisissez vos ventes quotidiennes et surveillez vos bénéfices.</p>
                     <div className="flex gap-4">
-                       <button onClick={() => navigate('/caisse')} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-600 transition-all">Saisir une vente</button>
-                       <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all">Historique</button>
+                       <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-500 transition-all flex items-center gap-2">
+                         <Plus className="w-4 h-4" /> Saisir une vente
+                       </button>
+                       <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-500 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center gap-2">
+                         <History className="w-4 h-4" /> Historique
+                       </button>
                     </div>
                  </div>
-                 <div className="h-40 w-40 bg-brand-50 rounded-[3rem] flex items-center justify-center shadow-inner group-hover:rotate-6 transition-transform"><CreditCard className="w-16 h-16 text-brand-500" /></div>
+                 <div className="h-40 w-40 bg-emerald-50 rounded-[3rem] flex items-center justify-center shadow-inner group-hover:rotate-6 transition-transform">
+                   <Wallet className="w-16 h-16 text-emerald-500" />
+                 </div>
                </div>
             </section>
 
