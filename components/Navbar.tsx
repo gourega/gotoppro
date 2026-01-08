@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BRAND_LOGO } from '../constants';
-import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles } from 'lucide-react';
+import { LogOut, User, ShieldCheck, LayoutDashboard, Sparkles, Wallet } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -34,7 +34,6 @@ const Navbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden sm:flex sm:items-center sm:space-x-6 lg:space-x-8">
             <NavLink to="/" label="Accueil" active={location.pathname === '/'} />
             <NavLink to="/vision" label="Vision" active={location.pathname === '/vision'} />
@@ -43,10 +42,16 @@ const Navbar: React.FC = () => {
             <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
             
             {user ? (
-              <div className="flex items-center gap-4 ml-4">
-                <Link to="/dashboard" className={`flex items-center gap-2 transition-colors p-2 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-brand-600'}`} title="Mon Espace">
+              <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-100">
+                <Link to="/caisse" className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/caisse' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} title="Ma Caisse">
+                  <Wallet className="w-5 h-5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">Ma Caisse</span>
+                </Link>
+                
+                <Link to="/dashboard" className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} title="Mon Espace">
                   <LayoutDashboard className="w-5 h-5" />
                 </Link>
+
                 <Link to="/profile" className={`h-10 w-10 rounded-xl flex items-center justify-center border-2 overflow-hidden shadow-sm transition-all ${location.pathname === '/profile' ? 'border-brand-500 ring-2 ring-brand-100' : 'border-white hover:border-brand-500'}`}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="P" className="w-full h-full object-cover" />
@@ -56,14 +61,16 @@ const Navbar: React.FC = () => {
                     </div>
                   )}
                 </Link>
+
                 {user.isAdmin && (
-                  <Link to="/admin" className={`p-2 transition-colors ${location.pathname === '/admin' ? 'text-brand-600 bg-brand-50 rounded-xl' : 'text-slate-400 hover:text-brand-600'}`} title="Administration">
+                  <Link to="/admin" className={`p-2.5 transition-colors ${location.pathname === '/admin' ? 'text-brand-600 bg-brand-50 rounded-xl' : 'text-slate-400 hover:text-brand-600'}`} title="Administration">
                     <ShieldCheck className="w-6 h-6" />
                   </Link>
                 )}
+                
                 <button 
                   onClick={handleLogout}
-                  className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
+                  className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors"
                   title="Déconnexion"
                 >
                   <LogOut className="w-5 h-5" />
@@ -74,11 +81,10 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile menu button & Quick Admin Access */}
           <div className="flex items-center sm:hidden gap-2">
-            {user?.isAdmin && (
-              <Link to="/admin" className={`p-2 rounded-xl transition-all ${location.pathname === '/admin' ? 'text-brand-600 bg-brand-50 ring-1 ring-brand-100' : 'text-slate-400 bg-slate-50'}`} title="Administration">
-                <ShieldCheck className="w-6 h-6" />
+            {user && (
+              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-brand-600 bg-brand-50 ring-1 ring-brand-100' : 'text-slate-400 bg-slate-50'}`}>
+                <Wallet className="w-5 h-5" />
               </Link>
             )}
             <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-slate-400 hover:text-slate-500 bg-slate-50 rounded-xl">
@@ -90,7 +96,6 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
           <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Accueil</Link>
@@ -98,11 +103,16 @@ const Navbar: React.FC = () => {
           <Link to="/avantages" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/avantages' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Avantages</Link>
           <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/audit-miroir' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>Miroir du Succès <Sparkles className="w-4 h-4" /></Link>
           <Link to="/quiz" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/quiz' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Diagnostic</Link>
+          
           {user && (
             <>
               <div className="h-px bg-slate-100 my-2"></div>
+              <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-3 ${location.pathname === '/caisse' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>
+                <Wallet className="w-5 h-5" /> Ma Caisse KITA
+              </Link>
               <Link to="/dashboard" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/dashboard' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Espace</Link>
               <Link to="/profile" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/profile' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Profil</Link>
+              
               {user.isAdmin && (
                 <Link to="/admin" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/admin' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>
                   Administration <ShieldCheck className="w-4 h-4" />
@@ -110,6 +120,7 @@ const Navbar: React.FC = () => {
               )}
             </>
           )}
+          
           {!user ? (
             <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest">Connexion</Link>
           ) : (
