@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
-import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, BADGES } from '../constants';
+import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, BADGES, TRAINING_CATALOG } from '../constants';
 
 const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
@@ -29,7 +29,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     if (user?.uid) {
       const profile = await getUserProfile(user.uid);
-      if (profile) setUser(profile);
+      if (profile) {
+        setUser(profile);
+      }
     }
   };
 
@@ -57,7 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedPhone = localStorage.getItem('gotop_manual_phone');
       if (savedPhone) {
         const profile = await getProfileByPhone(savedPhone);
-        if (profile && profile.isActive) setUser(profile);
+        if (profile && profile.isActive) {
+          setUser(profile);
+        }
         else localStorage.removeItem('gotop_manual_phone');
       }
       setLoading(false);
@@ -69,33 +73,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser.id;
     const phone = authUser.phone || '';
     const email = (authUser.email || '').toLowerCase();
-    const isMaster = email === MASTER_ADMIN_EMAIL.toLowerCase() || phone === SUPER_ADMIN_PHONE_NUMBER;
-
-    if (isMaster) {
-      const adminProfile: UserProfile = {
-        uid,
-        phoneNumber: phone,
-        email: email,
-        firstName: 'Coach',
-        lastName: 'Kita',
-        establishmentName: "Go'Top Pro HQ",
-        photoURL: COACH_KITA_AVATAR,
-        role: 'SUPER_ADMIN',
-        isActive: true,
-        isAdmin: true,
-        isKitaPremium: true,
-        kitaPremiumUntil: '2099-01-01', // Super Admin toujours Premium
-        badges: BADGES.map(b => b.id),
-        purchasedModuleIds: [],
-        pendingModuleIds: [],
-        actionPlan: [],
-        createdAt: new Date().toISOString()
-      };
-      setUser(adminProfile);
-      return;
-    }
+    
     const profile = await getUserProfile(uid);
-    if (profile) setUser(profile);
+    if (profile) {
+      setUser(profile);
+    } else {
+      // Cas de création si nécessaire pour l'admin via email lors du premier login
+      if (email === MASTER_ADMIN_EMAIL.toLowerCase()) {
+         const adminProfile: UserProfile = {
+          uid,
+          phoneNumber: phone || SUPER_ADMIN_PHONE_NUMBER,
+          email: email,
+          firstName: 'Coach',
+          lastName: 'Kita',
+          establishmentName: "Go'Top Pro HQ",
+          photoURL: COACH_KITA_AVATAR,
+          role: 'SUPER_ADMIN',
+          isActive: true,
+          isAdmin: true,
+          isKitaPremium: true,
+          kitaPremiumUntil: '2099-01-01',
+          badges: [],
+          purchasedModuleIds: TRAINING_CATALOG.map(m => m.id), // L'admin garde tout pour test
+          pendingModuleIds: [],
+          actionPlan: [],
+          createdAt: new Date().toISOString()
+        };
+        setUser(adminProfile);
+        await saveUserProfile(adminProfile);
+      }
+    }
   };
 
   const logout = async () => {
