@@ -38,20 +38,16 @@ const Navbar: React.FC = () => {
             <NavLink to="/" label="Accueil" active={location.pathname === '/'} />
             <NavLink to="/vision" label="Vision" active={location.pathname === '/vision'} />
             <NavLink to="/avantages" label="Avantages" active={location.pathname === '/avantages'} />
-            <NavLink to="/audit-miroir" label="Miroir du Succès" highlight active={location.pathname === '/audit-miroir'} />
-            <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
+            <NavLink to="/audit-miroir" label="Miroir" active={location.pathname === '/audit-miroir'} />
+            <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz'} />
+            
+            {/* MA CAISSE - INSÉRÉ COMME LIEN DE MENU STANDARD */}
+            {user && (
+              <NavLink to="/caisse" label="Ma Caisse" active={location.pathname === '/caisse'} highlight />
+            )}
             
             {user ? (
               <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-100">
-                {/* BOUTON MA CAISSE - PRIORITÉ VISUELLE MAXIMALE */}
-                <Link 
-                  to="/caisse" 
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${location.pathname === '/caisse' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'}`}
-                >
-                  <Wallet className="w-4 h-4" />
-                  Ma Caisse
-                </Link>
-
                 <Link 
                   to="/dashboard" 
                   className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} 
@@ -91,7 +87,7 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center sm:hidden gap-2">
             {user && (
-              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-white bg-emerald-600 shadow-lg' : 'text-emerald-600 bg-emerald-50'}`}>
+              <Link to="/caisse" className="p-2 rounded-xl text-emerald-600 bg-emerald-50">
                 <Wallet className="w-5 h-5" />
               </Link>
             )}
@@ -107,30 +103,14 @@ const Navbar: React.FC = () => {
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
           {user && (
-            <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-black p-4 rounded-2xl flex items-center gap-3 border-2 ${location.pathname === '/caisse' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-              <Wallet className="w-5 h-5" /> MA CAISSE KITA
+            <Link to="/caisse" onClick={() => setMenuOpen(false)} className="block font-black p-4 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-3">
+              <Wallet className="w-5 h-5" /> MA CAISSE
             </Link>
           )}
-          
-          <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-slate-50 text-brand-600' : 'text-slate-700'}`}>Accueil</Link>
+          <Link to="/" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Accueil</Link>
           <Link to="/vision" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Vision</Link>
-          <Link to="/avantages" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Avantages</Link>
-          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-brand-600 flex items-center gap-2">Miroir du Succès <Sparkles className="w-4 h-4" /></Link>
-          
-          {user && (
-            <>
-              <div className="h-px bg-slate-100 my-2"></div>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/dashboard' ? 'bg-slate-50 text-brand-600' : 'text-slate-700'}`}>Mon Espace</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Mon Profil</Link>
-              {user.isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-brand-600">Administration</Link>}
-            </>
-          )}
-          
-          {!user ? (
-            <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest shadow-xl">Connexion</Link>
-          ) : (
-            <button onClick={handleLogout} className="w-full text-rose-500 font-black uppercase text-[10px] tracking-widest p-4 text-left border-t border-slate-100">Déconnexion</button>
-          )}
+          <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Tableau de bord</Link>
+          {user && <button onClick={handleLogout} className="w-full text-rose-500 font-black uppercase text-[10px] tracking-widest p-4 text-left border-t border-slate-100">Déconnexion</button>}
         </div>
       )}
     </nav>
@@ -138,7 +118,7 @@ const Navbar: React.FC = () => {
 };
 
 const NavLink = ({ to, label, highlight = false, active = false }: { to: string, label: string, highlight?: boolean, active?: boolean }) => (
-  <Link to={to} className={`font-black text-[10px] uppercase tracking-widest transition-colors relative group flex items-center gap-2 ${active ? 'text-brand-900' : highlight ? 'text-brand-600' : 'text-slate-500 hover:text-brand-900'}`}>
+  <Link to={to} className={`font-black text-[10px] uppercase tracking-widest transition-colors relative group flex items-center gap-2 ${active ? 'text-brand-900' : highlight ? 'text-emerald-600 underline decoration-2 underline-offset-4' : 'text-slate-500 hover:text-brand-900'}`}>
     {label}
     {highlight && <Sparkles className="w-3 h-3 animate-pulse" />}
     <span className={`absolute -bottom-1 left-0 h-0.5 transition-all group-hover:w-full group-hover:bg-brand-500 ${active ? 'w-full bg-brand-900' : 'w-0'}`}></span>

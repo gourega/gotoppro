@@ -4,31 +4,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TRAINING_CATALOG, BADGES, COACH_KITA_AVATAR, DAILY_CHALLENGES } from '../constants';
 import { ModuleStatus } from '../types';
-import { saveUserProfile } from '../services/supabase';
 import { 
   Award, 
   CheckCircle2, 
-  Coins, 
   Zap, 
   ArrowRight,
   Circle,
-  BookOpen,
   LayoutDashboard,
   Smartphone,
   Download,
-  Users,
   Share2,
   Wallet,
   Cloud,
   CloudOff,
-  CreditCard,
   History,
-  // Fix: add missing Plus icon import from lucide-react
   Plus
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -59,36 +53,41 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#fcfdfe]">
       {showInstallBanner && (
-        <div className="bg-brand-600 p-4 text-white flex items-center justify-between sticky top-20 z-50">
+        <div className="bg-brand-600 p-4 text-white flex items-center justify-between sticky top-20 z-50 shadow-lg">
            <div className="flex items-center gap-3"><Smartphone className="w-5 h-5" /><p className="text-[10px] font-black uppercase tracking-widest">Installer Go'Top Pro sur mon écran</p></div>
-           <button onClick={() => alert("Menu Partager > Sur l'écran d'accueil")} className="bg-white text-brand-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2"><Download className="w-3 h-3" /> Comment ?</button>
+           <button onClick={() => alert("Menu Partager > Sur l'écran d'accueil")} className="bg-white text-brand-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 font-bold"><Download className="w-3 h-3" /> COMMENT ?</button>
         </div>
       )}
 
+      {/* ZONE HERO FLASHY */}
       <div className="bg-brand-900 pt-20 pb-40 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-500/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-10">
-            <div className="space-y-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+            <div className="space-y-6">
               <div className="flex items-center gap-3 text-brand-400 font-black text-[10px] uppercase tracking-[0.4em]"><LayoutDashboard className="w-4 h-4" />Tableau de bord stratégique</div>
-              <h1 className="text-4xl md:text-6xl font-serif font-bold text-white tracking-tight">Propulsez votre <span className="text-brand-500">empire</span></h1>
-              <p className="text-white/60 text-lg md:text-xl font-medium max-w-xl">Prenez le contrôle total de vos finances et de votre stock avec l'outil Ma Caisse KITA.</p>
+              <h1 className="text-4xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
+                Propulsez votre <span className="text-brand-500">empire</span>
+              </h1>
+              
+              {/* BOUTON CAISSE GÉANT DANS LE HERO */}
+              <button 
+                onClick={() => navigate('/caisse')}
+                className="bg-emerald-500 hover:bg-emerald-400 text-white px-10 py-6 rounded-[2rem] font-black text-xs uppercase tracking-widest flex items-center gap-4 shadow-[0_20px_50px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-1 active:scale-95 border-2 border-emerald-400/50"
+              >
+                <Wallet className="w-6 h-6" />
+                OUVRIR MA CAISSE KITA
+              </button>
             </div>
 
-            {/* CARTE HERO AVEC ACCÈS CAISSE ET BOUTIQUE */}
             <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl p-3 rounded-[2.5rem] border border-white/10 shadow-2xl">
               <div className="px-10 py-5 bg-white rounded-[1.8rem] text-brand-900 shadow-xl">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Maitrise</p>
                 <span className="text-4xl font-black">{progress}%</span>
               </div>
-              <div className="flex flex-col gap-2">
-                <Link to="/caisse" className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-400 transition-all shadow-xl">
-                  <Wallet className="w-4 h-4" /> Ma Caisse <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link to="/results" className="bg-brand-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-brand-400 transition-all shadow-xl">
-                  Boutique <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+              <Link to="/results" className="bg-brand-500 text-white px-8 py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-brand-400 transition-all shadow-xl">
+                BOUTIQUE <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
@@ -98,38 +97,29 @@ const Dashboard: React.FC = () => {
         <div className="grid lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-12">
             
-            {/* BLOC MA CAISSE - SECTION PRINCIPALE */}
-            <section className="bg-white rounded-[3rem] p-8 md:p-12 border-2 border-emerald-100 shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-6 right-6 z-20">
-                 <span className="flex h-3 w-3 relative">
-                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                   <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                 </span>
-               </div>
-               <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Wallet className="w-48 h-48" /></div>
-               <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
+            {/* BLOC CAISSE ALTERNATIF */}
+            <section className="bg-emerald-600 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden group border-4 border-emerald-400/30">
+               <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000"><Wallet className="w-64 h-64" /></div>
+               <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10 text-center md:text-left">
                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                       <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase text-[14px]">Ma Caisse KITA</h2>
-                       <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">Nouveau</div>
-                       {user.isKitaPremium ? <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-emerald-100"><Cloud className="w-3 h-3" /> Cloud Actif</div> : <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-[9px] font-black uppercase border border-amber-100"><CloudOff className="w-3 h-3" /> Mode Local</div>}
-                    </div>
-                    <p className="text-slate-500 font-medium leading-relaxed max-w-md">Pilotez votre salon comme une entreprise. Saisissez vos ventes quotidiennes et surveillez vos bénéfices.</p>
-                    <div className="flex gap-4">
-                       <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-500 transition-all flex items-center gap-2">
+                    <h2 className="text-3xl font-black tracking-tight uppercase">MA CAISSE KITA</h2>
+                    <p className="text-emerald-50 text-lg font-medium max-w-md">Pilotez vos revenus et sécurisez vos bénéfices en temps réel.</p>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+                       <button onClick={() => navigate('/caisse')} className="bg-white text-emerald-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-50 transition-all flex items-center gap-2">
                          <Plus className="w-4 h-4" /> Saisir une vente
                        </button>
-                       <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-500 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center gap-2">
+                       <button onClick={() => navigate('/caisse')} className="bg-emerald-700/50 text-white border border-emerald-400/30 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2">
                          <History className="w-4 h-4" /> Historique
                        </button>
                     </div>
                  </div>
-                 <div className="h-40 w-40 bg-emerald-50 rounded-[3rem] flex items-center justify-center shadow-inner group-hover:rotate-6 transition-transform">
-                   <Wallet className="w-16 h-16 text-emerald-500" />
+                 <div className="h-44 w-44 bg-white/20 rounded-[3rem] flex items-center justify-center backdrop-blur-md border border-white/20 group-hover:rotate-12 transition-transform">
+                   <Wallet className="w-20 h-20 text-white" />
                  </div>
                </div>
             </section>
 
+            {/* DISCIPLINE DU JOUR */}
             <section className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-2xl overflow-hidden relative">
                <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
                  <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-4 uppercase text-[14px]"><Zap className="w-6 h-6 text-brand-gold fill-current" />Discipline du jour</h2>
@@ -157,15 +147,6 @@ const Dashboard: React.FC = () => {
                <div><h3 className="text-lg font-black uppercase tracking-widest mb-1">Recruter un filleul</h3><p className="text-[10px] font-medium text-white/80">Gagnez des bonus d'ambassadeur.</p></div>
             </button>
 
-            <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-10">
-              <div className="flex items-center justify-between mb-10"><div className="flex items-center gap-3"><Award className="w-5 h-5 text-brand-500" /><h3 className="font-black text-slate-900 text-[11px] uppercase tracking-widest">Certifications</h3></div><div className="bg-brand-50 text-brand-600 px-3 py-1 rounded-lg font-black text-xs">{user.badges.length}</div></div>
-              <div className="grid grid-cols-2 gap-4">
-                {BADGES.map(badge => (
-                  <div key={badge.id} className={`h-24 rounded-[2rem] flex flex-col items-center justify-center gap-2 border-2 transition-all ${user.badges.includes(badge.id) ? 'bg-brand-50 border-brand-100 shadow-lg' : 'bg-slate-50 border-slate-50 grayscale opacity-20 scale-95'}`}><span className="text-3xl">{badge.icon}</span><span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{badge.name}</span></div>
-                ))}
-              </div>
-            </div>
-
             <div className="bg-brand-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
               <h3 className="font-black text-brand-400 mb-8 uppercase text-[10px] tracking-[0.4em]">Mentor Kita</h3>
               <p className="text-2xl text-white italic leading-relaxed font-serif font-medium mb-12">« On ne gère bien que ce que l'on mesure précisément chaque jour. »</p>
@@ -173,6 +154,17 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* BOUTON FLOTTANT (FAB) OMNIPRÉSENT */}
+      <div className="fixed bottom-24 right-6 z-[999]">
+        <button 
+          onClick={() => navigate('/caisse')}
+          className="h-20 w-20 bg-emerald-500 text-white rounded-full shadow-[0_15px_40px_rgba(16,185,129,0.5)] flex flex-col items-center justify-center gap-1 hover:bg-emerald-400 hover:scale-110 transition-all group animate-bounce"
+        >
+          <Wallet className="w-8 h-8" />
+          <span className="text-[8px] font-black uppercase tracking-widest">CAISSE</span>
+        </button>
       </div>
     </div>
   );
