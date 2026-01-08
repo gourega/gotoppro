@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +6,6 @@ import {
   deleteUserProfile, 
   grantModuleAccess, 
   updateQuizAttempts,
-  createAdminAccount,
   saveUserProfile
 } from '../services/supabase';
 import { TRAINING_CATALOG } from '../constants';
