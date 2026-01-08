@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { DAILY_CHALLENGES, COACH_KITA_AVATAR, TRAINING_CATALOG, BADGES } from '../constants';
+import { getReferrals } from '../services/supabase';
+import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES } from '../constants';
+import { UserProfile } from '../types';
 import { 
   CheckCircle2, 
   Zap, 
@@ -22,17 +24,24 @@ import {
   Target,
   Flame,
   Medal,
-  Calendar
+  Calendar,
+  Sparkles,
+  UserPlus,
+  Handshake,
+  Loader2
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
+  const [filleuls, setFilleuls] = useState<UserProfile[]>([]);
   const [copying, setCopying] = useState(false);
+  const [loadingFilleuls, setLoadingFilleuls] = useState(false);
 
   useEffect(() => {
     if (user) {
+      // Chargement des tâches quotidiennes
       const today = new Date().toLocaleDateString('fr-FR');
       const savedTasksRaw = localStorage.getItem(`daily_tasks_${user.uid}`);
       const savedDate = localStorage.getItem(`daily_date_${user.uid}`);
@@ -46,8 +55,24 @@ const Dashboard: React.FC = () => {
         localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(selected));
         localStorage.setItem(`daily_date_${user.uid}`, today);
       }
+
+      // Chargement du réseau (filleuls)
+      loadNetwork();
     }
   }, [user]);
+
+  const loadNetwork = async () => {
+    if (!user) return;
+    setLoadingFilleuls(true);
+    try {
+      const data = await getReferrals(user.uid);
+      setFilleuls(data);
+    } catch (err) {
+      console.warn("Erreur chargement réseau");
+    } finally {
+      setLoadingFilleuls(false);
+    }
+  };
 
   const purchasedModules = useMemo(() => {
     if (!user) return [];
@@ -58,6 +83,8 @@ const Dashboard: React.FC = () => {
     if (!user) return [];
     return BADGES.filter(b => (user.badges || []).includes(b.id));
   }, [user]);
+
+  const completedTasksCount = dailyTasks.filter(t => t.completed).length;
 
   const copyRefLink = () => {
     if (!user) return;
@@ -85,7 +112,7 @@ const Dashboard: React.FC = () => {
       <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400">
          <div className="flex items-center gap-4">
             <div className="bg-white/20 p-2 rounded-xl"><AlertCircle className="w-5 h-5" /></div>
-            <h3 className="text-sm font-bold">Pilotez votre croissance avec les outils KITA ELITE.</h3>
+            <h3 className="text-sm font-bold">Votre cockpit de gestion KITA est prêt.</h3>
          </div>
          <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-3">
            <Wallet className="w-4 h-4" /> OUVRIR MA CAISSE
@@ -97,12 +124,12 @@ const Dashboard: React.FC = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
-            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">Gérant Go'Top Pro Elite</p>
+            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">Tableau de Bord Elite</p>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">
               Bonjour, <span className="text-brand-500 italic">{user.firstName}</span>
             </h1>
             <p className="text-slate-400 text-lg font-medium max-w-xl italic opacity-80">
-              « Votre talent crée la beauté, votre gestion crée l'empire. »
+              « Votre succès n'est pas une chance, c'est une discipline. »
             </p>
           </div>
           
@@ -120,25 +147,121 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 -mt-12 pb-32 space-y-12">
         
-        {/* SECTION MES RÉUSSITES (BADGES) */}
-        {earnedBadges.length > 0 && (
-          <section className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
-             <div className="flex items-center gap-6">
-                <div className="bg-brand-50 p-4 rounded-2xl"><Medal className="w-8 h-8 text-brand-500" /></div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Tableau d'Honneur</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Vos distinctions d'expert</p>
+        {/* RITUEL DU MATIN & RÉCOMPENSES (COLONNES) */}
+        <div className="grid lg:grid-cols-12 gap-8 items-stretch">
+           
+           {/* GAUCHE : DISCIPLINE DU JOUR */}
+           <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-between">
+              <div className="flex justify-between items-center mb-8">
+                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
+                    <Flame className="w-5 h-5 text-amber-500 fill-current" /> Discipline du Jour
+                 </h2>
+                 <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-4 py-1.5 rounded-full uppercase">
+                    {completedTasksCount}/3 Terminé
+                 </span>
+              </div>
+              <div className="space-y-4 mb-8">
+                 {dailyTasks.map((task, idx) => (
+                   <button 
+                     key={idx} 
+                     onClick={() => {
+                       const updated = [...dailyTasks];
+                       updated[idx].completed = !updated[idx].completed;
+                       setDailyTasks(updated);
+                       localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(updated));
+                     }}
+                     className={`w-full p-6 rounded-2xl border-2 transition-all flex items-center gap-6 text-left ${task.completed ? 'bg-emerald-50/30 border-emerald-100 shadow-inner' : 'bg-white border-slate-50 hover:border-brand-500 shadow-sm'}`}
+                   >
+                     <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center ${task.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-300'}`}>
+                       {task.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                     </div>
+                     <p className={`text-sm font-bold leading-tight ${task.completed ? 'line-through text-slate-400 italic' : 'text-slate-700'}`}>{task.task}</p>
+                   </button>
+                 ))}
+              </div>
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                 <div 
+                   className="h-full bg-emerald-500 transition-all duration-500" 
+                   style={{ width: `${(completedTasksCount / 3) * 100}%` }}
+                 ></div>
+              </div>
+           </div>
+
+           {/* DROITE : TABLEAU D'HONNEUR */}
+           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col text-center">
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center justify-center gap-3">
+                 <Medal className="w-5 h-5 text-brand-500" /> Tableau d'Honneur
+              </h2>
+              {earnedBadges.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 flex-grow content-center">
+                   {earnedBadges.slice(0, 4).map(badge => (
+                     <div key={badge.id} title={badge.description} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-3 group hover:scale-105 transition-transform shadow-sm">
+                        <span className="text-4xl group-hover:rotate-12 transition-transform">{badge.icon}</span>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{badge.name}</p>
+                     </div>
+                   ))}
                 </div>
-             </div>
-             <div className="flex flex-wrap gap-4 justify-center">
-                {earnedBadges.map(badge => (
-                  <div key={badge.id} title={badge.description} className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl border border-slate-100 hover:scale-110 transition-transform shadow-sm">
-                    {badge.icon}
+              ) : (
+                <div className="flex-grow flex flex-col items-center justify-center gap-6 py-10">
+                   <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                      <Trophy className="w-10 h-10" />
+                   </div>
+                   <p className="text-xs font-medium text-slate-400 italic">Terminez votre premier module pour débloquer vos trophées.</p>
+                </div>
+              )}
+              <Link to="/profile" className="mt-10 text-[10px] font-black text-brand-600 uppercase tracking-widest hover:underline">Voir tous mes succès</Link>
+           </div>
+        </div>
+
+        {/* SECTION MON RÉSEAU D'ÉLITE (BANDEAU FILLEULS) */}
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-xl border border-slate-100 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+              <Users className="w-32 h-32" />
+           </div>
+           
+           <div className="flex flex-col md:flex-row justify-between items-center gap-10 mb-10 relative z-10">
+              <div>
+                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                    <Handshake className="text-amber-500 w-6 h-6" /> Mon Réseau d'Élite
+                 </h2>
+                 <p className="text-slate-500 font-medium text-sm mt-1">{filleuls.length} gérant(s) parrainé(s)</p>
+              </div>
+              <div className="flex gap-4">
+                 <button onClick={shareOnWhatsApp} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-emerald-600 flex items-center gap-3 transition-all">
+                    <Share2 className="w-4 h-4" /> Recruter
+                 </button>
+                 <button onClick={copyRefLink} className="bg-slate-100 text-slate-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 flex items-center gap-3 transition-all">
+                    {copying ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copying ? 'Copié' : 'Lien'}
+                 </button>
+              </div>
+           </div>
+
+           {loadingFilleuls ? (
+             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-brand-500" /></div>
+           ) : filleuls.length > 0 ? (
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                {filleuls.map(f => (
+                  <div key={f.uid} className="flex flex-col items-center text-center gap-3 group">
+                     <div className="h-16 w-16 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden group-hover:border-brand-500 transition-all">
+                        {f.photoURL ? <img src={f.photoURL} alt="" className="w-full h-full object-cover" /> : <span className="font-black text-brand-900">{f.firstName?.[0]}</span>}
+                     </div>
+                     <p className="text-[10px] font-bold text-slate-600 truncate w-full">{f.firstName} {f.lastName}</p>
                   </div>
                 ))}
+                <button onClick={shareOnWhatsApp} className="flex flex-col items-center text-center gap-3 group">
+                   <div className="h-16 w-16 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-brand-500 group-hover:text-brand-500 transition-all">
+                      <Plus className="w-6 h-6" />
+                   </div>
+                   <p className="text-[10px] font-bold text-slate-400">Ajouter</p>
+                </button>
              </div>
-          </section>
-        )}
+           ) : (
+             <div className="bg-slate-50 rounded-[2.5rem] p-10 text-center border border-dashed border-slate-200">
+                <UserPlus className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                <p className="text-sm font-medium text-slate-400 max-w-sm mx-auto">Votre réseau est encore vide. Parrainez vos confrères pour débloquer des cadeaux exclusifs !</p>
+             </div>
+           )}
+        </section>
 
         {/* SECTION MES FORMATIONS */}
         <section className="space-y-6">
@@ -146,7 +269,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
             </h2>
-            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline">Catalogue complet</Link>
+            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline">Accéder au catalogue complet</Link>
           </div>
 
           {purchasedModules.length > 0 ? (
@@ -184,25 +307,23 @@ const Dashboard: React.FC = () => {
           )}
         </section>
 
-        {/* SECTION RECRUTEMENT (PARRAINAGE) */}
-        <section className="bg-gradient-to-br from-brand-900 to-brand-800 rounded-[4rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Users className="w-48 h-48" /></div>
-           <div className="flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
-              <div className="space-y-6 text-center lg:text-left">
-                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/20 border border-brand-500/30 rounded-full text-brand-400 text-[10px] font-black uppercase tracking-widest">
-                    <Medal className="w-4 h-4" /> Programme Ambassadeur
+        {/* BLOC CAISSE KITA */}
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
+           <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
+              <div className="space-y-6 text-center md:text-left">
+                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">MA GESTION QUOTIDIENNE (KITA)</h2>
+                 <p className="text-slate-500 font-medium max-w-md">L'outil indispensable pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
+                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                    <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3">
+                       <Plus className="w-4 h-4" /> Nouvelle vente
+                    </button>
+                    <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 flex items-center gap-3">
+                       <History className="w-4 h-4" /> Consulter le journal
+                    </button>
                  </div>
-                 <h2 className="text-3xl font-serif font-bold">Élargissez votre réseau d'élite</h2>
-                 <p className="text-slate-300 font-medium max-w-md">Parrainez un confrère gérant : il reçoit un diagnostic expert et vous gagnez des modules offerts pour votre salon.</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                 <button onClick={shareOnWhatsApp} className="flex-grow lg:flex-none bg-emerald-500 text-white px-10 py-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 shadow-xl">
-                    <Share2 className="w-5 h-5" /> WhatsApp
-                 </button>
-                 <button onClick={copyRefLink} className="flex-grow lg:flex-none bg-white text-brand-900 px-10 py-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-3 shadow-xl">
-                    {copying ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                    {copying ? 'Copié !' : 'Copier le lien'}
-                 </button>
+              <div className="h-40 w-40 bg-emerald-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-transform duration-500">
+                 <Wallet className="w-16 h-16 text-emerald-500" />
               </div>
            </div>
         </section>
@@ -230,55 +351,6 @@ const Dashboard: React.FC = () => {
             </div>
           </section>
         )}
-
-        {/* BLOC CAISSE KITA */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
-           <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
-              <div className="space-y-6 text-center md:text-left">
-                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">MA GESTION QUOTIDIENNE (KITA)</h2>
-                 <p className="text-slate-500 font-medium max-w-md">L'outil indispensable pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
-                 <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                    <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3">
-                       <Plus className="w-4 h-4" /> Nouvelle vente
-                    </button>
-                    <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 flex items-center gap-3">
-                       <History className="w-4 h-4" /> Consulter le journal
-                    </button>
-                 </div>
-              </div>
-              <div className="h-40 w-40 bg-emerald-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-transform duration-500">
-                 <Wallet className="w-16 h-16 text-emerald-500" />
-              </div>
-           </div>
-        </section>
-
-        {/* DISCIPLINE DU JOUR */}
-        <section className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100">
-           <div className="flex justify-between items-center mb-10">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
-                <Flame className="w-5 h-5 text-amber-500 fill-current" /> Discipline du Jour
-              </h2>
-           </div>
-           <div className="grid md:grid-cols-3 gap-6">
-              {dailyTasks.map((task, idx) => (
-                <button 
-                  key={idx} 
-                  onClick={() => {
-                    const updated = [...dailyTasks];
-                    updated[idx].completed = !updated[idx].completed;
-                    setDailyTasks(updated);
-                    localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(updated));
-                  }}
-                  className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col gap-4 text-left ${task.completed ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-50 hover:border-brand-500'}`}
-                >
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${task.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-300'}`}>
-                    {task.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-                  </div>
-                  <p className={`text-sm font-bold leading-tight ${task.completed ? 'line-through text-slate-400 italic' : 'text-slate-700'}`}>{task.task}</p>
-                </button>
-              ))}
-           </div>
-        </section>
 
       </div>
     </div>
