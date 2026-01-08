@@ -2,26 +2,34 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { DAILY_CHALLENGES, COACH_KITA_AVATAR, TRAINING_CATALOG } from '../constants';
+import { DAILY_CHALLENGES, COACH_KITA_AVATAR, TRAINING_CATALOG, BADGES } from '../constants';
 import { 
   CheckCircle2, 
   Zap, 
   ArrowRight,
   Circle,
   Wallet,
-  Cloud,
   Plus,
   History,
   AlertCircle,
   BookOpen,
   Trophy,
-  Award
+  Award,
+  Users,
+  Share2,
+  Copy,
+  Check,
+  Target,
+  Flame,
+  Medal,
+  Calendar
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -46,10 +54,25 @@ const Dashboard: React.FC = () => {
     return TRAINING_CATALOG.filter(m => user.purchasedModuleIds.includes(m.id));
   }, [user]);
 
-  const availableModules = useMemo(() => {
+  const earnedBadges = useMemo(() => {
     if (!user) return [];
-    return TRAINING_CATALOG.filter(m => !user.purchasedModuleIds.includes(m.id)).slice(0, 3);
+    return BADGES.filter(b => (user.badges || []).includes(b.id));
   }, [user]);
+
+  const copyRefLink = () => {
+    if (!user) return;
+    const link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
+    navigator.clipboard.writeText(link);
+    setCopying(true);
+    setTimeout(() => setCopying(false), 2000);
+  };
+
+  const shareOnWhatsApp = () => {
+    if (!user) return;
+    const link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
+    const text = `Bonjour ! Je transforme mon salon avec Go'Top Pro. Rejoins l'élite des gérants ici : ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
 
   if (!user) return null;
 
@@ -62,7 +85,7 @@ const Dashboard: React.FC = () => {
       <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400">
          <div className="flex items-center gap-4">
             <div className="bg-white/20 p-2 rounded-xl"><AlertCircle className="w-5 h-5" /></div>
-            <h3 className="text-sm font-bold">L'outil de gestion KITA est actif. Prêt à piloter votre salon ?</h3>
+            <h3 className="text-sm font-bold">Pilotez votre croissance avec les outils KITA ELITE.</h3>
          </div>
          <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-3">
            <Wallet className="w-4 h-4" /> OUVRIR MA CAISSE
@@ -74,12 +97,12 @@ const Dashboard: React.FC = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
-            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">Gérant Go'Top Pro</p>
+            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">Gérant Go'Top Pro Elite</p>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">
               Bonjour, <span className="text-brand-500 italic">{user.firstName}</span>
             </h1>
             <p className="text-slate-400 text-lg font-medium max-w-xl italic opacity-80">
-              « L'excellence est un art que l'on n'atteint que par l'exercice constant. »
+              « Votre talent crée la beauté, votre gestion crée l'empire. »
             </p>
           </div>
           
@@ -97,32 +120,54 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 -mt-12 pb-32 space-y-12">
         
-        {/* SECTION MES FORMATIONS (RESTAURÉE) */}
+        {/* SECTION MES RÉUSSITES (BADGES) */}
+        {earnedBadges.length > 0 && (
+          <section className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
+             <div className="flex items-center gap-6">
+                <div className="bg-brand-50 p-4 rounded-2xl"><Medal className="w-8 h-8 text-brand-500" /></div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Tableau d'Honneur</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Vos distinctions d'expert</p>
+                </div>
+             </div>
+             <div className="flex flex-wrap gap-4 justify-center">
+                {earnedBadges.map(badge => (
+                  <div key={badge.id} title={badge.description} className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl border border-slate-100 hover:scale-110 transition-transform shadow-sm">
+                    {badge.icon}
+                  </div>
+                ))}
+             </div>
+          </section>
+        )}
+
+        {/* SECTION MES FORMATIONS */}
         <section className="space-y-6">
           <div className="flex justify-between items-end">
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
             </h2>
-            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline">Accéder au catalogue complet</Link>
+            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline">Catalogue complet</Link>
           </div>
 
           {purchasedModules.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {purchasedModules.map(mod => {
                 const score = user.progress?.[mod.id] || 0;
+                const isCertified = score >= 80;
                 return (
-                  <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px]">
+                  <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px] relative overflow-hidden">
+                    {isCertified && <div className="absolute top-4 right-4 text-emerald-500"><Award className="w-5 h-5 fill-current" /></div>}
                     <div>
                       <span className="text-[8px] font-black text-brand-500 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-widest">{mod.topic}</span>
                       <h3 className="text-lg font-bold text-slate-900 mt-4 leading-tight group-hover:text-brand-600 transition-colors">{mod.title}</h3>
                     </div>
                     <div className="mt-6 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${score >= 80 ? 'bg-emerald-500' : 'bg-amber-400'}`}></div>
+                        <div className={`h-2 w-2 rounded-full ${isCertified ? 'bg-emerald-500' : 'bg-amber-400'}`}></div>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score: {score}%</span>
                       </div>
-                      <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
-                        <ArrowRight className="w-4 h-4" />
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isCertified ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white'}`}>
+                        {isCertified ? <CheckCircle2 className="w-5 h-5" /> : <ArrowRight className="w-4 h-4" />}
                       </div>
                     </div>
                   </Link>
@@ -138,6 +183,53 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* SECTION RECRUTEMENT (PARRAINAGE) */}
+        <section className="bg-gradient-to-br from-brand-900 to-brand-800 rounded-[4rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Users className="w-48 h-48" /></div>
+           <div className="flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
+              <div className="space-y-6 text-center lg:text-left">
+                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/20 border border-brand-500/30 rounded-full text-brand-400 text-[10px] font-black uppercase tracking-widest">
+                    <Medal className="w-4 h-4" /> Programme Ambassadeur
+                 </div>
+                 <h2 className="text-3xl font-serif font-bold">Élargissez votre réseau d'élite</h2>
+                 <p className="text-slate-300 font-medium max-w-md">Parrainez un confrère gérant : il reçoit un diagnostic expert et vous gagnez des modules offerts pour votre salon.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                 <button onClick={shareOnWhatsApp} className="flex-grow lg:flex-none bg-emerald-500 text-white px-10 py-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 shadow-xl">
+                    <Share2 className="w-5 h-5" /> WhatsApp
+                 </button>
+                 <button onClick={copyRefLink} className="flex-grow lg:flex-none bg-white text-brand-900 px-10 py-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-3 shadow-xl">
+                    {copying ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                    {copying ? 'Copié !' : 'Copier le lien'}
+                 </button>
+              </div>
+           </div>
+        </section>
+
+        {/* SECTION MES ENGAGEMENTS (ACTION PLAN) */}
+        {user.actionPlan && user.actionPlan.length > 0 && (
+          <section className="space-y-6">
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+              <Target className="text-rose-500 w-6 h-6" /> Mes Engagements de Transformation
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+               {user.actionPlan.slice(0, 4).map((plan, idx) => (
+                 <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-start gap-6 group hover:border-brand-500 transition-all">
+                    <div className="bg-brand-50 p-4 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
+                       <Zap className="w-6 h-6 fill-current" />
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <Calendar className="w-3 h-3" /> {plan.date} • {plan.moduleTitle}
+                       </p>
+                       <p className="text-slate-800 font-bold leading-relaxed">{plan.action}</p>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          </section>
+        )}
 
         {/* BLOC CAISSE KITA */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
@@ -164,7 +256,7 @@ const Dashboard: React.FC = () => {
         <section className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100">
            <div className="flex justify-between items-center mb-10">
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
-                <Zap className="w-5 h-5 text-amber-500 fill-current" /> Objectifs Prioritaires
+                <Flame className="w-5 h-5 text-amber-500 fill-current" /> Discipline du Jour
               </h2>
            </div>
            <div className="grid md:grid-cols-3 gap-6">
