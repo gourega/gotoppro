@@ -145,13 +145,14 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 -mt-12 pb-32 space-y-12">
+      {/* CONTENU PRINCIPAL - Espacement Ajusté à mt-12 au lieu de -mt-12 */}
+      <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20">
         
         {/* RITUEL DU MATIN & RÉCOMPENSES (COLONNES) */}
         <div className="grid lg:grid-cols-12 gap-8 items-stretch">
            
            {/* GAUCHE : DISCIPLINE DU JOUR */}
-           <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-between">
+           <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col justify-between">
               <div className="flex justify-between items-center mb-8">
                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
                     <Flame className="w-5 h-5 text-amber-500 fill-current" /> Discipline du Jour
@@ -188,7 +189,7 @@ const Dashboard: React.FC = () => {
            </div>
 
            {/* DROITE : TABLEAU D'HONNEUR */}
-           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col text-center">
+           <div className="lg:col-span-5 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col text-center">
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center justify-center gap-3">
                  <Medal className="w-5 h-5 text-brand-500" /> Tableau d'Honneur
               </h2>
@@ -214,7 +215,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* SECTION MON RÉSEAU D'ÉLITE (BANDEAU FILLEULS) */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-xl border border-slate-100 relative overflow-hidden group">
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Users className="w-32 h-32" />
            </div>
@@ -227,7 +228,7 @@ const Dashboard: React.FC = () => {
                  <p className="text-slate-500 font-medium text-sm mt-1">{filleuls.length} gérant(s) parrainé(s)</p>
               </div>
               <div className="flex gap-4">
-                 <button onClick={shareOnWhatsApp} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-emerald-600 flex items-center gap-3 transition-all">
+                 <button onClick={shareOnWhatsApp} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-600 flex items-center gap-3 transition-all">
                     <Share2 className="w-4 h-4" /> Recruter
                  </button>
                  <button onClick={copyRefLink} className="bg-slate-100 text-slate-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 flex items-center gap-3 transition-all">
@@ -239,7 +240,7 @@ const Dashboard: React.FC = () => {
            {loadingFilleuls ? (
              <div className="flex justify-center py-10"><Loader2 className="animate-spin text-brand-500" /></div>
            ) : filleuls.length > 0 ? (
-             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 relative z-10">
                 {filleuls.map(f => (
                   <div key={f.uid} className="flex flex-col items-center text-center gap-3 group">
                      <div className="h-16 w-16 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center overflow-hidden group-hover:border-brand-500 transition-all">
@@ -258,7 +259,10 @@ const Dashboard: React.FC = () => {
            ) : (
              <div className="bg-slate-50 rounded-[2.5rem] p-10 text-center border border-dashed border-slate-200">
                 <UserPlus className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="text-sm font-medium text-slate-400 max-w-sm mx-auto">Votre réseau est encore vide. Parrainez vos confrères pour débloquer des cadeaux exclusifs !</p>
+                <p className="text-sm font-medium text-slate-400 max-w-sm mx-auto">Votre réseau est encore vide. Parrainez vos confrères pour bâtir votre empire !</p>
+                <button onClick={shareOnWhatsApp} className="mt-6 bg-brand-900 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-all">
+                  Inviter un confrère
+                </button>
              </div>
            )}
         </section>
@@ -278,7 +282,7 @@ const Dashboard: React.FC = () => {
                 const score = user.progress?.[mod.id] || 0;
                 const isCertified = score >= 80;
                 return (
-                  <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px] relative overflow-hidden">
+                  <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px] relative overflow-hidden">
                     {isCertified && <div className="absolute top-4 right-4 text-emerald-500"><Award className="w-5 h-5 fill-current" /></div>}
                     <div>
                       <span className="text-[8px] font-black text-brand-500 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-widest">{mod.topic}</span>
@@ -298,7 +302,7 @@ const Dashboard: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-slate-200">
+            <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-slate-200 shadow-xl">
                <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Votre empire attend son premier pilier.</h3>
                <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">Lancez votre diagnostic ou choisissez un module dans la boutique pour commencer votre ascension.</p>
@@ -311,13 +315,13 @@ const Dashboard: React.FC = () => {
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
-                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">MA GESTION QUOTIDIENNE (KITA)</h2>
-                 <p className="text-slate-500 font-medium max-w-md">L'outil indispensable pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
+                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">MA GESTION QUOTIDIENNE (KITA)</h2>
+                 <p className="text-slate-500 font-medium max-w-md m-0">L'outil indispensable pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3">
                        <Plus className="w-4 h-4" /> Nouvelle vente
                     </button>
-                    <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 flex items-center gap-3">
+                    <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 flex items-center gap-3 transition-all">
                        <History className="w-4 h-4" /> Consulter le journal
                     </button>
                  </div>
@@ -336,7 +340,7 @@ const Dashboard: React.FC = () => {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
                {user.actionPlan.slice(0, 4).map((plan, idx) => (
-                 <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-start gap-6 group hover:border-brand-500 transition-all">
+                 <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-start gap-6 group hover:border-brand-500 transition-all">
                     <div className="bg-brand-50 p-4 rounded-2xl text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
                        <Zap className="w-6 h-6 fill-current" />
                     </div>
