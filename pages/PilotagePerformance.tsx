@@ -24,7 +24,8 @@ import {
   Award,
   Plus,
   X,
-  CheckCircle2
+  CheckCircle2,
+  BarChart3
 } from 'lucide-react';
 
 const PilotagePerformance: React.FC = () => {
@@ -94,7 +95,6 @@ const PilotagePerformance: React.FC = () => {
     }
   };
 
-  // Calcul des commissions réelles basées sur les transactions du mois
   const staffPerformance = useMemo(() => {
     const perf: { [key: string]: { sales: number, commission: number } } = {};
     const now = new Date();
@@ -138,7 +138,7 @@ const PilotagePerformance: React.FC = () => {
     <div className="min-h-screen bg-[#0f172a] text-slate-200 pb-20">
       <header className="pt-16 pb-32 px-6 relative overflow-hidden bg-gradient-to-b from-slate-900 to-transparent">
         <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-          <TrendingUp className="w-96 h-96 text-brand-500" />
+          <BarChart3 className="w-96 h-96 text-brand-500" />
         </div>
         
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center relative z-10 gap-8">
@@ -160,6 +160,9 @@ const PilotagePerformance: React.FC = () => {
                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
                 <span className="text-[10px] font-black uppercase tracking-widest">{isUnlocked ? 'Pack Activé' : 'Mode Démo'}</span>
              </div>
+             <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
+                Aller à la Caisse
+             </button>
           </div>
         </div>
       </header>
@@ -184,15 +187,15 @@ const PilotagePerformance: React.FC = () => {
         )}
 
         <div className="grid lg:grid-cols-12 gap-10">
-           
+           {/* Section Collaborateurs */}
            <div className="lg:col-span-8 space-y-8">
               <div className="flex justify-between items-center px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3">
-                    <Users className="w-5 h-5 text-brand-500" /> Collaborateurs ({staff.length})
+                    <Users className="w-5 h-5 text-brand-500" /> Mon Staff ({staff.length})
                  </h3>
                  {isUnlocked && (
                    <button onClick={() => setShowAddStaffModal(true)} className="bg-brand-500 hover:bg-brand-400 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all">
-                      <Plus className="w-4 h-4" /> Ajouter un expert
+                      <Plus className="w-4 h-4" /> Nouvel Expert
                    </button>
                  )}
               </div>
@@ -201,7 +204,7 @@ const PilotagePerformance: React.FC = () => {
                staff.length === 0 ? (
                 <div className="bg-white/5 rounded-[3rem] p-20 text-center border border-dashed border-white/10">
                    <Users className="w-12 h-12 text-slate-700 mx-auto mb-6" />
-                   <p className="text-slate-500 font-medium italic">Aucun collaborateur enregistré.</p>
+                   <p className="text-slate-500 font-medium italic">Enregistrez vos coiffeurs pour suivre leurs commissions.</p>
                 </div>
                ) : (
                 <div className="grid md:grid-cols-2 gap-6">
@@ -234,7 +237,7 @@ const PilotagePerformance: React.FC = () => {
                                 <p className="text-lg font-black text-emerald-500">{perf.sales.toLocaleString()} F</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Com. à payer</p>
+                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Dû (Com.)</p>
                                 <p className="text-lg font-black text-white">{perf.commission.toLocaleString()} F</p>
                             </div>
                           </div>
@@ -251,14 +254,13 @@ const PilotagePerformance: React.FC = () => {
                  </h3>
                  <div className="bg-white/5 rounded-[3rem] border border-white/5 overflow-hidden">
                     {clients.length === 0 ? (
-                      <p className="p-12 text-center text-slate-500 text-sm italic">Votre base de données clients s'enrichit à chaque vente.</p>
+                      <p className="p-12 text-center text-slate-500 text-sm italic">Les dettes sont gérées dans la Caisse, les clients VIP ici.</p>
                     ) : (
                       <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-white/5">
                               <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Client</th>
-                              <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Dernière Visite</th>
-                              <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Total</th>
+                              <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Visites</th>
                               <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Contact</th>
                             </tr>
                         </thead>
@@ -269,7 +271,6 @@ const PilotagePerformance: React.FC = () => {
                                     <p className="font-bold text-white">{c.name}</p>
                                     <p className="text-[9px] text-slate-500 uppercase font-mono">{c.phone}</p>
                                 </td>
-                                <td className="px-8 py-6 text-slate-400 text-xs">{new Date(c.last_visit).toLocaleDateString('fr-FR')}</td>
                                 <td className="px-8 py-6">
                                     <span className="bg-brand-500/10 text-brand-400 px-3 py-1 rounded-full text-[10px] font-black border border-brand-500/20">{c.total_visits}</span>
                                 </td>
@@ -287,6 +288,7 @@ const PilotagePerformance: React.FC = () => {
               </div>
            </div>
 
+           {/* Audit IA */}
            <div className="lg:col-span-4 space-y-8">
               <div className="bg-slate-900 border border-white/5 rounded-[3rem] p-10 sticky top-24 shadow-2xl relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 transition-transform group-hover:scale-110">
@@ -307,7 +309,7 @@ const PilotagePerformance: React.FC = () => {
                     ) : (
                       <div className="space-y-6">
                          <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                            Laissez Coach Kita analyser les résultats réels de votre équipe pour identifier les opportunités de croissance.
+                            Laissez Coach Kita analyser les résultats de votre équipe pour identifier les opportunités de croissance.
                          </p>
                          <button 
                            onClick={handleGetAIAdvice}
@@ -319,14 +321,6 @@ const PilotagePerformance: React.FC = () => {
                          </button>
                       </div>
                     )}
-
-                    <div className="pt-8 border-t border-white/5">
-                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">CA Salon (Mois en cours)</p>
-                       <div className="flex justify-between text-xs font-bold mb-2">
-                          <span className="text-slate-400 italic">Total Net</span>
-                          <span className="text-white">{transactions.reduce((acc, t) => acc + (t.type === 'INCOME' ? t.amount : -t.amount), 0).toLocaleString()} F</span>
-                       </div>
-                    </div>
                  </div>
               </div>
 
@@ -334,9 +328,9 @@ const PilotagePerformance: React.FC = () => {
                  <Share2 className="w-8 h-8 text-slate-500 mx-auto mb-2" />
                  <h4 className="text-sm font-bold text-white uppercase tracking-widest">Marketing WhatsApp</h4>
                  <p className="text-[11px] text-slate-500 font-medium italic leading-relaxed px-4">
-                    Utilisez vos données clients pour envoyer des promotions personnalisées et doubler la fréquence des visites.
+                    Utilisez vos données clients pour envoyer des promotions personnalisées.
                  </p>
-                 <button className="text-[10px] font-black uppercase text-brand-500 tracking-[0.2em] hover:text-white transition-colors">Configurer mes campagnes</button>
+                 <button className="text-[10px] font-black uppercase text-brand-500 tracking-[0.2em] hover:text-white transition-colors">Lancer une campagne</button>
               </div>
            </div>
         </div>

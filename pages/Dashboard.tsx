@@ -30,7 +30,9 @@ import {
   Handshake,
   Loader2,
   TrendingUp,
-  Lock
+  Lock,
+  Crown,
+  Gem
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -104,6 +106,8 @@ const Dashboard: React.FC = () => {
 
   const progress = Math.round(((user.purchasedModuleIds?.filter(id => (user.progress?.[id] || 0) >= 80).length || 0) / (user.purchasedModuleIds?.length || 1)) * 100);
 
+  const hasAllModules = purchasedModules.length === TRAINING_CATALOG.length;
+
   return (
     <div className="min-h-screen bg-slate-50">
       
@@ -150,19 +154,51 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-16 relative z-20">
+      <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-12 relative z-20">
         
+        {/* SECTION UPGRADES STRATÉGIQUES */}
+        <div className="grid md:grid-cols-2 gap-6 -mt-32">
+           {/* Option Upgrade Elite (si pas tous les modules) */}
+           {!hasAllModules && (
+             <button onClick={() => navigate('/results')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
+                <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
+                <div>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre de Saison</p>
+                   <h3 className="text-xl font-bold text-slate-900 uppercase">Passer à l'Elite <span className="text-amber-500 font-black ml-2">(10k)</span></h3>
+                   <p className="text-xs text-slate-500 font-medium mt-1">Débloquez les {TRAINING_CATALOG.length - purchasedModules.length} modules restants.</p>
+                </div>
+             </button>
+           )}
+
+           {/* Option Upgrade Performance+ (si pas performance pack) */}
+           {!user.hasPerformancePack && (
+             <button onClick={() => navigate('/results')} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
+                <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
+                <div>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
+                   <h3 className="text-xl font-bold text-slate-900 uppercase">
+                     {hasAllModules ? 'Activer Performance+' : 'Elite Performance+'} 
+                     <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5k' : '15k'})</span>
+                   </h3>
+                   <p className="text-xs text-slate-500 font-medium mt-1">
+                     {hasAllModules ? 'Logiciel de staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
+                   </p>
+                </div>
+             </button>
+           )}
+        </div>
+
         {/* PACK PERFORMANCE & DISCIPLINE */}
         <div className="grid lg:grid-cols-12 gap-10 items-stretch">
            
-           {/* PACK PERFORMANCE (NOUVEAU) */}
+           {/* PACK PERFORMANCE (Cockpit) */}
            <div className="lg:col-span-5 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl border border-white/5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
                  <TrendingUp className="w-32 h-32 text-brand-500" />
               </div>
               <div className="relative z-10 h-full flex flex-col">
-                 <h2 className="text-brand-400 font-black text-[11px] uppercase tracking-[0.3em] mb-4">Module Expert</h2>
-                 <h3 className="text-2xl font-serif font-bold text-white mb-6">Pilotage Expert & Staff</h3>
+                 <h2 className="text-brand-400 font-black text-[11px] uppercase tracking-[0.3em] mb-4">Pilotage Expert</h2>
+                 <h3 className="text-2xl font-serif font-bold text-white mb-6">Staff & Performance</h3>
                  <p className="text-slate-400 text-sm leading-relaxed mb-10 flex-grow">
                    Gérez vos collaborateurs, leurs commissions et votre base clients VIP pour multiplier votre CA par 2.
                  </p>
@@ -172,7 +208,7 @@ const Dashboard: React.FC = () => {
                     </button>
                  ) : (
                     <button onClick={() => navigate('/results')} className="w-full bg-white/10 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-3">
-                       <Lock className="w-4 h-4 text-amber-500" /> Débloquer le Pack Expert
+                       <Lock className="w-4 h-4 text-amber-500" /> Débloquer les outils
                     </button>
                  )}
               </div>
