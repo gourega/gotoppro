@@ -13,16 +13,12 @@ import Vision from './pages/Vision';
 import Benefits from './pages/Benefits';
 import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
+import Caisse from './pages/Caisse';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  adminOnly?: boolean;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -58,6 +54,12 @@ const AppContent: React.FC = () => {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/caisse" element={
+            <ProtectedRoute>
+              <Caisse />
             </ProtectedRoute>
           } />
           

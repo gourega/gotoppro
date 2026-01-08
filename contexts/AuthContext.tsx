@@ -46,8 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       setLoading(true);
-      
-      // 1. Check Supabase Session (for Admins)
       if (supabase) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -56,35 +54,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       }
-
-      // 2. Check Manual Session (for Clients)
       const savedPhone = localStorage.getItem('gotop_manual_phone');
       if (savedPhone) {
         const profile = await getProfileByPhone(savedPhone);
-        if (profile && profile.isActive) {
-          setUser(profile);
-        } else {
-          localStorage.removeItem('gotop_manual_phone');
-        }
+        if (profile && profile.isActive) setUser(profile);
+        else localStorage.removeItem('gotop_manual_phone');
       }
-      
       setLoading(false);
     };
-
     initAuth();
-
-    // Listener for Supabase Auth changes
-    const { data: { subscription } } = supabase?.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-        handleUserSetup(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        if (!localStorage.getItem('gotop_manual_phone')) {
-          setUser(null);
-        }
-      }
-    }) || { data: { subscription: { unsubscribe: () => {} } } };
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const handleUserSetup = async (authUser: any) => {
@@ -102,33 +80,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastName: 'Kita',
         establishmentName: "Go'Top Pro HQ",
         photoURL: COACH_KITA_AVATAR,
-        bio: "Mentor d’élite avec 25 ans d'expertise terrain en Afrique de l’Ouest, j’ai consacré ma vie à l’émancipation des professionnels de la beauté. Héritier direct de l’aventure APB lancée en 2014, je fusionne aujourd'hui l'exigence des traditions d'excellence avec la puissance de l'IA. Ma mission est claire : transformer votre talent brut en un empire structuré, rentable et prestigieux.",
         role: 'SUPER_ADMIN',
         isActive: true,
         isAdmin: true,
-        badges: BADGES.map(b => b.id), // Tous les trophées activés pour le Super Admin
+        isKitaPremium: true,
+        kitaPremiumUntil: '2099-01-01', // Super Admin toujours Premium
+        badges: BADGES.map(b => b.id),
         purchasedModuleIds: [],
         pendingModuleIds: [],
         actionPlan: [],
         createdAt: new Date().toISOString()
       };
       setUser(adminProfile);
-      
-      getUserProfile(uid).then(dbProfile => {
-        if (!dbProfile) saveUserProfile(adminProfile);
-        else {
-          // On s'assure que même si chargé de la DB, le Super Admin garde ses badges et sa bio par défaut
-          setUser({
-            ...dbProfile,
-            badges: BADGES.map(b => b.id),
-            role: 'SUPER_ADMIN',
-            isAdmin: true
-          });
-        }
-      });
       return;
     }
-
     const profile = await getUserProfile(uid);
     if (profile) setUser(profile);
   };
@@ -139,11 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, refreshProfile, loginManually, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading, refreshProfile, loginManually, logout }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);
