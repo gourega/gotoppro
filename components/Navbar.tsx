@@ -42,13 +42,21 @@ const Navbar: React.FC = () => {
             <NavLink to="/quiz" label="Diagnostic" active={location.pathname === '/quiz' || location.pathname === '/results'} />
             
             {user ? (
-              <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-100">
-                <Link to="/caisse" className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/caisse' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} title="Ma Caisse">
-                  <Wallet className="w-5 h-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">Ma Caisse</span>
+              <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-100">
+                {/* BOUTON MA CAISSE MIS EN AVANT */}
+                <Link 
+                  to="/caisse" 
+                  className={`flex items-center gap-2 transition-all px-4 py-2.5 rounded-xl border-2 ${location.pathname === '/caisse' ? 'bg-brand-600 text-white border-brand-600 shadow-lg shadow-brand-500/20' : 'bg-brand-50 text-brand-600 border-brand-100 hover:bg-brand-100'}`}
+                >
+                  <Wallet className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Ma Caisse</span>
                 </Link>
                 
-                <Link to="/dashboard" className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} title="Mon Espace">
+                <Link 
+                  to="/dashboard" 
+                  className={`flex items-center gap-2 transition-all p-2.5 rounded-xl ${location.pathname === '/dashboard' ? 'text-brand-600 bg-brand-50 shadow-inner' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`} 
+                  title="Tableau de bord"
+                >
                   <LayoutDashboard className="w-5 h-5" />
                 </Link>
 
@@ -56,8 +64,8 @@ const Navbar: React.FC = () => {
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="P" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="bg-brand-100 w-full h-full flex items-center justify-center">
-                      <span className="text-brand-700 font-black text-xs">{user.firstName?.[0] || 'U'}</span>
+                    <div className="bg-brand-100 w-full h-full flex items-center justify-center text-brand-700 font-black text-xs">
+                      {user.firstName?.[0] || 'U'}
                     </div>
                   )}
                 </Link>
@@ -83,7 +91,7 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center sm:hidden gap-2">
             {user && (
-              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-brand-600 bg-brand-50 ring-1 ring-brand-100' : 'text-slate-400 bg-slate-50'}`}>
+              <Link to="/caisse" className={`p-2 rounded-xl transition-all ${location.pathname === '/caisse' ? 'text-white bg-brand-600 shadow-lg' : 'text-brand-600 bg-brand-50'}`}>
                 <Wallet className="w-5 h-5" />
               </Link>
             )}
@@ -98,31 +106,28 @@ const Navbar: React.FC = () => {
 
       {menuOpen && (
         <div className="sm:hidden bg-white border-t border-slate-100 p-6 space-y-4 animate-in slide-in-from-top duration-300">
-          <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Accueil</Link>
-          <Link to="/vision" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/vision' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Notre Vision</Link>
-          <Link to="/avantages" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/avantages' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Avantages</Link>
-          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/audit-miroir' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>Miroir du Succès <Sparkles className="w-4 h-4" /></Link>
-          <Link to="/quiz" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/quiz' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Diagnostic</Link>
+          {user && (
+            <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-black p-4 rounded-2xl flex items-center gap-3 border-2 ${location.pathname === '/caisse' ? 'bg-brand-600 text-white border-brand-600 shadow-lg' : 'bg-brand-50 text-brand-600 border-brand-100'}`}>
+              <Wallet className="w-5 h-5" /> MA CAISSE KITA
+            </Link>
+          )}
+          
+          <Link to="/" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/' ? 'bg-slate-50 text-brand-600' : 'text-slate-700'}`}>Accueil</Link>
+          <Link to="/vision" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Vision</Link>
+          <Link to="/avantages" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Avantages</Link>
+          <Link to="/audit-miroir" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-brand-600 flex items-center gap-2">Miroir du Succès <Sparkles className="w-4 h-4" /></Link>
           
           {user && (
             <>
               <div className="h-px bg-slate-100 my-2"></div>
-              <Link to="/caisse" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-3 ${location.pathname === '/caisse' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>
-                <Wallet className="w-5 h-5" /> Ma Caisse KITA
-              </Link>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/dashboard' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Espace</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/profile' ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}>Mon Profil</Link>
-              
-              {user.isAdmin && (
-                <Link to="/admin" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl flex items-center gap-2 ${location.pathname === '/admin' ? 'bg-brand-50 text-brand-600' : 'text-brand-600 hover:bg-slate-50'}`}>
-                  Administration <ShieldCheck className="w-4 h-4" />
-                </Link>
-              )}
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className={`block font-bold p-4 rounded-2xl ${location.pathname === '/dashboard' ? 'bg-slate-50 text-brand-600' : 'text-slate-700'}`}>Mon Espace</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-slate-700">Mon Profil</Link>
+              {user.isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block font-bold p-4 text-brand-600">Administration</Link>}
             </>
           )}
           
           {!user ? (
-            <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest">Connexion</Link>
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-brand-600 text-white p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest shadow-xl">Connexion</Link>
           ) : (
             <button onClick={handleLogout} className="w-full text-rose-500 font-black uppercase text-[10px] tracking-widest p-4 text-left border-t border-slate-100">Déconnexion</button>
           )}
