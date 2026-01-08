@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,14 +34,18 @@ import {
   Calendar,
   Tag,
   ArrowRight,
-  PackageSearch
+  PackageSearch,
+  Filter
 } from 'lucide-react';
+
+type Timeframe = 'day' | 'week' | 'month' | 'year';
 
 const Caisse: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState<'daily' | 'debts' | 'stock'>('daily');
+  const [timeframe, setTimeframe] = useState<Timeframe>('day');
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   const [debts, setDebts] = useState<KitaDebt[]>([]);
   const [products, setProducts] = useState<KitaProduct[]>([]);
@@ -70,7 +75,6 @@ const Caisse: React.FC = () => {
     setLoading(true);
     
     try {
-      // Offline-first: charger local d'abord
       const localTrans = localStorage.getItem(`kita_trans_${user.uid}`);
       if (localTrans) setTransactions(JSON.parse(localTrans));
 
@@ -83,8 +87,6 @@ const Caisse: React.FC = () => {
         setTransactions(cloudTrans);
         setDebts(cloudDebts);
         setProducts(cloudProducts);
-        
-        // Mettre à jour le cache local
         localStorage.setItem(`kita_trans_${user.uid}`, JSON.stringify(cloudTrans));
       }
     } catch (err) {
@@ -147,13 +149,48 @@ const Caisse: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const today = new Date().toDateString();
-    const todayTrans = transactions.filter(t => new Date(t.date).toDateString() === today);
-    const income = todayTrans.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-    const expense = todayTrans.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
+    const now = new Date();
+    
+    const filtered = transactions.filter(t => {
+      const tDate = new Date(t.date);
+      
+      if (timeframe === 'day') {
+        return tDate.toDateString() === now.toDateString();
+      }
+      
+      if (timeframe === 'week') {
+        // Calculer le début de la semaine (Lundi)
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay() || 7;
+        if (day !== 1) startOfWeek.setHours(-24 * (day - 1));
+        startOfWeek.setHours(0, 0, 0, 0);
+        return tDate >= startOfWeek;
+      }
+      
+      if (timeframe === 'month') {
+        return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
+      }
+      
+      if (timeframe === 'year') {
+        return tDate.getFullYear() === now.getFullYear();
+      }
+      
+      return false;
+    });
+
+    const income = filtered.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
+    const expense = filtered.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
     const balance = income - expense;
+    
     return { income, expense, balance };
-  }, [transactions]);
+  }, [transactions, timeframe]);
+
+  const timeframeLabels = {
+    day: "aujourd'hui",
+    week: "cette semaine",
+    month: "ce mois",
+    year: "cette année"
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -198,14 +235,34 @@ const Caisse: React.FC = () => {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 -mt-16">
-        {/* Résumé du jour */}
+        
+        {/* Filtre temporel */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-white/10 backdrop-blur-md p-1 rounded-2xl border border-white/20 flex gap-1 relative z-20">
+            {(['day', 'week', 'month', 'year'] as Timeframe[]).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  timeframe === tf 
+                    ? 'bg-white text-brand-900 shadow-lg' 
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {tf === 'day' ? 'Jour' : tf === 'week' ? 'Semaine' : tf === 'month' ? 'Mois' : 'Année'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Résumé dynamique */}
         <div className="bg-white rounded-[3rem] shadow-2xl p-10 grid grid-cols-2 md:grid-cols-3 gap-8 border border-slate-100 relative z-20">
           <div className="space-y-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recettes Jour</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recettes ({timeframeLabels[timeframe]})</p>
             <p className="text-3xl font-black text-emerald-600">+{stats.income.toLocaleString()} <span className="text-xs">F</span></p>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dépenses Jour</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dépenses ({timeframeLabels[timeframe]})</p>
             <p className="text-3xl font-black text-rose-600">-{stats.expense.toLocaleString()} <span className="text-xs">F</span></p>
           </div>
           <div className="col-span-2 md:col-span-1 p-6 bg-slate-900 rounded-[2rem] text-white space-y-1 flex flex-col justify-center shadow-xl">
@@ -244,7 +301,9 @@ const Caisse: React.FC = () => {
                              <p className="font-bold text-slate-900 text-lg leading-none">{t.label}</p>
                              <span className="text-[8px] font-black uppercase text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{t.category}</span>
                           </div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(t.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(t.date).toLocaleDateString('fr-FR')} • {new Date(t.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          </div>
                        </div>
                     </div>
                     <div className="flex items-center gap-6">
@@ -361,7 +420,7 @@ const Caisse: React.FC = () => {
 
               <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
                  <button onClick={() => setType('INCOME')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${type === 'INCOME' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400'}`}>+ Recette</button>
-                 <button onClick={() => setType('EXPENSE')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${type === 'EXPENSE' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400'}`}>- Dépense</button>
+                 <button onClick={() => setType('EXPENSE')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${type === 'EXPENSE' ? 'bg-rose-50 text-white shadow-lg' : 'text-slate-400'}`}>- Dépense</button>
               </div>
 
               <form onSubmit={handleAddTransaction} className="space-y-6">
