@@ -9,6 +9,37 @@ export interface UserActionCommitment {
   isCompleted: boolean;
 }
 
+// Structures pour KITA Comptabilité
+export interface KitaTransaction {
+  id: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  label: string;
+  category: string;
+  paymentMethod: string;
+  date: string;
+  clientId?: string;
+  productId?: string;
+}
+
+export interface KitaDebt {
+  id: string;
+  personName: string;
+  amount: number;
+  type: 'CREDIT' | 'DEBT'; // CREDIT = on me doit, DEBT = je dois
+  dueDate?: string;
+  isPaid: boolean;
+  createdAt: string;
+}
+
+export interface KitaProduct {
+  id: string;
+  name: string;
+  quantity: number;
+  purchasePrice: number;
+  alertThreshold: number;
+}
+
 export interface UserProfile {
   uid: string;
   phoneNumber: string;
@@ -23,14 +54,19 @@ export interface UserProfile {
   role: UserRole;
   isActive: boolean;
   isAdmin: boolean;
+  
+  // Statut KITA (Indispensable pour corriger les erreurs de Dashboard/Caisse/Profile)
+  isKitaPremium: boolean;
+  kitaPremiumUntil?: string; // Date ISO
+  
   badges: string[];
   purchasedModuleIds: string[];
   pendingModuleIds: string[];
   actionPlan: UserActionCommitment[];
   progress?: { [moduleId: string]: number };
   attempts?: { [moduleId: string]: number };
-  referredBy?: string; // Téléphone ou UID du parrain
-  referralCount?: number; // Nombre de personnes parrainées
+  referredBy?: string;
+  referralCount?: number;
   createdAt: string;
 }
 
