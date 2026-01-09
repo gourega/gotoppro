@@ -104,20 +104,25 @@ const Dashboard: React.FC = () => {
 
   if (!user) return null;
 
-  const progress = Math.round(((user.purchasedModuleIds?.filter(id => (user.progress?.[id] || 0) >= 80).length || 0) / (user.purchasedModuleIds?.length || 1)) * 100);
+  const progress = Math.round(((user.purchasedModuleIds?.filter(id => (user.progress?.[id] || 0) >= 80).length || 0) / (TRAINING_CATALOG.length || 1)) * 100);
+  const hasAllModules = purchasedModules.length >= 16;
+  const hasPerformance = user.hasPerformancePack;
 
-  const hasAllModules = purchasedModules.length === TRAINING_CATALOG.length;
+  // Calcul du cercle de progression (Graphique SVG)
+  const radius = 35;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 w-full">
       
       {/* BANDEAU KITA */}
-      <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400">
+      <div className="bg-emerald-600 text-white px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-emerald-400 w-full">
          <div className="flex items-center gap-4">
             <div className="bg-white p-1 rounded-xl shadow-inner">
                <img src={KITA_LOGO} alt="KITA Seal" className="w-8 h-8 object-contain" />
             </div>
-            <h3 className="text-sm font-bold">Pilotez votre salon avec le standard d'excellence KITA.</h3>
+            <h3 className="text-sm font-bold tracking-tight">Standard d'excellence KITA activé.</h3>
          </div>
          <div className="flex gap-3">
             <button onClick={() => navigate('/caisse')} className="bg-amber-400 text-brand-900 px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-2">
@@ -129,7 +134,7 @@ const Dashboard: React.FC = () => {
          </div>
       </div>
 
-      <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden">
+      <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden w-full">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
@@ -137,51 +142,66 @@ const Dashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">
               Bonjour, <span className="text-brand-500 italic">{user.firstName}</span>
             </h1>
-            <p className="text-slate-400 text-lg font-medium max-w-xl italic opacity-80">
+            <p className="text-slate-400 text-lg font-medium max-w-xl italic opacity-80 leading-relaxed">
               « Votre succès n'est pas une chance, c'est une discipline. »
             </p>
           </div>
           
-          <div className="bg-white/5 backdrop-blur-3xl p-3 rounded-[2.5rem] border border-white/10 flex items-center gap-4 shadow-2xl mb-4">
-            <div className="bg-white p-6 rounded-[2rem] text-center min-w-[120px]">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Maîtrise</p>
-              <p className="text-3xl font-black text-brand-900">{progress}%</p>
+          {/* GRAPHIQUE DE MAITRISE (Gauge Circulaire) */}
+          <div className="bg-white/5 backdrop-blur-3xl p-4 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl mb-4 group hover:bg-white/10 transition-all duration-500">
+            <div className="relative h-28 w-28 flex items-center justify-center shrink-0">
+               <svg className="w-full h-full -rotate-90 overflow-visible">
+                  <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" className="text-white/5" />
+                  <circle 
+                    cx="56" cy="56" r={radius} 
+                    fill="transparent" stroke="currentColor" strokeWidth="8" 
+                    strokeDasharray={circumference} 
+                    strokeDashoffset={offset} 
+                    strokeLinecap="round"
+                    className="text-brand-500 transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]"
+                  />
+               </svg>
+               <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-black text-white leading-none">{progress}%</span>
+                  <span className="text-[7px] font-black text-brand-400 uppercase tracking-widest mt-1">Maîtrise</span>
+               </div>
             </div>
-            <button onClick={() => navigate('/results')} className="bg-amber-400 text-brand-900 px-8 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-300 transition-all shadow-xl">
-              BOUTIQUE <ArrowRight className="ml-2 inline-block w-3 h-3" />
-            </button>
+            <div className="pr-4">
+              <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Masterclass d'élite</p>
+              <button onClick={() => navigate('/results')} className="bg-amber-400 text-brand-900 px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-300 transition-all shadow-xl active:scale-95">
+                BOUTIQUE <ArrowRight className="ml-2 inline-block w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-20 pb-32 space-y-12 relative z-20">
+      <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
         {/* SECTION UPGRADES STRATÉGIQUES */}
         <div className="grid md:grid-cols-2 gap-6 -mt-32">
-           {/* Option Upgrade Elite (si pas tous les modules) */}
            {!hasAllModules && (
              <button onClick={() => navigate('/results')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
                 <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
                 <div>
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre de Saison</p>
-                   <h3 className="text-xl font-bold text-slate-900 uppercase">Passer à l'Elite <span className="text-amber-500 font-black ml-2">(10k)</span></h3>
-                   <p className="text-xs text-slate-500 font-medium mt-1">Débloquez les {TRAINING_CATALOG.length - purchasedModules.length} modules restants.</p>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre Spéciale</p>
+                   <h3 className="text-xl font-bold text-slate-900 uppercase">Passer à l'Elite <span className="text-amber-500 font-black ml-2">(10 000 F)</span></h3>
+                   <p className="text-xs text-slate-500 font-medium mt-1">Débloquez les 16 modules experts immédiatement.</p>
                 </div>
              </button>
            )}
 
-           {/* Option Upgrade Performance+ (si pas performance pack) */}
-           {!user.hasPerformancePack && (
+           {!hasPerformance && (
              <button onClick={() => navigate('/results')} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
                 <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
                 <div>
                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
                    <h3 className="text-xl font-bold text-slate-900 uppercase">
                      {hasAllModules ? 'Activer Performance+' : 'Elite Performance+'} 
-                     <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5k' : '15k'})</span>
+                     <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5 000 F' : '15 000 F'})</span>
                    </h3>
                    <p className="text-xs text-slate-500 font-medium mt-1">
-                     {hasAllModules ? 'Logiciel de staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
+                     {hasAllModules ? 'Pilotage staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
                    </p>
                 </div>
              </button>
@@ -189,9 +209,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* PACK PERFORMANCE & DISCIPLINE */}
-        <div className="grid lg:grid-cols-12 gap-10 items-stretch">
-           
-           {/* PACK PERFORMANCE (Cockpit) */}
+        <div className="grid lg:grid-cols-12 gap-10 items-stretch mt-20">
            <div className="lg:col-span-5 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl border border-white/5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
                  <TrendingUp className="w-32 h-32 text-brand-500" />
@@ -214,7 +232,6 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
 
-           {/* DISCIPLINE DU JOUR */}
            <div className="lg:col-span-7 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col justify-between hover:shadow-brand-900/5 transition-all duration-500">
               <div className="flex justify-between items-center mb-8">
                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest">
@@ -243,18 +260,24 @@ const Dashboard: React.FC = () => {
                    </button>
                  ))}
               </div>
-              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                 <div 
-                   className="h-full bg-emerald-500 transition-all duration-500" 
-                   style={{ width: `${(completedTasksCount / 3) * 100}%` }}
-                 ></div>
+              <div className="relative pt-2">
+                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]" 
+                      style={{ width: `${(completedTasksCount / 3) * 100}%` }}
+                    ></div>
+                 </div>
+                 <div className="flex justify-between mt-2">
+                    <span className="text-[8px] font-black text-slate-300 uppercase">Début</span>
+                    <span className="text-[8px] font-black text-emerald-500 uppercase">Excellence</span>
+                 </div>
               </div>
            </div>
         </div>
 
         {/* SECTION MON RÉSEAU D'ÉLITE */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500">
-           <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500 w-full">
+           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Users className="w-48 h-48" />
            </div>
            
@@ -270,7 +293,7 @@ const Dashboard: React.FC = () => {
                     <Share2 className="w-4 h-4" /> Recruter
                  </button>
                  <button onClick={copyRefLink} className="bg-slate-100 text-slate-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 flex items-center gap-3 transition-all">
-                    {copying ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copying ? 'Copié' : 'Lien'}
+                    {copying ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copying ? 'Lien' : 'Lien'}
                  </button>
               </div>
            </div>
@@ -308,12 +331,12 @@ const Dashboard: React.FC = () => {
         </section>
 
         {/* SECTION MES FORMATIONS */}
-        <section className="space-y-8">
-          <div className="flex justify-between items-end">
+        <section className="space-y-8 w-full">
+          <div className="flex justify-between items-end px-4">
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
               <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
             </h2>
-            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline">Accéder au catalogue complet</Link>
+            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Catalogue complet</Link>
           </div>
 
           {purchasedModules.length > 0 ? (
@@ -345,27 +368,27 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-slate-200 shadow-xl">
                <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Votre empire attend son premier pilier.</h3>
-               <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">Lancez votre diagnostic ou choisissez un module dans la boutique pour commencer votre ascension.</p>
-               <button onClick={() => navigate('/results')} className="bg-brand-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl">Explorer la boutique</button>
+               <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto italic">Lancez votre diagnostic ou choisissez un module dans la boutique pour commencer votre ascension.</p>
+               <button onClick={() => navigate('/results')} className="bg-brand-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">Explorer la boutique</button>
             </div>
           )}
         </section>
 
         {/* BLOC CAISSE KITA */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group">
+        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
                  <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
                     <img src={KITA_LOGO} alt="KITA" className="h-10 w-10 object-contain" />
                     <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">GESTION KITA</h2>
                  </div>
-                 <p className="text-slate-500 font-medium max-w-md m-0">Le standard d'excellence pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
+                 <p className="text-slate-500 font-medium max-w-md m-0 leading-relaxed">Le standard d'excellence pour enregistrer vos ventes et sécuriser votre trésorerie en temps réel.</p>
                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                    <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3">
+                    <button onClick={() => navigate('/caisse')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-emerald-700 transition-all">
                        <Plus className="w-4 h-4" /> Nouvelle vente
                     </button>
                     <button onClick={() => navigate('/caisse')} className="bg-slate-50 text-slate-400 border border-slate-100 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 flex items-center gap-3 transition-all">
-                       <History className="w-4 h-4" /> Consulter le journal
+                       <History className="w-4 h-4" /> Journal
                     </button>
                  </div>
               </div>

@@ -5,14 +5,12 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden;
+    @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden w-full;
     font-family: 'Inter', sans-serif;
   }
   
   main {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    @apply w-full flex flex-col opacity-100 visible;
   }
 
   .animate-in {
