@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,8 +9,9 @@ import {
   updateQuizAttempts,
   saveUserProfile
 } from '../services/supabase';
-import { TRAINING_CATALOG } from '../constants';
+import { TRAINING_CATALOG, BADGES } from '../constants';
 import { UserProfile } from '../types';
+// Fixed: Added Trophy to the imports
 import { 
   Loader2, 
   RefreshCcw, 
@@ -35,7 +37,10 @@ import {
   Award,
   Crown,
   Handshake,
-  CheckCircle
+  CheckCircle,
+  Medal,
+  Star,
+  Trophy
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -314,10 +319,46 @@ const AdminDashboard: React.FC = () => {
               <div className="p-10 overflow-y-auto flex-grow custom-scrollbar">
                  <div className="grid lg:grid-cols-12 gap-10">
                     
-                    {/* Colonne Gauche : Récompenses */}
+                    {/* Colonne Gauche : Récompenses & Palmarès */}
                     <div className="lg:col-span-8 space-y-12">
                        
-                       {/* Section Offrir des Cadeaux (Unpurchased Modules) */}
+                       {/* SECTION RECOMPENSES & PALMARES */}
+                       <div className="bg-white/5 rounded-[2.5rem] p-10 border border-white/10">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
+                                <Trophy className="w-4 h-4" /> Palmarès & Réussites
+                             </h3>
+                             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[9px] font-black uppercase tracking-widest">
+                                <Award className="w-3 h-3" /> Certificats Validés
+                             </div>
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-4">
+                             {TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).length > 0 ? (
+                               TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).map(mod => (
+                                 <div key={mod.id} className="p-6 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex items-center gap-4 group">
+                                    <div className="h-12 w-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                                       <Medal className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                       <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-0.5">{mod.topic}</p>
+                                       <p className="text-sm font-bold text-white leading-tight">{mod.title}</p>
+                                       <div className="flex items-center gap-2 mt-1">
+                                          <div className="h-1 w-1 bg-emerald-500 rounded-full"></div>
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Score : {selectedUser.progress?.[mod.id]}%</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                               ))
+                             ) : (
+                               <div className="md:col-span-2 py-10 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                  <p className="text-slate-500 text-xs italic">Aucune certification validée (score ≥ 80%) pour le moment.</p>
+                               </div>
+                             )}
+                          </div>
+                       </div>
+
+                       {/* Section Offrir des Cadeaux */}
                        <section>
                           <div className="flex items-center justify-between mb-8">
                              <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] flex items-center gap-3">
@@ -344,7 +385,7 @@ const AdminDashboard: React.FC = () => {
                           </div>
                        </section>
 
-                       {/* Section Recharge de Jetons (Purchased Modules) */}
+                       {/* Section Recharge de Jetons */}
                        <section className="pt-10 border-t border-white/5">
                           <div className="flex items-center justify-between mb-8">
                              <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
@@ -387,8 +428,27 @@ const AdminDashboard: React.FC = () => {
                        </section>
                     </div>
 
-                    {/* Colonne Droite : Infos & Parrainage */}
+                    {/* Colonne Droite : Badges & Parrainage */}
                     <div className="lg:col-span-4 space-y-6">
+                       
+                       {/* BADGES SECTION */}
+                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><Star className="w-3 h-3 text-amber-500" /> Trophées Obtenus</p>
+                          <div className="grid grid-cols-2 gap-4">
+                             {BADGES.map(badge => {
+                               const hasBadge = selectedUser.badges?.includes(badge.id);
+                               return (
+                                 <div key={badge.id} className={`p-4 rounded-2xl border-2 flex flex-col items-center text-center transition-all ${hasBadge ? 'bg-white/10 border-brand-500 shadow-lg scale-100' : 'bg-white/5 border-transparent opacity-20 grayscale scale-90'}`}>
+                                    <span className="text-3xl mb-2">{badge.icon}</span>
+                                    <p className="text-[8px] font-black uppercase tracking-tight text-white">{badge.name}</p>
+                                    {hasBadge && <CheckCircle className="w-3 h-3 text-emerald-500 mt-2" />}
+                                 </div>
+                               )
+                             })}
+                          </div>
+                       </div>
+
+                       {/* SCORE AMBASSADEUR */}
                        <div className="bg-gradient-to-br from-amber-500/10 to-transparent p-8 rounded-[2.5rem] border border-amber-500/20">
                           <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Handshake className="w-3 h-3"/> Score Ambassadeur</p>
                           <div className="flex items-end gap-3 mb-2">
@@ -400,17 +460,18 @@ const AdminDashboard: React.FC = () => {
                           )}
                        </div>
 
+                       {/* CONTACT INFO QUICK VIEW */}
                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6">Badges & Rang</p>
-                          <div className="flex flex-wrap gap-3">
-                             {selectedUser.badges?.map(b => (
-                               <div key={b} className="h-12 w-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 text-2xl shadow-inner">
-                                  {b === 'first_module' ? '🚀' : b === 'dedicated' ? '🏆' : '✨'}
-                               </div>
-                             ))}
-                             {(!selectedUser.badges || selectedUser.badges.length === 0) && (
-                               <p className="text-[10px] text-slate-600 italic">Aucun badge obtenu.</p>
-                             )}
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6">Informations Client</p>
+                          <div className="space-y-4">
+                             <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-brand-500"><ShieldCheck className="w-4 h-4"/></div>
+                                <div><p className="text-[9px] font-black text-slate-500 uppercase">Statut</p><p className="text-xs font-bold text-white">{selectedUser.isActive ? 'Actif' : 'Suspendu'}</p></div>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-brand-500"><Medal className="w-4 h-4"/></div>
+                                <div><p className="text-[9px] font-black text-slate-500 uppercase">Maitrise Globale</p><p className="text-xs font-bold text-white">{Math.round(((selectedUser.purchasedModuleIds?.filter(id => (selectedUser.progress?.[id] || 0) >= 80).length || 0) / 16) * 100)}%</p></div>
+                             </div>
                           </div>
                        </div>
                     </div>

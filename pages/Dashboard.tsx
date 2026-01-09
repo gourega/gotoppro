@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getReferrals } from '../services/supabase';
 import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, KITA_LOGO } from '../constants';
 import { UserProfile } from '../types';
+// Fixed: Added ShieldCheck to the imports
 import { 
   CheckCircle2, 
   Zap, 
@@ -32,7 +33,8 @@ import {
   TrendingUp,
   Lock,
   Crown,
-  Gem
+  Gem,
+  ShieldCheck
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -138,75 +140,91 @@ const Dashboard: React.FC = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
-            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">Tableau de Bord Elite</p>
+            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">{user.isAdmin ? 'Console Administrative' : 'Tableau de Bord Elite'}</p>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">
               Bonjour, <span className="text-brand-500 italic">{user.firstName}</span>
             </h1>
             <p className="text-slate-400 text-lg font-medium max-w-xl italic opacity-80 leading-relaxed">
-              « Votre succès n'est pas une chance, c'est une discipline. »
+              {user.isAdmin 
+                ? "« Diriger, c'est prévoir l'excellence de demain. »" 
+                : "« Votre succès n'est pas une chance, c'est une discipline. »"}
             </p>
           </div>
           
-          {/* GRAPHIQUE DE MAITRISE (Gauge Circulaire) */}
-          <div className="bg-white/5 backdrop-blur-3xl p-4 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl mb-4 group hover:bg-white/10 transition-all duration-500">
-            <div className="relative h-28 w-28 flex items-center justify-center shrink-0">
-               <svg className="w-full h-full -rotate-90 overflow-visible">
-                  <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" className="text-white/5" />
-                  <circle 
-                    cx="56" cy="56" r={radius} 
-                    fill="transparent" stroke="currentColor" strokeWidth="8" 
-                    strokeDasharray={circumference} 
-                    strokeDashoffset={offset} 
-                    strokeLinecap="round"
-                    className="text-brand-500 transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]"
-                  />
-               </svg>
-               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-black text-white leading-none">{progress}%</span>
-                  <span className="text-[7px] font-black text-brand-400 uppercase tracking-widest mt-1">Maîtrise</span>
-               </div>
+          {/* GRAPHIQUE DE MAITRISE - Uniquement pour les gérants */}
+          {!user.isAdmin && (
+            <div className="bg-white/5 backdrop-blur-3xl p-4 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl mb-4 group hover:bg-white/10 transition-all duration-500">
+              <div className="relative h-28 w-28 flex items-center justify-center shrink-0">
+                 <svg className="w-full h-full -rotate-90 overflow-visible">
+                    <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" className="text-white/5" />
+                    <circle 
+                      cx="56" cy="56" r={radius} 
+                      fill="transparent" stroke="currentColor" strokeWidth="8" 
+                      strokeDasharray={circumference} 
+                      strokeDashoffset={offset} 
+                      strokeLinecap="round"
+                      className="text-brand-500 transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]"
+                    />
+                 </svg>
+                 <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black text-white leading-none">{progress}%</span>
+                    <span className="text-[7px] font-black text-brand-400 uppercase tracking-widest mt-1">Maîtrise</span>
+                 </div>
+              </div>
+              <div className="pr-4">
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Masterclass d'élite</p>
+                <button onClick={() => navigate('/results')} className="bg-amber-400 text-brand-900 px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-300 transition-all shadow-xl active:scale-95">
+                  BOUTIQUE <ArrowRight className="ml-2 inline-block w-3 h-3" />
+                </button>
+              </div>
             </div>
-            <div className="pr-4">
-              <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Masterclass d'élite</p>
-              <button onClick={() => navigate('/results')} className="bg-amber-400 text-brand-900 px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-300 transition-all shadow-xl active:scale-95">
-                BOUTIQUE <ArrowRight className="ml-2 inline-block w-3 h-3" />
-              </button>
-            </div>
-          </div>
+          )}
+
+          {/* Bouton Admin Direct */}
+          {user.isAdmin && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="bg-brand-500 text-white px-10 py-6 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-brand-500/20 hover:bg-brand-400 transition-all flex items-center gap-4"
+            >
+              Accéder au Pilotage Global <ShieldCheck className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
-        {/* SECTION UPGRADES STRATÉGIQUES */}
-        <div className="grid md:grid-cols-2 gap-6 -mt-32">
-           {!hasAllModules && (
-             <button onClick={() => navigate('/results')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
-                <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
-                <div>
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre Spéciale</p>
-                   <h3 className="text-xl font-bold text-slate-900 uppercase">Passer à l'Elite <span className="text-amber-500 font-black ml-2">(10 000 F)</span></h3>
-                   <p className="text-xs text-slate-500 font-medium mt-1">Débloquez les 16 modules experts immédiatement.</p>
-                </div>
-             </button>
-           )}
+        {/* SECTION UPGRADES STRATÉGIQUES - Masquée pour Admin */}
+        {!user.isAdmin && (
+          <div className="grid md:grid-cols-2 gap-6 -mt-32">
+             {!hasAllModules && (
+               <button onClick={() => navigate('/results')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
+                  <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre Spéciale</p>
+                     <h3 className="text-xl font-bold text-slate-900 uppercase">Passer à l'Elite <span className="text-amber-500 font-black ml-2">(10 000 F)</span></h3>
+                     <p className="text-xs text-slate-500 font-medium mt-1">Débloquez les 16 modules experts immédiatement.</p>
+                  </div>
+               </button>
+             )}
 
-           {!hasPerformance && (
-             <button onClick={() => navigate('/results')} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
-                <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
-                <div>
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
-                   <h3 className="text-xl font-bold text-slate-900 uppercase">
-                     {hasAllModules ? 'Activer Performance+' : 'Elite Performance+'} 
-                     <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5 000 F' : '15 000 F'})</span>
-                   </h3>
-                   <p className="text-xs text-slate-500 font-medium mt-1">
-                     {hasAllModules ? 'Pilotage staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
-                   </p>
-                </div>
-             </button>
-           )}
-        </div>
+             {!hasPerformance && (
+               <button onClick={() => navigate('/results')} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
+                  <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
+                  <div>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
+                     <h3 className="text-xl font-bold text-slate-900 uppercase">
+                       {hasAllModules ? 'Activer Performance+' : 'Elite Performance+'} 
+                       <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5 000 F' : '15 000 F'})</span>
+                     </h3>
+                     <p className="text-xs text-slate-500 font-medium mt-1">
+                       {hasAllModules ? 'Pilotage staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
+                     </p>
+                  </div>
+               </button>
+             )}
+          </div>
+        )}
 
         {/* PACK PERFORMANCE & DISCIPLINE */}
         <div className="grid lg:grid-cols-12 gap-10 items-stretch mt-20">
@@ -330,49 +348,51 @@ const Dashboard: React.FC = () => {
            )}
         </section>
 
-        {/* SECTION MES FORMATIONS */}
-        <section className="space-y-8 w-full">
-          <div className="flex justify-between items-end px-4">
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-              <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
-            </h2>
-            <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Catalogue complet</Link>
-          </div>
+        {/* SECTION MES FORMATIONS - Masquée pour Admin */}
+        {!user.isAdmin && (
+          <section className="space-y-8 w-full">
+            <div className="flex justify-between items-end px-4">
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                <BookOpen className="text-brand-500 w-6 h-6" /> Mon Parcours d'Élite
+              </h2>
+              <Link to="/results" className="text-brand-600 font-black text-[9px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Catalogue complet</Link>
+            </div>
 
-          {purchasedModules.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {purchasedModules.map(mod => {
-                const score = user.progress?.[mod.id] || 0;
-                const isCertified = score >= 80;
-                return (
-                  <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px] relative overflow-hidden">
-                    {isCertified && <div className="absolute top-4 right-4 text-emerald-500"><Award className="w-5 h-5 fill-current" /></div>}
-                    <div>
-                      <span className="text-[8px] font-black text-brand-500 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-widest">{mod.topic}</span>
-                      <h3 className="text-lg font-bold text-slate-900 mt-4 leading-tight group-hover:text-brand-600 transition-colors">{mod.title}</h3>
-                    </div>
-                    <div className="mt-6 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${isCertified ? 'bg-emerald-500' : 'bg-amber-400'}`}></div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score: {score}%</span>
+            {purchasedModules.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {purchasedModules.map(mod => {
+                  const score = user.progress?.[mod.id] || 0;
+                  const isCertified = score >= 80;
+                  return (
+                    <Link key={mod.id} to={`/module/${mod.id}`} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex flex-col justify-between min-h-[220px] relative overflow-hidden">
+                      {isCertified && <div className="absolute top-4 right-4 text-emerald-500"><Award className="w-5 h-5 fill-current" /></div>}
+                      <div>
+                        <span className="text-[8px] font-black text-brand-500 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-widest">{mod.topic}</span>
+                        <h3 className="text-lg font-bold text-slate-900 mt-4 leading-tight group-hover:text-brand-600 transition-colors">{mod.title}</h3>
                       </div>
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isCertified ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white'}`}>
-                        {isCertified ? <CheckCircle2 className="w-5 h-5" /> : <ArrowRight className="w-4 h-4" />}
+                      <div className="mt-6 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${isCertified ? 'bg-emerald-500' : 'bg-amber-400'}`}></div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score: {score}%</span>
+                        </div>
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isCertified ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white'}`}>
+                          {isCertified ? <CheckCircle2 className="w-5 h-5" /> : <ArrowRight className="w-4 h-4" />}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-slate-200 shadow-xl">
-               <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-6" />
-               <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Votre empire attend son premier pilier.</h3>
-               <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto italic">Lancez votre diagnostic ou choisissez un module dans la boutique pour commencer votre ascension.</p>
-               <button onClick={() => navigate('/results')} className="bg-brand-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">Explorer la boutique</button>
-            </div>
-          )}
-        </section>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-slate-200 shadow-xl">
+                 <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+                 <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Votre empire attend son premier pilier.</h3>
+                 <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto italic">Lancez votre diagnostic ou choisissez un module dans la boutique pour commencer votre ascension.</p>
+                 <button onClick={() => navigate('/results')} className="bg-brand-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">Explorer la boutique</button>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* BLOC CAISSE KITA */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
