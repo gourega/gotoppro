@@ -2,8 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct } from '../types';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+// Accès sécurisé aux variables d'environnement pour l'environnement Preview
+const getEnv = (key: string) => {
+  return (window as any).process?.env?.[key] || "";
+};
+
+const supabaseUrl = getEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
 export const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
@@ -123,6 +128,28 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     staffName: data.staff_name,
     commissionRate: data.commission_rate
   } as KitaTransaction;
+};
+
+export const updateKitaTransaction = async (id: string, transaction: Partial<KitaTransaction>) => {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('kita_transactions')
+    .update({ 
+      type: transaction.type,
+      amount: transaction.amount,
+      label: transaction.label,
+      category: transaction.category,
+      payment_method: transaction.paymentMethod,
+      date: transaction.date,
+      staff_name: transaction.staffName,
+      commission_rate: transaction.commissionRate
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
 };
 
 export const deleteKitaTransaction = async (id: string) => {
