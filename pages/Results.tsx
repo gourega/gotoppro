@@ -40,6 +40,10 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
 
+  // Status de possession
+  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length >= 16), [user]);
+  const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
+
   const availableCatalog = useMemo(() => {
     const purchasedIds = user?.purchasedModuleIds || [];
     return TRAINING_CATALOG.filter(m => !purchasedIds.includes(m.id));
@@ -121,14 +125,14 @@ const Results: React.FC = () => {
       try {
         if (!supabase) throw new Error("Base de données indisponible");
         
-        const isElite = activePack === 'elite' || activePack === 'elite_performance';
-        const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
+        const isEliteReq = activePack === 'elite' || activePack === 'elite_performance';
+        const isPerformanceReq = activePack === 'performance' || activePack === 'elite_performance';
         
-        let newPendingIds: string[] = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+        let newPendingIds: string[] = isEliteReq ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
         
         // On ajoute des marqueurs spéciaux pour que l'Admin voit les packs demandés
-        if (isElite) newPendingIds.push('REQUEST_ELITE');
-        if (isPerformance) newPendingIds.push('REQUEST_PERFORMANCE');
+        if (isEliteReq) newPendingIds.push('REQUEST_ELITE');
+        if (isPerformanceReq) newPendingIds.push('REQUEST_PERFORMANCE');
         
         const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
         
@@ -156,12 +160,12 @@ const Results: React.FC = () => {
       if (!supabase) throw new Error("Database error");
       const { data: existingProfile } = await supabase.from('profiles').select('*').eq('phoneNumber', formattedPhone).maybeSingle();
       
-      const isElite = activePack === 'elite' || activePack === 'elite_performance';
-      const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
+      const isEliteReq = activePack === 'elite' || activePack === 'elite_performance';
+      const isPerformanceReq = activePack === 'performance' || activePack === 'elite_performance';
       
-      let newPendingIds: string[] = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
-      if (isElite) newPendingIds.push('REQUEST_ELITE');
-      if (isPerformance) newPendingIds.push('REQUEST_PERFORMANCE');
+      let newPendingIds: string[] = isEliteReq ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+      if (isEliteReq) newPendingIds.push('REQUEST_ELITE');
+      if (isPerformanceReq) newPendingIds.push('REQUEST_PERFORMANCE');
       
       if (!existingProfile) {
         await supabase.from('profiles').insert({
@@ -217,7 +221,7 @@ const Results: React.FC = () => {
            <h1 className="text-4xl md:text-6xl font-black text-[#0f172a] tracking-tighter">Boutique de l'excellence</h1>
         </header>
 
-        {activePack === 'none' && (
+        {activePack === 'none' && !isElite && (
           <section className="mb-20 bg-[#0c4a6e] rounded-[3.5rem] p-10 md:p-16 text-white relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                <Crown className="w-64 h-64" />

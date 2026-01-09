@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getReferrals } from '../services/supabase';
-import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, KITA_LOGO } from '../constants';
+import { getReferrals, saveUserProfile } from '../services/supabase';
+import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, KITA_LOGO, COACH_KITA_AVATAR } from '../constants';
 import { UserProfile } from '../types';
 import { 
   CheckCircle2, 
@@ -33,7 +33,8 @@ import {
   Lock,
   Crown,
   Gem,
-  ShieldCheck
+  ShieldCheck,
+  Star
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -43,6 +44,29 @@ const Dashboard: React.FC = () => {
   const [filleuls, setFilleuls] = useState<UserProfile[]>([]);
   const [copying, setCopying] = useState(false);
   const [loadingFilleuls, setLoadingFilleuls] = useState(false);
+
+  // Calcul du statut Elite cumulé (Achat direct OU possession des 16 modules)
+  const isElite = useMemo(() => {
+    if (!user) return false;
+    return user.isKitaPremium || (user.purchasedModuleIds?.length >= 16);
+  }, [user]);
+
+  const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
+
+  // Synchronisation du statut Elite en base si les 16 modules sont atteints
+  useEffect(() => {
+    const syncEliteStatus = async () => {
+      if (user && user.purchasedModuleIds?.length >= 16 && !user.isKitaPremium) {
+        try {
+          await saveUserProfile({ uid: user.uid, isKitaPremium: true });
+          await refreshProfile();
+        } catch (e) {
+          console.warn("Elite sync failed", e);
+        }
+      }
+    };
+    syncEliteStatus();
+  }, [user?.purchasedModuleIds, user?.isKitaPremium]);
 
   useEffect(() => {
     if (user) {
@@ -81,9 +105,9 @@ const Dashboard: React.FC = () => {
     return TRAINING_CATALOG.filter(m => user.purchasedModuleIds.includes(m.id));
   }, [user]);
 
-  const earnedBadges = useMemo(() => {
-    if (!user) return [];
-    return BADGES.filter(b => (user.badges || []).includes(b.id));
+  const certifiedModulesCount = useMemo(() => {
+    if (!user) return 0;
+    return Object.values(user.progress || {}).filter(score => score >= 80).length;
   }, [user]);
 
   const completedTasksCount = dailyTasks.filter(t => t.completed).length;
@@ -106,9 +130,7 @@ const Dashboard: React.FC = () => {
   if (!user) return null;
 
   const progress = Math.round(((user.purchasedModuleIds?.filter(id => (user.progress?.[id] || 0) >= 80).length || 0) / (TRAINING_CATALOG.length || 1)) * 100);
-  const hasAllModules = purchasedModules.length >= 16;
-  const hasPerformance = user.hasPerformancePack;
-
+  
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
@@ -138,7 +160,14 @@ const Dashboard: React.FC = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
-            <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">{user.isAdmin ? 'Console Administrative' : 'Tableau de Bord Elite'}</p>
+            <div className="flex items-center gap-4">
+              <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">{user.isAdmin ? 'Console Administrative' : 'Tableau de Bord Elite'}</p>
+              {isElite && !user.isAdmin && (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[8px] font-black uppercase tracking-widest">
+                  <Crown className="w-3 h-3" /> Membre Elite
+                </div>
+              )}
+            </div>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">
               Bonjour, <span className="text-brand-500 italic">{user.firstName}</span>
             </h1>
@@ -190,9 +219,10 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
-        {!user.isAdmin && (
+        {/* SECTION RECLAME : Visible seulement si un pack manque */}
+        {!user.isAdmin && (!isElite || !isPerformance) && (
           <div className="grid md:grid-cols-2 gap-6 -mt-32">
-             {!hasAllModules && (
+             {!isElite && (
                <button onClick={() => navigate('/results?pack=elite')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
                   <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
                   <div>
@@ -203,17 +233,17 @@ const Dashboard: React.FC = () => {
                </button>
              )}
 
-             {!hasPerformance && (
-               <button onClick={() => navigate(`/results?pack=${hasAllModules ? 'performance' : 'elite_performance'}`)} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
+             {!isPerformance && (
+               <button onClick={() => navigate(`/results?pack=${isElite ? 'performance' : 'elite_performance'}`)} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${isElite ? 'col-span-full' : ''}`}>
                   <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
                   <div>
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
                      <h3 className="text-xl font-bold text-slate-900 uppercase">
-                       {hasAllModules ? 'Activer Performance+' : 'Elite Performance+'} 
-                       <span className="text-emerald-500 font-black ml-2">({hasAllModules ? '5 000 F' : '15 000 F'})</span>
+                       {isElite ? 'Activer Performance+' : 'Elite Performance+'} 
+                       <span className="text-emerald-500 font-black ml-2">({isElite ? '5 000 F' : '15 000 F'})</span>
                      </h3>
                      <p className="text-xs text-slate-500 font-medium mt-1">
-                       {hasAllModules ? 'Pilotage staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
+                       {isElite ? 'Pilotage staff, clients VIP et sauvegarde Cloud.' : 'Formation complète + Logiciels de pilotage.'}
                      </p>
                   </div>
                </button>
@@ -221,7 +251,7 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-12 gap-10 items-stretch mt-20">
+        <div className={`grid lg:grid-cols-12 gap-10 items-stretch ${(!user.isAdmin && isElite && isPerformance) ? 'mt-0' : 'mt-20'}`}>
            <div className="lg:col-span-5 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl border border-white/5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
                  <TrendingUp className="w-32 h-32 text-brand-500" />
@@ -286,6 +316,72 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
         </div>
+
+        {/* NOUVELLE SECTION : TABLEAU PRESTIGE (BADGES & CERTIFICATS) */}
+        {!user.isAdmin && (
+          <section className="bg-slate-950 rounded-[4rem] p-10 md:p-16 shadow-2xl relative overflow-hidden border border-white/5">
+             <div className="absolute top-0 right-0 p-16 opacity-[0.03] text-[20rem] font-serif italic pointer-events-none select-none -mr-20 -mt-20">Elite</div>
+             
+             <div className="relative z-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
+                   <div>
+                      <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
+                         <Crown className="w-4 h-4" /> Tableau de Prestige
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-serif font-bold text-white tracking-tight">Vos Honneurs & <span className="text-amber-500">Réussites</span></h2>
+                   </div>
+                   <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 text-center min-w-[200px]">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Certifications</p>
+                      <div className="flex items-baseline justify-center gap-2">
+                         <span className="text-5xl font-black text-emerald-500">{certifiedModulesCount}</span>
+                         <span className="text-sm font-bold text-slate-400">/ 16</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
+                   {BADGES.map(badge => {
+                     const isUnlocked = user.badges?.includes(badge.id);
+                     return (
+                       <div 
+                         key={badge.id} 
+                         className={`relative p-6 rounded-[2.5rem] border-2 transition-all duration-700 flex flex-col items-center text-center group ${
+                           isUnlocked 
+                             ? 'bg-gradient-to-br from-amber-500/20 to-transparent border-amber-500/50 shadow-2xl shadow-amber-500/10' 
+                             : 'bg-white/5 border-transparent opacity-30 grayscale'
+                         }`}
+                       >
+                         {isUnlocked && (
+                           <div className="absolute -top-2 -right-2 bg-amber-500 text-slate-950 p-1.5 rounded-full shadow-lg animate-bounce">
+                             <Check className="w-3 h-3 stroke-[4]" />
+                           </div>
+                         )}
+                         <span className={`text-5xl mb-4 transition-transform duration-500 ${isUnlocked ? 'group-hover:scale-125' : ''}`}>{badge.icon}</span>
+                         <p className={`text-[9px] font-black uppercase tracking-tight mb-1 ${isUnlocked ? 'text-white' : 'text-slate-500'}`}>{badge.name}</p>
+                         <p className="text-[7px] font-medium text-slate-400 leading-tight line-clamp-2">{badge.description}</p>
+                       </div>
+                     )
+                   })}
+                </div>
+
+                <div className="bg-white/[0.03] rounded-[3rem] p-10 border border-white/5 flex flex-col md:flex-row items-center gap-12">
+                   <div className="h-24 w-24 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                      <Medal className="w-12 h-12 text-emerald-500" />
+                   </div>
+                   <div className="space-y-4 flex-grow text-center md:text-left">
+                      <h4 className="text-xl font-serif font-bold text-white italic">"L'excellence est une habitude, pas un acte isolé."</h4>
+                      <p className="text-slate-400 text-sm font-medium">Vous avez déjà validé <span className="text-emerald-500 font-black">{certifiedModulesCount} piliers</span> de votre futur empire. Le certificat "Légende du Salon" vous attend au 12ème module maîtrisé.</p>
+                   </div>
+                   <button 
+                    onClick={() => navigate('/results')}
+                    className="bg-white text-slate-950 px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-400 transition-all shadow-xl"
+                   >
+                     Poursuivre ma quête
+                   </button>
+                </div>
+             </div>
+          </section>
+        )}
 
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500 w-full">
            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
