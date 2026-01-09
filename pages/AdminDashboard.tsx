@@ -11,7 +11,6 @@ import {
 } from '../services/supabase';
 import { TRAINING_CATALOG, BADGES } from '../constants';
 import { UserProfile } from '../types';
-// Fixed: Added Trophy to the imports
 import { 
   Loader2, 
   RefreshCcw, 
@@ -40,7 +39,8 @@ import {
   CheckCircle,
   Medal,
   Star,
-  Trophy
+  Trophy,
+  Gem
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -102,6 +102,32 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE') => {
+    if (!selectedUser) return;
+    setProcessingId(packType);
+    try {
+      const updates: Partial<UserProfile> = { uid: selectedUser.uid, isActive: true };
+      
+      if (packType === 'ELITE') {
+        updates.isKitaPremium = true;
+        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...TRAINING_CATALOG.map(m => m.id)])];
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_ELITE');
+      } else if (packType === 'PERFORMANCE') {
+        updates.hasPerformancePack = true;
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_PERFORMANCE');
+      }
+
+      await saveUserProfile(updates as any);
+      showNotification(`Pack ${packType} activé !`);
+      await fetchUsers();
+      setSelectedUser(prev => prev ? { ...prev, ...updates } as any : null);
+    } catch (err) {
+      showNotification("Erreur activation", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleDelete = async (uid: string) => {
     if (!window.confirm("Suppression définitive. Confirmer ?")) return;
     setProcessingId(uid);
@@ -154,13 +180,24 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const calculateNetPrice = (count: number) => {
-    const basePrice = count * 500;
-    let discount = 0;
-    if (count >= 13) discount = 0.50;
-    else if (count >= 9) discount = 0.30;
-    else if (count >= 5) discount = 0.20;
-    return Math.round(basePrice * (1 - discount));
+  const calculateNetPrice = (user: UserProfile) => {
+    // Calcul incluant les packs
+    let total = 0;
+    if (user.isKitaPremium) total += 10000;
+    if (user.hasPerformancePack) total += 5000;
+    
+    // Si pas Elite, calcul par module avec remises
+    if (!user.isKitaPremium) {
+      const count = (user.purchasedModuleIds || []).length;
+      const basePrice = count * 500;
+      let discount = 0;
+      if (count >= 13) discount = 0.50;
+      else if (count >= 9) discount = 0.30;
+      else if (count >= 5) discount = 0.20;
+      total += Math.round(basePrice * (1 - discount));
+    }
+    
+    return total;
   };
 
   const stats = useMemo(() => {
@@ -169,7 +206,7 @@ const AdminDashboard: React.FC = () => {
     return { 
       totalClients: clients.length, 
       active: activeClients.length,
-      revenue: clients.reduce((acc, u) => acc + calculateNetPrice(u.purchasedModuleIds?.length || 0), 0)
+      revenue: clients.reduce((acc, u) => acc + calculateNetPrice(u), 0)
     };
   }, [users]);
 
@@ -195,7 +232,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3 text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2">
               <ShieldAlert className="w-4 h-4" />
-              Pilotage Stratégique v2.1
+              Pilotage Stratégique v2.5
             </div>
             <div className="flex items-center gap-4">
               <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">Console de <span className="text-brand-500">Direction</span></h1>
@@ -247,55 +284,61 @@ const AdminDashboard: React.FC = () => {
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Identité</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Modules Acquis</th>
-                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ambassadeur</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut Pack</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Modules</th>
                   <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Détails</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredData.map(u => (
-                  <tr key={u.uid} className="group hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setSelectedUser(u)}>
-                    <td className="px-10 py-8">
-                      <div className="flex items-center gap-5">
-                        <div className="h-14 w-14 rounded-2xl flex items-center justify-center font-black bg-white/10 text-brand-500 overflow-hidden">
-                          {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"/> : (u.firstName?.[0] || 'U')}
+                {filteredData.map(u => {
+                  const hasEliteRequest = u.pendingModuleIds?.includes('REQUEST_ELITE');
+                  const hasPerfRequest = u.pendingModuleIds?.includes('REQUEST_PERFORMANCE');
+                  
+                  return (
+                    <tr key={u.uid} className={`group hover:bg-white/[0.02] transition-colors cursor-pointer ${!u.isActive ? 'bg-amber-500/5' : ''}`} onClick={() => setSelectedUser(u)}>
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-5">
+                          <div className="h-14 w-14 rounded-2xl flex items-center justify-center font-black bg-white/10 text-brand-500 overflow-hidden">
+                            {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"/> : (u.firstName?.[0] || 'U')}
+                          </div>
+                          <div>
+                            <p className="font-bold text-white text-lg group-hover:text-brand-400 transition-colors">{u.firstName} {u.lastName}</p>
+                            <p className="text-xs text-slate-500 font-medium">{u.phoneNumber}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-white text-lg group-hover:text-brand-400 transition-colors">{u.firstName} {u.lastName}</p>
-                          <p className="text-xs text-slate-500 font-medium">{u.phoneNumber}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-10 py-8">
-                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-lg border border-white/5">
-                          {u.purchasedModuleIds?.length || 0} / 16
-                       </span>
-                    </td>
-                    <td className="px-10 py-8">
-                       <div className="flex items-center gap-2">
-                          <Handshake className={`w-4 h-4 ${u.referralCount && u.referralCount > 0 ? 'text-amber-500' : 'text-slate-600'}`} />
-                          <span className="text-xs font-bold text-slate-400">{u.referralCount || 0} parrainages</span>
-                       </div>
-                    </td>
-                    <td className="px-10 py-8 text-right">
-                       <button onClick={() => setSelectedUser(u)} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
-                          <ChevronRight className="w-5 h-5" />
-                       </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-10 py-8">
+                         <div className="flex flex-wrap gap-2">
+                            {u.isKitaPremium && <span className="px-3 py-1 bg-amber-500 text-white rounded-lg text-[8px] font-black uppercase">Elite</span>}
+                            {u.hasPerformancePack && <span className="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[8px] font-black uppercase">Perf+</span>}
+                            {hasEliteRequest && <span className="px-3 py-1 bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-lg text-[8px] font-black uppercase animate-pulse">Demande Elite</span>}
+                            {hasPerfRequest && <span className="px-3 py-1 bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-lg text-[8px] font-black uppercase animate-pulse">Demande Perf+</span>}
+                            {!u.isKitaPremium && !u.hasPerformancePack && !hasEliteRequest && !hasPerfRequest && <span className="text-slate-600 text-[8px] font-black uppercase">Standard</span>}
+                         </div>
+                      </td>
+                      <td className="px-10 py-8">
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-lg border border-white/5">
+                            {u.purchasedModuleIds?.length || 0} / 16
+                         </span>
+                      </td>
+                      <td className="px-10 py-8 text-right">
+                         <button onClick={() => setSelectedUser(u)} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
+                            <ChevronRight className="w-5 h-5" />
+                         </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* Modal Récompenses & Pilotage */}
       {selectedUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-xl animate-in fade-in duration-300">
            <div className="bg-[#1e293b] w-full max-w-6xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
               
-              {/* Modal Header */}
               <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                  <div className="flex items-center gap-6">
                     <div className="h-16 w-16 rounded-[1.5rem] overflow-hidden bg-brand-500 flex items-center justify-center font-black relative">
@@ -319,20 +362,49 @@ const AdminDashboard: React.FC = () => {
               <div className="p-10 overflow-y-auto flex-grow custom-scrollbar">
                  <div className="grid lg:grid-cols-12 gap-10">
                     
-                    {/* Colonne Gauche : Récompenses & Palmarès */}
                     <div className="lg:col-span-8 space-y-12">
                        
-                       {/* SECTION RECOMPENSES & PALMARES */}
+                       {/* NOUVELLE SECTION : GESTION DES PACKS DEMANDES */}
+                       {(selectedUser.pendingModuleIds?.includes('REQUEST_ELITE') || selectedUser.pendingModuleIds?.includes('REQUEST_PERFORMANCE')) && (
+                          <div className="bg-amber-500/10 rounded-[2.5rem] p-10 border border-amber-500/20">
+                             <div className="flex items-center gap-4 mb-8">
+                                <Clock className="w-8 h-8 text-amber-500 animate-pulse" />
+                                <div>
+                                   <h3 className="text-xl font-black text-white uppercase tracking-tight">Paiement en attente</h3>
+                                   <p className="text-slate-400 text-sm">Le gérant a validé l'engagement, en attente du transfert Wave.</p>
+                                </div>
+                             </div>
+                             <div className="flex flex-wrap gap-4">
+                                {selectedUser.pendingModuleIds?.includes('REQUEST_ELITE') && (
+                                  <button 
+                                    onClick={() => handleActivatePack('ELITE')}
+                                    disabled={processingId === 'ELITE'}
+                                    className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-amber-400 flex items-center gap-3 transition-all"
+                                  >
+                                     {processingId === 'ELITE' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                                     Activer Pack Elite (10 000 F)
+                                  </button>
+                                )}
+                                {selectedUser.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && (
+                                  <button 
+                                    onClick={() => handleActivatePack('PERFORMANCE')}
+                                    disabled={processingId === 'PERFORMANCE'}
+                                    className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-400 flex items-center gap-3 transition-all"
+                                  >
+                                     {processingId === 'PERFORMANCE' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gem className="w-4 h-4" />}
+                                     Activer Pack Perf+ (5 000 F)
+                                  </button>
+                                )}
+                             </div>
+                          </div>
+                       )}
+
                        <div className="bg-white/5 rounded-[2.5rem] p-10 border border-white/10">
                           <div className="flex items-center justify-between mb-8">
                              <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
                                 <Trophy className="w-4 h-4" /> Palmarès & Réussites
                              </h3>
-                             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[9px] font-black uppercase tracking-widest">
-                                <Award className="w-3 h-3" /> Certificats Validés
-                             </div>
                           </div>
-                          
                           <div className="grid md:grid-cols-2 gap-4">
                              {TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).length > 0 ? (
                                TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).map(mod => (
@@ -352,19 +424,17 @@ const AdminDashboard: React.FC = () => {
                                ))
                              ) : (
                                <div className="md:col-span-2 py-10 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                  <p className="text-slate-500 text-xs italic">Aucune certification validée (score ≥ 80%) pour le moment.</p>
+                                  <p className="text-slate-500 text-xs italic">Aucune certification validée pour le moment.</p>
                                </div>
                              )}
                           </div>
                        </div>
 
-                       {/* Section Offrir des Cadeaux */}
                        <section>
                           <div className="flex items-center justify-between mb-8">
                              <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <Crown className="w-4 h-4" /> Récompenser (Modules non acquis)
+                                <Crown className="w-4 h-4" /> Récompenser (Modules seuls)
                              </h3>
-                             <p className="text-[9px] font-bold text-slate-500 italic">Offrez une masterclass comme cadeau de parrainage</p>
                           </div>
                           <div className="grid md:grid-cols-2 gap-4">
                              {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).map(mod => (
@@ -384,56 +454,11 @@ const AdminDashboard: React.FC = () => {
                              ))}
                           </div>
                        </section>
-
-                       {/* Section Recharge de Jetons */}
-                       <section className="pt-10 border-t border-white/5">
-                          <div className="flex items-center justify-between mb-8">
-                             <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                                <Zap className="w-4 h-4 fill-current" /> Recharger les Jetons (Tentatives)
-                             </h3>
-                             <p className="text-[9px] font-bold text-slate-500 italic">Offrez 3 nouvelles chances de réussite</p>
-                          </div>
-                          <div className="grid md:grid-cols-2 gap-6">
-                             {selectedUser.purchasedModuleIds?.map(id => {
-                               const m = TRAINING_CATALOG.find(tm => tm.id === id);
-                               const attempts = selectedUser.attempts?.[id] || 0;
-                               return (
-                                 <div key={id} className="bg-white/5 p-6 rounded-[2rem] border border-white/5 flex flex-col gap-4">
-                                    <div className="flex justify-between items-start">
-                                       <div className="max-w-[180px]">
-                                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{m?.topic}</p>
-                                          <p className="text-xs font-bold text-white truncate">{m?.title}</p>
-                                       </div>
-                                       <div className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                                          <span className="text-[10px] font-black text-slate-400">{attempts}/3 jetons</span>
-                                       </div>
-                                    </div>
-                                    <button 
-                                      onClick={() => handleResetTokens(id)}
-                                      disabled={processingId === `token_${id}`}
-                                      className="w-full py-3 bg-brand-500/10 text-brand-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-brand-500 hover:text-white transition-all flex items-center justify-center gap-3"
-                                    >
-                                       {processingId === `token_${id}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCcw className="w-3 h-3" />}
-                                       Offrir 3 Jetons (Recharge)
-                                    </button>
-                                 </div>
-                               );
-                             })}
-                             {(!selectedUser.purchasedModuleIds || selectedUser.purchasedModuleIds.length === 0) && (
-                               <div className="md:col-span-2 py-10 text-center border-2 border-dashed border-white/5 rounded-3xl">
-                                  <p className="text-slate-500 text-xs italic">Aucun module acquis pour le moment.</p>
-                               </div>
-                             )}
-                          </div>
-                       </section>
                     </div>
 
-                    {/* Colonne Droite : Badges & Parrainage */}
                     <div className="lg:col-span-4 space-y-6">
-                       
-                       {/* BADGES SECTION */}
-                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><Star className="w-3 h-3 text-amber-500" /> Trophées Obtenus</p>
+                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><Star className="w-3 h-3 text-amber-500" /> Trophées</p>
                           <div className="grid grid-cols-2 gap-4">
                              {BADGES.map(badge => {
                                const hasBadge = selectedUser.badges?.includes(badge.id);
@@ -441,44 +466,23 @@ const AdminDashboard: React.FC = () => {
                                  <div key={badge.id} className={`p-4 rounded-2xl border-2 flex flex-col items-center text-center transition-all ${hasBadge ? 'bg-white/10 border-brand-500 shadow-lg scale-100' : 'bg-white/5 border-transparent opacity-20 grayscale scale-90'}`}>
                                     <span className="text-3xl mb-2">{badge.icon}</span>
                                     <p className="text-[8px] font-black uppercase tracking-tight text-white">{badge.name}</p>
-                                    {hasBadge && <CheckCircle className="w-3 h-3 text-emerald-500 mt-2" />}
                                  </div>
                                )
                              })}
                           </div>
                        </div>
 
-                       {/* SCORE AMBASSADEUR */}
                        <div className="bg-gradient-to-br from-amber-500/10 to-transparent p-8 rounded-[2.5rem] border border-amber-500/20">
                           <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Handshake className="w-3 h-3"/> Score Ambassadeur</p>
                           <div className="flex items-end gap-3 mb-2">
                              <p className="text-5xl font-black text-white">{selectedUser.referralCount || 0}</p>
-                             <p className="text-xs text-slate-400 font-bold mb-2">Parrainages réussis</p>
-                          </div>
-                          {selectedUser.referredBy && (
-                            <p className="text-[10px] text-slate-500 italic mt-4 border-t border-white/5 pt-4">Parrainé par : {selectedUser.referredBy}</p>
-                          )}
-                       </div>
-
-                       {/* CONTACT INFO QUICK VIEW */}
-                       <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-6">Informations Client</p>
-                          <div className="space-y-4">
-                             <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-brand-500"><ShieldCheck className="w-4 h-4"/></div>
-                                <div><p className="text-[9px] font-black text-slate-500 uppercase">Statut</p><p className="text-xs font-bold text-white">{selectedUser.isActive ? 'Actif' : 'Suspendu'}</p></div>
-                             </div>
-                             <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-brand-500"><Medal className="w-4 h-4"/></div>
-                                <div><p className="text-[9px] font-black text-slate-500 uppercase">Maitrise Globale</p><p className="text-xs font-bold text-white">{Math.round(((selectedUser.purchasedModuleIds?.filter(id => (selectedUser.progress?.[id] || 0) >= 80).length || 0) / 16) * 100)}%</p></div>
-                             </div>
+                             <p className="text-xs text-slate-400 font-bold mb-2">Parrainages</p>
                           </div>
                        </div>
                     </div>
                  </div>
               </div>
 
-              {/* Barre d'Actions de Gestion */}
               <div className="p-8 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
                  <button 
                    onClick={() => handleDelete(selectedUser.uid)}
@@ -486,7 +490,7 @@ const AdminDashboard: React.FC = () => {
                    className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-black text-[10px] uppercase tracking-widest p-4 hover:bg-rose-500/10 rounded-2xl transition-all"
                  >
                     {processingId === selectedUser.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Désinscription Totale
+                    Désinscription
                  </button>
                  
                  <div className="flex gap-4">
@@ -500,13 +504,11 @@ const AdminDashboard: React.FC = () => {
                       }`}
                     >
                        {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                       {selectedUser.isActive ? 'Suspendre l\'Accès' : 'Activer le Compte'}
+                       {selectedUser.isActive ? 'Suspendre' : 'Activer Compte'}
                     </button>
-                    {!selectedUser.isAdmin && (
-                      <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-3">
-                         <MessageCircle className="w-4 h-4" /> Message WhatsApp
-                      </a>
-                    )}
+                    <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-500 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-3">
+                       <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
                  </div>
               </div>
            </div>

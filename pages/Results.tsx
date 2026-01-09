@@ -50,14 +50,12 @@ const Results: React.FC = () => {
   }, [availableCatalog, cart]);
 
   useEffect(() => {
-    // 1. Gestion des paramètres d'URL (Auto-sélection)
     const params = new URLSearchParams(location.search);
     const packParam = params.get('pack');
     if (packParam === 'performance') setActivePack('performance');
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'elite_performance') setActivePack('elite_performance');
 
-    // 2. Gestion du diagnostic
     const raw = localStorage.getItem('temp_quiz_results');
     const results = raw ? JSON.parse(raw) : null;
     
@@ -119,24 +117,25 @@ const Results: React.FC = () => {
 
   const handleValidateEngagement = async () => {
     if (user) {
-      // FAST-TRACK pour les utilisateurs connectés
       setLoading(true);
       try {
         if (!supabase) throw new Error("Base de données indisponible");
         
         const isElite = activePack === 'elite' || activePack === 'elite_performance';
         const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
-        const newPendingIds = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+        
+        let newPendingIds: string[] = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+        
+        // On ajoute des marqueurs spéciaux pour que l'Admin voit les packs demandés
+        if (isElite) newPendingIds.push('REQUEST_ELITE');
+        if (isPerformance) newPendingIds.push('REQUEST_PERFORMANCE');
         
         const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
         
         await supabase.from('profiles').update({ 
-          pendingModuleIds: updatedPending,
-          isKitaPremium: isElite || user.isKitaPremium,
-          hasPerformancePack: isPerformance || user.hasPerformancePack
+          pendingModuleIds: updatedPending
         }).eq('uid', user.uid);
         
-        // Redirection directe vers le dashboard
         navigate('/dashboard');
       } catch (err: any) {
         alert(`Erreur : ${err.message}`);
@@ -144,7 +143,6 @@ const Results: React.FC = () => {
         setLoading(false);
       }
     } else {
-      // Parcours prospect : ouverture de la modale
       setIsModalOpen(true);
     }
   };
@@ -161,7 +159,9 @@ const Results: React.FC = () => {
       const isElite = activePack === 'elite' || activePack === 'elite_performance';
       const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
       
-      const newPendingIds = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+      let newPendingIds: string[] = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+      if (isElite) newPendingIds.push('REQUEST_ELITE');
+      if (isPerformance) newPendingIds.push('REQUEST_PERFORMANCE');
       
       if (!existingProfile) {
         await supabase.from('profiles').insert({
@@ -176,8 +176,8 @@ const Results: React.FC = () => {
           purchasedModuleIds: [],
           pendingModuleIds: newPendingIds,
           actionPlan: [],
-          isKitaPremium: isElite,
-          hasPerformancePack: isPerformance,
+          isKitaPremium: false,
+          hasPerformancePack: false,
           createdAt: new Date().toISOString()
         });
       } else {
@@ -185,9 +185,7 @@ const Results: React.FC = () => {
         await supabase.from('profiles').update({ 
           pendingModuleIds: updatedPending,
           employeeCount,
-          yearsOfExistence,
-          isKitaPremium: isElite || existingProfile.isKitaPremium,
-          hasPerformancePack: isPerformance || existingProfile.hasPerformancePack
+          yearsOfExistence
         }).eq('uid', existingProfile.uid);
       }
       setCheckoutStep('payment');
@@ -219,7 +217,6 @@ const Results: React.FC = () => {
            <h1 className="text-4xl md:text-6xl font-black text-[#0f172a] tracking-tighter">Boutique de l'excellence</h1>
         </header>
 
-        {/* ELITE BANNER */}
         {activePack === 'none' && (
           <section className="mb-20 bg-[#0c4a6e] rounded-[3.5rem] p-10 md:p-16 text-white relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -423,7 +420,6 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALE D'IDENTIFICATION */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#0f172a]/95 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-white rounded-[4rem] shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300 border border-white">
