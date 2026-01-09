@@ -40,8 +40,8 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
 
-  // Status de possession
-  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length >= 16), [user]);
+  // Status de possession (Correction TS incluse avec le fallback || 0)
+  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
 
   const availableCatalog = useMemo(() => {
@@ -88,7 +88,7 @@ const Results: React.FC = () => {
       setAiAdvice("Explorez notre catalogue expert pour transformer votre salon.");
     }
     window.scrollTo(0,0);
-  }, [user, availableCatalog, location.search]);
+  }, [availableCatalog, location.search]);
 
   const pricingData = useMemo(() => {
     if (activePack === 'elite') return { total: 10000, label: 'Pack Elite (Formations)', count: 16 };

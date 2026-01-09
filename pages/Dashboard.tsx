@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
   // Synchronisation du statut Elite en base si les 16 modules sont atteints
   useEffect(() => {
     const syncEliteStatus = async () => {
-      if (user && user.purchasedModuleIds?.length >= 16 && !user.isKitaPremium) {
+      if (user && (user.purchasedModuleIds?.length || 0) >= 16 && !user.isKitaPremium) {
         try {
           await saveUserProfile({ uid: user.uid, isKitaPremium: true });
           await refreshProfile();
@@ -66,7 +66,7 @@ const Dashboard: React.FC = () => {
       }
     };
     syncEliteStatus();
-  }, [user?.purchasedModuleIds, user?.isKitaPremium]);
+  }, [user?.purchasedModuleIds, user?.isKitaPremium, refreshProfile, user?.uid]);
 
   useEffect(() => {
     if (user) {
@@ -219,7 +219,7 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
-        {/* SECTION RECLAME : Visible seulement si un pack manque */}
+        {/* SECTION RECLAME : Masquée si tout est acquis */}
         {!user.isAdmin && (!isElite || !isPerformance) && (
           <div className="grid md:grid-cols-2 gap-6 -mt-32">
              {!isElite && (
