@@ -26,7 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fix: Add implementation for refreshProfile
   const refreshProfile = async () => {
     if (user?.uid) {
       const profile = await getUserProfile(user.uid);
@@ -40,9 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     let profile = await getUserProfile(uid);
     
-    // Auto-création du Super Admin si l'email correspond
+    // Auto-création du Super Admin si l'email correspond au MASTER_ADMIN_EMAIL
     if (!profile && email === MASTER_ADMIN_EMAIL.toLowerCase()) {
-      // Fix: Add missing hasPerformancePack required property
       const adminProfile: UserProfile = {
         uid,
         phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
@@ -71,12 +69,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       setLoading(true);
       if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await (supabase.auth as any).getSession();
         if (session?.user) await handleUserSetup(session.user);
       }
       setLoading(false);
     };
     initAuth();
+
+    let authListener: any = null;
+    if (supabase) {
+      const { data } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await handleUserSetup(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      });
+      authListener = data.subscription;
+    }
+
+    return () => {
+      if (authListener) authListener.unsubscribe();
+    };
   }, []);
 
   const loginManually = async (phone: string): Promise<boolean> => {
@@ -90,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (supabase) await supabase.auth.signOut();
+    if (supabase) await (supabase.auth as any).signOut();
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
   };

@@ -9,8 +9,6 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-// Fix: Add missing helper functions for user profiles and transactions
-
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
@@ -35,19 +33,18 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
   if (error) throw new Error(error.message);
 };
 
-export const deleteUserProfile = async (uid: string) => {
-  if (!supabase) throw new Error("Supabase non initialisé");
-  const { error } = await supabase.from('profiles').delete().eq('uid', uid);
-  if (error) throw error;
-};
-
 export const getAllUsers = async (): Promise<UserProfile[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('profiles').select('*').order('createdAt', { ascending: false });
   return error ? [] : data as UserProfile[];
 };
 
-// Fix: Support for training module management
+export const deleteUserProfile = async (uid: string) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('profiles').delete().eq('uid', uid);
+  if (error) throw error;
+};
+
 export const grantModuleAccess = async (uid: string, moduleId: string) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
@@ -62,7 +59,6 @@ export const updateQuizAttempts = async (uid: string, moduleId: string, attempts
   await saveUserProfile({ uid, attempts: updatedAttempts });
 };
 
-// Fix: Support for profile photo uploads
 export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const fileName = `${userId}_${Date.now()}`;
@@ -72,7 +68,6 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
   return publicUrl;
 };
 
-// Fix: KITA Accounting transactions
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -91,7 +86,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  const { data, error } = await supabase.from('kita_transactions').insert({
+  const { data, error } = await (supabase as any).from('kita_transactions').insert({
     user_id: userId,
     type: transaction.type,
     amount: transaction.amount,
@@ -127,7 +122,6 @@ export const deleteKitaTransaction = async (id: string) => {
   if (error) throw error;
 };
 
-// Fix: KITA Staff Management
 export const getKitaStaff = async (userId: string): Promise<any[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
@@ -136,7 +130,7 @@ export const getKitaStaff = async (userId: string): Promise<any[]> => {
 
 export const addKitaStaff = async (userId: string, staff: { name: string, commission_rate: number, specialty: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  const { data, error } = await supabase.from('kita_staff').insert({
+  const { data, error } = await (supabase as any).from('kita_staff').insert({
     user_id: userId,
     name: staff.name,
     commission_rate: staff.commission_rate,
