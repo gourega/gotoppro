@@ -43,6 +43,15 @@ export interface KitaProduct {
   sellPrice: number;
   alertThreshold: number;
   category: string;
+  supplierId?: string; // Lien optionnel vers un fournisseur
+}
+
+export interface KitaSupplier {
+  id: string;
+  name: string;
+  phone: string;
+  category: string; // Ex: "Mèches", "Coloration", "Matériel technique"
+  userId: string;
 }
 
 export interface UserProfile {

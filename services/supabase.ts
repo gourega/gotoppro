@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, KitaTransaction, KitaDebt, KitaProduct } from '../types';
+import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier } from '../types';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -160,7 +160,16 @@ export const markDebtAsPaid = async (debtId: string) => {
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId).order('name', { ascending: true });
-  return error ? [] : data;
+  return error ? [] : data.map(p => ({
+    id: p.id,
+    name: p.name,
+    quantity: p.quantity,
+    purchasePrice: p.purchase_price,
+    sellPrice: p.sell_price,
+    alertThreshold: p.alert_threshold,
+    category: p.category,
+    supplierId: p.supplier_id
+  }));
 };
 
 export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
@@ -172,7 +181,8 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     purchase_price: product.purchasePrice,
     sell_price: product.sellPrice,
     alert_threshold: product.alertThreshold,
-    category: product.category
+    category: product.category,
+    supplier_id: product.supplierId
   }).select().single();
   if (error) throw error;
   return data;
@@ -180,7 +190,47 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
 
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  const { error } = await supabase.from('kita_products').update(product).eq('id', id);
+  const updates: any = {};
+  if (product.name !== undefined) updates.name = product.name;
+  if (product.quantity !== undefined) updates.quantity = product.quantity;
+  if (product.purchasePrice !== undefined) updates.purchase_price = product.purchasePrice;
+  if (product.sellPrice !== undefined) updates.sell_price = product.sellPrice;
+  if (product.alertThreshold !== undefined) updates.alert_threshold = product.alertThreshold;
+  if (product.category !== undefined) updates.category = product.category;
+  if (product.supplierId !== undefined) updates.supplier_id = product.supplierId;
+
+  const { error } = await supabase.from('kita_products').update(updates).eq('id', id);
+  if (error) throw error;
+};
+
+// --- FOURNISSEURS ---
+export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId).order('name', { ascending: true });
+  return error ? [] : data.map(s => ({
+    id: s.id,
+    name: s.name,
+    phone: s.phone,
+    category: s.category,
+    userId: s.user_id
+  }));
+};
+
+export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplier, 'id' | 'userId'>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { data, error } = await (supabase as any).from('kita_suppliers').insert({
+    user_id: userId,
+    name: supplier.name,
+    phone: supplier.phone,
+    category: supplier.category
+  }).select().single();
+  if (error) throw error;
+  return data;
+};
+
+export const deleteKitaSupplier = async (id: string) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('kita_suppliers').delete().eq('id', id);
   if (error) throw error;
 };
 
