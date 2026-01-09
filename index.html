@@ -5,21 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Go'Top Pro - Formation & Excellence</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Go'Top Pro">
     
-    <!-- Favicons et Icônes Apple via Supabase -->
     <link rel="icon" type="image/png" href="https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png">
     <link rel="apple-touch-icon" href="https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
+      window.tailwind.config = {
         theme: {
           extend: {
             colors: {
@@ -29,6 +25,8 @@
                 500: '#0ea5e9',
                 600: '#0284c7',
                 900: '#0c4a6e',
+                950: '#082f49',
+                gold: '#fbbf24',
               }
             },
             fontFamily: {
@@ -39,43 +37,35 @@
         }
       }
     </script>
-    <style>
-      @tailwind base;
-      @tailwind components;
-      @tailwind utilities;
-      
-      body {
-        font-family: 'Inter', sans-serif;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .font-serif {
-        font-family: 'Merriweather', serif;
-      }
-      /* Optimisation pour encoche iPhone */
-      @supports (padding: env(safe-area-inset-top)) {
-        .safe-top { padding-top: env(safe-area-inset-top); }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+    <style type="text/tailwindcss">
+      @layer base {
+        body { @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden; font-family: 'Inter', sans-serif; }
+        main { display: flex !important; opacity: 1 !important; visibility: visible !important; }
       }
     </style>
-<script type="importmap">
+
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.28.0?external=react,react-dom",
+    "@google/genai": "https://esm.sh/@google/genai@1.34.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.454.0?external=react",
+    "react-canvas-confetti": "https://esm.sh/react-canvas-confetti@2.0.7?external=react",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.48.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react-canvas-confetti": "https://esm.sh/react-canvas-confetti@^2.0.7",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0",
-    "vite": "https://esm.sh/vite@^7.3.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+<body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
