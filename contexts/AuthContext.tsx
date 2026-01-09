@@ -4,7 +4,7 @@ import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '..
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
-const MASTER_ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
+const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com").toLowerCase();
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -34,63 +34,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleUserSetup = async (authUser: any) => {
+    if (!authUser) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase();
     
-    let profile = await getUserProfile(uid);
-    
-    // Auto-création du Super Admin si l'email correspond au MASTER_ADMIN_EMAIL
-    if (!profile && email === MASTER_ADMIN_EMAIL.toLowerCase()) {
-      const adminProfile: UserProfile = {
-        uid,
-        phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
-        email: email,
-        firstName: 'Coach',
-        lastName: 'Kita',
-        role: 'SUPER_ADMIN',
-        isActive: true,
-        isAdmin: true,
-        isKitaPremium: true,
-        hasPerformancePack: true,
-        badges: [],
-        purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
-        pendingModuleIds: [],
-        actionPlan: [],
-        createdAt: new Date().toISOString()
-      };
-      await saveUserProfile(adminProfile);
-      profile = adminProfile;
+    try {
+      let profile = await getUserProfile(uid);
+      
+      // Auto-création / Reconnaissance du Super Admin
+      if (!profile && email === MASTER_ADMIN_EMAIL) {
+        console.log("AuthContext: Création du profil Super Admin...");
+        const adminProfile: UserProfile = {
+          uid,
+          phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
+          email: email,
+          firstName: 'Coach',
+          lastName: 'Kita',
+          role: 'SUPER_ADMIN',
+          isActive: true,
+          isAdmin: true,
+          isKitaPremium: true,
+          hasPerformancePack: true,
+          badges: [],
+          purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
+          pendingModuleIds: [],
+          actionPlan: [],
+          createdAt: new Date().toISOString()
+        };
+        await saveUserProfile(adminProfile);
+        profile = adminProfile;
+      }
+      
+      setUser(profile);
+    } catch (err) {
+      console.error("AuthContext Error:", err);
+    } finally {
+      setLoading(false);
     }
-    
-    if (profile) setUser(profile);
   };
 
   useEffect(() => {
     const initAuth = async () => {
-      setLoading(true);
       if (supabase) {
-        const { data: { session } } = await (supabase.auth as any).getSession();
-        if (session?.user) await handleUserSetup(session.user);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await handleUserSetup(session.user);
+        } else {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     };
     initAuth();
 
-    let authListener: any = null;
     if (supabase) {
-      const { data } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("Auth Event:", event);
+        if (session?.user) {
           await handleUserSetup(session.user);
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setUser(null);
+          setLoading(false);
         }
       });
-      authListener = data.subscription;
+      return () => subscription.unsubscribe();
     }
-
-    return () => {
-      if (authListener) authListener.unsubscribe();
-    };
   }, []);
 
   const loginManually = async (phone: string): Promise<boolean> => {
@@ -104,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (supabase) await (supabase.auth as any).signOut();
+    if (supabase) await supabase.auth.signOut();
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
   };
