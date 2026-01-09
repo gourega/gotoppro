@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleUserSetup = async (authUser: any) => {
+    console.log("Auth: Tentative de setup pour", authUser?.email);
     if (!authUser) {
       setUser(null);
       setLoading(false);
@@ -46,33 +47,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       let profile = await getUserProfile(uid);
       
-      // Auto-création / Reconnaissance du Super Admin
-      if (!profile && email === MASTER_ADMIN_EMAIL) {
-        console.log("AuthContext: Création du profil Super Admin...");
-        const adminProfile: UserProfile = {
-          uid,
-          phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
-          email: email,
-          firstName: 'Coach',
-          lastName: 'Kita',
-          role: 'SUPER_ADMIN',
-          isActive: true,
-          isAdmin: true,
-          isKitaPremium: true,
-          hasPerformancePack: true,
-          badges: [],
-          purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
-          pendingModuleIds: [],
-          actionPlan: [],
-          createdAt: new Date().toISOString()
-        };
-        await saveUserProfile(adminProfile);
-        profile = adminProfile;
+      // Cas critique : C'est l'email du Master Admin
+      if (email === MASTER_ADMIN_EMAIL) {
+        console.log("Auth: Master Admin détecté");
+        // Si le profil n'existe pas OU s'il n'est pas encore admin, on le crée/met à jour
+        if (!profile || !profile.isAdmin) {
+          console.log("Auth: Création/Mise à jour forcée du profil Super Admin...");
+          const adminProfile: UserProfile = {
+            uid,
+            phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
+            email: email,
+            firstName: profile?.firstName || 'Coach',
+            lastName: profile?.lastName || 'Kita',
+            role: 'SUPER_ADMIN',
+            isActive: true,
+            isAdmin: true,
+            isKitaPremium: true,
+            hasPerformancePack: true,
+            badges: profile?.badges || [],
+            purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
+            pendingModuleIds: [],
+            actionPlan: profile?.actionPlan || [],
+            createdAt: profile?.createdAt || new Date().toISOString()
+          };
+          await saveUserProfile(adminProfile);
+          profile = adminProfile;
+        }
       }
       
       setUser(profile);
+      console.log("Auth: Setup terminé, profil chargé :", !!profile);
     } catch (err) {
-      console.error("AuthContext Error:", err);
+      console.error("Auth: Erreur lors du handleUserSetup:", err);
     } finally {
       setLoading(false);
     }
@@ -81,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await (supabase.auth as any).getSession();
         if (session?.user) {
           await handleUserSetup(session.user);
         } else {
@@ -94,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
 
     if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
         console.log("Auth Event:", event);
         if (session?.user) {
           await handleUserSetup(session.user);
@@ -118,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (supabase) await supabase.auth.signOut();
+    if (supabase) await (supabase.auth as any).signOut();
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
   };

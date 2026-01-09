@@ -7,21 +7,27 @@ import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, HelpCircle } from 'lu
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Si l'utilisateur devient admin alors que la modale est ouverte, on redirige
+  // Surveillance de la connexion admin
   useEffect(() => {
-    if (isAdminModalOpen && authUser?.isAdmin) {
-      setIsAdminModalOpen(false);
-      setLoading(false);
-      navigate('/admin');
+    if (isAdminModalOpen && !authLoading) {
+      if (authUser?.isAdmin) {
+        setIsAdminModalOpen(false);
+        setLoading(false);
+        navigate('/admin');
+      } else if (loading && authUser && !authUser.isAdmin) {
+        // L'utilisateur est connecté mais n'est PAS admin
+        setError("Accès refusé : Ce compte n'a pas les droits d'administration.");
+        setLoading(false);
+      }
     }
-  }, [authUser, isAdminModalOpen, navigate]);
+  }, [authUser, authLoading, isAdminModalOpen, loading, navigate]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,15 +43,19 @@ const Footer: React.FC = () => {
     }
 
     try {
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      const { data, error: loginError } = await (supabase.auth as any).signInWithPassword({
         email: email.trim(),
         password: password.trim(),
       });
 
       if (loginError) throw loginError;
 
-      // Si login OK, on laisse le useEffect ou le AuthContext gérer la suite
-      // On ne met pas loading à false ici pour garder le spinner jusqu'à la redirection
+      // On laisse le useEffect surveiller l'arrivée du profil dans AuthContext
+      // Si après 5 secondes rien ne se passe, on débloque
+      setTimeout(() => {
+        if (loading) setLoading(false);
+      }, 5000);
+
     } catch (err: any) {
       console.error("Login Error:", err);
       setError(err.message === "Invalid login credentials" ? "Identifiants incorrects." : err.message);
@@ -87,7 +97,7 @@ const Footer: React.FC = () => {
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in">
           <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden">
-            <button onClick={() => setIsAdminModalOpen(false)} className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white">
+            <button onClick={() => { setIsAdminModalOpen(false); setLoading(false); }} className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white">
               <X className="w-5 h-5" />
             </button>
 
