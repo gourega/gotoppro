@@ -7,27 +7,22 @@ import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, HelpCircle } from 'lu
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
-  const { user: authUser, loading: authLoading } = useAuth();
+  const { user: authUser } = useAuth(); // On ne surveille plus authLoading ici pour la redirection
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Surveillance de la connexion admin et redirection
+  // Redirection Prioritaire
   useEffect(() => {
-    if (isAdminModalOpen && !authLoading) {
-      if (authUser?.isAdmin) {
-        console.log("Footer: Admin détecté, redirection...");
-        setIsAdminModalOpen(false);
-        setLoading(false);
-        navigate('/admin');
-      } else if (loading && authUser && !authUser.isAdmin) {
-        setError("Accès refusé : Ce compte n'a pas les droits d'administration.");
-        setLoading(false);
-      }
+    if (isAdminModalOpen && authUser?.isAdmin) {
+      console.log("Footer: Redirection Admin Immédiate !");
+      setIsAdminModalOpen(false);
+      setLoading(false);
+      navigate('/admin');
     }
-  }, [authUser, authLoading, isAdminModalOpen, loading, navigate]);
+  }, [authUser, isAdminModalOpen, navigate]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,21 +38,17 @@ const Footer: React.FC = () => {
     }
 
     try {
-      console.log("Footer: Tentative de login Supabase...");
-      const { data, error: loginError } = await (supabase.auth as any).signInWithPassword({
+      const { error: loginError } = await (supabase.auth as any).signInWithPassword({
         email: email.trim(),
         password: password.trim(),
       });
 
       if (loginError) throw loginError;
-
-      // Sécurité : si le setup prend plus de 5s, on libère le bouton
+      
+      // Si après 4s on n'est pas redirigé, on débloque le bouton
       setTimeout(() => {
-        if (loading) {
-          console.warn("Footer: Timeout atteint pour le setup du profil.");
-          setLoading(false);
-        }
-      }, 5000);
+        if (loading) setLoading(false);
+      }, 4000);
 
     } catch (err: any) {
       console.error("Login Error:", err);

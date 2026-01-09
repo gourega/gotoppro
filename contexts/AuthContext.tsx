@@ -4,7 +4,6 @@ import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '..
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
-// Sécurisation de l'email admin : priorité à l'env, sinon fallback dur sur votre email
 const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL && process.env.VITE_ADMIN_EMAIL.trim() !== "" 
   ? process.env.VITE_ADMIN_EMAIL 
   : "teletechnologyci@gmail.com").toLowerCase().trim();
@@ -29,16 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
-    if (user?.uid) {
-      const profile = await getUserProfile(user.uid);
-      if (profile) setUser(profile);
-    }
-  };
-
   const handleUserSetup = async (authUser: any) => {
     if (!authUser) {
-      console.log("Auth: Aucun utilisateur authentifié");
       setUser(null);
       setLoading(false);
       return;
@@ -47,47 +38,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase().trim();
     
-    console.log("Auth: Comparaison...", {
-      current: email,
-      target: MASTER_ADMIN_EMAIL,
-      match: email === MASTER_ADMIN_EMAIL
-    });
-    
-    try {
-      let profile = await getUserProfile(uid);
+    console.log("Auth: Vérification Master Admin...", email);
+
+    // LOGIQUE DE DÉBLOCAGE IMMÉDIAT
+    if (email === MASTER_ADMIN_EMAIL) {
+      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ - Libération de l'interface");
       
-      // Reconnaissance forcée du Super Admin
-      if (email === MASTER_ADMIN_EMAIL) {
-        console.log("Auth: MASTER ADMIN RECONNU - Vérification profil...");
-        
+      const adminProfile: UserProfile = {
+        uid,
+        phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
+        email: email,
+        firstName: 'Coach',
+        lastName: 'Kita',
+        role: 'SUPER_ADMIN',
+        isActive: true,
+        isAdmin: true,
+        isKitaPremium: true,
+        hasPerformancePack: true,
+        badges: [],
+        purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
+        pendingModuleIds: [],
+        actionPlan: [],
+        createdAt: new Date().toISOString()
+      };
+
+      // On définit l'utilisateur tout de suite pour débloquer le UI
+      setUser(adminProfile);
+      setLoading(false);
+
+      // On tente de sauvegarder/vérifier en arrière-plan sans "await" bloquant
+      getUserProfile(uid).then(profile => {
         if (!profile || !profile.isAdmin) {
-          console.log("Auth: Création/Réparation du profil Admin en cours...");
-          const adminProfile: UserProfile = {
-            uid,
-            phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
-            email: email,
-            firstName: profile?.firstName || 'Coach',
-            lastName: profile?.lastName || 'Kita',
-            role: 'SUPER_ADMIN',
-            isActive: true,
-            isAdmin: true,
-            isKitaPremium: true,
-            hasPerformancePack: true,
-            badges: profile?.badges || [],
-            purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
-            pendingModuleIds: [],
-            actionPlan: profile?.actionPlan || [],
-            createdAt: profile?.createdAt || new Date().toISOString()
-          };
-          await saveUserProfile(adminProfile);
-          profile = adminProfile;
+          saveUserProfile(adminProfile).catch(e => console.error("Note: Erreur synchro DB (background)", e));
         }
-      }
+      }).catch(() => {});
       
+      return; // On arrête l'exécution ici pour ne pas bloquer sur le prochain await
+    }
+
+    // Flux normal pour les autres utilisateurs
+    try {
+      const profile = await getUserProfile(uid);
       setUser(profile);
-      console.log("Auth: Setup terminé. Profil chargé:", !!profile);
     } catch (err) {
-      console.error("Auth: Erreur critique setup:", err);
+      console.error("Auth: Erreur profil", err);
     } finally {
       setLoading(false);
     }
@@ -95,19 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initAuth = async () => {
-      console.log("Auth: Initialisation session...");
       if (supabase) {
-        try {
-          const { data: { session } } = await (supabase.auth as any).getSession();
-          if (session?.user) {
-            await handleUserSetup(session.user);
-          } else {
-            setLoading(false);
-          }
-        } catch (e) {
-          console.error("Auth: Erreur session initiale", e);
-          setLoading(false);
-        }
+        const { data: { session } } = await (supabase.auth as any).getSession();
+        if (session?.user) await handleUserSetup(session.user);
+        else setLoading(false);
       } else {
         setLoading(false);
       }
@@ -116,10 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (supabase) {
       const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
-        console.log("Auth Event détecté:", event);
-        if (session?.user) {
-          await handleUserSetup(session.user);
-        } else if (event === 'SIGNED_OUT') {
+        if (session?.user) await handleUserSetup(session.user);
+        else {
           setUser(null);
           setLoading(false);
         }
@@ -127,6 +110,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => subscription.unsubscribe();
     }
   }, []);
+
+  const refreshProfile = async () => {
+    if (user?.uid) {
+      const profile = await getUserProfile(user.uid);
+      if (profile) setUser(profile);
+    }
+  };
 
   const loginManually = async (phone: string): Promise<boolean> => {
     const profile = await getProfileByPhone(phone);
