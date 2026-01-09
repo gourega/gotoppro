@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
@@ -27,10 +27,14 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastUidRef = useRef<string | null>(null);
 
   const handleUserSetup = async (authUser: any) => {
     if (!authUser) {
-      setUser(null);
+      if (lastUidRef.current !== null) {
+        lastUidRef.current = null;
+        setUser(null);
+      }
       setLoading(false);
       return;
     }
@@ -38,15 +42,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase().trim();
     
+    // Éviter de re-configurer si c'est le même utilisateur
+    if (uid === lastUidRef.current && user !== null) {
+      setLoading(false);
+      return;
+    }
+
+    lastUidRef.current = uid;
+
     // CAS MASTER ADMIN
     if (email === MASTER_ADMIN_EMAIL) {
-      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ", uid);
+      console.log("Auth: CONFIGURATION MASTER ADMIN", uid);
       
-      // On essaie de récupérer le profil existant d'abord
       let profile: UserProfile | null = null;
       try {
         profile = await getUserProfile(uid);
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Auth: Erreur lecture profil admin, utilisation des constantes.");
+      }
 
       const adminProfile: UserProfile = {
         uid,
@@ -71,8 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(adminProfile);
       setLoading(false);
 
-      // Synchro silencieuse de sécurité (uniquement colonnes de base)
-      if (!profile) {
+      // On ne synchronise que si le profil n'existe pas du tout
+      if (!profile && supabase) {
         saveUserProfile({
           uid: adminProfile.uid,
           phoneNumber: adminProfile.phoneNumber,
@@ -96,30 +109,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
-      if (supabase) {
-        try {
-          const { data: { session } } = await (supabase.auth as any).getSession();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const { data: { session } } = await (supabase.auth as any).getSession();
+        if (mounted) {
           if (session?.user) await handleUserSetup(session.user);
           else setLoading(false);
-        } catch (e) {
-          setLoading(false);
         }
-      } else {
-        setLoading(false);
+      } catch (e) {
+        if (mounted) setLoading(false);
       }
     };
+
     initAuth();
 
     if (supabase) {
       const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
-        if (session?.user) await handleUserSetup(session.user);
-        else {
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+          if (session?.user) await handleUserSetup(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          lastUidRef.current = null;
           setUser(null);
           setLoading(false);
         }
       });
-      return () => subscription.unsubscribe();
+      
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
     }
   }, []);
 
@@ -136,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await getProfileByPhone(phone);
       if (profile && profile.isActive) {
+        lastUidRef.current = profile.uid;
         setUser(profile);
         localStorage.setItem('gotop_manual_phone', phone);
         return true;
@@ -145,9 +173,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    setLoading(true);
     try {
       if (supabase) await (supabase.auth as any).signOut();
     } catch (e) {}
+    lastUidRef.current = null;
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
     setLoading(false);

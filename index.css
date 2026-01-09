@@ -7,7 +7,7 @@
   html, body {
     @apply m-0 p-0 w-full min-w-full overflow-x-hidden;
     min-height: 100%;
-    width: 100vw; /* Utilisation de vw pour forcer la largeur du viewport */
+    width: 100vw;
   }
 
   #root {
@@ -26,7 +26,7 @@
   }
 
   .animate-in {
-    animation-duration: 750ms;
+    animation-duration: 400ms; /* Plus rapide (était 750ms) */
     animation-fill-mode: both;
     opacity: 1 !important; 
     visibility: visible !important;
@@ -38,9 +38,9 @@
   .slide-in-from-bottom { animation-name: slideInBottom; }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-  @keyframes slideInTop { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes slideInBottom { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes zoomIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideInTop { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideInBottom { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 }
 
 /* Audit Stratégique Styling */
