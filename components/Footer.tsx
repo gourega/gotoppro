@@ -1,26 +1,28 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, HelpCircle } from 'lucide-react';
+import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, KeyRound } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth(); // On ne surveille plus authLoading ici pour la redirection
+  const { user: authUser } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isRedirecting = useRef(false);
 
-  // Redirection Prioritaire
+  // Redirection Prioritaire si déjà admin
   useEffect(() => {
-    if (isAdminModalOpen && authUser?.isAdmin) {
-      console.log("Footer: Redirection Admin Immédiate !");
+    if (isAdminModalOpen && authUser?.isAdmin && !isRedirecting.current) {
+      isRedirecting.current = true;
       setIsAdminModalOpen(false);
-      setLoading(false);
       navigate('/admin');
+      // On reset le flag après un court délai
+      setTimeout(() => { isRedirecting.current = false; }, 1000);
     }
   }, [authUser, isAdminModalOpen, navigate]);
 
@@ -39,22 +41,31 @@ const Footer: React.FC = () => {
 
     try {
       const { error: loginError } = await (supabase.auth as any).signInWithPassword({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password.trim(),
       });
 
-      if (loginError) throw loginError;
+      if (loginError) {
+        if (loginError.message.includes("Invalid login credentials")) {
+          throw new Error("Identifiants incorrects. Vérifiez votre compte Supabase Auth.");
+        }
+        throw loginError;
+      }
       
-      // Si après 4s on n'est pas redirigé, on débloque le bouton
-      setTimeout(() => {
-        if (loading) setLoading(false);
-      }, 4000);
-
+      // La redirection est gérée par le useEffect ci-dessus dès que authUser change
     } catch (err: any) {
       console.error("Login Error:", err);
-      setError(err.message === "Invalid login credentials" ? "Identifiants incorrects." : err.message);
+      setError(err.message || "Une erreur est survenue.");
       setLoading(false);
     }
+  };
+
+  const closeAdminModal = () => {
+    setIsAdminModalOpen(false);
+    setLoading(false);
+    setError('');
+    setEmail('');
+    setPassword('');
   };
 
   return (
@@ -74,15 +85,19 @@ const Footer: React.FC = () => {
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Légal</h4>
             <div className="flex flex-col gap-2 text-sm text-slate-400">
-              <Link to="/cgv" className="hover:text-white">CGV</Link>
-              <Link to="/confidentialite" className="hover:text-white">Confidentialité</Link>
+              <span className="cursor-default">Version Pro 2.5</span>
+              <span className="opacity-50">© {new Date().getFullYear()} Go'Top Pro.</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-slate-800 flex justify-between items-center">
-          <p className="text-[10px] text-slate-500 uppercase font-bold">© {new Date().getFullYear()} Go'Top Pro.</p>
-          <button onClick={() => setIsAdminModalOpen(true)} className="text-slate-600 hover:text-brand-400 p-2">
+        <div className="mt-10 pt-6 border-t border-slate-800 flex justify-end items-center">
+          <button 
+            onClick={() => setIsAdminModalOpen(true)} 
+            className="text-slate-700 hover:text-brand-400 p-2 transition-colors flex items-center gap-2"
+            title="Accès Administrateur"
+          >
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity">Zone Pilote</span>
             <Lock className="h-4 w-4" />
           </button>
         </div>
@@ -92,7 +107,7 @@ const Footer: React.FC = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in">
           <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden">
             <button 
-              onClick={() => { setIsAdminModalOpen(false); setLoading(false); setError(''); }} 
+              onClick={closeAdminModal} 
               className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white"
             >
               <X className="w-5 h-5" />
@@ -107,36 +122,43 @@ const Footer: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-6 text-xs font-bold flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 shrink-0" />
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl mb-6 text-[10px] font-bold flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
             <form onSubmit={handleAdminLogin} className="space-y-6 relative z-10">
               <div className="space-y-4">
-                <input 
-                  type="email" 
-                  placeholder="Email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
-                  required
-                />
-                <input 
-                  type="password" 
-                  placeholder="Mot de passe"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
-                  required
-                />
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="email" 
+                    placeholder="Email Master Admin"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="password" 
+                    placeholder="Mot de passe"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
+                    required
+                  />
+                </div>
               </div>
 
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-brand-600 text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-500 transition shadow-xl shadow-brand-500/20 flex items-center justify-center gap-3"
+                className="w-full bg-brand-600 text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-500 transition shadow-xl shadow-brand-500/20 flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "S'identifier"}
               </button>

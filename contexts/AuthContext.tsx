@@ -27,84 +27,76 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const lastUidRef = useRef<string | null>(null);
+  
+  // Verrous pour éviter les boucles de rendu
+  const processingRef = useRef<boolean>(false);
+  const lastProcessedUid = useRef<string | null>(null);
 
   const handleUserSetup = async (authUser: any) => {
     if (!authUser) {
-      if (lastUidRef.current !== null) {
-        lastUidRef.current = null;
+      if (lastProcessedUid.current !== null) {
+        lastProcessedUid.current = null;
         setUser(null);
       }
       setLoading(false);
       return;
     }
 
+    // Si on est déjà en train de traiter cet utilisateur, on ignore
+    if (processingRef.current && lastProcessedUid.current === authUser.id) return;
+    
+    processingRef.current = true;
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase().trim();
-    
-    // Éviter de re-configurer si c'est le même utilisateur
-    if (uid === lastUidRef.current && user !== null) {
-      setLoading(false);
-      return;
-    }
 
-    lastUidRef.current = uid;
-
-    // CAS MASTER ADMIN
-    if (email === MASTER_ADMIN_EMAIL) {
-      console.log("Auth: CONFIGURATION MASTER ADMIN", uid);
-      
-      let profile: UserProfile | null = null;
-      try {
-        profile = await getUserProfile(uid);
-      } catch (e) {
-        console.warn("Auth: Erreur lecture profil admin, utilisation des constantes.");
-      }
-
-      const adminProfile: UserProfile = {
-        uid,
-        phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
-        email: email,
-        firstName: profile?.firstName || 'Coach',
-        lastName: profile?.lastName || 'Kita',
-        establishmentName: profile?.establishmentName || "Go'Top Pro HQ",
-        role: 'SUPER_ADMIN',
-        isActive: true,
-        isAdmin: true,
-        isKitaPremium: true,
-        hasPerformancePack: true,
-        badges: profile?.badges || [],
-        purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
-        pendingModuleIds: [],
-        actionPlan: profile?.actionPlan || [],
-        createdAt: profile?.createdAt || new Date().toISOString(),
-        photoURL: profile?.photoURL || COACH_KITA_AVATAR
-      };
-
-      setUser(adminProfile);
-      setLoading(false);
-
-      // On ne synchronise que si le profil n'existe pas du tout
-      if (!profile && supabase) {
-        saveUserProfile({
-          uid: adminProfile.uid,
-          phoneNumber: adminProfile.phoneNumber,
-          role: 'SUPER_ADMIN',
-          isAdmin: true,
-          isActive: true
-        } as any).catch(() => {});
-      }
-      return;
-    }
-
-    // CAS CLIENT STANDARD
     try {
-      const profile = await getUserProfile(uid);
-      setUser(profile);
+      // CAS MASTER ADMIN
+      if (email === MASTER_ADMIN_EMAIL) {
+        // Si le Master Admin est déjà chargé avec le même UID, on ne fait rien
+        if (user?.uid === uid && user?.role === 'SUPER_ADMIN') {
+          setLoading(false);
+          processingRef.current = false;
+          return;
+        }
+
+        console.log("Auth: CONFIGURATION MASTER ADMIN", uid);
+        
+        // On récupère le profil réel pour les stats, mais on force les droits admin
+        const profile = await getUserProfile(uid).catch(() => null);
+
+        const adminProfile: UserProfile = {
+          uid,
+          phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
+          email: email,
+          firstName: profile?.firstName || 'Coach',
+          lastName: profile?.lastName || 'Kita',
+          establishmentName: profile?.establishmentName || "Go'Top Pro HQ",
+          role: 'SUPER_ADMIN',
+          isActive: true,
+          isAdmin: true,
+          isKitaPremium: true,
+          hasPerformancePack: true,
+          badges: profile?.badges || [],
+          purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
+          pendingModuleIds: [],
+          actionPlan: profile?.actionPlan || [],
+          createdAt: profile?.createdAt || new Date().toISOString(),
+          photoURL: profile?.photoURL || COACH_KITA_AVATAR
+        };
+
+        setUser(adminProfile);
+        lastProcessedUid.current = uid;
+      } else {
+        // CAS CLIENT STANDARD
+        const profile = await getUserProfile(uid);
+        setUser(profile);
+        lastProcessedUid.current = uid;
+      }
     } catch (err) {
-      console.error("Auth: Erreur profil", err);
+      console.error("Auth: Erreur critique setup", err);
     } finally {
       setLoading(false);
+      processingRef.current = false;
     }
   };
 
@@ -113,15 +105,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAuth = async () => {
       if (!supabase) {
-        setLoading(false);
+        if (mounted) setLoading(false);
         return;
       }
       
       try {
         const { data: { session } } = await (supabase.auth as any).getSession();
-        if (mounted) {
-          if (session?.user) await handleUserSetup(session.user);
-          else setLoading(false);
+        if (mounted && session?.user) {
+          await handleUserSetup(session.user);
+        } else if (mounted) {
+          setLoading(false);
         }
       } catch (e) {
         if (mounted) setLoading(false);
@@ -130,24 +123,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
+    let authListener: any = null;
     if (supabase) {
       const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
         if (!mounted) return;
         
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           if (session?.user) await handleUserSetup(session.user);
         } else if (event === 'SIGNED_OUT') {
-          lastUidRef.current = null;
+          lastProcessedUid.current = null;
           setUser(null);
           setLoading(false);
         }
       });
-      
-      return () => {
-        mounted = false;
-        subscription.unsubscribe();
-      };
+      authListener = subscription;
     }
+    
+    return () => {
+      mounted = false;
+      if (authListener) authListener.unsubscribe();
+    };
   }, []);
 
   const refreshProfile = async () => {
@@ -163,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await getProfileByPhone(phone);
       if (profile && profile.isActive) {
-        lastUidRef.current = profile.uid;
+        lastProcessedUid.current = profile.uid;
         setUser(profile);
         localStorage.setItem('gotop_manual_phone', phone);
         return true;
@@ -177,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (supabase) await (supabase.auth as any).signOut();
     } catch (e) {}
-    lastUidRef.current = null;
+    lastProcessedUid.current = null;
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
     setLoading(false);
