@@ -38,49 +38,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase().trim();
     
+    // CAS MASTER ADMIN
     if (email === MASTER_ADMIN_EMAIL) {
-      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ");
+      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ", uid);
       
+      // On essaie de récupérer le profil existant d'abord
+      let profile: UserProfile | null = null;
+      try {
+        profile = await getUserProfile(uid);
+      } catch (e) {}
+
       const adminProfile: UserProfile = {
         uid,
-        phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
+        phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
         email: email,
-        firstName: 'Coach',
-        lastName: 'Kita',
+        firstName: profile?.firstName || 'Coach',
+        lastName: profile?.lastName || 'Kita',
+        establishmentName: profile?.establishmentName || "Go'Top Pro HQ",
         role: 'SUPER_ADMIN',
         isActive: true,
         isAdmin: true,
         isKitaPremium: true,
         hasPerformancePack: true,
-        badges: [],
+        badges: profile?.badges || [],
         purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
         pendingModuleIds: [],
-        actionPlan: [],
-        createdAt: new Date().toISOString()
+        actionPlan: profile?.actionPlan || [],
+        createdAt: profile?.createdAt || new Date().toISOString(),
+        photoURL: profile?.photoURL || COACH_KITA_AVATAR
       };
 
       setUser(adminProfile);
       setLoading(false);
 
-      // Tentative de synchronisation discrète
-      try {
-        const profile = await getUserProfile(uid);
-        if (!profile || !profile.isAdmin) {
-          // On n'envoie que les colonnes de base universelles pour éviter les 400
-          await saveUserProfile({
-            uid: adminProfile.uid,
-            phoneNumber: adminProfile.phoneNumber,
-            role: 'SUPER_ADMIN',
-            isAdmin: true,
-            isActive: true
-          } as any);
-        }
-      } catch (e) {
-        console.warn("Auth: Synchro DB indisponible (colonnes manquantes)");
+      // Synchro silencieuse de sécurité (uniquement colonnes de base)
+      if (!profile) {
+        saveUserProfile({
+          uid: adminProfile.uid,
+          phoneNumber: adminProfile.phoneNumber,
+          role: 'SUPER_ADMIN',
+          isAdmin: true,
+          isActive: true
+        } as any).catch(() => {});
       }
       return;
     }
 
+    // CAS CLIENT STANDARD
     try {
       const profile = await getUserProfile(uid);
       setUser(profile);

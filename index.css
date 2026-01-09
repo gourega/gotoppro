@@ -7,7 +7,7 @@
   html, body {
     @apply m-0 p-0 w-full min-w-full overflow-x-hidden;
     min-height: 100%;
-    width: 100%;
+    width: 100vw; /* Utilisation de vw pour forcer la largeur du viewport */
   }
 
   #root {
