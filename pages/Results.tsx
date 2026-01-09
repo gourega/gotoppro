@@ -117,6 +117,38 @@ const Results: React.FC = () => {
     );
   };
 
+  const handleValidateEngagement = async () => {
+    if (user) {
+      // FAST-TRACK pour les utilisateurs connectés
+      setLoading(true);
+      try {
+        if (!supabase) throw new Error("Base de données indisponible");
+        
+        const isElite = activePack === 'elite' || activePack === 'elite_performance';
+        const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
+        const newPendingIds = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+        
+        const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
+        
+        await supabase.from('profiles').update({ 
+          pendingModuleIds: updatedPending,
+          isKitaPremium: isElite || user.isKitaPremium,
+          hasPerformancePack: isPerformance || user.hasPerformancePack
+        }).eq('uid', user.uid);
+        
+        // Redirection directe vers le dashboard
+        navigate('/dashboard');
+      } catch (err: any) {
+        alert(`Erreur : ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Parcours prospect : ouverture de la modale
+      setIsModalOpen(true);
+    }
+  };
+
   const handleIdentification = async () => {
     const digitsOnly = phoneInput.replace(/\D/g, '');
     if (digitsOnly.length < 10) return alert("Veuillez entrer un numéro valide.");
@@ -379,11 +411,11 @@ const Results: React.FC = () => {
                   </div>
                 </div>
                 <button 
-                  onClick={() => setIsModalOpen(true)} 
-                  disabled={activePack === 'none' && cart.length === 0} 
+                  onClick={handleValidateEngagement} 
+                  disabled={loading || (activePack === 'none' && cart.length === 0)} 
                   className="w-full py-7 bg-[#0ea5e9] text-white rounded-3xl font-black text-[12px] uppercase tracking-[0.25em] shadow-2xl hover:bg-[#0284c7] transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-20 relative z-10"
                 >
-                  Valider l'engagement <ArrowRight className="w-6 h-6" />
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Valider l'engagement <ArrowRight className="w-6 h-6" /></>}
                 </button>
               </div>
             </div>
