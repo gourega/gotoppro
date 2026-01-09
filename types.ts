@@ -22,16 +22,17 @@ export interface KitaTransaction {
   productId?: string;
   staffName?: string;
   commissionRate?: number;
+  isCredit?: boolean; // Si c'est une vente à crédit
 }
 
 export interface KitaDebt {
   id: string;
   personName: string;
   amount: number;
-  type: 'CREDIT' | 'DEBT';
-  dueDate?: string;
+  phone?: string;
   isPaid: boolean;
   createdAt: string;
+  paidAt?: string;
 }
 
 export interface KitaProduct {
@@ -39,7 +40,9 @@ export interface KitaProduct {
   name: string;
   quantity: number;
   purchasePrice: number;
+  sellPrice: number;
   alertThreshold: number;
+  category: string;
 }
 
 export interface UserProfile {
@@ -57,11 +60,11 @@ export interface UserProfile {
   isActive: boolean;
   isAdmin: boolean;
   
-  // Statut KITA
+  // Statuts KITA
   isKitaPremium: boolean;
   kitaPremiumUntil?: string; 
-  monthlyRentGoal?: number;
-  hasPerformancePack: boolean; // Nouveau : Pack additionnel
+  hasPerformancePack: boolean; // Pack Humains
+  hasStockPack: boolean;       // Pack Matériel
   
   badges: string[];
   purchasedModuleIds: string[];
@@ -112,14 +115,4 @@ export interface Badge {
   icon: string;
   description: string;
   condition: (user: UserProfile, modules: TrainingModule[]) => boolean;
-}
-
-export interface CoachMessage {
-  id: string;
-  userId: string;
-  userName: string;
-  userPhone: string;
-  content: string;
-  date: string;
-  isRead: boolean;
 }

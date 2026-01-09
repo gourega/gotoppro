@@ -66,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const profile = await getUserProfile(uid).catch(() => null);
 
+        // Fix: Added missing 'hasStockPack' property required by UserProfile interface
         const adminProfile: UserProfile = {
           uid,
           phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
@@ -78,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: true,
           isKitaPremium: true,
           hasPerformancePack: true,
+          hasStockPack: true,
           badges: profile?.badges || [],
           purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
           pendingModuleIds: [],

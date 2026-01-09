@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, KitaTransaction } from '../types';
+import { UserProfile, KitaTransaction, KitaDebt, KitaProduct } from '../types';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -68,6 +68,7 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
   return publicUrl;
 };
 
+// --- TRANSACTIONS ---
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -80,7 +81,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commissionRate: t.commission_rate
+    commissionRate: t.commission_rate,
+    isCredit: t.is_credit
   }));
 };
 
@@ -95,7 +97,8 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     payment_method: transaction.paymentMethod,
     date: transaction.date,
     staff_name: transaction.staffName,
-    commission_rate: transaction.commissionRate
+    commission_rate: transaction.commissionRate,
+    is_credit: transaction.isCredit || false
   }).select().single();
   if (error) throw error;
   return data;
@@ -111,7 +114,8 @@ export const updateKitaTransaction = async (id: string, transaction: Partial<Kit
     payment_method: transaction.paymentMethod,
     date: transaction.date,
     staff_name: transaction.staffName,
-    commission_rate: transaction.commissionRate
+    commission_rate: transaction.commissionRate,
+    is_credit: transaction.isCredit
   }).eq('id', id);
   if (error) throw error;
 };
@@ -122,6 +126,65 @@ export const deleteKitaTransaction = async (id: string) => {
   if (error) throw error;
 };
 
+// --- DETTES ---
+export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  return error ? [] : data;
+};
+
+export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { data, error } = await (supabase as any).from('kita_debts').insert({
+    user_id: userId,
+    person_name: debt.personName,
+    amount: debt.amount,
+    phone: debt.phone,
+    is_paid: debt.isPaid,
+    created_at: debt.createdAt
+  }).select().single();
+  if (error) throw error;
+  return data;
+};
+
+export const markDebtAsPaid = async (debtId: string) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('kita_debts').update({
+    is_paid: true,
+    paid_at: new Date().toISOString()
+  }).eq('id', debtId);
+  if (error) throw error;
+};
+
+// --- STOCK ---
+export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId).order('name', { ascending: true });
+  return error ? [] : data;
+};
+
+export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { data, error } = await (supabase as any).from('kita_products').insert({
+    user_id: userId,
+    name: product.name,
+    quantity: product.quantity,
+    purchase_price: product.purchasePrice,
+    sell_price: product.sellPrice,
+    alert_threshold: product.alertThreshold,
+    category: product.category
+  }).select().single();
+  if (error) throw error;
+  return data;
+};
+
+export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('kita_products').update(product).eq('id', id);
+  if (error) throw error;
+};
+
+// --- STAFF & CLIENTS ---
 export const getKitaStaff = async (userId: string): Promise<any[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
@@ -148,6 +211,19 @@ export const deleteKitaStaff = async (id: string) => {
 
 export const getKitaClients = async (userId: string): Promise<any[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId);
+  const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId).order('total_spent', { ascending: false });
   return error ? [] : data;
+};
+
+export const addKitaClient = async (userId: string, client: { name: string, phone: string }) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { data, error } = await (supabase as any).from('kita_clients').insert({
+    user_id: userId,
+    name: client.name,
+    phone: client.phone,
+    total_spent: 0,
+    total_visits: 0
+  }).select().single();
+  if (error) throw error;
+  return data;
 };

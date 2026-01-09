@@ -15,6 +15,7 @@ import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
 import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
+import Magasin from './pages/Magasin'; // Nouvelle page
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -70,6 +71,12 @@ const AppContent: React.FC = () => {
           <Route path="/pilotage" element={
             <ProtectedRoute>
               <PilotagePerformance />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/magasin" element={
+            <ProtectedRoute>
+              <Magasin />
             </ProtectedRoute>
           } />
           
