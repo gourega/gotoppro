@@ -15,20 +15,20 @@ const Footer: React.FC = () => {
   const [error, setError] = useState('');
   const isRedirecting = useRef(false);
 
-  // Redirection Prioritaire si déjà admin
+  // Redirection Prioritaire dès que l'état global AuthContext détecte l'admin
   useEffect(() => {
     if (isAdminModalOpen && authUser?.isAdmin && !isRedirecting.current) {
       isRedirecting.current = true;
       setIsAdminModalOpen(false);
       navigate('/admin');
-      // On reset le flag après un court délai
+      // Petit délai pour libérer le verrou de redirection
       setTimeout(() => { isRedirecting.current = false; }, 1000);
     }
   }, [authUser, isAdminModalOpen, navigate]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading) return; // Sécurité double clic
     
     setError('');
     setLoading(true);
@@ -52,17 +52,17 @@ const Footer: React.FC = () => {
         throw loginError;
       }
       
-      // La redirection est gérée par le useEffect ci-dessus dès que authUser change
+      // La redirection est gérée par le useEffect au-dessus via AuthContext
     } catch (err: any) {
       console.error("Login Error:", err);
       setError(err.message || "Une erreur est survenue.");
-      setLoading(false);
+      setLoading(false); // On réactive le bouton seulement en cas d'erreur
     }
   };
 
   const closeAdminModal = () => {
+    if (loading) return; // Empêcher de fermer pendant le chargement
     setIsAdminModalOpen(false);
-    setLoading(false);
     setError('');
     setEmail('');
     setPassword('');
@@ -109,6 +109,7 @@ const Footer: React.FC = () => {
             <button 
               onClick={closeAdminModal} 
               className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white"
+              disabled={loading}
             >
               <X className="w-5 h-5" />
             </button>
@@ -140,6 +141,7 @@ const Footer: React.FC = () => {
                     className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
                     required
                     autoFocus
+                    disabled={loading}
                   />
                 </div>
                 <div className="relative">
@@ -151,6 +153,7 @@ const Footer: React.FC = () => {
                     onChange={e => setPassword(e.target.value)}
                     className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-800/50 border border-slate-700 text-white text-sm outline-none focus:ring-2 focus:ring-brand-500/50"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>

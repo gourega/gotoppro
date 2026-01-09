@@ -28,11 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Verrous pour éviter les boucles de rendu
-  const processingRef = useRef<boolean>(false);
+  // Verrous critiques pour la performance
   const lastProcessedUid = useRef<string | null>(null);
+  const isProcessing = useRef<boolean>(false);
 
   const handleUserSetup = async (authUser: any) => {
+    // Si pas d'utilisateur, on reset tout
     if (!authUser) {
       if (lastProcessedUid.current !== null) {
         lastProcessedUid.current = null;
@@ -42,26 +43,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Si on est déjà en train de traiter cet utilisateur, on ignore
-    if (processingRef.current && lastProcessedUid.current === authUser.id) return;
-    
-    processingRef.current = true;
     const uid = authUser.id;
+
+    // VERROU : Si on traite déjà cet UID ou si c'est le même que le dernier traité, on stoppe
+    if (isProcessing.current || (lastProcessedUid.current === uid && user !== null)) {
+      setLoading(false);
+      return;
+    }
+
+    isProcessing.current = true;
+    lastProcessedUid.current = uid;
+    
     const email = (authUser.email || '').toLowerCase().trim();
 
     try {
       // CAS MASTER ADMIN
       if (email === MASTER_ADMIN_EMAIL) {
-        // Si le Master Admin est déjà chargé avec le même UID, on ne fait rien
-        if (user?.uid === uid && user?.role === 'SUPER_ADMIN') {
-          setLoading(false);
-          processingRef.current = false;
-          return;
-        }
-
         console.log("Auth: CONFIGURATION MASTER ADMIN", uid);
         
-        // On récupère le profil réel pour les stats, mais on force les droits admin
+        // On tente de récupérer le profil, mais on ne bloque pas si ça échoue
         const profile = await getUserProfile(uid).catch(() => null);
 
         const adminProfile: UserProfile = {
@@ -85,18 +85,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         setUser(adminProfile);
-        lastProcessedUid.current = uid;
       } else {
         // CAS CLIENT STANDARD
         const profile = await getUserProfile(uid);
-        setUser(profile);
-        lastProcessedUid.current = uid;
+        if (profile) {
+          setUser(profile);
+        }
       }
     } catch (err) {
-      console.error("Auth: Erreur critique setup", err);
+      console.error("Auth: Erreur de configuration profil", err);
     } finally {
+      isProcessing.current = false;
       setLoading(false);
-      processingRef.current = false;
     }
   };
 
@@ -111,10 +111,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       try {
         const { data: { session } } = await (supabase.auth as any).getSession();
-        if (mounted && session?.user) {
-          await handleUserSetup(session.user);
-        } else if (mounted) {
-          setLoading(false);
+        if (mounted) {
+          if (session?.user) {
+            await handleUserSetup(session.user);
+          } else {
+            setLoading(false);
+          }
         }
       } catch (e) {
         if (mounted) setLoading(false);
@@ -123,25 +125,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
-    let authListener: any = null;
+    let subscription: any = null;
     if (supabase) {
-      const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
+      const { data } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
         if (!mounted) return;
         
+        // On ne réagit qu'aux changements réels d'identité
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          if (session?.user) await handleUserSetup(session.user);
+          if (session?.user) {
+            await handleUserSetup(session.user);
+          }
         } else if (event === 'SIGNED_OUT') {
           lastProcessedUid.current = null;
           setUser(null);
           setLoading(false);
         }
       });
-      authListener = subscription;
+      subscription = data.subscription;
     }
     
     return () => {
       mounted = false;
-      if (authListener) authListener.unsubscribe();
+      if (subscription) subscription.unsubscribe();
     };
   }, []);
 
