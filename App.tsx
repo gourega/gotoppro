@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -24,8 +24,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-600"></div>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Chargement...</p>
+        </div>
       </div>
     );
   }
@@ -40,9 +43,9 @@ const AppContent: React.FC = () => {
   const { user } = useAuth();
   
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen w-full flex flex-col bg-slate-50 font-sans text-slate-900 items-stretch">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow flex flex-col w-full opacity-100 items-stretch">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -100,9 +103,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <AppContent />
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 };

@@ -38,11 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser.id;
     const email = (authUser.email || '').toLowerCase().trim();
     
-    console.log("Auth: Vérification Master Admin...", email);
-
-    // LOGIQUE DE DÉBLOCAGE IMMÉDIAT
     if (email === MASTER_ADMIN_EMAIL) {
-      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ - Libération de l'interface");
+      console.log("Auth: ACCÈS MAÎTRE DÉTECTÉ");
       
       const adminProfile: UserProfile = {
         uid,
@@ -62,21 +59,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString()
       };
 
-      // On définit l'utilisateur tout de suite pour débloquer le UI
       setUser(adminProfile);
       setLoading(false);
 
-      // On tente de sauvegarder/vérifier en arrière-plan sans "await" bloquant
-      getUserProfile(uid).then(profile => {
+      // Tentative de synchronisation discrète
+      try {
+        const profile = await getUserProfile(uid);
         if (!profile || !profile.isAdmin) {
-          saveUserProfile(adminProfile).catch(e => console.error("Note: Erreur synchro DB (background)", e));
+          // On n'envoie que les colonnes de base universelles pour éviter les 400
+          await saveUserProfile({
+            uid: adminProfile.uid,
+            phoneNumber: adminProfile.phoneNumber,
+            role: 'SUPER_ADMIN',
+            isAdmin: true,
+            isActive: true
+          } as any);
         }
-      }).catch(() => {});
-      
-      return; // On arrête l'exécution ici pour ne pas bloquer sur le prochain await
+      } catch (e) {
+        console.warn("Auth: Synchro DB indisponible (colonnes manquantes)");
+      }
+      return;
     }
 
-    // Flux normal pour les autres utilisateurs
     try {
       const profile = await getUserProfile(uid);
       setUser(profile);
@@ -90,9 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       if (supabase) {
-        const { data: { session } } = await (supabase.auth as any).getSession();
-        if (session?.user) await handleUserSetup(session.user);
-        else setLoading(false);
+        try {
+          const { data: { session } } = await (supabase.auth as any).getSession();
+          if (session?.user) await handleUserSetup(session.user);
+          else setLoading(false);
+        } catch (e) {
+          setLoading(false);
+        }
       } else {
         setLoading(false);
       }
@@ -113,23 +121,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user?.uid) {
-      const profile = await getUserProfile(user.uid);
-      if (profile) setUser(profile);
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (profile) setUser(profile);
+      } catch (e) {}
     }
   };
 
   const loginManually = async (phone: string): Promise<boolean> => {
-    const profile = await getProfileByPhone(phone);
-    if (profile && profile.isActive) {
-      setUser(profile);
-      localStorage.setItem('gotop_manual_phone', phone);
-      return true;
-    }
+    try {
+      const profile = await getProfileByPhone(phone);
+      if (profile && profile.isActive) {
+        setUser(profile);
+        localStorage.setItem('gotop_manual_phone', phone);
+        return true;
+      }
+    } catch (e) {}
     return false;
   };
 
   const logout = async () => {
-    if (supabase) await (supabase.auth as any).signOut();
+    try {
+      if (supabase) await (supabase.auth as any).signOut();
+    } catch (e) {}
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
     setLoading(false);
