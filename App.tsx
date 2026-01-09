@@ -15,7 +15,8 @@ import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
 import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
-import Magasin from './pages/Magasin'; // Nouvelle page
+import Magasin from './pages/Magasin';
+import MesFormations from './pages/MesFormations'; // Import de la nouvelle page
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -77,6 +78,12 @@ const AppContent: React.FC = () => {
           <Route path="/magasin" element={
             <ProtectedRoute>
               <Magasin />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/mes-formations" element={
+            <ProtectedRoute>
+              <MesFormations />
             </ProtectedRoute>
           } />
           
