@@ -14,15 +14,15 @@ const Footer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Surveillance de la connexion admin
+  // Surveillance de la connexion admin et redirection
   useEffect(() => {
     if (isAdminModalOpen && !authLoading) {
       if (authUser?.isAdmin) {
+        console.log("Footer: Admin détecté, redirection...");
         setIsAdminModalOpen(false);
         setLoading(false);
         navigate('/admin');
       } else if (loading && authUser && !authUser.isAdmin) {
-        // L'utilisateur est connecté mais n'est PAS admin
         setError("Accès refusé : Ce compte n'a pas les droits d'administration.");
         setLoading(false);
       }
@@ -43,6 +43,7 @@ const Footer: React.FC = () => {
     }
 
     try {
+      console.log("Footer: Tentative de login Supabase...");
       const { data, error: loginError } = await (supabase.auth as any).signInWithPassword({
         email: email.trim(),
         password: password.trim(),
@@ -50,10 +51,12 @@ const Footer: React.FC = () => {
 
       if (loginError) throw loginError;
 
-      // On laisse le useEffect surveiller l'arrivée du profil dans AuthContext
-      // Si après 5 secondes rien ne se passe, on débloque
+      // Sécurité : si le setup prend plus de 5s, on libère le bouton
       setTimeout(() => {
-        if (loading) setLoading(false);
+        if (loading) {
+          console.warn("Footer: Timeout atteint pour le setup du profil.");
+          setLoading(false);
+        }
       }, 5000);
 
     } catch (err: any) {
@@ -97,7 +100,10 @@ const Footer: React.FC = () => {
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in">
           <div className="bg-[#1e293b] w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 relative overflow-hidden">
-            <button onClick={() => { setIsAdminModalOpen(false); setLoading(false); }} className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white">
+            <button 
+              onClick={() => { setIsAdminModalOpen(false); setLoading(false); setError(''); }} 
+              className="absolute top-6 right-6 p-2 text-slate-500 hover:text-white"
+            >
               <X className="w-5 h-5" />
             </button>
 

@@ -4,7 +4,10 @@ import { supabase, getUserProfile, saveUserProfile, getProfileByPhone } from '..
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
-const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com").toLowerCase();
+// Sécurisation de l'email admin : priorité à l'env, sinon fallback dur sur votre email
+const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL && process.env.VITE_ADMIN_EMAIL.trim() !== "" 
+  ? process.env.VITE_ADMIN_EMAIL 
+  : "teletechnologyci@gmail.com").toLowerCase().trim();
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -34,25 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleUserSetup = async (authUser: any) => {
-    console.log("Auth: Tentative de setup pour", authUser?.email);
     if (!authUser) {
+      console.log("Auth: Aucun utilisateur authentifié");
       setUser(null);
       setLoading(false);
       return;
     }
 
     const uid = authUser.id;
-    const email = (authUser.email || '').toLowerCase();
+    const email = (authUser.email || '').toLowerCase().trim();
+    
+    console.log("Auth: Comparaison...", {
+      current: email,
+      target: MASTER_ADMIN_EMAIL,
+      match: email === MASTER_ADMIN_EMAIL
+    });
     
     try {
       let profile = await getUserProfile(uid);
       
-      // Cas critique : C'est l'email du Master Admin
+      // Reconnaissance forcée du Super Admin
       if (email === MASTER_ADMIN_EMAIL) {
-        console.log("Auth: Master Admin détecté");
-        // Si le profil n'existe pas OU s'il n'est pas encore admin, on le crée/met à jour
+        console.log("Auth: MASTER ADMIN RECONNU - Vérification profil...");
+        
         if (!profile || !profile.isAdmin) {
-          console.log("Auth: Création/Mise à jour forcée du profil Super Admin...");
+          console.log("Auth: Création/Réparation du profil Admin en cours...");
           const adminProfile: UserProfile = {
             uid,
             phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
@@ -76,9 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setUser(profile);
-      console.log("Auth: Setup terminé, profil chargé :", !!profile);
+      console.log("Auth: Setup terminé. Profil chargé:", !!profile);
     } catch (err) {
-      console.error("Auth: Erreur lors du handleUserSetup:", err);
+      console.error("Auth: Erreur critique setup:", err);
     } finally {
       setLoading(false);
     }
@@ -86,11 +95,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initAuth = async () => {
+      console.log("Auth: Initialisation session...");
       if (supabase) {
-        const { data: { session } } = await (supabase.auth as any).getSession();
-        if (session?.user) {
-          await handleUserSetup(session.user);
-        } else {
+        try {
+          const { data: { session } } = await (supabase.auth as any).getSession();
+          if (session?.user) {
+            await handleUserSetup(session.user);
+          } else {
+            setLoading(false);
+          }
+        } catch (e) {
+          console.error("Auth: Erreur session initiale", e);
           setLoading(false);
         }
       } else {
@@ -101,10 +116,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (supabase) {
       const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
-        console.log("Auth Event:", event);
+        console.log("Auth Event détecté:", event);
         if (session?.user) {
           await handleUserSetup(session.user);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setLoading(false);
         }
@@ -127,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabase) await (supabase.auth as any).signOut();
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
+    setLoading(false);
   };
 
   return (
