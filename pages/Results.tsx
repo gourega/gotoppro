@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowRight, 
   Loader2, 
@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Phone,
   Gift,
-  TrendingUp
+  TrendingUp,
+  Gem
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule } from '../types';
@@ -26,9 +27,10 @@ import { generateStrategicAdvice } from '../services/geminiService';
 const Results: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [cart, setCart] = useState<TrainingModule[]>([]);
-  const [isEliteSelected, setIsEliteSelected] = useState(false);
+  const [activePack, setActivePack] = useState<'none' | 'elite' | 'performance' | 'elite_performance'>('none');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'details' | 'payment'>('details');
   const [phoneInput, setPhoneInput] = useState('');
@@ -38,18 +40,24 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
 
-  // Catalogue de base (hors déjà achetés)
   const availableCatalog = useMemo(() => {
     const purchasedIds = user?.purchasedModuleIds || [];
     return TRAINING_CATALOG.filter(m => !purchasedIds.includes(m.id));
   }, [user]);
 
-  // Catalogue affiché (hors déjà dans le panier)
   const displayCatalog = useMemo(() => {
     return availableCatalog.filter(mod => !cart.find(c => c.id === mod.id));
   }, [availableCatalog, cart]);
 
   useEffect(() => {
+    // 1. Gestion des paramètres d'URL (Auto-sélection)
+    const params = new URLSearchParams(location.search);
+    const packParam = params.get('pack');
+    if (packParam === 'performance') setActivePack('performance');
+    else if (packParam === 'elite') setActivePack('elite');
+    else if (packParam === 'elite_performance') setActivePack('elite_performance');
+
+    // 2. Gestion du diagnostic
     const raw = localStorage.getItem('temp_quiz_results');
     const results = raw ? JSON.parse(raw) : null;
     
@@ -60,7 +68,9 @@ const Results: React.FC = () => {
       );
       
       const recommended = availableCatalog.filter(m => negativeLinkedIds.includes(m.id));
-      setCart(recommended);
+      if (packParam === null) {
+        setCart(recommended);
+      }
 
       const getAdvice = async () => {
         const negativeTexts = negativeQuestions.map((r: any) => 
@@ -76,50 +86,35 @@ const Results: React.FC = () => {
       setAiAdvice("Explorez notre catalogue expert pour transformer votre salon.");
     }
     window.scrollTo(0,0);
-  }, [user, availableCatalog]);
+  }, [user, availableCatalog, location.search]);
 
   const pricingData = useMemo(() => {
-    if (isEliteSelected) {
-      return { subtotal: 10000, discountAmount: 0, total: 10000, rate: 0, count: 16, nextTier: null, neededForNext: 0 };
-    }
+    if (activePack === 'elite') return { total: 10000, label: 'Pack Elite (Formations)', count: 16 };
+    if (activePack === 'performance') return { total: 5000, label: 'Pack Performance+ (Outils)', count: 0 };
+    if (activePack === 'elite_performance') return { total: 15000, label: 'Pack Elite Performance+', count: 16 };
+
     const subtotal = cart.reduce((acc, curr) => acc + curr.price, 0);
     const count = cart.length;
     let rate = 0;
     let nextTier = null;
     let neededForNext = 0;
 
-    if (count >= 13) {
-      rate = 0.50;
-    } else if (count >= 9) {
-      rate = 0.30;
-      nextTier = 50;
-      neededForNext = 13 - count;
-    } else if (count >= 5) {
-      rate = 0.20;
-      nextTier = 30;
-      neededForNext = 9 - count;
-    } else {
-      rate = 0;
-      nextTier = 20;
-      neededForNext = 5 - count;
-    }
+    if (count >= 13) rate = 0.50;
+    else if (count >= 9) { rate = 0.30; nextTier = 50; neededForNext = 13 - count; }
+    else if (count >= 5) { rate = 0.20; nextTier = 30; neededForNext = 9 - count; }
+    else { rate = 0; nextTier = 20; neededForNext = 5 - count; }
 
     const discountAmount = Math.round(subtotal * rate);
     const total = subtotal - discountAmount;
-    return { subtotal, discountAmount, total, rate: rate * 100, count, nextTier, neededForNext };
-  }, [cart, isEliteSelected]);
+    return { subtotal, discountAmount, total, rate: rate * 100, count, nextTier, neededForNext, label: null };
+  }, [cart, activePack]);
 
   const toggleModuleInCart = (mod: TrainingModule) => {
-    setIsEliteSelected(false);
+    setActivePack('none');
     setCart(prev => prev.find(item => item.id === mod.id) 
       ? prev.filter(item => item.id !== mod.id) 
       : [...prev, mod]
     );
-  };
-
-  const handleSelectElite = () => {
-    setIsEliteSelected(true);
-    setCart([]); 
   };
 
   const handleIdentification = async () => {
@@ -130,7 +125,12 @@ const Results: React.FC = () => {
     try {
       if (!supabase) throw new Error("Database error");
       const { data: existingProfile } = await supabase.from('profiles').select('*').eq('phoneNumber', formattedPhone).maybeSingle();
-      const newPendingIds = isEliteSelected ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+      
+      const isElite = activePack === 'elite' || activePack === 'elite_performance';
+      const isPerformance = activePack === 'performance' || activePack === 'elite_performance';
+      
+      const newPendingIds = isElite ? TRAINING_CATALOG.map(m => m.id) : cart.map(m => m.id);
+      
       if (!existingProfile) {
         await supabase.from('profiles').insert({
           uid: `client_${Date.now()}`,
@@ -144,8 +144,8 @@ const Results: React.FC = () => {
           purchasedModuleIds: [],
           pendingModuleIds: newPendingIds,
           actionPlan: [],
-          isKitaPremium: isEliteSelected,
-          hasPerformancePack: isEliteSelected,
+          isKitaPremium: isElite,
+          hasPerformancePack: isPerformance,
           createdAt: new Date().toISOString()
         });
       } else {
@@ -154,8 +154,8 @@ const Results: React.FC = () => {
           pendingModuleIds: updatedPending,
           employeeCount,
           yearsOfExistence,
-          isKitaPremium: isEliteSelected || existingProfile.isKitaPremium,
-          hasPerformancePack: isEliteSelected || existingProfile.hasPerformancePack
+          isKitaPremium: isElite || existingProfile.isKitaPremium,
+          hasPerformancePack: isPerformance || existingProfile.hasPerformancePack
         }).eq('uid', existingProfile.uid);
       }
       setCheckoutStep('payment');
@@ -180,7 +180,6 @@ const Results: React.FC = () => {
     <div className="min-h-screen bg-[#fcfdfe] pb-24">
       <div className="max-w-7xl mx-auto px-6 py-12">
         
-        {/* HEADER */}
         <header className="mb-14 flex items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
            <div className="bg-[#0ea5e9] p-3.5 rounded-2xl text-white shadow-lg shadow-sky-500/20">
              <ShoppingBag className="w-7 h-7" />
@@ -189,7 +188,7 @@ const Results: React.FC = () => {
         </header>
 
         {/* ELITE BANNER */}
-        {!user?.purchasedModuleIds?.includes('elite') && !isEliteSelected && (
+        {activePack === 'none' && (
           <section className="mb-20 bg-[#0c4a6e] rounded-[3.5rem] p-10 md:p-16 text-white relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                <Crown className="w-64 h-64" />
@@ -201,16 +200,8 @@ const Results: React.FC = () => {
                 </div>
                 <h2 className="text-5xl md:text-7xl font-serif font-bold leading-tight">Pack ELITE KITA</h2>
                 <p className="text-xl text-slate-300 font-medium leading-relaxed max-w-xl">
-                  Débloquez les <span className="text-white border-b-2 border-[#0ea5e9] font-black">16 modules</span> experts et sécurisez vos chiffres sur le <span className="text-white font-black">Cloud</span> pendant 3 ans.
+                  Débloquez les <span className="text-white border-b-2 border-[#0ea5e9] font-black">16 modules</span> experts et sécurisez vos chiffres sur le <span className="text-white font-black">Cloud</span>.
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-3 px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Formation Complète
-                  </div>
-                  <div className="flex items-center gap-3 px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest">
-                    <Zap className="w-4 h-4 text-amber-400" /> Protection Cloud 3 ans
-                  </div>
-                </div>
               </div>
               
               <div className="bg-white/5 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/10 min-w-[320px] text-center shadow-2xl">
@@ -218,10 +209,10 @@ const Results: React.FC = () => {
                     <p className="text-7xl font-black flex items-center justify-center gap-2">
                        10 000 <span className="text-2xl font-bold opacity-60">F</span>
                     </p>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mt-2">Paiement Unique</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mt-2">Formations Seules</p>
                  </div>
                  <button 
-                  onClick={handleSelectElite}
+                  onClick={() => { setActivePack('elite'); setCart([]); }}
                   className="w-full bg-white text-[#0c4a6e] py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:scale-105 transition-all shadow-xl shadow-black/20"
                  >
                    Choisir l'Elite
@@ -234,8 +225,6 @@ const Results: React.FC = () => {
         <div className="grid lg:grid-cols-[1fr_400px] gap-12 items-start">
           
           <div className="space-y-20">
-            
-            {/* AUDIT SECTION */}
             <section className="bg-white rounded-[4rem] border border-slate-100 p-12 md:p-16 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] group">
               <div className="flex flex-col md:flex-row gap-16 items-start">
                 <div className="shrink-0">
@@ -261,7 +250,6 @@ const Results: React.FC = () => {
               </div>
             </section>
 
-            {/* MODULES CATALOG */}
             {displayCatalog.length > 0 && (
               <section className="space-y-12">
                 <div className="flex items-center gap-4">
@@ -293,7 +281,6 @@ const Results: React.FC = () => {
             )}
           </div>
 
-          {/* PANIER SIDEBAR */}
           <div className="lg:sticky lg:top-24">
             <div className="bg-white rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] border border-slate-50 overflow-hidden animate-in slide-in-from-right-4 duration-700">
               <div className="p-12 border-b border-slate-50 space-y-8 bg-white">
@@ -303,12 +290,11 @@ const Results: React.FC = () => {
                     <h3 className="text-4xl font-black text-[#0f172a] tracking-tighter">Panier</h3>
                   </div>
                   <div className="h-10 w-10 bg-[#0ea5e9] text-white rounded-full flex items-center justify-center text-sm font-black shadow-lg shadow-sky-500/30">
-                    {pricingData.count}
+                    {activePack !== 'none' ? '1' : cart.length}
                   </div>
                 </div>
 
-                {/* BARRE DE PROGRESSION DES REMISES (GAMIFICATION) */}
-                {!isEliteSelected && cart.length > 0 && (
+                {activePack === 'none' && cart.length > 0 && (
                   <div className="space-y-4 animate-in fade-in duration-700">
                      <div className="flex justify-between items-end">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -323,33 +309,25 @@ const Results: React.FC = () => {
                         )}
                      </div>
                      <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden flex items-center">
-                        {/* Segments de paliers */}
-                        <div className="absolute left-[31%] h-full w-0.5 bg-white z-10" title="Palier 5 modules (-20%)"></div>
-                        <div className="absolute left-[56%] h-full w-0.5 bg-white z-10" title="Palier 9 modules (-30%)"></div>
-                        <div className="absolute left-[81%] h-full w-0.5 bg-white z-10" title="Palier 13 modules (-50%)"></div>
-                        
-                        {/* Barre de progression réelle */}
+                        <div className="absolute left-[31%] h-full w-0.5 bg-white z-10"></div>
+                        <div className="absolute left-[56%] h-full w-0.5 bg-white z-10"></div>
+                        <div className="absolute left-[81%] h-full w-0.5 bg-white z-10"></div>
                         <div 
-                           className="h-full bg-[#0ea5e9] transition-all duration-700 ease-out shadow-[0_0_10px_rgba(14,165,233,0.4)]"
-                           style={{ width: `${Math.min(100, (pricingData.count / 16) * 100)}%` }}
+                           className="h-full bg-[#0ea5e9] transition-all duration-700 ease-out"
+                           style={{ width: `${Math.min(100, (cart.length / 16) * 100)}%` }}
                         />
-                     </div>
-                     <div className="flex justify-between text-[8px] font-black text-slate-300 uppercase px-1">
-                        <span className={pricingData.count >= 5 ? "text-[#0ea5e9]" : ""}>-20% (5)</span>
-                        <span className={pricingData.count >= 9 ? "text-[#0ea5e9]" : ""}>-30% (9)</span>
-                        <span className={pricingData.count >= 13 ? "text-[#0ea5e9]" : ""}>-50% (13)</span>
                      </div>
                   </div>
                 )}
               </div>
               
               <div className="p-10 max-h-[400px] overflow-y-auto custom-scrollbar space-y-5">
-                {isEliteSelected ? (
+                {activePack !== 'none' ? (
                   <div className="p-10 bg-sky-50 rounded-[2.5rem] border border-sky-100 animate-in zoom-in-95 text-center">
-                     <Crown className="w-10 h-10 text-amber-500 mx-auto mb-4 animate-bounce" />
-                     <p className="text-[#0c4a6e] font-black text-sm uppercase tracking-widest mb-3">Pack ELITE KITA</p>
-                     <p className="text-slate-600 text-xs font-medium italic leading-relaxed">Accès total débloqué immédiatement + Sauvegarde Cloud incluse pendant 3 ans.</p>
-                     <button onClick={() => setIsEliteSelected(false)} className="mt-6 text-[9px] font-black uppercase text-slate-400 hover:text-rose-500 transition-colors">Repasser au choix individuel</button>
+                     {activePack === 'performance' ? <Gem className="w-10 h-10 text-emerald-500 mx-auto mb-4 animate-bounce" /> : <Crown className="w-10 h-10 text-amber-500 mx-auto mb-4 animate-bounce" />}
+                     <p className="text-[#0c4a6e] font-black text-sm uppercase tracking-widest mb-3">{pricingData.label}</p>
+                     <p className="text-slate-600 text-xs font-medium italic leading-relaxed">Activation prioritaire immédiate demandée.</p>
+                     <button onClick={() => { setActivePack('none'); setCart([]); }} className="mt-6 text-[9px] font-black uppercase text-slate-400 hover:text-rose-500 transition-colors">Annuler le pack</button>
                   </div>
                 ) : cart.length === 0 ? (
                   <div className="py-24 text-center opacity-30 flex flex-col items-center">
@@ -380,14 +358,16 @@ const Results: React.FC = () => {
               <div className="p-12 bg-[#0f172a] text-white rounded-t-[4.5rem] space-y-10 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                 <div className="space-y-6 relative z-10">
-                  <div className="flex justify-between text-xs font-black text-slate-500 uppercase tracking-[0.2em]">
-                    <span>Valeur</span>
-                    <span>{pricingData.subtotal.toLocaleString()} F</span>
-                  </div>
-                  {pricingData.discountAmount > 0 && (
+                  {activePack === 'none' && (
+                    <div className="flex justify-between text-xs font-black text-slate-500 uppercase tracking-[0.2em]">
+                      <span>Valeur</span>
+                      <span>{(pricingData as any).subtotal?.toLocaleString() || 0} F</span>
+                    </div>
+                  )}
+                  {activePack === 'none' && (pricingData as any).discountAmount > 0 && (
                     <div className="flex justify-between text-xs font-black text-emerald-400 uppercase tracking-[0.2em] animate-in fade-in">
-                      <span>Remise Volume (-{pricingData.rate}%)</span>
-                      <span>-{pricingData.discountAmount.toLocaleString()} F</span>
+                      <span>Remise Volume (-{(pricingData as any).rate}%)</span>
+                      <span>-{(pricingData as any).discountAmount?.toLocaleString() || 0} F</span>
                     </div>
                   )}
                   <div className="pt-8 border-t border-white/5">
@@ -400,7 +380,7 @@ const Results: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setIsModalOpen(true)} 
-                  disabled={!isEliteSelected && cart.length === 0} 
+                  disabled={activePack === 'none' && cart.length === 0} 
                   className="w-full py-7 bg-[#0ea5e9] text-white rounded-3xl font-black text-[12px] uppercase tracking-[0.25em] shadow-2xl hover:bg-[#0284c7] transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-20 relative z-10"
                 >
                   Valider l'engagement <ArrowRight className="w-6 h-6" />

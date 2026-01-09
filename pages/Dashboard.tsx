@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { getReferrals } from '../services/supabase';
 import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, KITA_LOGO } from '../constants';
 import { UserProfile } from '../types';
-// Fixed: Added ShieldCheck to the imports
 import { 
   CheckCircle2, 
   Zap, 
@@ -110,7 +109,6 @@ const Dashboard: React.FC = () => {
   const hasAllModules = purchasedModules.length >= 16;
   const hasPerformance = user.hasPerformancePack;
 
-  // Calcul du cercle de progression (Graphique SVG)
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
@@ -151,7 +149,6 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           
-          {/* GRAPHIQUE DE MAITRISE - Uniquement pour les gérants */}
           {!user.isAdmin && (
             <div className="bg-white/5 backdrop-blur-3xl p-4 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl mb-4 group hover:bg-white/10 transition-all duration-500">
               <div className="relative h-28 w-28 flex items-center justify-center shrink-0">
@@ -180,7 +177,6 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Bouton Admin Direct */}
           {user.isAdmin && (
             <button 
               onClick={() => navigate('/admin')}
@@ -194,11 +190,10 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
-        {/* SECTION UPGRADES STRATÉGIQUES - Masquée pour Admin */}
         {!user.isAdmin && (
           <div className="grid md:grid-cols-2 gap-6 -mt-32">
              {!hasAllModules && (
-               <button onClick={() => navigate('/results')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
+               <button onClick={() => navigate('/results?pack=elite')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8">
                   <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform"><Crown className="w-8 h-8" /></div>
                   <div>
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Offre Spéciale</p>
@@ -209,7 +204,7 @@ const Dashboard: React.FC = () => {
              )}
 
              {!hasPerformance && (
-               <button onClick={() => navigate('/results')} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
+               <button onClick={() => navigate(`/results?pack=${hasAllModules ? 'performance' : 'elite_performance'}`)} className={`bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 ${hasAllModules ? 'col-span-full' : ''}`}>
                   <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform"><Gem className="w-8 h-8" /></div>
                   <div>
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Empire</p>
@@ -226,7 +221,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* PACK PERFORMANCE & DISCIPLINE */}
         <div className="grid lg:grid-cols-12 gap-10 items-stretch mt-20">
            <div className="lg:col-span-5 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl border border-white/5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
@@ -243,7 +237,7 @@ const Dashboard: React.FC = () => {
                        Accéder au Cockpit <ArrowRight className="w-4 h-4" />
                     </button>
                  ) : (
-                    <button onClick={() => navigate('/results')} className="w-full bg-white/10 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-3">
+                    <button onClick={() => navigate('/results?pack=performance')} className="w-full bg-white/10 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-3">
                        <Lock className="w-4 h-4 text-amber-500" /> Débloquer les outils
                     </button>
                  )}
@@ -293,7 +287,6 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        {/* SECTION MON RÉSEAU D'ÉLITE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 relative overflow-hidden group hover:shadow-brand-900/5 transition-all duration-500 w-full">
            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
               <Users className="w-48 h-48" />
@@ -348,7 +341,6 @@ const Dashboard: React.FC = () => {
            )}
         </section>
 
-        {/* SECTION MES FORMATIONS - Masquée pour Admin */}
         {!user.isAdmin && (
           <section className="space-y-8 w-full">
             <div className="flex justify-between items-end px-4">
@@ -394,7 +386,6 @@ const Dashboard: React.FC = () => {
           </section>
         )}
 
-        {/* BLOC CAISSE KITA */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
