@@ -26,7 +26,7 @@ import {
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, saveUserProfile } from '../services/supabase';
+import { supabase, saveUserProfile, getProfileByPhone } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 
 const Results: React.FC = () => {
@@ -123,9 +123,12 @@ const Results: React.FC = () => {
     
     setLoading(true);
     try {
-      const formattedPhone = regPhone.startsWith('0') ? `+225${regPhone}` : regPhone;
+      const formattedPhone = regPhone.trim().startsWith('0') ? `+225${regPhone.trim()}` : regPhone.trim();
       
-      // CAPTURE SÉCURISÉE DU PANIER
+      // 1. Vérifier si un profil existe déjà pour ce numéro
+      const existingProfile = await getProfileByPhone(formattedPhone);
+      
+      // Capture du panier
       let pendingIds: string[] = [];
       if (activePack === 'elite') pendingIds = ['REQUEST_ELITE'];
       else if (activePack === 'stock') pendingIds = ['REQUEST_STOCK'];
@@ -135,46 +138,46 @@ const Results: React.FC = () => {
         throw new Error("Votre panier est vide.");
       }
 
-      // CRÉATION DU PROFIL AVEC TOUS LES CHAMPS REQUIS (Évite l'erreur DB)
-      const newProfile: Partial<UserProfile> & { uid: string } = {
-        uid: `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`,
+      // 2. Préparer l'objet profil
+      // Si le profil existe, on garde son UID actuel pour éviter la violation de contrainte Unique
+      const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
+
+      const profileToSave: Partial<UserProfile> & { uid: string } = {
+        uid: targetUid,
         phoneNumber: formattedPhone,
         establishmentName: regStoreName,
-        firstName: 'Gérant',
-        lastName: '',
-        isActive: false,
-        isAdmin: false,
-        isKitaPremium: false,
-        hasPerformancePack: false,
-        hasStockPack: false,
-        badges: [],
-        purchasedModuleIds: [],
-        pendingModuleIds: pendingIds,
-        actionPlan: [],
-        createdAt: new Date().toISOString(),
-        role: 'CLIENT'
+        firstName: existingProfile?.firstName || 'Gérant',
+        lastName: existingProfile?.lastName || '',
+        isActive: existingProfile?.isActive || false,
+        isAdmin: existingProfile?.isAdmin || false,
+        isKitaPremium: existingProfile?.isKitaPremium || false,
+        hasPerformancePack: existingProfile?.hasPerformancePack || false,
+        hasStockPack: existingProfile?.hasStockPack || false,
+        badges: existingProfile?.badges || [],
+        purchasedModuleIds: existingProfile?.purchasedModuleIds || [],
+        pendingModuleIds: pendingIds, // On remplace le panier en attente par le nouveau
+        actionPlan: existingProfile?.actionPlan || [],
+        createdAt: existingProfile?.createdAt || new Date().toISOString(),
+        role: existingProfile?.role || 'CLIENT'
       };
 
-      await saveUserProfile(newProfile as any);
+      // 3. Sauvegarder
+      await saveUserProfile(profileToSave as any);
       
-      // Marquer localement la demande
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
-      
       setRegStep('success');
     } catch (err: any) {
-      // Affichage du message d'erreur réel de Supabase si disponible
-      alert(err.message || "Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+      console.error("Supabase Save Error:", err);
+      // Affichage du message d'erreur technique pour aider au diagnostic
+      alert(`Erreur : ${err.message || "Vérifiez votre connexion internet."}`);
     } finally {
       setLoading(false);
     }
   };
 
   const finalizeAndRedirect = () => {
-    // 1. Ouvrir WhatsApp
     const message = `Bonjour Coach Kita, je suis le gérant du salon "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro : 01 03 43 84 56.`;
     window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
-    
-    // 2. Fermer la modale et rediriger vers LOGIN
     setIsRegisterModalOpen(false);
     navigate('/login');
   };
