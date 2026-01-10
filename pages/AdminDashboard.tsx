@@ -106,6 +106,27 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (user: UserProfile) => {
+    if (!user) return;
+    if (user.uid === currentUser?.uid) return showNotification("Vous ne pouvez pas vous supprimer vous-même", "error");
+    
+    const confirmDelete = window.confirm(`⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement le profil de ${user.firstName} ${user.lastName} ?\n\nCette action supprimera ses formations achetées, ses certificats et ses données de caisse. C'est irréversible.`);
+    
+    if (!confirmDelete) return;
+
+    setProcessingId('delete');
+    try {
+      await deleteUserProfile(user.uid);
+      showNotification("Profil gérant supprimé avec succès");
+      setSelectedUser(null); // On ferme le panneau de détails
+      await fetchUsers(); // On rafraîchit la liste
+    } catch (err: any) {
+      showNotification(`Erreur lors de la suppression : ${err.message}`, "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL') => {
     if (!selectedUser) return;
     setProcessingId(packType);
@@ -123,7 +144,6 @@ const AdminDashboard: React.FC = () => {
         updates.hasStockPack = true;
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_STOCK');
       } else if (packType === 'INDIVIDUAL') {
-        // Activation de tous les modules individuels demandés dans le panier
         const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
@@ -210,7 +230,6 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-brand-500/30">
-      {/* Notification */}
       {notification && (
         <div className={`fixed top-8 right-8 z-[200] px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 animate-in slide-in-from-right-10 duration-500 ${
           notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-rose-500/20 border-rose-500/50 text-rose-400'
@@ -223,7 +242,6 @@ const AdminDashboard: React.FC = () => {
       <div className="fixed inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 via-emerald-500 to-amber-500 opacity-20"></div>
 
       <div className="max-w-[1600px] mx-auto px-8 py-12">
-        {/* Header Elite */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-16">
           <div>
             <div className="flex items-center gap-4 text-brand-500 font-black text-[10px] uppercase tracking-[0.6em] mb-4">
@@ -251,7 +269,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
           <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/stats.total)*100)}% Retention`} />
@@ -259,7 +276,6 @@ const AdminDashboard: React.FC = () => {
           <StatCard title="Recettes Totales" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" sub="Revenue to date" />
         </div>
 
-        {/* Main Interface */}
         <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl">
           <div className="p-10 border-b border-white/5 flex flex-col xl:flex-row justify-between items-center gap-10">
             <div className="relative w-full xl:max-w-2xl">
@@ -361,7 +377,6 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Detail Panel */}
       {selectedUser && (
         <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-4xl bg-[#0f172a] h-full shadow-[-20px_0_60px_rgba(0,0,0,0.5)] border-l border-white/10 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
@@ -387,8 +402,6 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="p-12 space-y-12 flex-grow">
-              
-              {/* PANIER EN ATTENTE (CORRECTION : AFFICHAGE DU CONTENU RÉEL) */}
               {(selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0) && (
                 <div className="bg-amber-500/10 rounded-[3rem] p-10 border border-amber-500/30 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><ShoppingCart className="w-24 h-24 text-amber-500" /></div>
@@ -432,7 +445,6 @@ const AdminDashboard: React.FC = () => {
               )}
 
               <div className="grid lg:grid-cols-2 gap-10">
-                {/* Académie */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                       <Trophy className="w-5 h-5" /> État des Formations
@@ -454,7 +466,6 @@ const AdminDashboard: React.FC = () => {
                    </div>
                 </div>
 
-                {/* Social */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                       <Award className="w-5 h-5" /> Trophées & Influence
@@ -476,7 +487,6 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Modules unitaires (CORRECTION : N'APPARAIT QUE SI VALIDE) */}
               {selectedUser.isActive && !selectedUser.isAdmin && (
                 <section className="animate-in fade-in">
                   <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
@@ -504,33 +514,39 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Actions Pied de page */}
             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
-               <button 
-                onClick={() => handleToggleStatus(selectedUser)}
-                disabled={selectedUser.uid === currentUser?.uid}
-                className={`w-full md:w-auto px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                  selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
-                } disabled:opacity-30`}
-               >
-                  {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  {selectedUser.isActive ? 'Suspendre Gérant' : 'Activer Gérant'}
-               </button>
+               <div className="flex items-center gap-4 w-full md:w-auto">
+                 <button 
+                  onClick={() => handleToggleStatus(selectedUser)}
+                  disabled={selectedUser.uid === currentUser?.uid}
+                  className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                    selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
+                  } disabled:opacity-30`}
+                 >
+                    {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                    {selectedUser.isActive ? 'Suspendre Gérant' : 'Activer Gérant'}
+                 </button>
+                 
+                 {currentUser?.role === 'SUPER_ADMIN' && (
+                   <button 
+                     onClick={() => handleDeleteUser(selectedUser)}
+                     disabled={processingId === 'delete'}
+                     className="p-5 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-600 hover:text-white transition-all active:scale-90"
+                     title="Supprimer définitivement"
+                   >
+                      {processingId === 'delete' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                   </button>
+                 )}
+               </div>
 
                <div className="flex items-center gap-4 w-full md:w-auto">
                  <a 
                    href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Votre accès Premium Go'Top Pro est maintenant actif !`)}`} 
                    target="_blank" rel="noreferrer" 
-                   className="flex-grow md:flex-grow-0 bg-emerald-500 text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 shadow-xl"
+                   className="flex-grow md:flex-grow-0 bg-[#25D366] text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#128C7E] transition-all flex items-center justify-center gap-3 shadow-xl"
                  >
                     <MessageCircle className="w-4 h-4" /> WhatsApp Confirm
                  </a>
-                 <button 
-                   onClick={() => { if(window.confirm("Action irréversible. Supprimer ce profil ?")) deleteUserProfile(selectedUser.uid).then(fetchUsers); }}
-                   className="p-5 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-500 transition-all hover:text-white"
-                 >
-                    <Trash2 className="w-5 h-5" />
-                 </button>
                </div>
             </div>
           </div>
@@ -550,10 +566,10 @@ const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
     </div>
     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{title}</p>
     <p className="text-4xl font-black text-white tracking-tight">{value}</p>
-    <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2">
+    <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2">
       <div className="h-1 w-1 bg-slate-700 rounded-full"></div>
       {sub}
-    </p>
+    </div>
   </div>
 );
 
