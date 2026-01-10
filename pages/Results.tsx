@@ -157,7 +157,8 @@ const Results: React.FC = () => {
 
       const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
 
-      const profileToSave: Partial<UserProfile> & { uid: string } = {
+      // On construit l'objet de manière explicite pour éviter les colonnes manquantes
+      const profileToSave: any = {
         uid: targetUid,
         phoneNumber: formattedPhone,
         establishmentName: regStoreName,
@@ -176,11 +177,12 @@ const Results: React.FC = () => {
         role: existingProfile?.role || 'CLIENT'
       };
 
-      await saveUserProfile(profileToSave as any);
+      await saveUserProfile(profileToSave);
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       setRegStep('success');
     } catch (err: any) {
-      alert(`Erreur : ${err.message || "Vérifiez votre connexion internet."}`);
+      console.error("Save error:", err);
+      alert(`Erreur : ${err.message || "Assurez-vous d'avoir lancé le script SQL de mise à jour."}`);
     } finally {
       setLoading(false);
     }
