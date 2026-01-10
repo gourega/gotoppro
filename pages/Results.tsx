@@ -15,16 +15,19 @@ import {
   CheckCircle2,
   TrendingUp,
   Percent,
-  Gift
+  Gift,
+  Phone,
+  Store,
+  ShieldCheck
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
-import { TrainingModule } from '../types';
+import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../services/supabase';
+import { supabase, saveUserProfile } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 
 const Results: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loginManually } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -34,6 +37,11 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
   const [recommendedModuleIds, setRecommendedModuleIds] = useState<string[]>([]);
+
+  // États pour la modale d'inscription
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [regPhone, setRegPhone] = useState('');
+  const [regStoreName, setRegStoreName] = useState('');
 
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
 
@@ -55,8 +63,6 @@ const Results: React.FC = () => {
       }).filter(Boolean) as string[];
 
       setRecommendedModuleIds(negativeIds);
-
-      // Pré-remplissage initial avec les recommandations
       const recommendedModules = TRAINING_CATALOG.filter(m => negativeIds.includes(m.id));
       setCart(recommendedModules);
 
@@ -107,10 +113,42 @@ const Results: React.FC = () => {
     };
   }, [cart, activePack]);
 
+  const handleRegisterAndValidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regPhone || !regStoreName) return alert("Veuillez remplir tous les champs.");
+    
+    setLoading(true);
+    try {
+      const formattedPhone = regPhone.startsWith('0') ? `+225${regPhone}` : regPhone;
+      
+      // 1. Créer le profil "En attente" dans Supabase
+      const newProfile: any = {
+        uid: `guest_${Date.now()}`, // ID temporaire
+        phoneNumber: formattedPhone,
+        establishmentName: regStoreName,
+        firstName: 'Gérant',
+        isActive: false,
+        pendingModuleIds: activePack === 'elite' ? ['REQUEST_ELITE'] : activePack === 'stock' ? ['REQUEST_STOCK'] : cart.map(m => m.id)
+      };
+
+      await saveUserProfile(newProfile);
+      
+      // 2. Rediriger vers WhatsApp
+      const message = `Bonjour Coach Kita, je suis le gérant de "${regStoreName}". Je viens de faire mon diagnostic et je souhaite valider mon plan d'action (${pricingData.total} F). Mon numéro est le ${formattedPhone}.`;
+      window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
+      
+      setIsRegisterModalOpen(false);
+      navigate('/'); // Retour à l'accueil en attendant l'activation
+    } catch (err: any) {
+      alert("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleValidateEngagement = async () => {
     if (!user) {
-      alert("Veuillez vous connecter pour valider votre plan d'action.");
-      navigate('/login');
+      setIsRegisterModalOpen(true);
       return;
     }
 
@@ -121,22 +159,19 @@ const Results: React.FC = () => {
 
     setLoading(true);
     try {
-      if (!supabase) throw new Error("Base de données indisponible");
-      
       let newPendingIds: string[] = [];
       if (activePack === 'elite') {
-        newPendingIds = TRAINING_CATALOG.map(m => m.id);
-        newPendingIds.push('REQUEST_ELITE');
+        newPendingIds = ['REQUEST_ELITE'];
       } else if (activePack === 'stock') {
-        newPendingIds.push('REQUEST_STOCK');
+        newPendingIds = ['REQUEST_STOCK'];
       } else {
         newPendingIds = cart.map(m => m.id);
       }
       
       const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
-      await supabase.from('profiles').update({ pendingModuleIds: updatedPending }).eq('uid', user.uid);
+      await saveUserProfile({ uid: user.uid, pendingModuleIds: updatedPending });
       
-      const message = `Bonjour Coach Kita, je viens de valider mon plan d'action Go'Top Pro (${pricingData.total} F). Je procède au transfert Wave.`;
+      const message = `Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave.`;
       window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
       
       navigate('/dashboard');
@@ -193,6 +228,7 @@ const Results: React.FC = () => {
                     <div className="flex flex-col gap-4 py-4">
                       <div className="h-4 w-full bg-slate-100 animate-pulse rounded"></div>
                       <div className="h-4 w-3/4 bg-slate-100 animate-pulse rounded"></div>
+                      <div className="h-4 w-5/6 bg-slate-100 animate-pulse rounded"></div>
                       <Loader2 className="animate-spin text-brand-600 mt-4" />
                     </div>
                   ) : (
@@ -204,7 +240,7 @@ const Results: React.FC = () => {
               </div>
             </section>
 
-            {/* Recommandations (Filtering out modules already in cart) */}
+            {/* Recommandations */}
             <section>
                <div className="flex items-center gap-4 mb-10">
                   <Target className="w-6 h-6 text-brand-600" />
@@ -232,7 +268,7 @@ const Results: React.FC = () => {
                </div>
             </section>
 
-            {/* Catalogue Complet (Filtering out modules already in cart) */}
+            {/* Catalogue Complet */}
             <section>
                <div className="flex items-center gap-4 mb-10 pt-10 border-t border-slate-100">
                   <ShoppingBag className="w-6 h-6 text-slate-400" />
@@ -254,7 +290,7 @@ const Results: React.FC = () => {
             </section>
           </div>
 
-          {/* Sidebar Panier / Checkout */}
+          {/* Sidebar Panier */}
           <div className="lg:sticky lg:top-28">
             <div className="bg-[#0f172a] rounded-[3.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -304,7 +340,7 @@ const Results: React.FC = () => {
                     )}
                  </div>
 
-                 {/* Liste détaillée du panier */}
+                 {/* Panier détaillé */}
                  {cart.length > 0 && activePack === 'none' && (
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                        {cart.map(m => (
@@ -316,7 +352,6 @@ const Results: React.FC = () => {
                             <button 
                               onClick={() => toggleModuleInCart(m)} 
                               className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
-                              title="Retirer du plan"
                             >
                                <Trash2 className="w-4 h-4" />
                             </button>
@@ -346,23 +381,75 @@ const Results: React.FC = () => {
                  </button>
               </div>
             </div>
-
-            {/* Pack Stock Option */}
-            {activePack !== 'stock' && (
-              <button 
-                onClick={() => setActivePack('stock')}
-                className="w-full mt-6 bg-white border border-slate-200 p-8 rounded-[2.5rem] text-left hover:border-sky-500 transition-all group"
-              >
-                <div className="flex justify-between items-center mb-2">
-                   <h4 className="text-sm font-black text-slate-900 uppercase">Pack Stock Expert</h4>
-                   <Zap className="w-5 h-5 text-sky-500 group-hover:scale-110 transition-transform" />
-                </div>
-                <p className="text-xs text-slate-500 font-medium">Contrôlez votre magasin et évitez les pertes (5 000 F).</p>
-              </button>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Registration Modal (C'est ici la correction majeure) */}
+      {isRegisterModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
+           <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl p-10 relative overflow-hidden border border-white/20">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Kita</div>
+              
+              <button 
+                onClick={() => setIsRegisterModalOpen(false)}
+                className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 p-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="text-center mb-10">
+                <div className="h-24 w-24 rounded-[2rem] overflow-hidden border-4 border-brand-50 shadow-xl mx-auto mb-6">
+                  <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+                </div>
+                <h2 className="text-2xl font-serif font-bold text-slate-900 mb-2">Identifiez-vous</h2>
+                <p className="text-slate-500 text-xs font-medium max-w-[200px] mx-auto">Pour que Coach Kita enregistre votre plan de réussite.</p>
+              </div>
+
+              <form onSubmit={handleRegisterAndValidate} className="space-y-6 relative z-10">
+                <div className="space-y-4">
+                  <div className="relative group">
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
+                    <input 
+                      type="tel" 
+                      placeholder="Numéro WhatsApp (ex: 0708...)" 
+                      value={regPhone} 
+                      onChange={e => setRegPhone(e.target.value)} 
+                      className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
+                      required 
+                      disabled={loading} 
+                    />
+                  </div>
+                  <div className="relative group">
+                    <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
+                    <input 
+                      type="text" 
+                      placeholder="Nom de votre Salon" 
+                      value={regStoreName} 
+                      onChange={e => setRegStoreName(e.target.value)} 
+                      className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
+                      required 
+                      disabled={loading} 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-950 transition shadow-xl shadow-brand-900/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5 text-emerald-400" />}
+                  Finaliser mon engagement
+                </button>
+                
+                <p className="text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                  En validant, Coach Kita recevra votre demande<br/>et vous contactera pour l'activation.
+                </p>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
