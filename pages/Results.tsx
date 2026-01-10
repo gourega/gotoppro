@@ -18,7 +18,9 @@ import {
   Gift,
   Phone,
   Store,
-  ShieldCheck
+  ShieldCheck,
+  MessageCircle,
+  QrCode
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -40,12 +42,20 @@ const Results: React.FC = () => {
 
   // États pour la modale d'inscription
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [regStep, setRegStep] = useState<'form' | 'success'>('form');
   const [regPhone, setRegPhone] = useState('');
   const [regStoreName, setRegStoreName] = useState('');
 
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
 
   useEffect(() => {
+    // Vérifier si une demande est déjà en cours localement pour éviter de réouvrir la modale
+    const pendingRequest = localStorage.getItem('gotop_pending_request');
+    if (pendingRequest && !user) {
+      // Si une demande a été faite mais que l'utilisateur n'est pas encore actif
+      // On peut laisser la modale fermée pour l'instant
+    }
+
     const params = new URLSearchParams(location.search);
     const packParam = params.get('pack');
     if (packParam === 'performance') setActivePack('none');
@@ -121,29 +131,39 @@ const Results: React.FC = () => {
     try {
       const formattedPhone = regPhone.startsWith('0') ? `+225${regPhone}` : regPhone;
       
-      // 1. Créer le profil "En attente" dans Supabase
+      // Sécurisation de la liste des IDs (capture immédiate de l'état cart)
+      let pendingIds: string[] = [];
+      if (activePack === 'elite') pendingIds = ['REQUEST_ELITE'];
+      else if (activePack === 'stock') pendingIds = ['REQUEST_STOCK'];
+      else pendingIds = cart.map(m => m.id);
+
+      // 1. Créer le profil "En attente"
       const newProfile: any = {
-        uid: `guest_${Date.now()}`, // ID temporaire
+        uid: `guest_${Date.now()}`,
         phoneNumber: formattedPhone,
         establishmentName: regStoreName,
         firstName: 'Gérant',
         isActive: false,
-        pendingModuleIds: activePack === 'elite' ? ['REQUEST_ELITE'] : activePack === 'stock' ? ['REQUEST_STOCK'] : cart.map(m => m.id)
+        pendingModuleIds: pendingIds
       };
 
       await saveUserProfile(newProfile);
       
-      // 2. Rediriger vers WhatsApp
-      const message = `Bonjour Coach Kita, je suis le gérant de "${regStoreName}". Je viens de faire mon diagnostic et je souhaite valider mon plan d'action (${pricingData.total} F). Mon numéro est le ${formattedPhone}.`;
-      window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
+      // 3. Marquer comme envoyé localement pour éviter le spam
+      localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       
-      setIsRegisterModalOpen(false);
-      navigate('/'); // Retour à l'accueil en attendant l'activation
+      // Passer à l'étape succès
+      setRegStep('success');
     } catch (err: any) {
       alert("Erreur lors de l'enregistrement. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const openWhatsApp = () => {
+    const message = `Bonjour Coach Kita, je suis le gérant de "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro.`;
+    window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleValidateEngagement = async () => {
@@ -160,13 +180,9 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPendingIds: string[] = [];
-      if (activePack === 'elite') {
-        newPendingIds = ['REQUEST_ELITE'];
-      } else if (activePack === 'stock') {
-        newPendingIds = ['REQUEST_STOCK'];
-      } else {
-        newPendingIds = cart.map(m => m.id);
-      }
+      if (activePack === 'elite') newPendingIds = ['REQUEST_ELITE'];
+      else if (activePack === 'stock') newPendingIds = ['REQUEST_STOCK'];
+      else newPendingIds = cart.map(m => m.id);
       
       const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
       await saveUserProfile({ uid: user.uid, pendingModuleIds: updatedPending });
@@ -333,11 +349,6 @@ const Results: React.FC = () => {
                        <p className="text-6xl font-black tracking-tighter">{pricingData.total.toLocaleString()}</p>
                        <p className="text-xl font-bold text-brand-500">FCFA</p>
                     </div>
-                    {pricingData.discount > 0 && (
-                      <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                         Tarif réduit appliqué : {pricingData.unitPrice} F / module
-                      </p>
-                    )}
                  </div>
 
                  {/* Panier détaillé */}
@@ -385,68 +396,105 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* Registration Modal (C'est ici la correction majeure) */}
+      {/* Registration Modal avec flux de succès corrigé */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
            <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl p-10 relative overflow-hidden border border-white/20">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Kita</div>
               
               <button 
-                onClick={() => setIsRegisterModalOpen(false)}
+                onClick={() => { setIsRegisterModalOpen(false); if(regStep === 'success') navigate('/'); }}
                 className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 p-2"
               >
                 <X className="w-6 h-6" />
               </button>
 
-              <div className="text-center mb-10">
-                <div className="h-24 w-24 rounded-[2rem] overflow-hidden border-4 border-brand-50 shadow-xl mx-auto mb-6">
-                  <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
-                </div>
-                <h2 className="text-2xl font-serif font-bold text-slate-900 mb-2">Identifiez-vous</h2>
-                <p className="text-slate-500 text-xs font-medium max-w-[200px] mx-auto">Pour que Coach Kita enregistre votre plan de réussite.</p>
-              </div>
-
-              <form onSubmit={handleRegisterAndValidate} className="space-y-6 relative z-10">
-                <div className="space-y-4">
-                  <div className="relative group">
-                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
-                    <input 
-                      type="tel" 
-                      placeholder="Numéro WhatsApp (ex: 0708...)" 
-                      value={regPhone} 
-                      onChange={e => setRegPhone(e.target.value)} 
-                      className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
-                      required 
-                      disabled={loading} 
-                    />
+              {regStep === 'form' ? (
+                <>
+                  <div className="text-center mb-10">
+                    <div className="h-24 w-24 rounded-[2rem] overflow-hidden border-4 border-brand-50 shadow-xl mx-auto mb-6">
+                      <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+                    </div>
+                    <h2 className="text-2xl font-serif font-bold text-slate-900 mb-2">Identifiez-vous</h2>
+                    <p className="text-slate-500 text-xs font-medium max-w-[200px] mx-auto">Pour que Coach Kita enregistre votre plan de réussite.</p>
                   </div>
-                  <div className="relative group">
-                    <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
-                    <input 
-                      type="text" 
-                      placeholder="Nom de votre Salon" 
-                      value={regStoreName} 
-                      onChange={e => setRegStoreName(e.target.value)} 
-                      className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
-                      required 
-                      disabled={loading} 
-                    />
-                  </div>
-                </div>
 
-                <button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-950 transition shadow-xl shadow-brand-900/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5 text-emerald-400" />}
-                  Finaliser mon engagement
-                </button>
-                
-                <p className="text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  En validant, Coach Kita recevra votre demande<br/>et vous contactera pour l'activation.
-                </p>
-              </form>
+                  <form onSubmit={handleRegisterAndValidate} className="space-y-6 relative z-10">
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
+                        <input 
+                          type="tel" 
+                          placeholder="Numéro WhatsApp (ex: 0708...)" 
+                          value={regPhone} 
+                          onChange={e => setRegPhone(e.target.value)} 
+                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
+                          required 
+                        />
+                      </div>
+                      <div className="relative group">
+                        <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
+                        <input 
+                          type="text" 
+                          placeholder="Nom de votre Salon" 
+                          value={regStoreName} 
+                          onChange={e => setRegStoreName(e.target.value)} 
+                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
+                          required 
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-950 transition shadow-xl shadow-brand-900/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5 text-emerald-400" />}
+                      Finaliser mon engagement
+                    </button>
+                  </form>
+                </>
+              ) : (
+                /* ÉCRAN DE SUCCÈS - INSTRUCTIONS WAVE */
+                <div className="text-center animate-in zoom-in-95 duration-500">
+                   <div className="h-24 w-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                      <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                   </div>
+                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Demande Envoyée !</h2>
+                   <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10">
+                      Coach Kita a bien reçu votre plan d'action pour le salon <strong className="text-slate-900">"{regStoreName}"</strong>.
+                   </p>
+
+                   <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] mb-10 text-left">
+                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                         <QrCode className="w-4 h-4" /> Procédure de Paiement Wave
+                      </p>
+                      <div className="space-y-4">
+                         <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-500">Montant à transférer :</span>
+                            <span className="text-xl font-black text-brand-900">{pricingData.total.toLocaleString()} F</span>
+                         </div>
+                         <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-500">Vers le numéro :</span>
+                            <span className="text-xs font-black text-slate-900">01 03 43 84 56</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <button 
+                    onClick={openWhatsApp}
+                    className="w-full bg-[#25D366] text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-green-200 flex items-center justify-center gap-3 hover:scale-[1.02] transition-all"
+                   >
+                      <MessageCircle className="w-5 h-5 fill-current" />
+                      Confirmer via WhatsApp
+                   </button>
+                   
+                   <p className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      Activation sous 15 min après réception.
+                   </p>
+                </div>
+              )}
            </div>
         </div>
       )}
