@@ -44,9 +44,10 @@ import {
   LayoutDashboard,
   Activity,
   ArrowUpRight,
-  // Fix: Added missing AlertCircle and Package icons
   AlertCircle,
-  Package
+  Package,
+  Wifi,
+  SearchCode
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -56,7 +57,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'all' | 'pending' | 'active' | 'admins'>('all');
+  const [viewMode, setViewMode] = useState<'inbox' | 'pending' | 'active' | 'admins'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
@@ -133,7 +134,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Fix: Implemented handleRewardModule to grant access to individual modules
   const handleRewardModule = async (moduleId: string) => {
     if (!selectedUser) return;
     setProcessingId(moduleId);
@@ -141,7 +141,6 @@ const AdminDashboard: React.FC = () => {
       await grantModuleAccess(selectedUser.uid, moduleId);
       showNotification(`Module attribué avec succès`);
       await fetchUsers();
-      // Refresh local view
       setSelectedUser(prev => {
         if (!prev) return null;
         return {
@@ -182,24 +181,36 @@ const AdminDashboard: React.FC = () => {
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    return users.filter(u => {
+    const isSearching = searchTerm.trim().length > 0;
+    
+    // Logique de filtrage "Inbox" : Gérants avec actions en attente OU Admins
+    const baseInboxUsers = users.filter(u => u.isAdmin || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
+    
+    // Si on cherche, on cherche dans TOUS les utilisateurs
+    const sourceSet = isSearching ? users : baseInboxUsers;
+
+    return sourceSet.filter(u => {
       const search = searchTerm.toLowerCase();
-      const matchesSearch = u.phoneNumber.includes(search) || 
+      const matchesSearch = (u.phoneNumber || '').includes(search) || 
         (u.firstName || '').toLowerCase().includes(search) || 
+        (u.lastName || '').toLowerCase().includes(search) ||
         (u.establishmentName || '').toLowerCase().includes(search);
       
       if (!matchesSearch) return false;
       
+      // Filtres d'onglets
       if (viewMode === 'admins') return u.isAdmin;
       if (viewMode === 'pending') return !u.isAdmin && u.pendingModuleIds && u.pendingModuleIds.length > 0;
       if (viewMode === 'active') return !u.isAdmin && u.isActive;
-      return !u.isAdmin;
+      
+      // Mode 'inbox' (default) : On montre tout ce qui est dans sourceSet qui match la recherche
+      return true;
     });
   }, [users, searchTerm, viewMode]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-brand-500/30">
-      {/* Toast Notification */}
+      {/* Notification */}
       {notification && (
         <div className={`fixed top-8 right-8 z-[200] px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 animate-in slide-in-from-right-10 duration-500 ${
           notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-rose-500/20 border-rose-500/50 text-rose-400'
@@ -241,7 +252,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tableau de bord financier & Volume */}
+        {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
           <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/stats.total)*100)}% Retention`} />
@@ -253,19 +264,29 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl">
           <div className="p-10 border-b border-white/5 flex flex-col xl:flex-row justify-between items-center gap-10">
             <div className="relative w-full xl:max-w-2xl">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Search className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${searchTerm ? 'text-brand-500' : 'text-slate-500'}`} />
               <input 
                 type="text" 
-                placeholder="Rechercher un gérant, un numéro ou un salon..."
-                className="w-full pl-16 pr-8 py-6 rounded-[2rem] bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-brand-500/40 text-white placeholder-slate-600 transition-all font-medium"
+                placeholder="Rechercher partout (Radar Global)..."
+                className={`w-full pl-16 pr-8 py-6 rounded-[2rem] border outline-none focus:ring-2 transition-all font-medium ${
+                  searchTerm 
+                  ? 'bg-brand-500/5 border-brand-500/30 text-white focus:ring-brand-500/40' 
+                  : 'bg-white/5 border-white/10 text-slate-300 focus:ring-brand-500/20 placeholder-slate-600'
+                }`}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
+              {searchTerm && (
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                   <div className="bg-brand-500/20 text-brand-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse border border-brand-500/30">Radar Actif</div>
+                   <button onClick={() => setSearchTerm('')} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
+                </div>
+              )}
             </div>
             <div className="flex bg-black/40 p-1.5 rounded-[2rem] border border-white/10 shrink-0">
-              <NavTab active={viewMode === 'all'} onClick={() => setViewMode('all')} label="Tous" count={stats.total} />
+              <NavTab active={viewMode === 'inbox'} onClick={() => setViewMode('inbox')} label="Opérations" count={stats.pending + users.filter(u => u.isAdmin).length} />
               <NavTab active={viewMode === 'pending'} onClick={() => setViewMode('pending')} label="En attente" count={stats.pending} isUrgent={stats.pending > 0} />
-              <NavTab active={viewMode === 'active'} onClick={() => setViewMode('active')} label="Actifs" />
+              <NavTab active={viewMode === 'active'} onClick={() => setViewMode('active')} label="Gérants" />
               <NavTab active={viewMode === 'admins'} onClick={() => setViewMode('admins')} label="Équipe" />
             </div>
           </div>
@@ -290,12 +311,15 @@ const AdminDashboard: React.FC = () => {
                   >
                     <td className="px-12 py-8">
                       <div className="flex items-center gap-6">
-                        <div className="h-16 w-16 rounded-[1.5rem] bg-brand-900 border border-white/10 flex items-center justify-center font-black text-xl text-brand-500 overflow-hidden relative shadow-inner">
+                        <div className={`h-16 w-16 rounded-[1.5rem] border border-white/10 flex items-center justify-center font-black text-xl overflow-hidden relative shadow-inner ${u.isAdmin ? 'bg-brand-900 text-brand-500 border-brand-500/30' : 'bg-slate-800 text-slate-500'}`}>
                           {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"/> : (u.firstName?.[0] || 'U')}
                           {u.isActive && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#020617]"></div>}
                         </div>
                         <div>
-                          <p className="font-serif font-bold text-white text-xl group-hover:text-brand-400 transition-colors">{u.firstName} {u.lastName}</p>
+                          <div className="flex items-center gap-3">
+                            <p className="font-serif font-bold text-white text-xl group-hover:text-brand-400 transition-colors">{u.firstName} {u.lastName}</p>
+                            {u.isAdmin && <ShieldAlert className="w-4 h-4 text-brand-500" />}
+                          </div>
                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{u.establishmentName || 'SALON INDÉPENDANT'}</p>
                         </div>
                       </div>
@@ -328,9 +352,16 @@ const AdminDashboard: React.FC = () => {
                 )) : (
                   <tr>
                     <td colSpan={5} className="py-32 text-center">
-                      <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Users className="w-16 h-16" />
-                        <p className="font-black text-xs uppercase tracking-widest">Aucun résultat trouvé dans la base</p>
+                      <div className="flex flex-col items-center gap-6">
+                        <div className="h-24 w-24 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center animate-pulse">
+                           <Wifi className="w-10 h-10 text-slate-700" />
+                        </div>
+                        <div className="space-y-2">
+                           <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-500">
+                             {searchTerm ? "Aucun gérant trouvé pour ce critère" : "Inbox Zéro : Aucun gérant ne nécessite d'action urgente"}
+                           </p>
+                           {searchTerm && <button onClick={() => setSearchTerm('')} className="text-brand-500 font-bold text-[10px] uppercase tracking-widest hover:underline">Réinitialiser le radar</button>}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -341,18 +372,21 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Panel Détails Gérant (Drawer Style) */}
+      {/* Detail Panel */}
       {selectedUser && (
         <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-4xl bg-[#0f172a] h-full shadow-[-20px_0_60px_rgba(0,0,0,0.5)] border-l border-white/10 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
             
             <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               <div className="flex items-center gap-6">
-                <div className="h-20 w-20 rounded-[2rem] overflow-hidden bg-brand-900 flex items-center justify-center font-black text-3xl shadow-2xl border-2 border-white/10">
+                <div className={`h-20 w-20 rounded-[2rem] overflow-hidden flex items-center justify-center font-black text-3xl shadow-2xl border-2 ${selectedUser.isAdmin ? 'bg-brand-900 border-brand-500/50' : 'bg-slate-800 border-white/10'}`}>
                   {selectedUser.photoURL ? <img src={selectedUser.photoURL} alt="" className="w-full h-full object-cover"/> : selectedUser.firstName?.[0]}
                 </div>
                 <div>
-                  <h2 className="text-3xl font-serif font-bold text-white">{selectedUser.firstName} {selectedUser.lastName}</h2>
+                  <h2 className="text-3xl font-serif font-bold text-white flex items-center gap-4">
+                    {selectedUser.firstName} {selectedUser.lastName}
+                    {selectedUser.isAdmin && <Badge text="EQUIPE DIRECTION" color="blue" />}
+                  </h2>
                   <div className="flex items-center gap-4 mt-2">
                     <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{selectedUser.phoneNumber}</p>
                     <span className="h-1.5 w-1.5 bg-slate-700 rounded-full"></span>
@@ -365,7 +399,7 @@ const AdminDashboard: React.FC = () => {
 
             <div className="p-12 space-y-12 flex-grow">
               
-              {/* SECTION CRITIQUE : REQUÊTES DE PAIEMENT */}
+              {/* REQUÊTES EN ATTENTE */}
               {(selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0) && (
                 <div className="bg-amber-500/10 rounded-[3rem] p-10 border border-amber-500/30 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><Coins className="w-24 h-24 text-amber-500" /></div>
@@ -374,8 +408,8 @@ const AdminDashboard: React.FC = () => {
                       <Clock className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Vérification de Paiement</h3>
-                      <p className="text-amber-400/70 text-sm font-medium">Le gérant attend l'activation manuelle après son transfert Wave.</p>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Paiement Détecté</h3>
+                      <p className="text-amber-400/70 text-sm font-medium">Action requise après vérification du transfert.</p>
                     </div>
                   </div>
                   
@@ -394,11 +428,11 @@ const AdminDashboard: React.FC = () => {
               )}
 
               <div className="grid lg:grid-cols-2 gap-10">
-                {/* Stats Académiques */}
+                {/* Académie */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <div className="flex items-center justify-between mb-8">
                       <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                         <Trophy className="w-5 h-5" /> Palmarès Académique
+                         <Trophy className="w-5 h-5" /> Académie
                       </h3>
                    </div>
                    <div className="space-y-4">
@@ -413,12 +447,12 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         ))
                       ) : (
-                        <div className="py-10 text-center opacity-30 italic text-sm">Aucun diplôme validé</div>
+                        <div className="py-10 text-center opacity-30 italic text-sm">Aucune certification validée</div>
                       )}
                    </div>
                 </div>
 
-                {/* Trophées & Social */}
+                {/* Social */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                       <Award className="w-5 h-5" /> Influence
@@ -440,42 +474,45 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Attribution de modules individuels */}
-              <section>
-                 <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                    <Plus className="w-5 h-5" /> Récompenser (Modules unitaires)
-                 </h3>
-                 <div className="grid md:grid-cols-2 gap-4">
-                    {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).map(mod => (
-                      <button 
-                        key={mod.id} 
-                        onClick={() => handleRewardModule(mod.id)}
-                        disabled={processingId === mod.id}
-                        className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-between group hover:bg-brand-500/10 hover:border-brand-500/50 transition-all text-left"
-                      >
-                         <div>
-                            <p className="text-[8px] font-black text-brand-500 uppercase mb-1">{mod.topic}</p>
-                            <p className="text-xs font-bold text-white">{mod.title}</p>
-                         </div>
-                         <div className="h-10 w-10 bg-white/5 rounded-xl flex items-center justify-center group-hover:bg-brand-500 group-hover:text-white transition-all">
-                            {processingId === mod.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                         </div>
-                      </button>
-                    ))}
-                 </div>
-              </section>
+              {/* Modules unitaires */}
+              {!selectedUser.isAdmin && (
+                <section>
+                  <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                      <Plus className="w-5 h-5" /> Offrir des modules (Récompense)
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                      {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).map(mod => (
+                        <button 
+                          key={mod.id} 
+                          onClick={() => handleRewardModule(mod.id)}
+                          disabled={processingId === mod.id}
+                          className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-between group hover:bg-brand-500/10 hover:border-brand-500/50 transition-all text-left"
+                        >
+                          <div>
+                              <p className="text-[8px] font-black text-brand-500 uppercase mb-1">{mod.topic}</p>
+                              <p className="text-xs font-bold text-white">{mod.title}</p>
+                          </div>
+                          <div className="h-10 w-10 bg-white/5 rounded-xl flex items-center justify-center group-hover:bg-brand-500 group-hover:text-white transition-all">
+                              {processingId === mod.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </section>
+              )}
             </div>
 
-            {/* Footer Actions */}
+            {/* Actions */}
             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
                <button 
                 onClick={() => handleToggleStatus(selectedUser)}
+                disabled={selectedUser.uid === currentUser?.uid}
                 className={`w-full md:w-auto px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
                   selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
-                }`}
+                } disabled:opacity-30 disabled:cursor-not-allowed`}
                >
                   {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  {selectedUser.isActive ? 'Suspendre le gérant' : 'Activer le gérant'}
+                  {selectedUser.isActive ? 'Suspendre' : 'Activer'}
                </button>
 
                <div className="flex items-center gap-4 w-full md:w-auto">
@@ -487,7 +524,7 @@ const AdminDashboard: React.FC = () => {
                     <MessageCircle className="w-4 h-4" /> WhatsApp Confirm
                  </a>
                  <button 
-                   onClick={() => { if(window.confirm("Action irréversible. Supprimer ?")) deleteUserProfile(selectedUser.uid).then(fetchUsers); }}
+                   onClick={() => { if(window.confirm("Action irréversible. Supprimer ce profil ?")) deleteUserProfile(selectedUser.uid).then(fetchUsers); }}
                    className="p-5 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-500 transition-all hover:text-white"
                  >
                     <Trash2 className="w-5 h-5" />
