@@ -30,7 +30,7 @@ import { supabase, saveUserProfile } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 
 const Results: React.FC = () => {
-  const { user, loginManually } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -125,51 +125,58 @@ const Results: React.FC = () => {
     try {
       const formattedPhone = regPhone.startsWith('0') ? `+225${regPhone}` : regPhone;
       
-      // CAPTURE EXPLICITE DU PANIER ICI
+      // CAPTURE SÉCURISÉE DU PANIER
       let pendingIds: string[] = [];
-      if (activePack === 'elite') {
-        pendingIds = ['REQUEST_ELITE'];
-      } else if (activePack === 'stock') {
-        pendingIds = ['REQUEST_STOCK'];
-      } else {
-        // On s'assure d'avoir les IDs réels du panier actuel
-        pendingIds = cart.map(m => m.id);
-      }
+      if (activePack === 'elite') pendingIds = ['REQUEST_ELITE'];
+      else if (activePack === 'stock') pendingIds = ['REQUEST_STOCK'];
+      else pendingIds = cart.map(m => m.id);
 
       if (pendingIds.length === 0 && activePack === 'none') {
-        throw new Error("Panier vide. Sélectionnez des modules avant de valider.");
+        throw new Error("Votre panier est vide.");
       }
 
-      // 1. Créer le profil "En attente"
-      const newProfile: any = {
-        uid: `guest_${Date.now()}_${formattedPhone.replace(/\+/g, '')}`,
+      // CRÉATION DU PROFIL AVEC TOUS LES CHAMPS REQUIS (Évite l'erreur DB)
+      const newProfile: Partial<UserProfile> & { uid: string } = {
+        uid: `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`,
         phoneNumber: formattedPhone,
         establishmentName: regStoreName,
         firstName: 'Gérant',
+        lastName: '',
         isActive: false,
+        isAdmin: false,
+        isKitaPremium: false,
+        hasPerformancePack: false,
+        hasStockPack: false,
+        badges: [],
+        purchasedModuleIds: [],
         pendingModuleIds: pendingIds,
+        actionPlan: [],
         createdAt: new Date().toISOString(),
         role: 'CLIENT'
       };
 
-      await saveUserProfile(newProfile);
+      await saveUserProfile(newProfile as any);
       
-      // 2. Marquer localement
+      // Marquer localement la demande
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       
       setRegStep('success');
     } catch (err: any) {
-      alert(err.message || "Erreur lors de l'enregistrement. Veuillez réessayer.");
+      // Affichage du message d'erreur réel de Supabase si disponible
+      alert(err.message || "Erreur lors de l'enregistrement. Vérifiez votre connexion.");
     } finally {
       setLoading(false);
     }
   };
 
   const finalizeAndRedirect = () => {
+    // 1. Ouvrir WhatsApp
     const message = `Bonjour Coach Kita, je suis le gérant du salon "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro : 01 03 43 84 56.`;
     window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
+    
+    // 2. Fermer la modale et rediriger vers LOGIN
     setIsRegisterModalOpen(false);
-    navigate('/login'); // Redirection vers la page de connexion
+    navigate('/login');
   };
 
   const handleValidateEngagement = async () => {
@@ -193,7 +200,7 @@ const Results: React.FC = () => {
       const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
       await saveUserProfile({ uid: user.uid, pendingModuleIds: updatedPending });
       
-      const message = `Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave.`;
+      const message = `Bonjour Coach Kita, je viens de valider une nouvelle demande (${pricingData.total} F). Je procède au transfert Wave.`;
       window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
       
       navigate('/dashboard');
@@ -281,12 +288,6 @@ const Results: React.FC = () => {
                         isRecommended
                       />
                     ))}
-                  {TRAINING_CATALOG.filter(m => recommendedModuleIds.includes(m.id) && !cart.some(c => c.id === m.id)).length === 0 && (
-                    <div className="col-span-full p-10 rounded-[2.5rem] bg-emerald-50 border border-emerald-100 flex items-center gap-4">
-                       <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                       <p className="text-emerald-800 font-bold text-sm">Toutes les recommandations prioritaires sont dans votre plan d'action.</p>
-                    </div>
-                  )}
                </div>
             </section>
 
@@ -323,30 +324,6 @@ const Results: React.FC = () => {
                 <TrendingUp className="text-emerald-500 w-6 h-6" />
                 VOTRE PLAN
               </h3>
-
-              {/* Jauge d'incitation */}
-              {cart.length > 0 && cart.length < 16 && activePack === 'none' && (
-                <div className="mb-10 p-5 bg-white/5 rounded-2xl border border-white/10 relative z-10">
-                   <div className="flex justify-between items-center mb-3">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Jauge de Réduction</p>
-                      <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                         <Percent className="w-3 h-3" /> -{pricingData.discount}% débloqués
-                      </span>
-                   </div>
-                   <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden mb-4">
-                      <div 
-                        className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 transition-all duration-1000" 
-                        style={{ width: `${(cart.length / 16) * 100}%` }}
-                      ></div>
-                   </div>
-                   {pricingData.nextThreshold! > cart.length && (
-                      <div className="flex items-center gap-3 text-brand-400 text-[10px] font-bold italic">
-                         <Gift className="w-3.5 h-3.5 shrink-0" />
-                         <span>Plus que {pricingData.nextThreshold! - cart.length} module(s) pour passer à {pricingData.nextDiscount}% de remise !</span>
-                      </div>
-                   )}
-                </div>
-              )}
 
               <div className="space-y-8 mb-12 relative z-10">
                  <div className="space-y-2">
@@ -402,7 +379,7 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* Registration Modal avec flux de succès corrigé */}
+      {/* Registration Modal */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
            <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl p-10 relative overflow-hidden border border-white/20">
@@ -462,27 +439,23 @@ const Results: React.FC = () => {
                   </form>
                 </>
               ) : (
-                /* ÉCRAN DE SUCCÈS - INSTRUCTIONS WAVE */
                 <div className="text-center animate-in zoom-in-95 duration-500">
                    <div className="h-24 w-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
                       <CheckCircle2 className="w-12 h-12 text-emerald-500" />
                    </div>
-                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Demande Envoyée !</h2>
-                   <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10">
-                      Coach Kita a bien reçu votre plan d'action pour le salon <strong className="text-slate-900">"{regStoreName}"</strong>.
+                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Plan Enregistré !</h2>
+                   <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10 text-center">
+                      Coach Kita attend la confirmation de votre transfert <strong className="text-slate-900">Wave</strong> pour le salon <strong className="text-slate-900">"{regStoreName}"</strong>.
                    </p>
 
                    <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] mb-10 text-left">
-                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                         <QrCode className="w-4 h-4" /> Procédure de Paiement Wave
-                      </p>
                       <div className="space-y-4">
                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-500">Montant à transférer :</span>
+                            <span className="text-xs font-bold text-slate-500">Montant :</span>
                             <span className="text-xl font-black text-brand-900">{pricingData.total.toLocaleString()} F</span>
                          </div>
                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-500">Vers le numéro :</span>
+                            <span className="text-xs font-bold text-slate-500">Numéro :</span>
                             <span className="text-xs font-black text-slate-900">01 03 43 84 56</span>
                          </div>
                       </div>
@@ -497,7 +470,7 @@ const Results: React.FC = () => {
                    </button>
                    
                    <p className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                      Une fois payé, fermez cette fenêtre pour vous connecter.
+                      L'App va vous rediriger vers la connexion.
                    </p>
                 </div>
               )}
