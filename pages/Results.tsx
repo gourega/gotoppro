@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   MessageCircle,
   QrCode,
-  CreditCard
+  CreditCard,
+  Check
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -101,19 +102,23 @@ const Results: React.FC = () => {
     const count = cart.length;
     let unitPrice = 500;
     let discount = 0;
+    let nextThreshold = 0;
+    let nextDiscount = 0;
 
     if (count >= 13) { unitPrice = 250; discount = 50; }
-    else if (count >= 9) { unitPrice = 350; discount = 30; }
-    else if (count >= 5) { unitPrice = 400; discount = 20; }
+    else if (count >= 9) { unitPrice = 350; discount = 30; nextThreshold = 13; nextDiscount = 50; }
+    else if (count >= 5) { unitPrice = 400; discount = 20; nextThreshold = 9; nextDiscount = 30; }
+    else { nextThreshold = 5; nextDiscount = 20; }
 
     const total = count === 16 ? 10000 : count * unitPrice;
+    
     return { 
       total, 
       unitPrice, 
       discount,
       label: count > 0 ? `${count} module(s) sélectionné(s)` : 'Sélectionnez vos modules',
-      nextThreshold: count < 5 ? 5 : count < 9 ? 9 : count < 13 ? 13 : 16,
-      nextDiscount: count < 5 ? 20 : count < 9 ? 30 : count < 13 ? 50 : 0
+      nextThreshold,
+      nextDiscount
     };
   }, [cart, activePack]);
 
@@ -124,11 +129,8 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       const formattedPhone = regPhone.trim().startsWith('0') ? `+225${regPhone.trim()}` : regPhone.trim();
-      
-      // 1. Vérifier si un profil existe déjà pour ce numéro
       const existingProfile = await getProfileByPhone(formattedPhone);
       
-      // Capture du panier
       let pendingIds: string[] = [];
       if (activePack === 'elite') pendingIds = ['REQUEST_ELITE'];
       else if (activePack === 'stock') pendingIds = ['REQUEST_STOCK'];
@@ -138,8 +140,6 @@ const Results: React.FC = () => {
         throw new Error("Votre panier est vide.");
       }
 
-      // 2. Préparer l'objet profil
-      // Si le profil existe, on garde son UID actuel pour éviter la violation de contrainte Unique
       const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
 
       const profileToSave: Partial<UserProfile> & { uid: string } = {
@@ -155,20 +155,16 @@ const Results: React.FC = () => {
         hasStockPack: existingProfile?.hasStockPack || false,
         badges: existingProfile?.badges || [],
         purchasedModuleIds: existingProfile?.purchasedModuleIds || [],
-        pendingModuleIds: pendingIds, // On remplace le panier en attente par le nouveau
+        pendingModuleIds: pendingIds,
         actionPlan: existingProfile?.actionPlan || [],
         createdAt: existingProfile?.createdAt || new Date().toISOString(),
         role: existingProfile?.role || 'CLIENT'
       };
 
-      // 3. Sauvegarder
       await saveUserProfile(profileToSave as any);
-      
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       setRegStep('success');
     } catch (err: any) {
-      console.error("Supabase Save Error:", err);
-      // Affichage du message d'erreur technique pour aider au diagnostic
       alert(`Erreur : ${err.message || "Vérifiez votre connexion internet."}`);
     } finally {
       setLoading(false);
@@ -281,12 +277,12 @@ const Results: React.FC = () => {
                
                <div className="grid md:grid-cols-2 gap-6">
                   {TRAINING_CATALOG
-                    .filter(m => recommendedModuleIds.includes(m.id) && !cart.some(c => c.id === m.id))
+                    .filter(m => recommendedModuleIds.includes(m.id))
                     .map(mod => (
                       <ModuleCard 
                         key={mod.id} 
                         module={mod} 
-                        isSelected={false}
+                        isSelected={cart.some(c => c.id === mod.id)}
                         onToggle={() => toggleModuleInCart(mod)}
                         isRecommended
                       />
@@ -303,12 +299,12 @@ const Results: React.FC = () => {
                
                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {TRAINING_CATALOG
-                    .filter(m => !recommendedModuleIds.includes(m.id) && !cart.some(c => c.id === m.id))
+                    .filter(m => !recommendedModuleIds.includes(m.id))
                     .map(mod => (
                       <ModuleCard 
                         key={mod.id} 
                         module={mod} 
-                        isSelected={false}
+                        isSelected={cart.some(c => c.id === mod.id)}
                         onToggle={() => toggleModuleInCart(mod)}
                       />
                     ))}
@@ -316,7 +312,7 @@ const Results: React.FC = () => {
             </section>
           </div>
 
-          {/* Sidebar Panier */}
+          {/* Sidebar Panier avec Jauge rétablie */}
           <div className="lg:sticky lg:top-28">
             <div className="bg-[#0f172a] rounded-[3.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
@@ -327,6 +323,30 @@ const Results: React.FC = () => {
                 <TrendingUp className="text-emerald-500 w-6 h-6" />
                 VOTRE PLAN
               </h3>
+
+              {/* Jauge de Réduction (RÉTABLIE) */}
+              {cart.length > 0 && cart.length < 16 && activePack === 'none' && (
+                <div className="mb-10 p-5 bg-white/5 rounded-2xl border border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-2">
+                   <div className="flex justify-between items-center mb-3">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Jauge de Réduction</p>
+                      <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                         <Percent className="w-3 h-3" /> -{pricingData.discount}% débloqués
+                      </span>
+                   </div>
+                   <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden mb-4">
+                      <div 
+                        className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 transition-all duration-1000" 
+                        style={{ width: `${(cart.length / 16) * 100}%` }}
+                      ></div>
+                   </div>
+                   {pricingData.nextThreshold > 0 && (
+                      <div className="flex items-center gap-3 text-brand-400 text-[10px] font-bold italic">
+                         <Gift className="w-3.5 h-3.5 shrink-0" />
+                         <span>Plus que {pricingData.nextThreshold - cart.length} module(s) pour passer à {pricingData.nextDiscount}% de remise !</span>
+                      </div>
+                   )}
+                </div>
+              )}
 
               <div className="space-y-8 mb-12 relative z-10">
                  <div className="space-y-2">
@@ -339,7 +359,7 @@ const Results: React.FC = () => {
 
                  {/* Panier détaillé */}
                  {cart.length > 0 && activePack === 'none' && (
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                        {cart.map(m => (
                          <div key={m.id} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5 group/item hover:bg-white/10 transition-all">
                             <div className="flex flex-col">
@@ -362,7 +382,7 @@ const Results: React.FC = () => {
                  {!isElite && activePack !== 'elite' && pricingData.total >= 3000 && (
                    <button 
                     onClick={() => setActivePack('elite')}
-                    className="w-full py-5 bg-amber-400 text-brand-900 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-amber-300 transition-all"
+                    className="w-full py-5 bg-amber-400 text-brand-900 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-amber-300 transition-all animate-bounce-short"
                    >
                       <Crown className="w-4 h-4" /> Passer au Pack Elite (10.000 F)
                    </button>
@@ -490,7 +510,7 @@ const ModuleCard = ({ module, isSelected, onToggle, isRecommended }: any) => {
       onClick={onToggle}
       className={`p-8 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 relative overflow-hidden group ${
         isSelected 
-        ? 'bg-white border-brand-500 shadow-xl' 
+        ? 'bg-white border-brand-500 shadow-xl ring-2 ring-brand-500/10' 
         : 'bg-white border-slate-100 hover:border-brand-200 shadow-sm hover:shadow-md'
       }`}
     >
@@ -501,11 +521,11 @@ const ModuleCard = ({ module, isSelected, onToggle, isRecommended }: any) => {
       )}
       
       <div className="flex justify-between items-start mb-6">
-         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 group-hover:text-brand-600`}>
+         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isSelected ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:text-brand-600'}`}>
            {module.topic}
          </span>
-         <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-200 group-hover:bg-brand-500 group-hover:text-white`}>
-            <Plus className="w-5 h-5" />
+         <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-brand-500 text-white shadow-lg' : 'bg-slate-50 text-slate-200 group-hover:bg-brand-500 group-hover:text-white'}`}>
+            {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
          </div>
       </div>
       
