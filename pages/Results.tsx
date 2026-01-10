@@ -20,7 +20,8 @@ import {
   Store,
   ShieldCheck,
   MessageCircle,
-  QrCode
+  QrCode,
+  CreditCard
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -49,13 +50,6 @@ const Results: React.FC = () => {
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
 
   useEffect(() => {
-    // Vérifier si une demande est déjà en cours localement pour éviter de réouvrir la modale
-    const pendingRequest = localStorage.getItem('gotop_pending_request');
-    if (pendingRequest && !user) {
-      // Si une demande a été faite mais que l'utilisateur n'est pas encore actif
-      // On peut laisser la modale fermée pour l'instant
-    }
-
     const params = new URLSearchParams(location.search);
     const packParam = params.get('pack');
     if (packParam === 'performance') setActivePack('none');
@@ -131,39 +125,51 @@ const Results: React.FC = () => {
     try {
       const formattedPhone = regPhone.startsWith('0') ? `+225${regPhone}` : regPhone;
       
-      // Sécurisation de la liste des IDs (capture immédiate de l'état cart)
+      // CAPTURE EXPLICITE DU PANIER ICI
       let pendingIds: string[] = [];
-      if (activePack === 'elite') pendingIds = ['REQUEST_ELITE'];
-      else if (activePack === 'stock') pendingIds = ['REQUEST_STOCK'];
-      else pendingIds = cart.map(m => m.id);
+      if (activePack === 'elite') {
+        pendingIds = ['REQUEST_ELITE'];
+      } else if (activePack === 'stock') {
+        pendingIds = ['REQUEST_STOCK'];
+      } else {
+        // On s'assure d'avoir les IDs réels du panier actuel
+        pendingIds = cart.map(m => m.id);
+      }
+
+      if (pendingIds.length === 0 && activePack === 'none') {
+        throw new Error("Panier vide. Sélectionnez des modules avant de valider.");
+      }
 
       // 1. Créer le profil "En attente"
       const newProfile: any = {
-        uid: `guest_${Date.now()}`,
+        uid: `guest_${Date.now()}_${formattedPhone.replace(/\+/g, '')}`,
         phoneNumber: formattedPhone,
         establishmentName: regStoreName,
         firstName: 'Gérant',
         isActive: false,
-        pendingModuleIds: pendingIds
+        pendingModuleIds: pendingIds,
+        createdAt: new Date().toISOString(),
+        role: 'CLIENT'
       };
 
       await saveUserProfile(newProfile);
       
-      // 3. Marquer comme envoyé localement pour éviter le spam
+      // 2. Marquer localement
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       
-      // Passer à l'étape succès
       setRegStep('success');
     } catch (err: any) {
-      alert("Erreur lors de l'enregistrement. Veuillez réessayer.");
+      alert(err.message || "Erreur lors de l'enregistrement. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
   };
 
-  const openWhatsApp = () => {
-    const message = `Bonjour Coach Kita, je suis le gérant de "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro.`;
+  const finalizeAndRedirect = () => {
+    const message = `Bonjour Coach Kita, je suis le gérant du salon "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro : 01 03 43 84 56.`;
     window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
+    setIsRegisterModalOpen(false);
+    navigate('/login'); // Redirection vers la page de connexion
   };
 
   const handleValidateEngagement = async () => {
@@ -403,7 +409,7 @@ const Results: React.FC = () => {
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Kita</div>
               
               <button 
-                onClick={() => { setIsRegisterModalOpen(false); if(regStep === 'success') navigate('/'); }}
+                onClick={() => { setIsRegisterModalOpen(false); if(regStep === 'success') navigate('/login'); }}
                 className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 p-2"
               >
                 <X className="w-6 h-6" />
@@ -483,15 +489,15 @@ const Results: React.FC = () => {
                    </div>
 
                    <button 
-                    onClick={openWhatsApp}
+                    onClick={finalizeAndRedirect}
                     className="w-full bg-[#25D366] text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-green-200 flex items-center justify-center gap-3 hover:scale-[1.02] transition-all"
                    >
-                      <MessageCircle className="w-5 h-5 fill-current" />
-                      Confirmer via WhatsApp
+                      <CreditCard className="w-5 h-5" />
+                      Procéder au paiement
                    </button>
                    
                    <p className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                      Activation sous 15 min après réception.
+                      Une fois payé, fermez cette fenêtre pour vous connecter.
                    </p>
                 </div>
               )}

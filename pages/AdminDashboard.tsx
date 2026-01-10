@@ -47,7 +47,8 @@ import {
   AlertCircle,
   Package,
   Wifi,
-  SearchCode
+  SearchCode,
+  ShoppingCart
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -105,7 +106,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK') => {
+  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL') => {
     if (!selectedUser) return;
     setProcessingId(packType);
     try {
@@ -121,14 +122,19 @@ const AdminDashboard: React.FC = () => {
       } else if (packType === 'STOCK') {
         updates.hasStockPack = true;
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_STOCK');
+      } else if (packType === 'INDIVIDUAL') {
+        // Activation de tous les modules individuels demandés dans le panier
+        const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
+        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
       }
 
       await saveUserProfile(updates as any);
-      showNotification(`Pack ${packType} activé pour ${selectedUser.firstName} !`);
+      showNotification(`Accès validé pour ${selectedUser.firstName} !`);
       await fetchUsers();
       setSelectedUser(prev => prev ? { ...prev, ...updates } as any : null);
     } catch (err) {
-      showNotification("Erreur lors de l'activation du pack", "error");
+      showNotification("Erreur lors de l'activation", "error");
     } finally {
       setProcessingId(null);
     }
@@ -182,11 +188,7 @@ const AdminDashboard: React.FC = () => {
 
   const filteredUsers = useMemo(() => {
     const isSearching = searchTerm.trim().length > 0;
-    
-    // Logique de filtrage "Inbox" : Gérants avec actions en attente OU Admins
     const baseInboxUsers = users.filter(u => u.isAdmin || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
-    
-    // Si on cherche, on cherche dans TOUS les utilisateurs
     const sourceSet = isSearching ? users : baseInboxUsers;
 
     return sourceSet.filter(u => {
@@ -198,12 +200,10 @@ const AdminDashboard: React.FC = () => {
       
       if (!matchesSearch) return false;
       
-      // Filtres d'onglets
       if (viewMode === 'admins') return u.isAdmin;
       if (viewMode === 'pending') return !u.isAdmin && u.pendingModuleIds && u.pendingModuleIds.length > 0;
       if (viewMode === 'active') return !u.isAdmin && u.isActive;
       
-      // Mode 'inbox' (default) : On montre tout ce qui est dans sourceSet qui match la recherche
       return true;
     });
   }, [users, searchTerm, viewMode]);
@@ -220,7 +220,6 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Side Decoration */}
       <div className="fixed inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 via-emerald-500 to-amber-500 opacity-20"></div>
 
       <div className="max-w-[1600px] mx-auto px-8 py-12">
@@ -276,12 +275,6 @@ const AdminDashboard: React.FC = () => {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
-              {searchTerm && (
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                   <div className="bg-brand-500/20 text-brand-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse border border-brand-500/30">Radar Actif</div>
-                   <button onClick={() => setSearchTerm('')} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
-                </div>
-              )}
             </div>
             <div className="flex bg-black/40 p-1.5 rounded-[2rem] border border-white/10 shrink-0">
               <NavTab active={viewMode === 'inbox'} onClick={() => setViewMode('inbox')} label="Opérations" count={stats.pending + users.filter(u => u.isAdmin).length} />
@@ -327,9 +320,10 @@ const AdminDashboard: React.FC = () => {
                     <td className="px-8 py-8">
                       <div className="flex flex-wrap gap-2">
                         {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
-                        {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="WAITING ELITE" color="amber" animate />}
-                        {u.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && <Badge text="WAITING PERF" color="emerald" animate />}
-                        {u.pendingModuleIds?.includes('REQUEST_STOCK') && <Badge text="WAITING STOCK" color="sky" animate />}
+                        {u.pendingModuleIds?.some(id => id.startsWith('mod_')) && <Badge text="PANIER INDIVIDUEL" color="blue" animate />}
+                        {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="ATTENTE ELITE" color="amber" animate />}
+                        {u.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && <Badge text="ATTENTE PERF" color="emerald" animate />}
+                        {u.pendingModuleIds?.includes('REQUEST_STOCK') && <Badge text="ATTENTE STOCK" color="sky" animate />}
                       </div>
                     </td>
                     <td className="px-8 py-8">
@@ -356,12 +350,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="h-24 w-24 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center animate-pulse">
                            <Wifi className="w-10 h-10 text-slate-700" />
                         </div>
-                        <div className="space-y-2">
-                           <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-500">
-                             {searchTerm ? "Aucun gérant trouvé pour ce critère" : "Inbox Zéro : Aucun gérant ne nécessite d'action urgente"}
-                           </p>
-                           {searchTerm && <button onClick={() => setSearchTerm('')} className="text-brand-500 font-bold text-[10px] uppercase tracking-widest hover:underline">Réinitialiser le radar</button>}
-                        </div>
+                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-500">Inbox Zéro : Aucun gérant ne nécessite d'action urgente</p>
                       </div>
                     </td>
                   </tr>
@@ -390,7 +379,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-4 mt-2">
                     <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{selectedUser.phoneNumber}</p>
                     <span className="h-1.5 w-1.5 bg-slate-700 rounded-full"></span>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ID: {selectedUser.uid.substring(0,8)}</p>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">SALON: {selectedUser.establishmentName || 'INCONNU'}</p>
                   </div>
                 </div>
               </div>
@@ -399,23 +388,38 @@ const AdminDashboard: React.FC = () => {
 
             <div className="p-12 space-y-12 flex-grow">
               
-              {/* REQUÊTES EN ATTENTE */}
+              {/* PANIER EN ATTENTE (CORRECTION : AFFICHAGE DU CONTENU RÉEL) */}
               {(selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0) && (
                 <div className="bg-amber-500/10 rounded-[3rem] p-10 border border-amber-500/30 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><Coins className="w-24 h-24 text-amber-500" /></div>
+                  <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><ShoppingCart className="w-24 h-24 text-amber-500" /></div>
                   <div className="flex items-center gap-6 mb-8 relative z-10">
                     <div className="h-14 w-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-xl animate-pulse">
                       <Clock className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Paiement Détecté</h3>
-                      <p className="text-amber-400/70 text-sm font-medium">Action requise après vérification du transfert.</p>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Panier à Valider</h3>
+                      <p className="text-amber-400/70 text-sm font-medium">Le gérant attend l'activation de son paiement Wave.</p>
                     </div>
+                  </div>
+
+                  <div className="space-y-4 mb-8 relative z-10">
+                    {selectedUser.pendingModuleIds.filter(id => id.startsWith('mod_')).map(id => {
+                      const mod = TRAINING_CATALOG.find(m => m.id === id);
+                      return (
+                        <div key={id} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
+                           <span className="text-xs font-bold text-white">{mod?.title || id}</span>
+                           <span className="text-[10px] font-black text-amber-500">500 F</span>
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                     {selectedUser.pendingModuleIds.includes('REQUEST_ELITE') && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="10.000 F" color="amber" />
+                    )}
+                    {selectedUser.pendingModuleIds.some(id => id.startsWith('mod_')) && (
+                      <ActionBtn onClick={() => handleActivatePack('INDIVIDUAL')} loading={processingId === 'INDIVIDUAL'} icon={<CheckCircle />} label="Activer Panier" price="Modules unitaires" color="blue" />
                     )}
                     {selectedUser.pendingModuleIds.includes('REQUEST_PERFORMANCE') && (
                       <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
@@ -430,24 +434,22 @@ const AdminDashboard: React.FC = () => {
               <div className="grid lg:grid-cols-2 gap-10">
                 {/* Académie */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
-                   <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] flex items-center gap-3">
-                         <Trophy className="w-5 h-5" /> Académie
-                      </h3>
-                   </div>
+                   <h3 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                      <Trophy className="w-5 h-5" /> État des Formations
+                   </h3>
                    <div className="space-y-4">
-                      {TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).length > 0 ? (
-                        TRAINING_CATALOG.filter(m => (selectedUser.progress?.[m.id] || 0) >= 80).map(mod => (
-                          <div key={mod.id} className="p-5 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group">
-                             <div className="flex items-center gap-4">
-                                <Medal className="w-5 h-5 text-emerald-500" />
-                                <span className="text-xs font-bold text-white truncate max-w-[150px]">{mod.title}</span>
-                             </div>
-                             <span className="text-[10px] font-black text-emerald-400">{selectedUser.progress?.[mod.id]}%</span>
-                          </div>
-                        ))
+                      {selectedUser.purchasedModuleIds?.length > 0 ? (
+                        TRAINING_CATALOG.filter(m => selectedUser.purchasedModuleIds.includes(m.id)).map(mod => {
+                          const score = selectedUser.progress?.[mod.id] || 0;
+                          return (
+                            <div key={mod.id} className="p-4 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
+                               <span className="text-[11px] font-bold text-white truncate max-w-[150px]">{mod.title}</span>
+                               <span className={`text-[10px] font-black ${score >= 80 ? 'text-emerald-400' : 'text-slate-500'}`}>{score}%</span>
+                            </div>
+                          );
+                        })
                       ) : (
-                        <div className="py-10 text-center opacity-30 italic text-sm">Aucune certification validée</div>
+                        <div className="py-10 text-center opacity-30 italic text-sm">Aucun module acheté</div>
                       )}
                    </div>
                 </div>
@@ -455,7 +457,7 @@ const AdminDashboard: React.FC = () => {
                 {/* Social */}
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                      <Award className="w-5 h-5" /> Influence
+                      <Award className="w-5 h-5" /> Trophées & Influence
                    </h3>
                    <div className="flex items-end gap-4 mb-8">
                       <p className="text-5xl font-black text-white">{selectedUser.referralCount || 0}</p>
@@ -474,11 +476,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Modules unitaires */}
-              {!selectedUser.isAdmin && (
-                <section>
+              {/* Modules unitaires (CORRECTION : N'APPARAIT QUE SI VALIDE) */}
+              {selectedUser.isActive && !selectedUser.isAdmin && (
+                <section className="animate-in fade-in">
                   <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                      <Plus className="w-5 h-5" /> Offrir des modules (Récompense)
+                      <Plus className="w-5 h-5" /> Offrir des modules bonus
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
                       {TRAINING_CATALOG.filter(m => !(selectedUser.purchasedModuleIds || []).includes(m.id)).map(mod => (
@@ -502,24 +504,24 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Actions */}
+            {/* Actions Pied de page */}
             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
                <button 
                 onClick={() => handleToggleStatus(selectedUser)}
                 disabled={selectedUser.uid === currentUser?.uid}
                 className={`w-full md:w-auto px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
                   selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
-                } disabled:opacity-30 disabled:cursor-not-allowed`}
+                } disabled:opacity-30`}
                >
                   {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                  {selectedUser.isActive ? 'Suspendre' : 'Activer'}
+                  {selectedUser.isActive ? 'Suspendre Gérant' : 'Activer Gérant'}
                </button>
 
                <div className="flex items-center gap-4 w-full md:w-auto">
                  <a 
-                   href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Votre accès Premium Go'Top Pro est maintenant actif !`)}`} 
+                   href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Votre accès Premium Go'Top Pro est maintenant actif !`)}`} 
                    target="_blank" rel="noreferrer" 
-                   className="flex-grow md:flex-grow-0 bg-emerald-500 text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/20"
+                   className="flex-grow md:flex-grow-0 bg-emerald-500 text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 shadow-xl"
                  >
                     <MessageCircle className="w-4 h-4" /> WhatsApp Confirm
                  </a>
@@ -547,9 +549,7 @@ const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
        <ArrowUpRight className="w-4 h-4 text-slate-700" />
     </div>
     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{title}</p>
-    <div className="flex items-baseline gap-3">
-       <p className="text-4xl font-black text-white tracking-tight">{value}</p>
-    </div>
+    <p className="text-4xl font-black text-white tracking-tight">{value}</p>
     <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2">
       <div className="h-1 w-1 bg-slate-700 rounded-full"></div>
       {sub}
@@ -592,7 +592,8 @@ const ActionBtn = ({ onClick, loading, icon, label, price, color }: any) => {
   const colors: any = {
     amber: 'bg-amber-500 hover:bg-amber-400 text-black',
     emerald: 'bg-emerald-500 hover:bg-emerald-400 text-white',
-    sky: 'bg-sky-500 hover:bg-sky-400 text-white'
+    sky: 'bg-sky-500 hover:bg-sky-400 text-white',
+    blue: 'bg-indigo-600 hover:bg-indigo-500 text-white'
   };
   return (
     <button 
