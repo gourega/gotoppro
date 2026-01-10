@@ -96,8 +96,23 @@ const Results: React.FC = () => {
   };
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { total: 10000, unitPrice: 625, discount: 50, label: 'Pack Elite (Accès Total)' };
-    if (activePack === 'stock') return { total: 5000, unitPrice: 5000, discount: 0, label: 'Pack Stock Expert (Magasin)' };
+    if (activePack === 'elite') return { 
+      total: 10000, 
+      unitPrice: 625, 
+      discount: 50, 
+      label: 'Pack Elite (Accès Total)',
+      nextThreshold: 0,
+      nextDiscount: 0
+    };
+    
+    if (activePack === 'stock') return { 
+      total: 5000, 
+      unitPrice: 5000, 
+      discount: 0, 
+      label: 'Pack Stock Expert (Magasin)',
+      nextThreshold: 0,
+      nextDiscount: 0
+    };
 
     const count = cart.length;
     let unitPrice = 500;
