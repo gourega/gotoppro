@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { KitaTransaction, KitaDebt } from '../types';
+import { KitaTransaction, KitaDebt, KitaService } from '../types';
 import { 
   getKitaTransactions, 
   addKitaTransaction, 
@@ -10,7 +10,9 @@ import {
   deleteKitaTransaction,
   getKitaDebts,
   addKitaDebt,
-  markDebtAsPaid
+  markDebtAsPaid,
+  getKitaServices,
+  addKitaService
 } from '../services/supabase';
 import { 
   Plus, 
@@ -23,9 +25,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  History
+  Printer,
+  ChevronDown,
+  Search,
+  X
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
+import { DEFAULT_KITA_SERVICES, BRAND_LOGO } from '../constants';
 
 type PeriodFilter = 'today' | 'week' | 'month' | 'debts';
 
@@ -34,10 +40,12 @@ const Caisse: React.FC = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   const [debts, setDebts] = useState<KitaDebt[]>([]);
+  const [services, setServices] = useState<KitaService[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isServiceListOpen, setIsServiceListOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [newTrans, setNewTrans] = useState<Omit<KitaTransaction, 'id'>>({
     type: 'INCOME',
@@ -49,6 +57,7 @@ const Caisse: React.FC = () => {
     isCredit: false
   });
   const [saving, setSaving] = useState(false);
+  const [lastSavedTransaction, setLastSavedTransaction] = useState<KitaTransaction | null>(null);
 
   useEffect(() => {
     if (user) loadData();
@@ -58,10 +67,23 @@ const Caisse: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [transData, debtData] = await Promise.all([
+      const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
-        getKitaDebts(user.uid)
+        getKitaDebts(user.uid),
+        getKitaServices(user.uid)
       ]);
+      
+      // Initialisation auto des services si catalogue vide
+      if (serviceData.length === 0) {
+        for (const name of DEFAULT_KITA_SERVICES) {
+          await addKitaService(user.uid, { name, category: 'Général', defaultPrice: 0, isActive: true });
+        }
+        const refreshedServices = await getKitaServices(user.uid);
+        setServices(refreshedServices);
+      } else {
+        setServices(serviceData);
+      }
+      
       setTransactions(transData);
       setDebts(debtData);
     } catch (err) {
@@ -105,24 +127,32 @@ const Caisse: React.FC = () => {
     if (!user || newTrans.amount <= 0 || !newTrans.label) return;
     setSaving(true);
     try {
+      let savedId = '';
       if (newTrans.isCredit && newTrans.type === 'INCOME') {
-        await addKitaDebt(user.uid, {
+        const debt = await addKitaDebt(user.uid, {
           personName: newTrans.label,
           amount: newTrans.amount,
           isPaid: false,
           createdAt: new Date().toISOString(),
           phone: ''
         });
-        await addKitaTransaction(user.uid, { ...newTrans, category: 'Ardoise' });
+        const trans = await addKitaTransaction(user.uid, { ...newTrans, category: 'Ardoise' });
+        savedId = trans.id;
       } else {
-        if (editingId) {
-          await updateKitaTransaction(editingId, newTrans);
-        } else {
-          await addKitaTransaction(user.uid, newTrans);
-        }
+        const trans = await addKitaTransaction(user.uid, newTrans);
+        savedId = trans.id;
       }
+      
       await loadData();
-      closeModal();
+      
+      // On garde une trace de la transaction pour l'impression
+      setLastSavedTransaction({ ...newTrans, id: savedId });
+      
+      if (!newTrans.isCredit && newTrans.type === 'INCOME') {
+        // Optionnel : On pourrait ouvrir le ticket automatiquement ici
+      } else {
+        closeModal();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -130,42 +160,125 @@ const Caisse: React.FC = () => {
     }
   };
 
+  // Ajout de la fonction manquante handleCollectDebt
   const handleCollectDebt = async (debt: KitaDebt) => {
-    if (!user || !window.confirm(`Encaisser ${debt.amount} F de ${debt.personName} ?`)) return;
-    setSaving(true);
+    if (!user) return;
+    if (!window.confirm(`Confirmer l'encaissement de ${debt.amount} F de ${debt.personName} ?`)) return;
+    
+    setLoading(true);
     try {
+      // 1. Marquer la dette comme payée dans la table des dettes
       await markDebtAsPaid(debt.id);
+      
+      // 2. Enregistrer une transaction réelle de type INCOME pour que l'argent apparaisse dans le cash du jour
       await addKitaTransaction(user.uid, {
         type: 'INCOME',
         amount: debt.amount,
-        label: `Paiement Ardoise: ${debt.personName}`,
-        category: 'Ardoise récupérée',
+        label: `Recouvrement : ${debt.personName}`,
+        category: 'Recouvrement',
         paymentMethod: 'Espèces',
         date: new Date().toISOString().split('T')[0],
         isCredit: false
       });
+      
+      // 3. Recharger toutes les données pour mettre à jour l'UI
       await loadData();
     } catch (err) {
-      console.error(err);
+      console.error("Erreur lors du recouvrement de la dette:", err);
+      alert("Une erreur est survenue lors du recouvrement.");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) return;
-    try {
-      await deleteKitaTransaction(id);
-      setTransactions(transactions.filter(t => t.id !== id));
-    } catch (err) {
-      console.error(err);
-    }
+  const handleSelectService = (s: KitaService) => {
+    setNewTrans({
+      ...newTrans,
+      label: s.name,
+      amount: s.defaultPrice > 0 ? s.defaultPrice : newTrans.amount
+    });
+    setIsServiceListOpen(false);
+    setSearchTerm('');
   };
+
+  const handlePrintTicket = (transaction: KitaTransaction) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const ticketHtml = `
+      <html>
+        <head>
+          <style>
+            @page { size: 80mm 200mm; margin: 0; }
+            body { 
+              width: 70mm; 
+              margin: 0 auto; 
+              padding: 10mm 5mm; 
+              font-family: 'Courier New', Courier, monospace; 
+              font-size: 12px; 
+              line-height: 1.4; 
+              color: black;
+            }
+            .text-center { text-align: center; }
+            .header { margin-bottom: 10px; }
+            .logo { width: 40mm; margin-bottom: 10px; }
+            .divider { border-bottom: 1px dashed black; margin: 10px 0; }
+            .row { display: flex; justify-content: space-between; }
+            .bold { font-weight: bold; }
+            .footer { margin-top: 20px; font-size: 10px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div class="header text-center">
+            <img src="${BRAND_LOGO}" class="logo" />
+            <div class="bold">${user?.establishmentName || "Go'Top Pro Salon"}</div>
+            <div>Tél: ${user?.phoneNumber}</div>
+          </div>
+          <div class="divider"></div>
+          <div class="text-center bold">TICKET DE CAISSE</div>
+          <div class="row">
+            <span>Date:</span>
+            <span>${new Date(transaction.date).toLocaleDateString('fr-FR')}</span>
+          </div>
+          <div class="row">
+            <span>Mode:</span>
+            <span>${transaction.paymentMethod}</span>
+          </div>
+          <div class="divider"></div>
+          <div class="row bold">
+            <span>Désignation</span>
+            <span>Total</span>
+          </div>
+          <div class="row">
+            <span style="max-width: 45mm;">${transaction.label}</span>
+            <span>${transaction.amount.toLocaleString()} F</span>
+          </div>
+          <div class="divider"></div>
+          <div class="row bold" style="font-size: 16px;">
+            <span>TOTAL</span>
+            <span>${transaction.amount.toLocaleString()} F</span>
+          </div>
+          <div class="divider"></div>
+          <div class="footer text-center">
+            Merci de votre visite !<br>
+            À bientôt pour votre prochaine beauté.<br>
+            Propulsé par Go'Top Pro
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(ticketHtml);
+    printWindow.document.close();
+  };
+
+  const filteredServices = services.filter(s => 
+    s.isActive && s.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditingId(null);
+    setLastSavedTransaction(null);
     setNewTrans({
       type: 'INCOME',
       amount: 0,
@@ -265,7 +378,7 @@ const Caisse: React.FC = () => {
         ) : period === 'debts' ? (
           <div className="space-y-6">
              <div className="flex items-center gap-4 px-4">
-                <History className="w-6 h-6 text-brand-900" />
+                <Clock className="w-6 h-6 text-brand-900" />
                 <h2 className="text-xl font-black uppercase tracking-widest text-brand-900">Le Carnet d'Ardoises</h2>
              </div>
              {debts.filter(d => !d.isPaid).length === 0 ? (
@@ -320,9 +433,16 @@ const Caisse: React.FC = () => {
                   <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F
                   </p>
-                  <button onClick={(e) => handleDelete(t.id, e)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
+                    {t.type === 'INCOME' && (
+                      <button onClick={() => handlePrintTicket(t)} className="p-3 text-brand-600 hover:bg-brand-50 rounded-xl" title="Imprimer ticket">
+                        <Printer className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -332,31 +452,129 @@ const Caisse: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl">
-          <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
-            <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Nouvelle opération</h2>
-            <form onSubmit={handleSaveTransaction} className="space-y-8">
-              <div className="flex bg-slate-100 p-1.5 rounded-[2rem]">
-                <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
-                <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
+          <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
+            {lastSavedTransaction ? (
+              <div className="text-center space-y-8 animate-in fade-in">
+                 <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
+                    <CheckCircle2 className="w-10 h-10" />
+                 </div>
+                 <h2 className="text-3xl font-serif font-bold text-slate-900">Enregistré !</h2>
+                 <p className="text-slate-500 font-medium leading-relaxed italic">
+                    La prestation "${lastSavedTransaction.label}" de ${lastSavedTransaction.amount} F a bien été ajoutée à la caisse.
+                 </p>
+                 <div className="flex flex-col gap-4">
+                    <button 
+                      onClick={() => handlePrintTicket(lastSavedTransaction)}
+                      className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all"
+                    >
+                       <Printer className="w-5 h-5" /> Imprimer le ticket
+                    </button>
+                    <button onClick={closeModal} className="w-full py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">
+                       Terminer
+                    </button>
+                 </div>
               </div>
-              <div className="space-y-4">
-                <input type="number" placeholder="Montant" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-8 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-5xl text-center" />
-                <input type="text" placeholder={newTrans.isCredit ? "Nom du client" : "Libellé"} value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold" />
-                {newTrans.type === 'INCOME' && (
-                  <label className="flex items-center gap-4 p-6 bg-amber-50 rounded-2xl border border-amber-100 cursor-pointer">
-                    <input type="checkbox" checked={newTrans.isCredit} onChange={e => setNewTrans({...newTrans, isCredit: e.target.checked})} className="w-6 h-6 rounded-lg text-amber-500" />
-                    <p className="text-sm font-black text-amber-900 uppercase">Vente à crédit (Ardoise)</p>
-                  </label>
-                )}
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Valider
-                </button>
-                <button type="button" onClick={closeModal} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Annuler</button>
-              </div>
-            </form>
+            ) : (
+              <>
+                <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Nouvelle opération</h2>
+                <form onSubmit={handleSaveTransaction} className="space-y-8">
+                  <div className="flex bg-slate-100 p-1.5 rounded-[2rem]">
+                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
+                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Libellé / Prestation</label>
+                      <div className="relative">
+                        <button 
+                          type="button"
+                          onClick={() => setIsServiceListOpen(true)}
+                          className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-left flex justify-between items-center group hover:bg-slate-100 transition-all"
+                        >
+                           <span className={newTrans.label ? 'text-slate-900' : 'text-slate-400'}>
+                              {newTrans.label || "Choisir un service..."}
+                           </span>
+                           <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-all" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Montant (F)</label>
+                      <input 
+                        type="number" 
+                        placeholder="0" 
+                        value={newTrans.amount || ''} 
+                        onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} 
+                        className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" 
+                      />
+                    </div>
+
+                    {newTrans.type === 'INCOME' && (
+                      <label className="flex items-center gap-4 p-5 bg-amber-50 rounded-2xl border border-amber-100 cursor-pointer hover:bg-amber-100 transition-all">
+                        <input type="checkbox" checked={newTrans.isCredit} onChange={e => setNewTrans({...newTrans, isCredit: e.target.checked})} className="w-6 h-6 rounded-lg text-amber-500" />
+                        <p className="text-sm font-black text-amber-900 uppercase">Vente à crédit (Ardoise)</p>
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all">
+                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Valider
+                    </button>
+                    <button type="button" onClick={closeModal} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Annuler</button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Modal Sélection Service */}
+      {isServiceListOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
+           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in slide-in-from-bottom-10">
+              <div className="p-8 border-b border-slate-100">
+                 <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-serif font-bold text-slate-900">Nos Prestations</h3>
+                    <button onClick={() => setIsServiceListOpen(false)} className="p-2 text-slate-400 hover:text-rose-500 transition-all"><X /></button>
+                 </div>
+                 <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Rechercher une prestation..." 
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
+                      autoFocus
+                    />
+                 </div>
+              </div>
+              <div className="flex-grow overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                 {filteredServices.map(s => (
+                   <button 
+                    key={s.id} 
+                    onClick={() => handleSelectService(s)}
+                    className="w-full p-6 text-left hover:bg-brand-50 rounded-2xl transition-all border border-transparent hover:border-brand-200 group flex justify-between items-center"
+                   >
+                      <div>
+                        <p className="font-bold text-slate-900 text-lg group-hover:text-brand-900">{s.name}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.category}</p>
+                      </div>
+                      {s.defaultPrice > 0 && <span className="font-black text-brand-600 text-sm">{s.defaultPrice.toLocaleString()} F</span>}
+                   </button>
+                 ))}
+                 {filteredServices.length === 0 && (
+                   <div className="text-center py-20 text-slate-400">
+                      <p className="italic font-medium">Aucune prestation ne correspond.</p>
+                      <button onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Utiliser "${searchTerm}" comme libellé libre</button>
+                   </div>
+                 )}
+              </div>
+           </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier } from '../types';
+import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -66,6 +66,51 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
   if (error) throw error;
   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
   return publicUrl;
+};
+
+// --- SERVICES (CATALOGUE) ---
+export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId).order('name', { ascending: true });
+  return error ? [] : data.map(s => ({
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    defaultPrice: s.default_price,
+    isActive: s.is_active,
+    userId: s.user_id
+  }));
+};
+
+export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { data, error } = await (supabase as any).from('kita_services').insert({
+    user_id: userId,
+    name: service.name,
+    category: service.category,
+    default_price: service.defaultPrice,
+    is_active: service.isActive
+  }).select().single();
+  if (error) throw error;
+  return data;
+};
+
+export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const updates: any = {};
+  if (service.name !== undefined) updates.name = service.name;
+  if (service.category !== undefined) updates.category = service.category;
+  if (service.defaultPrice !== undefined) updates.default_price = service.defaultPrice;
+  if (service.isActive !== undefined) updates.is_active = service.isActive;
+
+  const { error } = await supabase.from('kita_services').update(updates).eq('id', id);
+  if (error) throw error;
+};
+
+export const deleteKitaService = async (id: string) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('kita_services').delete().eq('id', id);
+  if (error) throw error;
 };
 
 // --- TRANSACTIONS ---

@@ -8,6 +8,15 @@ export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/stora
 
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
+export const DEFAULT_KITA_SERVICES = [
+  "Bain d'huile", "Brushing", "Babyliss", "Balayage", "Chignon", 
+  "Coupe homme", "Coupe", "Défrisage", "Tresse", "Epilation sourcils", 
+  "Manicure", "Pédicure", "Mise en plis", "Maquillage", 
+  "Pose de vernis + Nettoyage", "Pose vernis permanent", "Pose gel / Capsules", 
+  "Massage", "Soins du corps", "Soins du visage", "Percing / Tatouage", 
+  "Shampoing", "Teinture", "Tissage", "Divers", "Vente de produits"
+];
+
 export const DAILY_CHALLENGES = [
   "Nettoyer ses ciseaux devant le prochain client",
   "Sourire consciemment lors de chaque appel téléphonique",
@@ -261,7 +270,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_fidelisation",
     topic: "Vente",
     title: "Fidélisation : faire revenir vos clients",
-    description: "Apprenez à utiliser votre carnet client pour que vos clientes reviennent 8 fois par an au lieu de 4.",
+    description: "Apprenez à utiliser votre carnet client pour que vos constantes actuelles en reviennent 8 fois par an au lieu de 4.",
     mini_course: "Garder un client coûte 5 fois moins cher qu'en trouver un nouveau.",
     price: 500,
     aiCredits: 3,
@@ -459,7 +468,6 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <p>Vos produits ne doivent pas prendre la poussière. Disposez-les à hauteur des yeux, avec des étiquettes de prix claires et des descriptions de bénéfices. Changez la mise en avant chaque mois pour créer de la nouveauté.</p>
       </section>
       <section class="lesson-card">
-        ines
         <h2>III. L'éducation pendant le service</h2>
         <p>Expliquez chaque produit que vous utilisez pendant que vous le manipulez. « Je mets ce sérum pour éviter les frisottis dus à l'humidité ». Le client teste ainsi le produit en temps réel et comprend son utilité avant même de passer à la caisse.</p>
       </section>`,
@@ -817,7 +825,7 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 2, text: "L'équipe s'entraîne-t-elle à faire un bon diagnostic avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
   { id: 3, text: "Les protocoles d'hygiène sont-ils affichés et respectés scrupuleusement par tous ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
   { id: 4, text: "Avez-vous un inventaire à jour chaque semaine pour éviter les ruptures de stock ?", category: "Gestion", linkedModuleId: "mod_stock" },
-  { id: 5, text: "Publiez-vous régulièrement (au moins 3 fois par semaine) on vos réseaux sociaux ?", category: "Visibilité", linkedModuleId: "mod_social_media" },
+  { id: 5, text: "Publiez-vous régulièrement (au moins 3 fois par semaine) sur vos réseaux sociaux ?", category: "Visibilité", linkedModuleId: "mod_social_media" },
   { id: 6, text: "Utilisez-vous un fichier client pour relancer ceux qui ne sont plus venus depuis 3 mois ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
   { id: 7, text: "Réalisez-vous des entretiens individuels de motivation avec vos employés chaque mois ?", category: "Direction", linkedModuleId: "mod_management" },
   { id: 8, text: "Connaissez-vous précisément votre coût à la minute pour fixer vos tarifs ?", category: "Gestion", linkedModuleId: "mod_tarification" },

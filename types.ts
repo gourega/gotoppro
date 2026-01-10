@@ -9,6 +9,15 @@ export interface UserActionCommitment {
   isCompleted: boolean;
 }
 
+export interface KitaService {
+  id: string;
+  name: string;
+  category: string;
+  defaultPrice: number;
+  isActive: boolean;
+  userId: string;
+}
+
 // Structures pour KITA Comptabilité
 export interface KitaTransaction {
   id: string;
