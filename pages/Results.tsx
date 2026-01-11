@@ -53,44 +53,52 @@ const Results: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const packParam = params.get('pack');
+    const rechargeId = params.get('recharge');
+    
     if (packParam === 'performance') setActivePack('none');
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'stock') setActivePack('stock');
 
-    // Gestion du rachat de module (recharge)
-    const rechargeId = params.get('recharge');
+    // INITIALISATION DU PANIER
+    let initialCart: TrainingModule[] = [];
+
+    // Cas 1: Si c'est un rachat, on ne met QUE ce module
     if (rechargeId) {
       const moduleToRecharge = TRAINING_CATALOG.find(m => m.id === rechargeId);
       if (moduleToRecharge) {
-        setCart(prev => {
-          if (prev.find(m => m.id === rechargeId)) return prev;
-          return [...prev, moduleToRecharge];
-        });
+        initialCart = [moduleToRecharge];
+      }
+    } 
+    // Cas 2: Si pas de rachat, on regarde le diagnostic
+    else {
+      const raw = localStorage.getItem('temp_quiz_results');
+      const results = raw ? JSON.parse(raw) : null;
+      
+      if (results) {
+        const negativeResults = results.filter((r: any) => !r.answer);
+        const negativeIds = negativeResults.map((r: any) => {
+          const q = DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId);
+          return q?.linkedModuleId;
+        }).filter(Boolean) as string[];
+
+        setRecommendedModuleIds(negativeIds);
+        
+        // On n'ajoute que les modules recommandés que le gérant ne possède pas déjà
+        const diagnosticModules = TRAINING_CATALOG.filter(m => 
+          negativeIds.includes(m.id) && 
+          !(user?.purchasedModuleIds || []).includes(m.id)
+        );
+        initialCart = diagnosticModules;
       }
     }
 
-    const raw = localStorage.getItem('temp_quiz_results');
-    const results = raw ? JSON.parse(raw) : null;
-    
-    if (results) {
+    setCart(initialCart);
+
+    // GÉNÉRATION DE L'AUDIT
+    const rawResults = localStorage.getItem('temp_quiz_results');
+    if (rawResults) {
+      const results = JSON.parse(rawResults);
       const negativeResults = results.filter((r: any) => !r.answer);
-      const negativeIds = negativeResults.map((r: any) => {
-        const q = DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId);
-        return q?.linkedModuleId;
-      }).filter(Boolean) as string[];
-
-      setRecommendedModuleIds(negativeIds);
-      
-      // On combine les modules du diagnostic avec ceux déjà présents (ex: rechargeId)
-      setCart(prev => {
-        const diagnosticModules = TRAINING_CATALOG.filter(m => negativeIds.includes(m.id));
-        const combined = [...prev];
-        diagnosticModules.forEach(dm => {
-          if (!combined.find(c => c.id === dm.id)) combined.push(dm);
-        });
-        return combined;
-      });
-
       const getAdvice = async () => {
         const negativeTexts = negativeResults.map((r: any) => 
           DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text
@@ -102,9 +110,9 @@ const Results: React.FC = () => {
       getAdvice();
     } else {
       setLoadingAdvice(false);
-      setAiAdvice("Explorez notre catalogue expert pour transformer votre salon.");
+      setAiAdvice(rechargeId ? "Concentrez-vous sur la validation de ce module pour franchir une nouvelle étape." : "Explorez notre catalogue expert pour transformer votre salon.");
     }
-  }, [user, location.search]);
+  }, [user?.uid, location.search]); // Ajout de user.uid pour recalculer si l'utilisateur change
 
   const toggleModuleInCart = (mod: TrainingModule) => {
     setActivePack('none');
@@ -177,7 +185,6 @@ const Results: React.FC = () => {
 
       const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
 
-      // On construit l'objet de manière explicite pour éviter les colonnes manquantes
       const profileToSave: any = {
         uid: targetUid,
         phoneNumber: formattedPhone,
@@ -322,6 +329,7 @@ const Results: React.FC = () => {
                         isSelected={cart.some(c => c.id === mod.id)}
                         onToggle={() => toggleModuleInCart(mod)}
                         isRecommended
+                        isAlreadyOwned={(user?.purchasedModuleIds || []).includes(mod.id)}
                       />
                     ))}
                </div>
@@ -343,6 +351,7 @@ const Results: React.FC = () => {
                         module={mod} 
                         isSelected={cart.some(c => c.id === mod.id)}
                         onToggle={() => toggleModuleInCart(mod)}
+                        isAlreadyOwned={(user?.purchasedModuleIds || []).includes(mod.id)}
                       />
                     ))}
                </div>
@@ -361,7 +370,7 @@ const Results: React.FC = () => {
                 VOTRE PLAN
               </h3>
 
-              {/* Jauge de Réduction (RÉTABLIE) */}
+              {/* Jauge de Réduction */}
               {cart.length > 0 && cart.length < 16 && activePack === 'none' && (
                 <div className="mb-10 p-5 bg-white/5 rounded-2xl border border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-2">
                    <div className="flex justify-between items-center mb-3">
@@ -541,7 +550,7 @@ const Results: React.FC = () => {
   );
 };
 
-const ModuleCard = ({ module, isSelected, onToggle, isRecommended }: any) => {
+const ModuleCard = ({ module, isSelected, onToggle, isRecommended, isAlreadyOwned }: any) => {
   return (
     <div 
       onClick={onToggle}
@@ -549,11 +558,17 @@ const ModuleCard = ({ module, isSelected, onToggle, isRecommended }: any) => {
         isSelected 
         ? 'bg-white border-brand-500 shadow-xl ring-2 ring-brand-500/10' 
         : 'bg-white border-slate-100 hover:border-brand-200 shadow-sm hover:shadow-md'
-      }`}
+      } ${isAlreadyOwned && !isSelected ? 'opacity-40 grayscale-[0.5]' : ''}`}
     >
       {isRecommended && (
         <div className="absolute top-0 right-0 px-4 py-1.5 bg-amber-400 text-brand-900 text-[8px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-2">
            <Zap className="w-3 h-3 fill-current" /> Urgent
+        </div>
+      )}
+      
+      {isAlreadyOwned && (
+        <div className="absolute top-10 -right-8 px-10 py-1 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-widest rotate-45 flex items-center gap-1 shadow-lg">
+           Déjà acquis
         </div>
       )}
       
