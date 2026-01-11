@@ -8,6 +8,28 @@ export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/stora
 
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
+/**
+ * Table de migration pour restaurer les anciens comptes
+ */
+export const LEGACY_ID_MAP: Record<string, string> = {
+  "1": "mod_accueil_tel",
+  "2": "mod_diagnostic",
+  "3": "mod_hygiene",
+  "4": "mod_shampoing",
+  "5": "mod_pricing",
+  "6": "mod_management",
+  "7": "mod_fidelisation",
+  "8": "mod_digital",
+  "9": "mod_color",
+  "10": "mod_retail",
+  "11": "mod_coupe",
+  "12": "mod_planning",
+  "13": "mod_psychologie",
+  "14": "mod_vip",
+  "15": "mod_chiffres",
+  "16": "mod_formalisation"
+};
+
 export const DEFAULT_KITA_SERVICES = [
   "Bain d'huile", "Brushing", "Babyliss", "Balayage", "Chignon", 
   "Coupe homme", "Coupe", "Défrisage", "Tresse", "Epilation sourcils", 

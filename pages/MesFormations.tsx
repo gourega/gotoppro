@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { TRAINING_CATALOG, BADGES } from '../constants';
+import { TRAINING_CATALOG, BADGES, LEGACY_ID_MAP } from '../constants';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
   BookOpen, 
@@ -22,19 +22,40 @@ const MesFormations: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Sécurité Fail-safe : Si Elite, on donne tout. Sinon on filtre par IDs achetés.
+  // Sécurité Fail-safe + Migration Legacy
   const myModules = useMemo(() => {
     if (!user) return [];
+    
+    // Cas Elite/Admin : Tout afficher
     if (user.isKitaPremium || user.role === 'SUPER_ADMIN') {
       return TRAINING_CATALOG;
     }
-    if (!user.purchasedModuleIds) return [];
-    return TRAINING_CATALOG.filter(m => user.purchasedModuleIds.includes(m.id));
+
+    const purchasedIds = user.purchasedModuleIds || [];
+    
+    // Traduction des IDs legacy pour le filtrage
+    const translatedIds = purchasedIds.map(id => LEGACY_ID_MAP[id] || id);
+    
+    // On affiche aussi les modules qui ont de la progression (legacy recovery)
+    const progressIds = user.progress ? Object.keys(user.progress).map(id => LEGACY_ID_MAP[id] || id) : [];
+    
+    const allValidIds = [...new Set([...translatedIds, ...progressIds])];
+
+    return TRAINING_CATALOG.filter(m => allValidIds.includes(m.id));
   }, [user]);
 
   const certifiedCount = useMemo(() => {
     if (!user?.progress) return 0;
-    return Object.values(user.progress).filter(score => score >= 80).length;
+    
+    // Compter les scores >= 80% en tenant compte de la migration
+    const uniqueCertified = new Set<string>();
+    Object.entries(user.progress).forEach(([id, score]) => {
+      if (score >= 80) {
+        uniqueCertified.add(LEGACY_ID_MAP[id] || id);
+      }
+    });
+    
+    return uniqueCertified.size;
   }, [user]);
 
   if (!user) return null;
@@ -132,7 +153,9 @@ const MesFormations: React.FC = () => {
            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
              {myModules.length > 0 ? (
                myModules.map(module => {
-                 const score = user.progress?.[module.id] || 0;
+                 // Rechercher le score en testant l'ID actuel et l'ancien ID
+                 const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
+                 const score = user.progress?.[module.id] || (legacyId ? user.progress?.[legacyId] : 0) || 0;
                  const isCertified = score >= 80;
                  
                  return (

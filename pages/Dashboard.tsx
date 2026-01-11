@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getReferrals, updateUserProfile } from '../services/supabase';
-import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES } from '../constants';
+import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, LEGACY_ID_MAP } from '../constants';
 import { UserProfile } from '../types';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -29,15 +29,45 @@ const Dashboard: React.FC = () => {
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
   const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
 
-  // Synchronisation et Réparation Silencieuse des accès Elite
+  // Synchronisation et Réparation Silencieuse des données Legacy & Elite
   useEffect(() => {
-    const syncEliteData = async () => {
+    const repairUserData = async () => {
       if (!user) return;
       
-      const hasAllModules = (user.purchasedModuleIds?.length || 0) >= 16;
+      const currentIds = user.purchasedModuleIds || [];
+      const currentProgress = user.progress || {};
       
-      // Cas 1: L'utilisateur a payé l'Elite mais ses IDs sont manquants (Réparation)
-      // Cas 2: L'utilisateur a tous les modules mais n'est pas encore marqué Elite (Promotion)
+      // 1. Détection des IDs Legacy (1-16)
+      const needsMigration = currentIds.some(id => LEGACY_ID_MAP[id]) || 
+                             Object.keys(currentProgress).some(id => LEGACY_ID_MAP[id]);
+
+      if (needsMigration) {
+        console.log("Dashboard: Migration des données gérant détectée...");
+        
+        // Conversion des identifiants achetés
+        const migratedPurchasedIds = [...new Set(currentIds.map(id => LEGACY_ID_MAP[id] || id))];
+        
+        // Conversion de la progression (on garde le meilleur score si doublon)
+        const migratedProgress: Record<string, number> = {};
+        Object.entries(currentProgress).forEach(([id, score]) => {
+          const newId = LEGACY_ID_MAP[id] || id;
+          migratedProgress[newId] = Math.max(migratedProgress[newId] || 0, score);
+        });
+
+        try {
+          await updateUserProfile(user.uid, { 
+            purchasedModuleIds: migratedPurchasedIds,
+            progress: migratedProgress
+          });
+          await refreshProfile();
+        } catch (e) {
+          console.error("Migration failed", e);
+        }
+        return; // On arrête là pour cette boucle
+      }
+
+      // 2. Gestion Elite Silencieuse
+      const hasAllModules = (currentIds.length >= 16);
       if ((user.isKitaPremium && !hasAllModules) || (hasAllModules && !user.isKitaPremium)) {
         try {
           const allIds = TRAINING_CATALOG.map(m => m.id);
@@ -51,8 +81,8 @@ const Dashboard: React.FC = () => {
         }
       }
     };
-    syncEliteData();
-  }, [user?.purchasedModuleIds, user?.isKitaPremium, refreshProfile, user?.uid]);
+    repairUserData();
+  }, [user?.purchasedModuleIds, user?.progress, user?.isKitaPremium, refreshProfile, user?.uid]);
 
   useEffect(() => {
     if (user) {
@@ -74,10 +104,12 @@ const Dashboard: React.FC = () => {
 
   if (!user) return null;
 
-  const progress = Math.round(((user.purchasedModuleIds?.filter(id => (user.progress?.[id] || 0) >= 80).length || 0) / (TRAINING_CATALOG.length || 1)) * 100);
+  // Calcul du progrès en tenant compte du catalogue total (16)
+  const completedCount = TRAINING_CATALOG.filter(m => (user.progress?.[m.id] || 0) >= 80).length;
+  const progressPercent = Math.round((completedCount / TRAINING_CATALOG.length) * 100);
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
+  const offset = circumference - (progressPercent / 100) * circumference;
 
   return (
     <div className="min-h-screen bg-slate-50 w-full">
@@ -109,7 +141,7 @@ const Dashboard: React.FC = () => {
                     <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-brand-500 transition-all duration-1000 ease-out" />
                  </svg>
                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-white leading-none">{progress}%</span>
+                    <span className="text-2xl font-black text-white leading-none">{progressPercent}%</span>
                  </div>
               </div>
               <div className="pr-4">
