@@ -25,7 +25,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   
-  // Un gérant est considéré Elite s'il a le flag OU s'il avait déjà accès aux 16 modules
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
   const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
@@ -34,18 +33,10 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const repairAccess = async () => {
       if (!user) return;
-      
       const currentIds = user.purchasedModuleIds || [];
-      const hasProgress = user.progress && Object.keys(user.progress).length > 0;
-      
-      /**
-       * CONDITION DE REPARATION FORCEE :
-       * Si le gérant est marqué Premium mais n'a pas les 16 modules dans son panier physique
-       */
       const needsFullRestore = (user.isKitaPremium && currentIds.length < 16);
 
       if (needsFullRestore) {
-        console.log("Dashboard: Détection anomalie Elite. Restauration en cours...");
         try {
           const allModuleIds = TRAINING_CATALOG.map(m => m.id);
           await updateUserProfile(user.uid, { 
@@ -54,7 +45,7 @@ const Dashboard: React.FC = () => {
           });
           await refreshProfile();
         } catch (e) {
-          console.warn("Échec de la restauration automatique", e);
+          console.warn("Restauration échouée", e);
         }
       }
     };
@@ -79,13 +70,37 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
+  /**
+   * CALCUL DE PROGRESSION UNIFIÉ (LEGACY + NEW)
+   */
+  const stats = useMemo(() => {
+    if (!user?.progress) return { completed: 0, percent: 0 };
+    
+    let completedCount = 0;
+    TRAINING_CATALOG.forEach(module => {
+      // On cherche l'ancien ID (ex: "2") qui correspond à l'ID actuel (ex: "mod_diagnostic")
+      const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
+      
+      // On prend le meilleur score entre les deux IDs
+      const score = Math.max(
+        Number(user.progress?.[module.id] || 0),
+        legacyId ? Number(user.progress?.[legacyId] || 0) : 0
+      );
+
+      if (score >= 80) completedCount++;
+    });
+
+    return {
+      completed: completedCount,
+      percent: Math.round((completedCount / TRAINING_CATALOG.length) * 100)
+    };
+  }, [user]);
+
   if (!user) return null;
 
-  const completedCount = TRAINING_CATALOG.filter(m => (user.progress?.[m.id] || 0) >= 80).length;
-  const progressPercent = Math.round((completedCount / TRAINING_CATALOG.length) * 100);
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progressPercent / 100) * circumference;
+  const offset = circumference - (stats.percent / 100) * circumference;
 
   return (
     <div className="min-h-screen bg-slate-50 w-full">
@@ -116,7 +131,7 @@ const Dashboard: React.FC = () => {
                     <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-brand-500 transition-all duration-1000 ease-out" />
                  </svg>
                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-white leading-none">{progressPercent}%</span>
+                    <span className="text-2xl font-black text-white leading-none">{stats.percent}%</span>
                  </div>
               </div>
               <div className="pr-4">

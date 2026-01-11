@@ -32,7 +32,7 @@ const MesFormations: React.FC = () => {
     if (!user) return [];
     
     // RÈGLE PRIORITAIRE : Si Elite ou Admin, on donne TOUT.
-    if (user.isKitaPremium || user.role === 'SUPER_ADMIN') {
+    if (user.isKitaPremium || user.role === 'SUPER_ADMIN' || (user.purchasedModuleIds?.length || 0) >= 15) {
       return TRAINING_CATALOG;
     }
 
@@ -43,49 +43,53 @@ const MesFormations: React.FC = () => {
     const allKnownIds = [...new Set([...purchasedIds, ...progressIds])];
     const translatedIds = allKnownIds.map(id => LEGACY_ID_MAP[id] || id);
 
-    // Si on détecte qu'il n'y a qu'un seul module mais que l'utilisateur est un client actif,
-    // On pourrait être dans le cas du bug de migration.
-    const filtered = TRAINING_CATALOG.filter(m => translatedIds.includes(m.id));
-    
-    // Fallback : Si l'utilisateur est un client mais n'a "rien", on lui montre quand même le catalogue 
-    // s'il est censé être Elite (plus de 14 modules théoriques)
-    if (filtered.length <= 1 && user.role === 'CLIENT') {
-       return filtered; // On laisse le bouton de restauration faire le travail
-    }
-
-    return filtered;
+    return TRAINING_CATALOG.filter(m => translatedIds.includes(m.id));
   }, [user]);
 
   const handleForceRestore = async () => {
     if (!user || isSyncing) return;
     setIsSyncing(true);
     try {
-      console.log("MesFormations: Restauration forcée des 16 modules...");
       const allIds = TRAINING_CATALOG.map(m => m.id);
       await updateUserProfile(user.uid, { 
         isKitaPremium: true,
         purchasedModuleIds: allIds 
       });
       await refreshProfile();
-      alert("Succès ! Votre Académie Elite a été restaurée avec les 16 modules.");
+      alert("Succès ! Votre Académie Elite a été restaurée.");
     } catch (e) {
-      alert("Erreur de synchronisation. Vérifiez votre connexion.");
+      alert("Erreur de synchronisation.");
     } finally {
       setIsSyncing(false);
     }
   };
 
+  /**
+   * CALCUL DU NOMBRE DE CERTIFICATIONS (UNIFIÉ LEGACY + NEW)
+   */
   const certifiedCount = useMemo(() => {
     if (!user?.progress) return 0;
+    
     const uniqueCertified = new Set<string>();
-    Object.entries(user.progress).forEach(([id, score]) => {
-      if (score >= 80) uniqueCertified.add(LEGACY_ID_MAP[id] || id);
+    
+    TRAINING_CATALOG.forEach(module => {
+      const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
+      const score = Math.max(
+        Number(user.progress?.[module.id] || 0),
+        legacyId ? Number(user.progress?.[legacyId] || 0) : 0
+      );
+
+      if (score >= 80) {
+        uniqueCertified.add(module.id);
+      }
     });
+    
     return uniqueCertified.size;
   }, [user]);
 
   if (!user) return null;
 
+  // Afficher l'aide seulement si moins de 2 modules sont détectés (ce qui est anormal pour un Elite)
   const showRestoreUI = myModules.length <= 1 && user.role === 'CLIENT';
 
   return (
@@ -109,7 +113,6 @@ const MesFormations: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 -mt-16 space-y-12 relative z-20">
         
-        {/* BANNIÈRE DE RÉCUPÉRATION ÉLITE (Visible seulement si problème détecté) */}
         {showRestoreUI && (
           <div className="bg-amber-500 rounded-[2.5rem] p-8 md:p-12 shadow-2xl flex flex-col md:row items-center justify-between gap-8 border-4 border-white animate-in slide-in-from-top-4 duration-500">
              <div className="flex items-center gap-6">
@@ -118,7 +121,7 @@ const MesFormations: React.FC = () => {
                 </div>
                 <div className="text-white">
                    <h2 className="text-2xl font-black uppercase tracking-tight">Accès Elite Incomplet ?</h2>
-                   <p className="font-bold opacity-90">Si vous avez payé le Pack Elite (10.000 F), cliquez sur le bouton pour restaurer vos 16 modules immédiatement.</p>
+                   <p className="font-bold opacity-90">Si vous avez payé le Pack Elite, cliquez sur le bouton pour restaurer vos 16 modules.</p>
                 </div>
              </div>
              <button 
@@ -200,8 +203,13 @@ const MesFormations: React.FC = () => {
            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
              {myModules.length > 0 ? (
                myModules.map(module => {
+                 // Recherche du meilleur score (Legacy vs New)
                  const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
-                 const score = user.progress?.[module.id] || (legacyId ? user.progress?.[legacyId] : 0) || 0;
+                 const score = Math.max(
+                    Number(user.progress?.[module.id] || 0),
+                    legacyId ? Number(user.progress?.[legacyId] || 0) : 0
+                 );
+                 
                  const isCertified = score >= 80;
                  
                  return (
