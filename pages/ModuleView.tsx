@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-/* Fixed react-router-dom named exports */
 import { useParams, useNavigate } from 'react-router-dom';
-import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES } from '../constants';
+import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
@@ -40,7 +39,6 @@ function decodeBase64(base64: string): Uint8Array {
   return bytes;
 }
 
-/* Updated decodeAudioData to match @google/genai coding guidelines */
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -77,11 +75,23 @@ const ModuleView: React.FC = () => {
   // États Audio & Cache
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  
+  // Fix: Added missing 'const' declarations for useRef hooks
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const cachedAudioBufferRef = useRef<AudioBuffer | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
+
+  // Récupération du score unifié (Legacy + New)
+  const currentScore = useMemo(() => {
+    if (!user?.progress || !module) return 0;
+    const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
+    return Math.max(
+      Number(user.progress?.[module.id] || 0),
+      legacyId ? Number(user.progress?.[legacyId] || 0) : 0
+    );
+  }, [user?.progress, module]);
 
   useEffect(() => {
     if (!user?.purchasedModuleIds.includes(moduleId || '')) {
@@ -185,10 +195,21 @@ const ModuleView: React.FC = () => {
     }
   };
 
+  /**
+   * INITIALISATION SÉCURISÉE DU QUIZ
+   */
+  const startQuizAttempt = () => {
+    setAnswers([]);
+    setCurrentIdx(0);
+    setQuizState('active');
+  };
+
   const handleAnswer = (idx: number) => {
-    if (isFinishingQuiz) return;
+    if (isFinishingQuiz || quizState !== 'active') return;
+    
     const newAnswers = [...answers, idx];
     setAnswers(newAnswers);
+
     if (currentIdx < module.quiz_questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
@@ -199,13 +220,18 @@ const ModuleView: React.FC = () => {
   const finishQuiz = async (finalAnswers: number[]) => {
     setIsFinishingQuiz(true);
     let score = 0;
-    finalAnswers.forEach((ans, i) => { 
-      if (ans === module.quiz_questions[i].correctAnswer) score++; 
+    
+    // Sécurité anti-crash : on ne boucle que sur les questions existantes
+    module.quiz_questions.forEach((q, i) => { 
+      if (finalAnswers[i] !== undefined && finalAnswers[i] === q.correctAnswer) {
+        score++; 
+      }
     });
+    
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     
     try {
-      const updatedUser = { ...user };
+      const updatedUser = JSON.parse(JSON.stringify(user)); // Deep copy simple
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
 
@@ -259,8 +285,14 @@ const ModuleView: React.FC = () => {
     }
   };
 
-  const currentScore = Number(user.progress?.[module.id]) || 0;
-  const latestAttemptScore = answers.reduce((acc, ans, i) => ans === module.quiz_questions[i].correctAnswer ? acc + 1 : acc, 0);
+  // Calcul sécurisé du score de la tentative en cours pour l'affichage
+  const latestAttemptScore = useMemo(() => {
+    return answers.reduce((acc, ans, i) => {
+      const question = module.quiz_questions[i];
+      return (question && ans === question.correctAnswer) ? acc + 1 : acc;
+    }, 0);
+  }, [answers, module]);
+
   const latestPercentage = Math.round((latestAttemptScore / module.quiz_questions.length) * 100);
   const isCertified = currentScore >= 80;
   const attemptCount = Number(user.attempts?.[module.id]) || 0;
@@ -318,7 +350,6 @@ const ModuleView: React.FC = () => {
               </div>
             </header>
 
-            {/* Nouveau conteneur de contenu typographique */}
             <div className="prose-kita" dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
             
             <div className="my-24 bg-brand-900 rounded-[5rem] p-16 md:p-24 text-white relative overflow-hidden group shadow-2xl shadow-brand-900/20">
@@ -356,7 +387,7 @@ const ModuleView: React.FC = () => {
                 </div>
 
                 {tokensRemaining > 0 ? (
-                  <button onClick={() => setQuizState('active')} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl shadow-brand-200 uppercase tracking-widest text-xs flex items-center justify-center gap-4">
+                  <button onClick={startQuizAttempt} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl shadow-brand-200 uppercase tracking-widest text-xs flex items-center justify-center gap-4">
                      Utiliser 1 jeton & Commencer <ArrowRight className="w-5 h-5" />
                   </button>
                 ) : (
@@ -370,7 +401,7 @@ const ModuleView: React.FC = () => {
               </div>
             )}
 
-            {quizState === 'active' && (
+            {quizState === 'active' && module.quiz_questions[currentIdx] && (
               <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500">
                 <div className="mb-20">
                   <div className="flex justify-between items-center mb-10">
@@ -409,10 +440,15 @@ const ModuleView: React.FC = () => {
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
                        <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
                        <p className="text-amber-900 text-xl font-medium leading-relaxed italic">
-                         "La persévérance est la marque des élites. Vous n'avez pas encore atteint les 80%, mais je ne vous donne pas encore les réponses. Relisez bien les chapitres II et III, le secret s'y trouve."
+                         "La persévérance est la marque des élites. Vous n'avez pas encore atteint les 80%. Relisez bien la leçon, le mentor Coach Kita croit en votre réussite."
                        </p>
                     </div>
-                    <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition shadow-xl">Recommencer ma leçon</button>
+                    <button onClick={() => { 
+                      setQuizState('intro'); 
+                      setActiveTab('lesson'); 
+                      setAnswers([]); 
+                      setCurrentIdx(0);
+                    }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition shadow-xl">Recommencer ma leçon</button>
                   </div>
                 ) : (
                   <div className="space-y-16">
@@ -435,7 +471,7 @@ const ModuleView: React.FC = () => {
                                   {q.options.map((opt, oIdx) => (
                                     <div key={oIdx} className={`p-5 rounded-2xl text-sm font-bold flex items-center justify-between ${
                                       oIdx === q.correctAnswer ? 'bg-emerald-50 text-emerald-700 ring-2 ring-emerald-100' : 
-                                      oIdx === userAns && !isCorrect ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-400 opacity-60'
+                                      (oIdx === userAns && !isCorrect) ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-400 opacity-60'
                                     }`}>
                                       {opt}
                                       {oIdx === q.correctAnswer && <CheckCircle2 className="w-5 h-5" />}
@@ -452,21 +488,19 @@ const ModuleView: React.FC = () => {
                     </section>
 
                     {isCertified ? (
-                      <>
-                        <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
-                          <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2"></div>
-                          <div className="relative z-10">
-                            <div className="mb-14">
-                              <Crown className="w-16 h-16 text-brand-500 mx-auto mb-6" />
-                              <h2 className="text-[12px] font-black text-brand-900 uppercase tracking-[0.6em] mb-4">Certificat d'Excellence Go'Top Pro</h2>
-                              <div className="h-px w-24 bg-brand-200 mx-auto"></div>
-                            </div>
-                            <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
-                            <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
-                            <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
+                      <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2"></div>
+                        <div className="relative z-10">
+                          <div className="mb-14">
+                            <Crown className="w-16 h-16 text-brand-500 mx-auto mb-6" />
+                            <h2 className="text-[12px] font-black text-brand-900 uppercase tracking-[0.6em] mb-4">Certificat d'Excellence Go'Top Pro</h2>
+                            <div className="h-px w-24 bg-brand-200 mx-auto"></div>
                           </div>
+                          <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
+                          <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
+                          <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
