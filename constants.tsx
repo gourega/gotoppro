@@ -67,12 +67,12 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La signature vocale : instaurer l'autorité</h2>
+      <h2>1. La signature vocale : instaurer l'autorité</h2>
       <p>Le premier contact avec votre salon ne se fait pas dans le fauteuil, mais à travers une onde sonore. Répondre par un simple « allô » est une erreur de débutant qui dévalorise instantanément votre expertise. Un gérant d'élite impose un standard dès la première seconde.</p>
       <blockquote>« La voix est le miroir de votre salon ; si elle est hésitante, votre service le sera aussi. »</blockquote>
       <p>La formule d'or doit être prononcée avec un sourire conscient : <strong>« Salon [Nom du Salon], [Votre Prénom] à votre écoute, bonjour. »</strong> Cette structure permet au client de confirmer qu'il est au bon endroit et d'identifier son interlocuteur, créant ainsi un lien humain immédiat.</p>
       
-      <h2>II. La prise de rendez-vous active</h2>
+      <h2>2. La prise de rendez-vous active</h2>
       <p>L'expert ne subit jamais son agenda, il le pilote. Si vous demandez « quand voulez-vous venir ? », vous donnez le pouvoir au client de bloquer vos heures de pointe tout en laissant vos heures creuses vides. C'est la mort de votre rentabilité.</p>
       <p>Apprenez à diriger le flux. Proposez toujours deux options précises qui arrangent votre organisation :</p>
       <ul>
@@ -81,7 +81,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <li>Si les deux options sont refusées, demandez ses contraintes et proposez une troisième alternative stratégique.</li>
       </ul>
 
-      <h2>III. Le rituel de clôture professionnelle</h2>
+      <h2>3. Le rituel de clôture professionnelle</h2>
       <p>La fin de l'appel est aussi cruciale que le début. Elle doit servir à graver l'engagement dans l'esprit du client. Avant de raccrocher, validez systématiquement les trois piliers du rendez-vous : la date, l'heure précise et le nom du collaborateur qui réalisera la prestation.</p>
       <p>Terminez par une phrase de bienvenue qui valorise la visite à venir : « Nous sommes ravis de vous recevoir mardi prochain, excellente journée à vous, Mme Koné. » Personnaliser le nom du client à la fin de l'appel augmente le taux de présence de 30 %.</p>
     `,
@@ -119,12 +119,12 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La posture du mentor : briser la barrière du miroir</h2>
+      <h2>1. La posture du mentor : briser la barrière du miroir</h2>
       <p>Le diagnostic est le moment le plus rentable de votre journée, pourtant c'est celui que beaucoup négligent par manque de temps. L'erreur fatale est de parler au client à travers le miroir alors qu'il est déjà installé. Dans cette position, vous n'êtes qu'un exécutant.</p>
       <blockquote>« Pour être respecté comme un expert, vous devez regarder le client dans les yeux, pas son reflet. »</blockquote>
       <p>La règle d'or de Go'Top Pro est de s'asseoir à hauteur du client, face à lui, avant même de toucher ses cheveux. Ce contact visuel direct crée un contrat de confiance. À cet instant, vous ne vendez pas une coiffure, vous vendez votre regard d'expert.</p>
 
-      <h2>II. L'art de l'interrogatoire stratégique</h2>
+      <h2>2. L'art de l'interrogatoire stratégique</h2>
       <p>Un bon diagnostic ne commence pas par des affirmations, mais par des questions ouvertes. Vous devez comprendre non seulement ce que le client veut, mais surtout ce qu'il vit au quotidien avec ses cheveux.</p>
       <p>Voici les trois questions que chaque expert doit poser :</p>
       <ul>
@@ -133,7 +133,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <li>« Quels produits utilisez-vous actuellement à la maison ? » (Préparer la vente additionnelle).</li>
       </ul>
 
-      <h2>III. La prescription : transformer le besoin en désir</h2>
+      <h2>3. La prescription : transformer le besoin en désir</h2>
       <p>Une fois l'analyse terminée, ne donnez pas un prix, donnez une solution. Utilisez un vocabulaire de prestige. Ne dites pas « je vais faire un soin », dites « je préconise un rituel de restructuration pour redonner de l'éclat à votre fibre capillaire ». </p>
       <p>Concluez toujours par un engagement mutuel : « Pour obtenir le résultat que nous venons de définir, voici le plan d'action pour aujourd'hui. » Cette méthode place le client dans une position d'attente positive et justifie des tarifs plus élevés.</p>
     `,
@@ -171,12 +171,12 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 2,
     lesson_content: `
-      <h2>I. La désinfection visible : le marketing de la santé</h2>
+      <h2>1. La désinfection visible : le marketing de la santé</h2>
       <p>Dans un monde où la sécurité sanitaire est devenue une priorité, la propreté de votre salon n'est plus un détail de gestion, c'est votre argument de vente numéro un. L'erreur classique est de nettoyer le salon quand il n'y a personne.</p>
       <blockquote>« Ce que le client ne voit pas n'existe pas dans son esprit. »</blockquote>
       <p>L'expert Go'Top Pro désinfecte ses outils (ciseaux, peignes, tondeuses) <strong>devant le client</strong>. Ce geste de 10 secondes justifie à lui seul une hausse de vos tarifs. Il prouve que vous respectez le corps de votre cliente autant que son style.</p>
 
-      <h2>II. Le bac à shampoing : le sanctuaire du luxe</h2>
+      <h2>2. Le bac à shampoing : le sanctuaire du luxe</h2>
       <p>Le bac est l'endroit où le client passe le plus de temps en position de vulnérabilité. C'est ici que l'image de votre salon se joue. Un bac avec des traces de produits séchés ou une serviette humide qui traîne brise instantanément l'expérience de luxe.</p>
       <p>Instaurez un protocole rigoureux après chaque passage :</p>
       <ul>
@@ -185,7 +185,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <li>Vérification de l'absence totale de cheveux sur le sol autour de la zone de détente.</li>
       </ul>
 
-      <h2>III. La psychologie des textiles et de l'air</h2>
+      <h2>3. La psychologie des textiles et de l'air</h2>
       <p>L'odorat est le sens le plus lié à la mémoire. Une serviette qui sent le linge frais crée une émotion positive instantanée. Ne laissez jamais une serviette utilisée sur un fauteuil, même pour une minute. L'ordre visuel doit être parfait.</p>
       <p>L'excellence se niche dans l'air que l'on respire. Aérez votre salon toutes les deux heures pour chasser les odeurs de produits chimiques et utilisez un parfum d'ambiance léger et signature. C'est cette atmosphère qui transforme un simple service en une expérience inoubliable.</p>
     `,
@@ -223,12 +223,12 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La prescription post-salon : une responsabilité morale</h2>
+      <h2>1. La prescription post-salon : une responsabilité morale</h2>
       <p>Beaucoup de coiffeurs ont peur de vendre, car ils pensent « forcer » le client. C'est une erreur de vision. Votre mission est de garantir que le travail que vous avez réalisé sur le fauteuil durera plusieurs semaines. Sans les bons produits à domicile, votre talent s'évapore au premier shampoing.</p>
       <blockquote>« Ne pas vendre le produit adapté, c'est laisser votre cliente saboter votre travail. »</blockquote>
       <p>L'expert ne vend pas, il prescrit. À la fin de chaque séance, présentez les trois produits indispensables : le nettoyant spécifique, le soin profond et le protecteur de finition. C'est le « kit de survie » de la beauté que vous offrez à votre cliente.</p>
 
-      <h2>II. L'architecture du regard : le merchandising magnétique</h2>
+      <h2>2. L'architecture du regard : le merchandising magnétique</h2>
       <p>Vos produits ne doivent pas simplement « être là ». Ils doivent raconter une histoire de transformation. La disposition de votre espace boutique obéit à des règles psychologiques précises :</p>
       <ul>
         <li>La règle des 160 cm : Placez vos meilleures ventes à hauteur des yeux du client moyen.</li>
@@ -236,7 +236,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         <li>L'étiquetage d'autorité : Chaque prix doit être clair et accompagné d'une courte promesse manuscrite.</li>
       </ul>
 
-      <h2>III. L'éducation par la manipulation</h2>
+      <h2>3. L'éducation par la manipulation</h2>
       <p>La vente commence au bac à shampoing, pas à la caisse. Expliquez chaque texture que vous posez sur ses cheveux. Faites-lui sentir le parfum, décrivez la sensation du produit entre vos doigts. Le client doit tester le bénéfice en temps réel.</p>
       <p>En impliquant les sens du client pendant la prestation, vous le préparez naturellement à l'achat final. La transition vers la vente devient une simple conclusion logique de l'expérience vécue dans votre salon. C'est ainsi que l'on bâtit une boutique rentable sans jamais paraître insistant.</p>
     `,
@@ -274,15 +274,15 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. La fin du tarif au hasard</h2>
+      <h2>1. La fin du tarif au hasard</h2>
       <p>La majorité des salons fixent leurs prix en regardant ce que fait le voisin. C'est une stratégie de survie, pas de développement. Vos prix doivent être le reflet de vos charges réelles et du niveau d'excellence que vous offrez.</p>
       <blockquote>« Si vous ne valorisez pas votre temps, personne ne le fera pour vous. »</blockquote>
       <p>L'expert Go'Top Pro calcule son coût à la minute. Chaque fauteuil vide est une perte sèche. Augmenter ses tarifs de 10 % sans changer son volume de clients peut transformer une année difficile en une année record.</p>
 
-      <h2>II. La hiérarchie du prestige</h2>
+      <h2>2. La hiérarchie du prestige</h2>
       <p>Créez des paliers de prix. Ne proposez pas un prix unique pour une tresse ou un brushing. Segmentez votre offre par niveau de difficulté ou par "Signature de l'expert". Cela permet de guider le client vers des options à plus forte marge.</p>
 
-      <h2>III. Communiquer l'augmentation</h2>
+      <h2>3. Communiquer l'augmentation</h2>
       <p>Une augmentation de tarif ne se justifie pas par l'inflation, mais par l'amélioration constante de votre service. Apprenez à annoncer vos nouveaux prix avec fierté en mettant en avant les nouvelles formations suivies par votre équipe.</p>
     `,
     coach_tip: "Votre talent n'est pas négociable.",
@@ -304,7 +304,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. Le gérant-pilote : donner le cap</h2>
+      <h2>1. Le gérant-pilote : donner le cap</h2>
       <p>Un salon performant ne repose pas sur les mains du patron, mais sur l'autonomie de son équipe. Le rôle du gérant d'élite est de définir des standards clairs et de s'assurer qu'ils sont respectés même en son absence.</p>
       <blockquote>« Le leadership, c'est l'art d'inspirer les autres à donner le meilleur d'eux-mêmes. »</blockquote>
       <p>Mettez en place des réunions hebdomadaires de 15 minutes pour partager les objectifs de la semaine. La clarté de la vision réduit le stress et augmente l'efficacité.</p>
@@ -324,7 +324,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. L'expérience mémorable</h2>
+      <h2>1. L'expérience mémorable</h2>
       <p>La fidélité ne s'achète pas avec des cartes de réduction, elle se gagne par l'émotion. Chaque visite doit être une parenthèse de bien-être unique.</p>
     `,
     coach_tip: "Le petit café offert vaut plus que 10% de remise.",
@@ -342,7 +342,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>I. Le pouvoir de l'image</h2>
+      <h2>1. Le pouvoir de l'image</h2>
       <p>Apprenez à photographier vos réalisations. Une belle lumière et un angle précis font toute la différence sur les réseaux sociaux.</p>
     `,
     coach_tip: "Postez une photo par jour, à l'heure du déjeuner.",
@@ -359,7 +359,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "C'est au bac que vous gagnez le cœur de votre cliente.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>I. La technique magistrale du massage crânien</h2><p>Le client ne vient pas seulement se laver les cheveux, il vient chercher un moment de déconnexion. Maîtrisez les points de pression.</p>`,
+    lesson_content: `<h2>1. La technique magistrale du massage crânien</h2><p>Le client ne vient pas seulement se laver les cheveux, il vient chercher un moment de déconnexion. Maîtrisez les points de pression.</p>`,
     coach_tip: "Ne parlez pas pendant le massage, laissez le client savourer.",
     strategic_mantra: "Un shampoing bâclé est une expérience ratée.",
     quiz_questions: [],
@@ -374,7 +374,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "La couleur est l'âme du salon.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>I. La roue chromatique appliquée</h2><p>Comprendre les pigments sous-jacents pour neutraliser les reflets indésirables.</p>`,
+    lesson_content: `<h2>1. La roue chromatique appliquée</h2><p>Comprendre les pigments sous-jacents pour neutraliser les reflets indésirables.</p>`,
     coach_tip: "Pesez toujours vos mélanges sur une balance électronique.",
     strategic_mantra: "La précision technique évite les rattrapages gratuits.",
     quiz_questions: [],
@@ -389,7 +389,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Une coupe réussie est une coupe qui grandit bien.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>I. Analyse morphologique</h2><p>Visage ovale, rond, carré : à chaque forme sa géométrie de coupe.</p>`,
+    lesson_content: `<h2>1. Analyse morphologique</h2><p>Visage ovale, rond, carré : à chaque forme sa géométrie de coupe.</p>`,
     coach_tip: "Utilisez le miroir pour valider l'équilibre de la coupe sous tous les angles.",
     strategic_mantra: "L'harmonie visuelle est le but ultime de l'expert.",
     quiz_questions: [],
@@ -404,7 +404,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Le temps est votre seule ressource limitée.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>I. Le séquençage des tâches</h2><p>Comment chevaucher deux prestations intelligemment sans faire attendre le client.</p>`,
+    lesson_content: `<h2>1. Le séquençage des tâches</h2><p>Comment chevaucher deux prestations intelligemment sans faire attendre le client.</p>`,
     coach_tip: "Prévoyez toujours 15 minutes de marge pour les imprévus.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
     quiz_questions: [],
@@ -419,7 +419,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "On coiffe une personne, pas seulement des cheveux.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>I. L'écoute active augmentée</h2><p>Décoder le langage corporel pour adapter son discours de vente.</p>`,
+    lesson_content: `<h2>1. L'écoute active augmentée</h2><p>Décoder le langage corporel pour adapter son discours de vente.</p>`,
     coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la cliente.",
     strategic_mantra: "Celui qui comprend gagne.",
     quiz_questions: [],
@@ -434,7 +434,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Le luxe se niche dans les détails invisibles.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>I. Les codes de l'hospitalité de luxe</h2><p>Du peignoir en soie à la boisson signature.</p>`,
+    lesson_content: `<h2>1. Les codes de l'hospitalité de luxe</h2><p>Du peignoir en soie à la boisson signature.</p>`,
     coach_tip: "L'exclusivité crée le désir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
     quiz_questions: [],
@@ -449,7 +449,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Les chiffres ne mentent jamais.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>I. Les indicateurs clés de performance (KPI)</h2><p>Ticket moyen, taux de revente, productivité horaire.</p>`,
+    lesson_content: `<h2>1. Les indicateurs clés de performance (KPI)</h2><p>Ticket moyen, taux de revente, productivité horaire.</p>`,
     coach_tip: "Vérifiez vos chiffres tous les soirs avant de fermer.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
     quiz_questions: [],
@@ -464,7 +464,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Un salon formel est un salon pérenne.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>I. La structure juridique et fiscale</h2><p>Comprendre l'intérêt de la formalisation en Côte d'Ivoire.</p>`,
+    lesson_content: `<h2>1. La structure juridique et fiscale</h2><p>Comprendre l'intérêt de la formalisation en Côte d'Ivoire.</p>`,
     coach_tip: "Séparez toujours votre argent personnel de celui du salon.",
     strategic_mantra: "La rigueur administrative est la base de la croissance.",
     quiz_questions: [],
