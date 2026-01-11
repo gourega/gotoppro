@@ -22,12 +22,12 @@ const MesFormations: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Sécurité Fail-safe + Migration Legacy
+  // Sécurité Fail-safe + Migration Legacy + Affichage Global Elite
   const myModules = useMemo(() => {
     if (!user) return [];
     
-    // Cas Elite/Admin : Tout afficher
-    if (user.isKitaPremium || user.role === 'SUPER_ADMIN') {
+    // RÈGLE D'OR : Si Elite ou Admin, on donne TOUT sans réfléchir aux IDs
+    if (user.isKitaPremium || user.role === 'SUPER_ADMIN' || (user.purchasedModuleIds?.length || 0) >= 15) {
       return TRAINING_CATALOG;
     }
 
@@ -199,7 +199,7 @@ const MesFormations: React.FC = () => {
                  <Star className="w-16 h-16 text-slate-300 mx-auto mb-6" />
                  <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4">Votre bibliothèque est vide</h3>
                  <p className="text-slate-500 mb-10 max-w-md mx-auto">Vous n'avez pas encore acheté de modules. Réalisez votre diagnostic pour identifier vos besoins prioritaires.</p>
-                 <button onClick={() => navigate('/results')} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-3 mx-auto">
+                 <button onClick={() => navigate('/quiz')} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-3 mx-auto">
                    Aller à la boutique <ArrowRight className="w-4 h-4" />
                  </button>
                </div>

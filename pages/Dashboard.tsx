@@ -25,64 +25,43 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   
+  // Un gérant est considéré Elite s'il a le flag OU s'il avait déjà accès aux 16 modules
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
   const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
 
-  // Synchronisation et Réparation Silencieuse des données Legacy & Elite
+  // REPARATION CRITIQUE DES ACCÈS PERDUS
   useEffect(() => {
-    const repairUserData = async () => {
+    const repairAccess = async () => {
       if (!user) return;
       
       const currentIds = user.purchasedModuleIds || [];
-      const currentProgress = user.progress || {};
+      const hasProgress = user.progress && Object.keys(user.progress).length > 0;
       
-      // 1. Détection des IDs Legacy (1-16)
-      const needsMigration = currentIds.some(id => LEGACY_ID_MAP[id]) || 
-                             Object.keys(currentProgress).some(id => LEGACY_ID_MAP[id]);
+      /**
+       * CONDITION DE REPARATION :
+       * Si le gérant est censé être premium mais n'a pas les 16 modules
+       * OU s'il a perdu ses accès (liste < 16) mais qu'il a déjà de la progression enregistrée
+       */
+      const needsFullRestore = (user.isKitaPremium && currentIds.length < 16) || 
+                               (hasProgress && currentIds.length < 2); // Probable bug d'écrasement détecté
 
-      if (needsMigration) {
-        console.log("Dashboard: Migration des données gérant détectée...");
-        
-        // Conversion des identifiants achetés
-        const migratedPurchasedIds = [...new Set(currentIds.map(id => LEGACY_ID_MAP[id] || id))];
-        
-        // Conversion de la progression (on garde le meilleur score si doublon)
-        const migratedProgress: Record<string, number> = {};
-        Object.entries(currentProgress).forEach(([id, score]) => {
-          const newId = LEGACY_ID_MAP[id] || id;
-          migratedProgress[newId] = Math.max(migratedProgress[newId] || 0, score);
-        });
-
+      if (needsFullRestore) {
+        console.log("Dashboard: Restauration automatique du catalogue Elite...");
         try {
+          const allModuleIds = TRAINING_CATALOG.map(m => m.id);
           await updateUserProfile(user.uid, { 
-            purchasedModuleIds: migratedPurchasedIds,
-            progress: migratedProgress
+            isKitaPremium: true, // On s'assure qu'il est bien marqué Premium
+            purchasedModuleIds: allModuleIds 
           });
           await refreshProfile();
         } catch (e) {
-          console.error("Migration failed", e);
-        }
-        return; // On arrête là pour cette boucle
-      }
-
-      // 2. Gestion Elite Silencieuse
-      const hasAllModules = (currentIds.length >= 16);
-      if ((user.isKitaPremium && !hasAllModules) || (hasAllModules && !user.isKitaPremium)) {
-        try {
-          const allIds = TRAINING_CATALOG.map(m => m.id);
-          await updateUserProfile(user.uid, { 
-            isKitaPremium: true,
-            purchasedModuleIds: allIds 
-          });
-          await refreshProfile();
-        } catch (e) {
-          console.warn("Elite recovery sync failed", e);
+          console.warn("Échec de la restauration automatique", e);
         }
       }
     };
-    repairUserData();
-  }, [user?.purchasedModuleIds, user?.progress, user?.isKitaPremium, refreshProfile, user?.uid]);
+    repairAccess();
+  }, [user?.uid, user?.purchasedModuleIds, user?.progress, user?.isKitaPremium, refreshProfile]);
 
   useEffect(() => {
     if (user) {
@@ -104,7 +83,6 @@ const Dashboard: React.FC = () => {
 
   if (!user) return null;
 
-  // Calcul du progrès en tenant compte du catalogue total (16)
   const completedCount = TRAINING_CATALOG.filter(m => (user.progress?.[m.id] || 0) >= 80).length;
   const progressPercent = Math.round((completedCount / TRAINING_CATALOG.length) * 100);
   const radius = 35;
@@ -113,7 +91,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 w-full">
-      
       <KitaTopNav />
 
       <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden w-full border-b border-brand-800">
@@ -156,41 +133,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
-        
-        {!user.isAdmin && (!isElite || !isPerformance || !isStockExpert) && (
-          <div className="grid md:grid-cols-3 gap-6 -mt-32">
-             {!isElite && (
-               <button onClick={() => navigate('/results?pack=elite')} className="bg-white border-4 border-amber-400 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-6">
-                  <div className="h-14 w-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shrink-0"><Crown className="w-7 h-7" /></div>
-                  <div>
-                     <h3 className="text-lg font-bold text-slate-900 uppercase">Pack Elite</h3>
-                     <p className="text-xs text-slate-500 font-medium mt-1">16 modules experts</p>
-                  </div>
-               </button>
-             )}
-
-             {!isPerformance && (
-               <button onClick={() => navigate('/results?pack=performance')} className="bg-white border-4 border-emerald-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-6">
-                  <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0"><Gem className="w-7 h-7" /></div>
-                  <div>
-                     <h3 className="text-lg font-bold text-slate-900 uppercase">Performance+</h3>
-                     <p className="text-xs text-slate-500 font-medium mt-1">RH & Clients VIP</p>
-                  </div>
-               </button>
-             )}
-
-             {!isStockExpert && (
-               <button onClick={() => navigate('/results?pack=stock')} className="bg-white border-4 border-sky-500 rounded-[2.5rem] p-8 text-left shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-6">
-                  <div className="h-14 w-14 bg-sky-50 rounded-2xl flex items-center justify-center text-sky-500 shrink-0"><Package className="w-7 h-7" /></div>
-                  <div>
-                     <h3 className="text-lg font-bold text-slate-900 uppercase">Stock Expert</h3>
-                     <p className="text-xs text-slate-500 font-medium mt-1">Inventaire & Alertes</p>
-                  </div>
-               </button>
-             )}
-          </div>
-        )}
-
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
