@@ -61,7 +61,15 @@ export const grantModuleAccess = async (uid: string, moduleId: string) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  await updateUserProfile(uid, { purchasedModuleIds: updatedIds, isActive: true });
+  
+  // RESET DES TENTATIVES LORS DU GRANT
+  const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: 0 };
+  
+  await updateUserProfile(uid, { 
+    purchasedModuleIds: updatedIds, 
+    attempts: updatedAttempts,
+    isActive: true 
+  });
 };
 
 export const updateQuizAttempts = async (uid: string, moduleId: string, attempts: number) => {

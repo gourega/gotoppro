@@ -133,11 +133,19 @@ const AdminDashboard: React.FC = () => {
     setProcessingId(packType);
     try {
       const updates: Partial<UserProfile> = { isActive: true };
+      const currentAttempts = selectedUser.attempts || {};
       
       if (packType === 'ELITE') {
         updates.isKitaPremium = true;
-        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...TRAINING_CATALOG.map(m => m.id)])];
+        const allIds = TRAINING_CATALOG.map(m => m.id);
+        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_ELITE');
+        
+        // RESET TOTAL DES TENTATIVES POUR ELITE
+        const resetAttempts: Record<string, number> = { ...currentAttempts };
+        allIds.forEach(id => { resetAttempts[id] = 0; });
+        updates.attempts = resetAttempts;
+
       } else if (packType === 'PERFORMANCE') {
         updates.hasPerformancePack = true;
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_PERFORMANCE');
@@ -148,6 +156,11 @@ const AdminDashboard: React.FC = () => {
         const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
+        
+        // RESET DES TENTATIVES POUR LES MODULES DU PANIER
+        const resetAttempts: Record<string, number> = { ...currentAttempts };
+        modulesToGrant.forEach(id => { resetAttempts[id] = 0; });
+        updates.attempts = resetAttempts;
       }
 
       await updateUserProfile(selectedUser.uid, updates);
@@ -173,6 +186,7 @@ const AdminDashboard: React.FC = () => {
         return {
           ...prev,
           purchasedModuleIds: [...new Set([...(prev.purchasedModuleIds || []), moduleId])],
+          attempts: { ...(prev.attempts || {}), [moduleId]: 0 },
           isActive: true
         };
       });
@@ -583,7 +597,7 @@ const NavTab = ({ active, onClick, label, count, isUrgent }: any) => (
   >
     {label}
     {count !== undefined && (
-      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20 text-white' : isUrgent ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-400'}`}>
+      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20 text-white' : isUrgent ? 'bg-amber-50 text-black' : 'bg-white/10 text-slate-400'}`}>
         {count}
       </span>
     )}
