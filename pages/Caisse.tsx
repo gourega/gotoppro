@@ -28,12 +28,26 @@ import {
   Printer,
   ChevronDown,
   Search,
-  X
+  X,
+  Scissors,
+  Sparkles,
+  Zap,
+  ShoppingBag,
+  MoreHorizontal
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES, BRAND_LOGO } from '../constants';
 
 type PeriodFilter = 'today' | 'week' | 'month' | 'debts';
+
+const CATEGORIES = [
+  { id: 'all', label: 'Tout', icon: <Sparkles className="w-4 h-4" /> },
+  { id: 'Coiffure', label: 'Coiffure', icon: <Scissors className="w-4 h-4" /> },
+  { id: 'Ongles', label: 'Ongles', icon: <Zap className="w-4 h-4" /> },
+  { id: 'Soins', label: 'Soins', icon: <Sparkles className="w-4 h-4" /> },
+  { id: 'Vente', label: 'Vente', icon: <ShoppingBag className="w-4 h-4" /> },
+  { id: 'Autre', label: 'Autre', icon: <MoreHorizontal className="w-4 h-4" /> },
+];
 
 const Caisse: React.FC = () => {
   const { user } = useAuth();
@@ -45,6 +59,7 @@ const Caisse: React.FC = () => {
   const [period, setPeriod] = useState<PeriodFilter>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isServiceListOpen, setIsServiceListOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
   const [newTrans, setNewTrans] = useState<Omit<KitaTransaction, 'id'>>({
@@ -73,10 +88,16 @@ const Caisse: React.FC = () => {
         getKitaServices(user.uid)
       ]);
       
-      // Initialisation auto des services si catalogue vide
       if (serviceData.length === 0) {
         for (const name of DEFAULT_KITA_SERVICES) {
-          await addKitaService(user.uid, { name, category: 'Général', defaultPrice: 0, isActive: true });
+          // Détection basique de catégorie pour l'init
+          let cat = 'Autre';
+          if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage/i)) cat = 'Coiffure';
+          else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules/i)) cat = 'Ongles';
+          else if (name.match(/Massage|Visage|Corps|Soins/i)) cat = 'Soins';
+          else if (name.match(/Vente/i)) cat = 'Vente';
+
+          await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
         }
         const refreshedServices = await getKitaServices(user.uid);
         setServices(refreshedServices);
@@ -144,15 +165,7 @@ const Caisse: React.FC = () => {
       }
       
       await loadData();
-      
-      // On garde une trace de la transaction pour l'impression
       setLastSavedTransaction({ ...newTrans, id: savedId });
-      
-      if (!newTrans.isCredit && newTrans.type === 'INCOME') {
-        // Optionnel : On pourrait ouvrir le ticket automatiquement ici
-      } else {
-        closeModal();
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -160,17 +173,13 @@ const Caisse: React.FC = () => {
     }
   };
 
-  // Ajout de la fonction manquante handleCollectDebt
   const handleCollectDebt = async (debt: KitaDebt) => {
     if (!user) return;
     if (!window.confirm(`Confirmer l'encaissement de ${debt.amount} F de ${debt.personName} ?`)) return;
     
     setLoading(true);
     try {
-      // 1. Marquer la dette comme payée dans la table des dettes
       await markDebtAsPaid(debt.id);
-      
-      // 2. Enregistrer une transaction réelle de type INCOME pour que l'argent apparaisse dans le cash du jour
       await addKitaTransaction(user.uid, {
         type: 'INCOME',
         amount: debt.amount,
@@ -180,12 +189,9 @@ const Caisse: React.FC = () => {
         date: new Date().toISOString().split('T')[0],
         isCredit: false
       });
-      
-      // 3. Recharger toutes les données pour mettre à jour l'UI
       await loadData();
     } catch (err) {
-      console.error("Erreur lors du recouvrement de la dette:", err);
-      alert("Une erreur est survenue lors du recouvrement.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -210,60 +216,28 @@ const Caisse: React.FC = () => {
         <head>
           <style>
             @page { size: 80mm 200mm; margin: 0; }
-            body { 
-              width: 70mm; 
-              margin: 0 auto; 
-              padding: 10mm 5mm; 
-              font-family: 'Courier New', Courier, monospace; 
-              font-size: 12px; 
-              line-height: 1.4; 
-              color: black;
-            }
+            body { width: 70mm; margin: 0 auto; padding: 10mm 5mm; font-family: sans-serif; font-size: 12px; line-height: 1.4; color: black; }
             .text-center { text-align: center; }
-            .header { margin-bottom: 10px; }
-            .logo { width: 40mm; margin-bottom: 10px; }
+            .logo { width: 30mm; margin-bottom: 10px; }
             .divider { border-bottom: 1px dashed black; margin: 10px 0; }
-            .row { display: flex; justify-content: space-between; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
             .bold { font-weight: bold; }
             .footer { margin-top: 20px; font-size: 10px; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
           <div class="header text-center">
-            <img src="${BRAND_LOGO}" class="logo" />
-            <div class="bold">${user?.establishmentName || "Go'Top Pro Salon"}</div>
+            <div class="bold" style="font-size: 14px;">${user?.establishmentName || "Go'Top Pro Salon"}</div>
             <div>Tél: ${user?.phoneNumber}</div>
           </div>
           <div class="divider"></div>
-          <div class="text-center bold">TICKET DE CAISSE</div>
-          <div class="row">
-            <span>Date:</span>
-            <span>${new Date(transaction.date).toLocaleDateString('fr-FR')}</span>
-          </div>
-          <div class="row">
-            <span>Mode:</span>
-            <span>${transaction.paymentMethod}</span>
-          </div>
+          <div class="text-center bold" style="margin-bottom: 10px;">REÇU DE CAISSE</div>
+          <div class="row"><span>Date:</span><span>${new Date(transaction.date).toLocaleDateString('fr-FR')}</span></div>
+          <div class="row"><span>Prestation:</span><span class="bold">${transaction.label}</span></div>
           <div class="divider"></div>
-          <div class="row bold">
-            <span>Désignation</span>
-            <span>Total</span>
-          </div>
-          <div class="row">
-            <span style="max-width: 45mm;">${transaction.label}</span>
-            <span>${transaction.amount.toLocaleString()} F</span>
-          </div>
+          <div class="row bold" style="font-size: 16px;"><span>TOTAL</span><span>${transaction.amount.toLocaleString()} F</span></div>
           <div class="divider"></div>
-          <div class="row bold" style="font-size: 16px;">
-            <span>TOTAL</span>
-            <span>${transaction.amount.toLocaleString()} F</span>
-          </div>
-          <div class="divider"></div>
-          <div class="footer text-center">
-            Merci de votre visite !<br>
-            À bientôt pour votre prochaine beauté.<br>
-            Propulsé par Go'Top Pro
-          </div>
+          <div class="footer text-center">Propulsé par Go'Top Pro KITA</div>
         </body>
       </html>
     `;
@@ -272,9 +246,13 @@ const Caisse: React.FC = () => {
     printWindow.document.close();
   };
 
-  const filteredServices = services.filter(s => 
-    s.isActive && s.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredServices = useMemo(() => {
+    return services.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCat = activeCategory === 'all' || s.category === activeCategory;
+      return s.isActive && matchesSearch && matchesCat;
+    });
+  }, [services, searchTerm, activeCategory]);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -296,12 +274,9 @@ const Caisse: React.FC = () => {
       
       <header className="bg-amber-500 pt-16 pb-32 px-6 md:px-12 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none select-none italic font-serif text-[15rem] leading-none text-white">CFA</div>
-        
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
            <div className="flex items-center gap-6">
-              <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0">
-                 <Wallet className="w-full h-full text-amber-500" />
-              </div>
+              <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0"><Wallet className="w-full h-full text-amber-500" /></div>
               <div>
                  <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest">
                     <ChevronLeft className="w-3 h-3" /> Dashboard
@@ -309,41 +284,14 @@ const Caisse: React.FC = () => {
                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 tracking-tight">Pilotage <span className="text-white italic">Financier</span></h1>
               </div>
            </div>
-
-           <button 
-             onClick={() => setIsModalOpen(true)}
-             className="h-20 w-20 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group"
-           >
-              <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
-           </button>
-        </div>
-
-        <div className="max-w-4xl mx-auto mt-12 bg-white/20 backdrop-blur-xl border border-white/30 rounded-[3rem] p-6 flex items-center justify-between shadow-2xl">
-           <div className="flex items-center gap-4 ml-4">
-              <AlertCircle className="w-6 h-6 text-brand-900" />
-              <div>
-                 <p className="text-brand-900 font-black text-[10px] uppercase tracking-widest">Ardoises à recouvrir</p>
-                 <p className="text-xl font-bold text-white">{totals.unpaidDebts.toLocaleString()} F</p>
-              </div>
-           </div>
-           <button onClick={() => setPeriod('debts')} className="bg-brand-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all">
-              Détails Ardoises
-           </button>
+           <button onClick={() => setIsModalOpen(true)} className="h-20 w-20 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
         <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
           {(['today', 'week', 'month', 'debts'] as PeriodFilter[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-8 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                period === p 
-                  ? 'bg-brand-900 text-white shadow-xl scale-105' 
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
+            <button key={p} onClick={() => setPeriod(p)} className={`px-8 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : p === 'month' ? "Mois" : "Ardoises"}
             </button>
           ))}
@@ -354,21 +302,12 @@ const Caisse: React.FC = () => {
         {period !== 'debts' && (
           <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden">
              <div className="grid grid-cols-2 gap-16 md:gap-24 flex-grow">
-                <div className="space-y-2">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes (Cash)</p>
-                   <p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p>
-                </div>
-                <div className="space-y-2">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p>
-                   <p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p>
-                </div>
+                <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes (Cash)</p><p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
+                <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
              </div>
              <div className="bg-brand-900 p-10 rounded-[3rem] text-white min-w-[300px] shadow-2xl">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance Cash</p>
-                <div className="flex items-baseline gap-2">
-                   <p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p>
-                   <p className="text-lg font-bold text-slate-500">F</p>
-                </div>
+                <div className="flex items-baseline gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
              </div>
           </div>
         )}
@@ -377,10 +316,6 @@ const Caisse: React.FC = () => {
           <div className="py-24 text-center"><Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto" /></div>
         ) : period === 'debts' ? (
           <div className="space-y-6">
-             <div className="flex items-center gap-4 px-4">
-                <Clock className="w-6 h-6 text-brand-900" />
-                <h2 className="text-xl font-black uppercase tracking-widest text-brand-900">Le Carnet d'Ardoises</h2>
-             </div>
              {debts.filter(d => !d.isPaid).length === 0 ? (
                <div className="bg-white rounded-[3rem] p-20 text-center border-2 border-dashed border-slate-200">
                   <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
@@ -391,22 +326,12 @@ const Caisse: React.FC = () => {
                   {debts.filter(d => !d.isPaid).map(d => (
                     <div key={d.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group">
                        <div className="flex items-center gap-6">
-                          <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center">
-                             <Clock className="w-6 h-6" />
-                          </div>
-                          <div>
-                             <p className="font-bold text-slate-900 text-xl mb-1">{d.personName}</p>
-                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Depuis le {new Date(d.createdAt).toLocaleDateString('fr-FR')}</p>
-                          </div>
+                          <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center"><Clock className="w-6 h-6" /></div>
+                          <div><p className="font-bold text-slate-900 text-xl mb-1">{d.personName}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Depuis le {new Date(d.createdAt).toLocaleDateString('fr-FR')}</p></div>
                        </div>
                        <div className="flex items-center gap-8">
                           <p className="text-2xl font-black text-rose-600">{d.amount.toLocaleString()} F</p>
-                          <button 
-                            onClick={() => handleCollectDebt(d)}
-                            className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 shadow-lg transition-all"
-                          >
-                             Encaisser
-                          </button>
+                          <button onClick={() => handleCollectDebt(d)} className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 shadow-lg transition-all">Encaisser</button>
                        </div>
                     </div>
                   ))}
@@ -416,32 +341,18 @@ const Caisse: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {filteredTransactions.map(t => (
-              <div 
-                key={t.id} 
-                className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group"
-              >
+              <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group">
                 <div className="flex items-center gap-6">
                   <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
                     {t.type === 'INCOME' ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                   </div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.category} • {new Date(t.date).toLocaleDateString('fr-FR')}</p>
-                  </div>
+                  <div><p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.category} • {new Date(t.date).toLocaleDateString('fr-FR')}</p></div>
                 </div>
                 <div className="flex items-center gap-10">
-                  <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F
-                  </p>
+                  <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F</p>
                   <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
-                    {t.type === 'INCOME' && (
-                      <button onClick={() => handlePrintTicket(t)} className="p-3 text-brand-600 hover:bg-brand-50 rounded-xl" title="Imprimer ticket">
-                        <Printer className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {t.type === 'INCOME' && <button onClick={() => handlePrintTicket(t)} className="p-3 text-brand-600 hover:bg-brand-50 rounded-xl"><Printer className="w-4 h-4" /></button>}
+                    <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               </div>
@@ -455,23 +366,12 @@ const Caisse: React.FC = () => {
           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
             {lastSavedTransaction ? (
               <div className="text-center space-y-8 animate-in fade-in">
-                 <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
-                    <CheckCircle2 className="w-10 h-10" />
-                 </div>
+                 <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="w-10 h-10" /></div>
                  <h2 className="text-3xl font-serif font-bold text-slate-900">Enregistré !</h2>
-                 <p className="text-slate-500 font-medium leading-relaxed italic">
-                    La prestation "${lastSavedTransaction.label}" de ${lastSavedTransaction.amount} F a bien été ajoutée à la caisse.
-                 </p>
+                 <p className="text-slate-500 font-medium leading-relaxed italic">La prestation "${lastSavedTransaction.label}" de ${lastSavedTransaction.amount} F a bien été ajoutée.</p>
                  <div className="flex flex-col gap-4">
-                    <button 
-                      onClick={() => handlePrintTicket(lastSavedTransaction)}
-                      className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all"
-                    >
-                       <Printer className="w-5 h-5" /> Imprimer le ticket
-                    </button>
-                    <button onClick={closeModal} className="w-full py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">
-                       Terminer
-                    </button>
+                    <button onClick={() => handlePrintTicket(lastSavedTransaction)} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all"><Printer className="w-5 h-5" /> Imprimer le ticket</button>
+                    <button onClick={closeModal} className="w-full py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">Terminer</button>
                  </div>
               </div>
             ) : (
@@ -485,30 +385,16 @@ const Caisse: React.FC = () => {
                   
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Libellé / Prestation</label>
-                      <div className="relative">
-                        <button 
-                          type="button"
-                          onClick={() => setIsServiceListOpen(true)}
-                          className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-left flex justify-between items-center group hover:bg-slate-100 transition-all"
-                        >
-                           <span className={newTrans.label ? 'text-slate-900' : 'text-slate-400'}>
-                              {newTrans.label || "Choisir un service..."}
-                           </span>
-                           <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-all" />
-                        </button>
-                      </div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prestation (Menu Visuel)</label>
+                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-brand-500/20 text-left flex justify-between items-center group transition-all">
+                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Sélectionner un service..."}</span>
+                        <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-brand-500" />
+                      </button>
                     </div>
 
                     <div>
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Montant (F)</label>
-                      <input 
-                        type="number" 
-                        placeholder="0" 
-                        value={newTrans.amount || ''} 
-                        onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} 
-                        className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" 
-                      />
+                      <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" />
                     </div>
 
                     {newTrans.type === 'INCOME' && (
@@ -532,47 +418,95 @@ const Caisse: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Sélection Service */}
+      {/* Menu Visuel des Services */}
       {isServiceListOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
-           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in slide-in-from-bottom-10">
-              <div className="p-8 border-b border-slate-100">
-                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-2xl font-serif font-bold text-slate-900">Nos Prestations</h3>
-                    <button onClick={() => setIsServiceListOpen(false)} className="p-2 text-slate-400 hover:text-rose-500 transition-all"><X /></button>
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-900/90 backdrop-blur-md">
+           <div className="bg-white w-full max-w-2xl h-[90vh] md:h-[80vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
+              <div className="p-8 border-b border-slate-100 bg-white">
+                 <div className="flex justify-between items-center mb-8">
+                    <div>
+                      <h3 className="text-3xl font-serif font-bold text-slate-900 mb-1">Catalogue Expert</h3>
+                      <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Sélectionnez une prestation</p>
+                    </div>
+                    <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all"><X /></button>
                  </div>
-                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                 
+                 {/* Barre de Recherche */}
+                 <div className="relative mb-8">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="text" 
-                      placeholder="Rechercher une prestation..." 
+                      placeholder="Chercher une prestation (ex: Tresse...)" 
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
-                      className="w-full pl-12 pr-6 py-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
+                      className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold text-lg"
                       autoFocus
                     />
                  </div>
+
+                 {/* Onglets Catégories */}
+                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                    {CATEGORIES.map(cat => (
+                      <button 
+                        key={cat.id} 
+                        onClick={() => setActiveCategory(cat.id)}
+                        className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                      >
+                         {cat.icon} {cat.label}
+                      </button>
+                    ))}
+                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                 {filteredServices.map(s => (
-                   <button 
-                    key={s.id} 
-                    onClick={() => handleSelectService(s)}
-                    className="w-full p-6 text-left hover:bg-brand-50 rounded-2xl transition-all border border-transparent hover:border-brand-200 group flex justify-between items-center"
-                   >
-                      <div>
-                        <p className="font-bold text-slate-900 text-lg group-hover:text-brand-900">{s.name}</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.category}</p>
-                      </div>
-                      {s.defaultPrice > 0 && <span className="font-black text-brand-600 text-sm">{s.defaultPrice.toLocaleString()} F</span>}
-                   </button>
-                 ))}
-                 {filteredServices.length === 0 && (
-                   <div className="text-center py-20 text-slate-400">
-                      <p className="italic font-medium">Aucune prestation ne correspond.</p>
-                      <button onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Utiliser "${searchTerm}" comme libellé libre</button>
+
+              {/* Grille de Tuiles */}
+              <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
+                 <div className="grid grid-cols-2 gap-4">
+                    {filteredServices.map(s => (
+                      <button 
+                        key={s.id} 
+                        onClick={() => handleSelectService(s)}
+                        className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
+                      >
+                         <div>
+                            <div className="flex justify-between items-start mb-3">
+                               <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
+                            </div>
+                            <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
+                         </div>
+                         <div className="mt-4 flex items-center justify-between">
+                            <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
+                               {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
+                            </span>
+                            <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
+                               <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
+                            </div>
+                         </div>
+                      </button>
+                    ))}
+                    
+                    {/* Option Libre si recherche vide */}
+                    {searchTerm && filteredServices.length === 0 && (
+                      <button 
+                        onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)}
+                        className="col-span-2 p-8 bg-brand-50 border-2 border-dashed border-brand-200 rounded-[2.5rem] text-center group hover:bg-brand-100 transition-all"
+                      >
+                         <p className="text-brand-900 font-bold mb-2">Libellé libre : "{searchTerm}"</p>
+                         <p className="text-brand-600 text-xs font-black uppercase tracking-widest">Utiliser ce nom personnalisé</p>
+                      </button>
+                    )}
+                 </div>
+
+                 {filteredServices.length === 0 && !searchTerm && (
+                   <div className="py-20 text-center text-slate-400">
+                      <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p className="italic font-medium">Aucun service dans cette catégorie.</p>
+                      <button onClick={() => navigate('/pilotage')} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Gérer mon catalogue</button>
                    </div>
                  )}
+              </div>
+              
+              <div className="p-6 border-t border-slate-100 md:hidden bg-white">
+                 <button onClick={() => setIsServiceListOpen(false)} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs">Fermer</button>
               </div>
            </div>
         </div>
