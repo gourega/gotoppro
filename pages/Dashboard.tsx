@@ -39,19 +39,17 @@ const Dashboard: React.FC = () => {
       const hasProgress = user.progress && Object.keys(user.progress).length > 0;
       
       /**
-       * CONDITION DE REPARATION :
-       * Si le gérant est censé être premium mais n'a pas les 16 modules
-       * OU s'il a perdu ses accès (liste < 16) mais qu'il a déjà de la progression enregistrée
+       * CONDITION DE REPARATION FORCEE :
+       * Si le gérant est marqué Premium mais n'a pas les 16 modules dans son panier physique
        */
-      const needsFullRestore = (user.isKitaPremium && currentIds.length < 16) || 
-                               (hasProgress && currentIds.length < 2); // Probable bug d'écrasement détecté
+      const needsFullRestore = (user.isKitaPremium && currentIds.length < 16);
 
       if (needsFullRestore) {
-        console.log("Dashboard: Restauration automatique du catalogue Elite...");
+        console.log("Dashboard: Détection anomalie Elite. Restauration en cours...");
         try {
           const allModuleIds = TRAINING_CATALOG.map(m => m.id);
           await updateUserProfile(user.uid, { 
-            isKitaPremium: true, // On s'assure qu'il est bien marqué Premium
+            isKitaPremium: true,
             purchasedModuleIds: allModuleIds 
           });
           await refreshProfile();
@@ -61,7 +59,7 @@ const Dashboard: React.FC = () => {
       }
     };
     repairAccess();
-  }, [user?.uid, user?.purchasedModuleIds, user?.progress, user?.isKitaPremium, refreshProfile]);
+  }, [user?.uid, user?.purchasedModuleIds, user?.isKitaPremium, refreshProfile]);
 
   useEffect(() => {
     if (user) {
