@@ -27,7 +27,7 @@ import {
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, saveUserProfile, getProfileByPhone } from '../services/supabase';
+import { supabase, saveUserProfile, getProfileByPhone, updateUserProfile } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 
 const Results: React.FC = () => {
@@ -185,38 +185,47 @@ const Results: React.FC = () => {
 
       const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
 
-      const profileToSave: any = {
-        uid: targetUid,
-        phoneNumber: formattedPhone,
-        establishmentName: regStoreName,
-        firstName: existingProfile?.firstName || 'Gérant',
-        lastName: existingProfile?.lastName || '',
-        isActive: existingProfile?.isActive || false,
-        isAdmin: existingProfile?.isAdmin || false,
-        isKitaPremium: existingProfile?.isKitaPremium || false,
-        hasPerformancePack: existingProfile?.hasPerformancePack || false,
-        hasStockPack: existingProfile?.hasStockPack || false,
-        badges: existingProfile?.badges || [],
-        purchasedModuleIds: existingProfile?.purchasedModuleIds || [],
-        pendingModuleIds: pendingIds,
-        actionPlan: existingProfile?.actionPlan || [],
-        createdAt: existingProfile?.createdAt || new Date().toISOString(),
-        role: existingProfile?.role || 'CLIENT'
-      };
-
-      await saveUserProfile(profileToSave);
+      // Si le gérant existe déjà, on utilise updateUserProfile pour ne pas l'écraser
+      if (existingProfile) {
+        await updateUserProfile(existingProfile.uid, {
+          establishmentName: regStoreName,
+          pendingModuleIds: [...new Set([...(existingProfile.pendingModuleIds || []), ...pendingIds])]
+        });
+      } else {
+        // Nouveau profil : on peut utiliser saveUserProfile (upsert) car il n'y a pas de données à préserver
+        const profileToSave: any = {
+          uid: targetUid,
+          phoneNumber: formattedPhone,
+          establishmentName: regStoreName,
+          firstName: 'Gérant',
+          lastName: '',
+          isActive: false,
+          isAdmin: false,
+          isKitaPremium: false,
+          hasPerformancePack: false,
+          hasStockPack: false,
+          badges: [],
+          purchasedModuleIds: [],
+          pendingModuleIds: pendingIds,
+          actionPlan: [],
+          createdAt: new Date().toISOString(),
+          role: 'CLIENT'
+        };
+        await saveUserProfile(profileToSave);
+      }
+      
       localStorage.setItem('gotop_pending_request', JSON.stringify({ phone: formattedPhone, amount: pricingData.total }));
       setRegStep('success');
     } catch (err: any) {
       console.error("Save error:", err);
-      alert(`Erreur : ${err.message || "Assurez-vous d'avoir lancé le script SQL de mise à jour."}`);
+      alert(`Erreur : ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const finalizeAndRedirect = () => {
-    const message = `Bonjour Coach Kita, je suis le gérant du salon "${regStoreName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro : 01 03 43 84 56.`;
+    const message = `Bonjour Coach Kita, je suis le gérant du salon "${regStoreName || user?.establishmentName}". Je viens de valider mon plan d'action (${pricingData.total} F). Je procède au transfert Wave sur votre numéro : 01 03 43 84 56.`;
     window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
     setIsRegisterModalOpen(false);
     navigate('/login');
@@ -241,7 +250,9 @@ const Results: React.FC = () => {
       else newPendingIds = cart.map(m => m.id);
       
       const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
-      await saveUserProfile({ uid: user.uid, pendingModuleIds: updatedPending });
+      
+      // CRITIQUE : Utiliser update au lieu d'upsert pour préserver les purchasedModuleIds
+      await updateUserProfile(user.uid, { pendingModuleIds: updatedPending });
       
       const message = `Bonjour Coach Kita, je viens de valider une nouvelle demande (${pricingData.total} F). Je procède au transfert Wave.`;
       window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
@@ -514,7 +525,7 @@ const Results: React.FC = () => {
                    </div>
                    <h2 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Plan Enregistré !</h2>
                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10 text-center">
-                      Coach Kita attend la confirmation de votre transfert <strong className="text-slate-900">Wave</strong> pour le salon <strong className="text-slate-900">"{regStoreName}"</strong>.
+                      Coach Kita attend la confirmation de votre transfert <strong className="text-slate-900">Wave</strong> pour le salon <strong className="text-slate-900">"{regStoreName || user?.establishmentName}"</strong>.
                    </p>
 
                    <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] mb-10 text-left">

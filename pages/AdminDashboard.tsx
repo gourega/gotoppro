@@ -7,7 +7,8 @@ import {
   deleteUserProfile, 
   grantModuleAccess, 
   updateQuizAttempts,
-  saveUserProfile
+  saveUserProfile,
+  updateUserProfile
 } from '../services/supabase';
 import { TRAINING_CATALOG, BADGES } from '../constants';
 import { UserProfile } from '../types';
@@ -93,7 +94,7 @@ const AdminDashboard: React.FC = () => {
     
     setProcessingId(user.uid);
     try {
-      await saveUserProfile({ uid: user.uid, isActive: !user.isActive });
+      await updateUserProfile(user.uid, { isActive: !user.isActive });
       showNotification(user.isActive ? "Accès suspendu avec succès" : "Accès gérant réactivé");
       await fetchUsers();
       if (selectedUser?.uid === user.uid) {
@@ -131,7 +132,7 @@ const AdminDashboard: React.FC = () => {
     if (!selectedUser) return;
     setProcessingId(packType);
     try {
-      const updates: Partial<UserProfile> = { uid: selectedUser.uid, isActive: true };
+      const updates: Partial<UserProfile> = { isActive: true };
       
       if (packType === 'ELITE') {
         updates.isKitaPremium = true;
@@ -149,7 +150,7 @@ const AdminDashboard: React.FC = () => {
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
       }
 
-      await saveUserProfile(updates as any);
+      await updateUserProfile(selectedUser.uid, updates);
       showNotification(`Accès validé pour ${selectedUser.firstName} !`);
       await fetchUsers();
       setSelectedUser(prev => prev ? { ...prev, ...updates } as any : null);
@@ -451,7 +452,7 @@ const AdminDashboard: React.FC = () => {
                    </h3>
                    <div className="space-y-4">
                       {selectedUser.purchasedModuleIds?.length > 0 ? (
-                        TRAINING_CATALOG.filter(m => selectedUser.purchasedModuleIds.includes(m.id)).map(mod => {
+                        TRAINING_CATALOG.filter(m => (selectedUser.purchasedModuleIds || []).includes(m.id)).map(mod => {
                           const score = selectedUser.progress?.[mod.id] || 0;
                           return (
                             <div key={mod.id} className="p-4 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
@@ -476,7 +477,7 @@ const AdminDashboard: React.FC = () => {
                    </div>
                    <div className="grid grid-cols-3 gap-3">
                       {BADGES.map(badge => {
-                        const has = selectedUser.badges?.includes(badge.id);
+                        const has = (selectedUser.badges || []).includes(badge.id);
                         return (
                           <div key={badge.id} className={`h-16 rounded-xl flex items-center justify-center text-2xl border ${has ? 'bg-amber-500/10 border-amber-500/50 grayscale-0' : 'bg-white/5 border-white/5 grayscale opacity-20'}`}>
                              {badge.icon}

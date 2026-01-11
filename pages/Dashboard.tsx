@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getReferrals, saveUserProfile } from '../services/supabase';
+import { getReferrals, updateUserProfile } from '../services/supabase';
 import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES } from '../constants';
 import { UserProfile } from '../types';
 import KitaTopNav from '../components/KitaTopNav';
@@ -17,7 +17,6 @@ import {
   Lock,
   Star,
   CheckCircle2,
-  // Fix: Added Play to the lucide-react imports
   Play
 } from 'lucide-react';
 
@@ -30,18 +29,29 @@ const Dashboard: React.FC = () => {
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
   const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
 
+  // Synchronisation et Réparation Silencieuse des accès Elite
   useEffect(() => {
-    const syncEliteStatus = async () => {
-      if (user && (user.purchasedModuleIds?.length || 0) >= 16 && !user.isKitaPremium) {
+    const syncEliteData = async () => {
+      if (!user) return;
+      
+      const hasAllModules = (user.purchasedModuleIds?.length || 0) >= 16;
+      
+      // Cas 1: L'utilisateur a payé l'Elite mais ses IDs sont manquants (Réparation)
+      // Cas 2: L'utilisateur a tous les modules mais n'est pas encore marqué Elite (Promotion)
+      if ((user.isKitaPremium && !hasAllModules) || (hasAllModules && !user.isKitaPremium)) {
         try {
-          await saveUserProfile({ uid: user.uid, isKitaPremium: true });
+          const allIds = TRAINING_CATALOG.map(m => m.id);
+          await updateUserProfile(user.uid, { 
+            isKitaPremium: true,
+            purchasedModuleIds: allIds 
+          });
           await refreshProfile();
         } catch (e) {
-          console.warn("Elite sync failed", e);
+          console.warn("Elite recovery sync failed", e);
         }
       }
     };
-    syncEliteStatus();
+    syncEliteData();
   }, [user?.purchasedModuleIds, user?.isKitaPremium, refreshProfile, user?.uid]);
 
   useEffect(() => {
@@ -72,7 +82,6 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 w-full">
       
-      {/* BANDEAU KITA UNIFIÉ */}
       <KitaTopNav />
 
       <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden w-full border-b border-brand-800">
@@ -116,7 +125,6 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
         
-        {/* OFFRES PROMOTIONNELLES */}
         {!user.isAdmin && (!isElite || !isPerformance || !isStockExpert) && (
           <div className="grid md:grid-cols-3 gap-6 -mt-32">
              {!isElite && (
@@ -151,7 +159,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION FINANCES (GRANDE CARTE) */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
@@ -173,7 +180,6 @@ const Dashboard: React.FC = () => {
         </section>
 
         <div className="grid lg:grid-cols-12 gap-10">
-           {/* Pilier Stock */}
            <div className="lg:col-span-6 bg-slate-900 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110">
                  <Package className="w-32 h-32 text-sky-500" />
@@ -194,7 +200,6 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
 
-           {/* Pilier RH */}
            <div className="lg:col-span-6 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 transition-transform group-hover:scale-110">
                  <Users className="w-32 h-32 text-emerald-500" />
@@ -216,7 +221,6 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        {/* Section Formation */}
         <section className="bg-indigo-900 rounded-[4rem] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 transition-transform group-hover:scale-110">
               <BookOpen className="w-48 h-48 text-white" />
@@ -224,8 +228,7 @@ const Dashboard: React.FC = () => {
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
                  <h2 className="text-2xl font-black text-white uppercase tracking-tight m-0">FORMATION & EXCELLENCE</h2>
-                 <p className="text-indigo-200 font-medium max-w-md m-0 leading-relaxed">Progressez dans vos modules, validez vos certifications et devenez un g&eacute;rant d'&eacute;lite reconnu.</p>
-                 {/* Fix: Added the Play icon to the button and imported it above */}
+                 <p className="text-indigo-200 font-medium max-w-md m-0 leading-relaxed">Progressez dans vos modules, validez vos certifications et devenez un g&eacute;rant d&eacute;lite reconnu.</p>
                  <button onClick={() => navigate('/mes-formations')} className="bg-white text-indigo-900 px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-slate-100 transition-all flex items-center gap-3 mx-auto md:mx-0">
                     Reprendre mes cours <Play className="w-4 h-4" />
                  </button>

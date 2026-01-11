@@ -22,8 +22,13 @@ const MesFormations: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Sécurité Fail-safe : Si Elite, on donne tout. Sinon on filtre par IDs achetés.
   const myModules = useMemo(() => {
     if (!user) return [];
+    if (user.isKitaPremium || user.role === 'SUPER_ADMIN') {
+      return TRAINING_CATALOG;
+    }
+    if (!user.purchasedModuleIds) return [];
     return TRAINING_CATALOG.filter(m => user.purchasedModuleIds.includes(m.id));
   }, [user]);
 
@@ -69,7 +74,7 @@ const MesFormations: React.FC = () => {
               
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-6 relative z-10">
                  {BADGES.map(badge => {
-                   const isUnlocked = user.badges.includes(badge.id);
+                   const isUnlocked = (user.badges || []).includes(badge.id);
                    return (
                      <div key={badge.id} className="flex flex-col items-center gap-3 group/badge">
                         <div className={`h-16 w-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner border transition-all duration-500 ${

@@ -76,7 +76,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         question: "Un client appelle pendant que vous êtes en prestation, que faites-vous ?", 
         options: ["Vous ignorez l'appel", "Vous décrochez et prenez le rendez-vous vite", "Vous vous excusez et proposez de rappeler"], 
         correctAnswer: 2, 
-        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la personne sur le fauteuil." 
+        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la person sur le fauteuil." 
       },
       { 
         question: "Quelle information est la plus critique lors d'un rendez-vous ?", 
@@ -242,6 +242,212 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     ],
     exercises: ["Vendre au moins un produit à 3 clientes consécutives.", "Nettoyer et réorganiser l'espace boutique."],
     tips: ["Faites sentir les textures et les parfums."]
+  },
+  {
+    id: "mod_pricing",
+    topic: "Finance",
+    title: "Tarification stratégique : valoriser son talent",
+    description: "Apprenez à fixer vos prix non pas en fonction de la concurrence, mais de votre valeur réelle et de vos charges.",
+    mini_course: "Un tarif trop bas est un signal de manque de confiance qui attire les mauvais clients.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `
+      <h2>I. La fin du tarif au hasard</h2>
+      <p>La majorité des salons fixent leurs prix en regardant ce que fait le voisin. C'est une stratégie de survie, pas de développement. Vos prix doivent être le reflet de vos charges réelles et du niveau d'excellence que vous offrez.</p>
+      <blockquote>« Si vous ne valorisez pas votre temps, personne ne le fera pour vous. »</blockquote>
+      <p>L'expert Go'Top Pro calcule son coût à la minute. Chaque fauteuil vide est une perte sèche. Augmenter ses tarifs de 10 % sans changer son volume de clients peut transformer une année difficile en une année record.</p>
+
+      <h2>II. La hiérarchie du prestige</h2>
+      <p>Créez des paliers de prix. Ne proposez pas un prix unique pour une tresse ou un brushing. Segmentez votre offre par niveau de difficulté ou par "Signature de l'expert". Cela permet de guider le client vers des options à plus forte marge.</p>
+
+      <h2>III. Communiquer l'augmentation</h2>
+      <p>Une augmentation de tarif ne se justifie pas par l'inflation, mais par l'amélioration constante de votre service. Apprenez à annoncer vos nouveaux prix avec fierté en mettant en avant les nouvelles formations suivies par votre équipe.</p>
+    `,
+    coach_tip: "Votre talent n'est pas négociable.",
+    strategic_mantra: "Mieux vaut moins de clients qui paient le juste prix que trop de clients à perte.",
+    quiz_questions: [
+      { question: "Pourquoi fixer ses prix sur le voisin est-il risqué ?", options: ["On peut se tromper", "Ses charges ne sont pas les vôtres", "C'est de l'espionnage"], correctAnswer: 1, explanation: "Chaque salon a sa structure de coût unique." },
+      { question: "Quel est le but d'une tarification segmentée ?", options: ["Perdre des clients", "Augmenter la marge", "Simplifier la caisse"], correctAnswer: 1, explanation: "La segmentation permet de proposer de la valeur ajoutée payante." },
+      { question: "Quand augmenter ses prix ?", options: ["Tous les mois", "Quand la qualité s'améliore", "À Noël uniquement"], correctAnswer: 1, explanation: "L'amélioration du service justifie naturellement la hausse de valeur." }
+    ],
+    exercises: ["Calculer le coût à la minute de votre salon.", "Identifier 2 prestations à augmenter immédiatement."],
+    tips: ["Affichez vos prix clairement mais avec élégance."]
+  },
+  {
+    id: "mod_management",
+    topic: "Management",
+    title: "Leadership et motivation d'équipe",
+    description: "Transformez vos collaborateurs en partenaires engagés pour le succès de votre enseigne.",
+    mini_course: "Une équipe qui sourit est une équipe qui vend.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `
+      <h2>I. Le gérant-pilote : donner le cap</h2>
+      <p>Un salon performant ne repose pas sur les mains du patron, mais sur l'autonomie de son équipe. Le rôle du gérant d'élite est de définir des standards clairs et de s'assurer qu'ils sont respectés même en son absence.</p>
+      <blockquote>« Le leadership, c'est l'art d'inspirer les autres à donner le meilleur d'eux-mêmes. »</blockquote>
+      <p>Mettez en place des réunions hebdomadaires de 15 minutes pour partager les objectifs de la semaine. La clarté de la vision réduit le stress et augmente l'efficacité.</p>
+    `,
+    coach_tip: "Félicitez en public, recadrez en privé.",
+    strategic_mantra: "Seul on va vite, ensemble on va loin.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_fidelisation",
+    topic: "Vente",
+    title: "Fidélisation : transformer le client en fan",
+    description: "Il coûte 5 fois plus cher d'acquérir un nouveau client que d'en garder un. Maîtrisez le cycle de vie du client.",
+    mini_course: "Un client fidèle est votre meilleur ambassadeur gratuit.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `
+      <h2>I. L'expérience mémorable</h2>
+      <p>La fidélité ne s'achète pas avec des cartes de réduction, elle se gagne par l'émotion. Chaque visite doit être une parenthèse de bien-être unique.</p>
+    `,
+    coach_tip: "Le petit café offert vaut plus que 10% de remise.",
+    strategic_mantra: "Le client revient pour ce qu'il a ressenti, pas seulement pour sa coupe.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_digital",
+    topic: "Marketing",
+    title: "Marketing Digital : attirer les meilleurs clients",
+    description: "Utilisez Instagram et WhatsApp pour remplir votre agenda chaque matin.",
+    mini_course: "Votre vitrine n'est plus dans la rue, elle est dans la poche de vos clientes.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `
+      <h2>I. Le pouvoir de l'image</h2>
+      <p>Apprenez à photographier vos réalisations. Une belle lumière et un angle précis font toute la différence sur les réseaux sociaux.</p>
+    `,
+    coach_tip: "Postez une photo par jour, à l'heure du déjeuner.",
+    strategic_mantra: "Si on ne vous voit pas, vous n'existez pas.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_shampoing",
+    topic: "Technique",
+    title: "L'art du shampoing : le premier moment de vérité",
+    description: "Le shampoing n'est pas un nettoyage, c'est un soin technique et sensoriel crucial.",
+    mini_course: "C'est au bac que vous gagnez le cœur de votre cliente.",
+    price: 500,
+    aiCredits: 2,
+    lesson_content: `<h2>I. La technique magistrale du massage crânien</h2><p>Le client ne vient pas seulement se laver les cheveux, il vient chercher un moment de déconnexion. Maîtrisez les points de pression.</p>`,
+    coach_tip: "Ne parlez pas pendant le massage, laissez le client savourer.",
+    strategic_mantra: "Un shampoing bâclé est une expérience ratée.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_color",
+    topic: "Technique",
+    title: "Colorimétrie Expert : la science des nuances",
+    description: "Devenez un maître de la couleur et évitez les erreurs techniques coûteuses.",
+    mini_course: "La couleur est l'âme du salon.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `<h2>I. La roue chromatique appliquée</h2><p>Comprendre les pigments sous-jacents pour neutraliser les reflets indésirables.</p>`,
+    coach_tip: "Pesez toujours vos mélanges sur une balance électronique.",
+    strategic_mantra: "La précision technique évite les rattrapages gratuits.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_coupe",
+    topic: "Technique",
+    title: "Coupe & Morphologie : sculpter le visage",
+    description: "Apprenez à adapter chaque coupe à la forme du visage de vos clientes.",
+    mini_course: "Une coupe réussie est une coupe qui grandit bien.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `<h2>I. Analyse morphologique</h2><p>Visage ovale, rond, carré : à chaque forme sa géométrie de coupe.</p>`,
+    coach_tip: "Utilisez le miroir pour valider l'équilibre de la coupe sous tous les angles.",
+    strategic_mantra: "L'harmonie visuelle est le but ultime de l'expert.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_planning",
+    topic: "Management",
+    title: "Organisation du Planning : gagner du temps",
+    description: "Optimisez chaque minute de votre journée pour maximiser votre chiffre d'affaires.",
+    mini_course: "Le temps est votre seule ressource limitée.",
+    price: 500,
+    aiCredits: 2,
+    lesson_content: `<h2>I. Le séquençage des tâches</h2><p>Comment chevaucher deux prestations intelligemment sans faire attendre le client.</p>`,
+    coach_tip: "Prévoyez toujours 15 minutes de marge pour les imprévus.",
+    strategic_mantra: "Un planning fluide est un gérant serein.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_psychologie",
+    topic: "Accueil",
+    title: "Psychologie de la Cliente : comprendre l'inexprimé",
+    description: "Apprenez à lire entre les lignes pour satisfaire les désirs cachés de vos clients.",
+    mini_course: "On coiffe une personne, pas seulement des cheveux.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `<h2>I. L'écoute active augmentée</h2><p>Décoder le langage corporel pour adapter son discours de vente.</p>`,
+    coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la cliente.",
+    strategic_mantra: "Celui qui comprend gagne.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_vip",
+    topic: "Prestige",
+    title: "Services VIP & Prestige : viser le haut de gamme",
+    description: "Comment transformer votre salon de quartier en une adresse incontournable pour les élites.",
+    mini_course: "Le luxe se niche dans les détails invisibles.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `<h2>I. Les codes de l'hospitalité de luxe</h2><p>Du peignoir en soie à la boisson signature.</p>`,
+    coach_tip: "L'exclusivité crée le désir.",
+    strategic_mantra: "Le prestige autorise des marges extraordinaires.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_chiffres",
+    topic: "Finance",
+    title: "Analyse des Chiffres : piloter par la donnée",
+    description: "Ne gérez plus au doigt mouillé. Apprenez à lire votre bilan comme un expert comptable.",
+    mini_course: "Les chiffres ne mentent jamais.",
+    price: 500,
+    aiCredits: 3,
+    lesson_content: `<h2>I. Les indicateurs clés de performance (KPI)</h2><p>Ticket moyen, taux de revente, productivité horaire.</p>`,
+    coach_tip: "Vérifiez vos chiffres tous les soirs avant de fermer.",
+    strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
+  },
+  {
+    id: "mod_formalisation",
+    topic: "Management",
+    title: "Formalisation & Structure : bâtir une entreprise solide",
+    description: "Sortez de l'informel pour accéder aux crédits bancaires et aux partenariats.",
+    mini_course: "Un salon formel est un salon pérenne.",
+    price: 500,
+    aiCredits: 2,
+    lesson_content: `<h2>I. La structure juridique et fiscale</h2><p>Comprendre l'intérêt de la formalisation en Côte d'Ivoire.</p>`,
+    coach_tip: "Séparez toujours votre argent personnel de celui du salon.",
+    strategic_mantra: "La rigueur administrative est la base de la croissance.",
+    quiz_questions: [],
+    exercises: [],
+    tips: []
   }
 ];
 
@@ -280,5 +486,6 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 1, text: "Votre équipe est-elle formée aux techniques d'un bon accueil téléphonique ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
   { id: 2, text: "L'équipe s'entraîne-t-elle à faire un bon diagnostic avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
   { id: 3, text: "Les protocoles d'hygiène sont-ils affichés et respectés scrupuleusement par tous ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
-  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" }
+  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" },
+  { id: 5, text: "Maîtrisez-vous votre coût à la minute pour chaque prestation ?", category: "Finance", linkedModuleId: "mod_pricing" }
 ];

@@ -27,9 +27,21 @@ export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
   return error ? [] : data as UserProfile[];
 };
 
+/**
+ * Pour les créations de profil (nouveaux utilisateurs)
+ */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const { error } = await supabase.from('profiles').upsert(profile);
+  if (error) throw new Error(error.message);
+};
+
+/**
+ * Pour les mises à jour partielles (ne supprime pas les champs manquants)
+ */
+export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
   if (error) throw new Error(error.message);
 };
 
@@ -49,14 +61,14 @@ export const grantModuleAccess = async (uid: string, moduleId: string) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  await saveUserProfile({ uid, purchasedModuleIds: updatedIds, isActive: true });
+  await updateUserProfile(uid, { purchasedModuleIds: updatedIds, isActive: true });
 };
 
 export const updateQuizAttempts = async (uid: string, moduleId: string, attempts: number) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: attempts };
-  await saveUserProfile({ uid, attempts: updatedAttempts });
+  await updateUserProfile(uid, { attempts: updatedAttempts });
 };
 
 export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
@@ -126,8 +138,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commissionRate: t.commission_rate,
-    isCredit: t.is_credit
+    commission_rate: t.commission_rate,
+    is_credit: t.is_credit
   }));
 };
 
