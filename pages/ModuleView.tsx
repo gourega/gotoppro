@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+/* Fixed react-router-dom named exports */
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,14 +40,14 @@ function decodeBase64(base64: string): Uint8Array {
   return bytes;
 }
 
+/* Updated decodeAudioData to match @google/genai coding guidelines */
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-  const dataInt16 = new Int16Array(arrayBuffer);
+  const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -214,10 +215,10 @@ const ModuleView: React.FC = () => {
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
 
-      const currentAttempts = (updatedUser.attempts[module.id] || 0) + 1;
+      const currentAttempts = (Number(updatedUser.attempts[module.id]) || 0) + 1;
       updatedUser.attempts[module.id] = currentAttempts;
       
-      const prevBest = updatedUser.progress[module.id] || 0;
+      const prevBest = Number(updatedUser.progress[module.id]) || 0;
       if (percentage > prevBest) {
         updatedUser.progress[module.id] = percentage;
       }
@@ -225,7 +226,7 @@ const ModuleView: React.FC = () => {
       if (percentage >= 80) {
         setShouldFire(true);
         if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
-        const completedModulesCount = Object.values(updatedUser.progress).filter(p => p >= 80).length;
+        const completedModulesCount = Object.values(updatedUser.progress).filter(p => Number(p) >= 80).length;
         if (completedModulesCount >= 5 && !updatedUser.badges.includes('dedicated')) {
           updatedUser.badges.push('dedicated');
         }
@@ -273,12 +274,12 @@ const ModuleView: React.FC = () => {
     }
   };
 
-  const currentScore = user.progress?.[module.id] || 0;
+  const currentScore = Number(user.progress?.[module.id]) || 0;
   const latestAttemptScore = answers.reduce((acc, ans, i) => ans === module.quiz_questions[i].correctAnswer ? acc + 1 : acc, 0);
   const latestPercentage = Math.round((latestAttemptScore / module.quiz_questions.length) * 100);
   
   const isCertified = currentScore >= 80;
-  const attemptCount = user.attempts?.[module.id] || 0;
+  const attemptCount = Number(user.attempts?.[module.id]) || 0;
   const tokensRemaining = Math.max(0, 3 - attemptCount);
 
   return (
@@ -388,7 +389,7 @@ const ModuleView: React.FC = () => {
                      <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-6" />
                      <h3 className="text-2xl font-bold text-rose-900 font-serif mb-4 tracking-tight">Stock épuisé</h3>
                      <p className="text-rose-700 font-medium mb-10 leading-relaxed italic">Vous avez utilisé vos 3 jetons sans valider l'excellence. Relancez le processus pour continuer votre perfectionnement.</p>
-                     <button onClick={() => navigate('/quiz')} className="w-full bg-rose-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition shadow-xl shadow-rose-200">Racheter le module</button>
+                     <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition shadow-xl shadow-rose-200">Racheter le module</button>
                   </div>
                 )}
               </div>
@@ -546,7 +547,7 @@ const ModuleView: React.FC = () => {
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
                         <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
                         <p className="text-rose-700 text-xl font-medium mb-12 leading-relaxed max-w-2xl mx-auto italic">"Même avec l'audit complet sous vos yeux, le standard Go'Top n'est pas atteint. Un expert n'abandonne jamais. Renouvelez vos jetons pour prouver votre détermination."</p>
-                        <button onClick={() => navigate('/quiz')} className="bg-rose-600 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition shadow-2xl shadow-rose-200 flex items-center gap-4 mx-auto">
+                        <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="bg-rose-600 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition shadow-2xl shadow-rose-200 flex items-center gap-4 mx-auto">
                            Renouveler mes jetons d'expert <ArrowRight className="w-5 h-5" />
                         </button>
                       </div>

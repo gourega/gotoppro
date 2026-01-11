@@ -57,6 +57,18 @@ const Results: React.FC = () => {
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'stock') setActivePack('stock');
 
+    // Gestion du rachat de module (recharge)
+    const rechargeId = params.get('recharge');
+    if (rechargeId) {
+      const moduleToRecharge = TRAINING_CATALOG.find(m => m.id === rechargeId);
+      if (moduleToRecharge) {
+        setCart(prev => {
+          if (prev.find(m => m.id === rechargeId)) return prev;
+          return [...prev, moduleToRecharge];
+        });
+      }
+    }
+
     const raw = localStorage.getItem('temp_quiz_results');
     const results = raw ? JSON.parse(raw) : null;
     
@@ -68,8 +80,16 @@ const Results: React.FC = () => {
       }).filter(Boolean) as string[];
 
       setRecommendedModuleIds(negativeIds);
-      const recommendedModules = TRAINING_CATALOG.filter(m => negativeIds.includes(m.id));
-      setCart(recommendedModules);
+      
+      // On combine les modules du diagnostic avec ceux déjà présents (ex: rechargeId)
+      setCart(prev => {
+        const diagnosticModules = TRAINING_CATALOG.filter(m => negativeIds.includes(m.id));
+        const combined = [...prev];
+        diagnosticModules.forEach(dm => {
+          if (!combined.find(c => c.id === dm.id)) combined.push(dm);
+        });
+        return combined;
+      });
 
       const getAdvice = async () => {
         const negativeTexts = negativeResults.map((r: any) => 
