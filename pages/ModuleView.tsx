@@ -117,13 +117,11 @@ const ModuleView: React.FC = () => {
   };
 
   const handlePlayAudio = async () => {
-    // Si déjà en lecture, on arrête
     if (isPlaying) {
       stopAudio();
       return;
     }
 
-    // Initialisation AudioContext si nécessaire
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
@@ -132,7 +130,6 @@ const ModuleView: React.FC = () => {
       await audioContextRef.current.resume();
     }
 
-    // Utilisation du cache si disponible (évite l'appel API et préserve le quota)
     if (cachedAudioBufferRef.current) {
       playBuffer(cachedAudioBufferRef.current);
       return;
@@ -171,7 +168,6 @@ const ModuleView: React.FC = () => {
           1
         );
         
-        // Stockage en cache pour cette session de vue du module
         cachedAudioBufferRef.current = audioBuffer;
         playBuffer(audioBuffer);
       } else {
@@ -179,10 +175,8 @@ const ModuleView: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Erreur Masterclass Audio:", err);
-      
-      // Gestion spécifique de l'erreur de quota (429)
       if (err.message?.includes("429") || err.message?.includes("quota")) {
-        alert("Coach Kita est très sollicité en ce moment (limite de quota atteinte). Veuillez réessayer dans quelques minutes ou passer à la lecture du texte ci-dessous.");
+        alert("Coach Kita est très sollicité en ce moment. Veuillez réessayer dans quelques minutes.");
       } else {
         alert(`Masterclass indisponible : ${err.message || "Erreur de connexion"}`);
       }
@@ -226,20 +220,14 @@ const ModuleView: React.FC = () => {
       if (percentage >= 80) {
         setShouldFire(true);
         if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
-        const completedModulesCount = Object.values(updatedUser.progress).filter(p => Number(p) >= 80).length;
-        if (completedModulesCount >= 5 && !updatedUser.badges.includes('dedicated')) {
-          updatedUser.badges.push('dedicated');
-        }
       }
 
       await saveUserProfile(updatedUser);
       await refreshProfile();
-      
       setQuizState('results');
     } catch (err: any) {
       console.error("Erreur critique quiz:", err);
       setQuizState('results');
-      alert("Vos résultats sont affichés mais n'ont pas pu être synchronisés.");
     } finally {
       setIsFinishingQuiz(false);
     }
@@ -247,7 +235,6 @@ const ModuleView: React.FC = () => {
 
   const handleCommit = async () => {
     if (!commitment.trim() || !user || !module || isSaving) return;
-
     setIsSaving(true);
     try {
       const newAction: UserActionCommitment = {
@@ -257,12 +244,10 @@ const ModuleView: React.FC = () => {
         date: new Date().toLocaleDateString('fr-FR'),
         isCompleted: false
       };
-
       const updatedUser = {
         ...user,
         actionPlan: [newAction, ...(user.actionPlan || [])]
       };
-
       await saveUserProfile(updatedUser);
       await refreshProfile();
       setCommitment('');
@@ -277,13 +262,12 @@ const ModuleView: React.FC = () => {
   const currentScore = Number(user.progress?.[module.id]) || 0;
   const latestAttemptScore = answers.reduce((acc, ans, i) => ans === module.quiz_questions[i].correctAnswer ? acc + 1 : acc, 0);
   const latestPercentage = Math.round((latestAttemptScore / module.quiz_questions.length) * 100);
-  
   const isCertified = currentScore >= 80;
   const attemptCount = Number(user.attempts?.[module.id]) || 0;
   const tokensRemaining = Math.max(0, 3 - attemptCount);
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-white">
       {shouldFire && (
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
@@ -294,16 +278,15 @@ const ModuleView: React.FC = () => {
         />
       )}
       
-      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 h-20 flex items-center">
+        <div className="max-w-5xl mx-auto w-full px-6 flex items-center justify-between">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors font-black text-[10px] uppercase tracking-widest group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Retour
           </button>
-          
           <div className="flex bg-slate-100 p-1 rounded-2xl">
             <button onClick={() => setActiveTab('lesson')} className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'lesson' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}>
-              <Book className="w-3 h-3" /> La Leçon
+              <Book className="w-3 h-3" /> Le Cours
             </button>
             <button onClick={() => setActiveTab('quiz')} className={`flex items-center gap-2 px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'quiz' ? 'bg-white text-brand-900 shadow-xl shadow-slate-900/5' : 'text-slate-500 hover:text-slate-700'}`}>
               <Award className="w-3 h-3" /> Certification
@@ -313,15 +296,6 @@ const ModuleView: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-20 pb-32">
-        {isFinishingQuiz && (
-          <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[100] flex items-center justify-center">
-            <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 text-center space-y-6">
-              <Loader2 className="w-12 h-12 animate-spin text-brand-600 mx-auto" />
-              <p className="font-serif font-bold text-xl text-brand-900">Calcul de votre excellence...</p>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'lesson' ? (
           <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
             <header className="text-center mb-24">
@@ -344,7 +318,8 @@ const ModuleView: React.FC = () => {
               </div>
             </header>
 
-            <div className="lesson-content-container" dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
+            {/* Nouveau conteneur de contenu typographique */}
+            <div className="prose-kita" dangerouslySetInnerHTML={{ __html: module.lesson_content }} />
             
             <div className="my-24 bg-brand-900 rounded-[5rem] p-16 md:p-24 text-white relative overflow-hidden group shadow-2xl shadow-brand-900/20">
                <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000"><Sparkles className="w-48 h-48" /></div>
@@ -419,7 +394,6 @@ const ModuleView: React.FC = () => {
 
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
-                {/* Score Header */}
                 <div className="text-center mb-16">
                    <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
@@ -430,7 +404,6 @@ const ModuleView: React.FC = () => {
                    <p className="text-slate-500 text-lg font-medium">Tentative effectuée : {attemptCount} / 3</p>
                 </div>
 
-                {/* Case 1: First 2 attempts and failed */}
                 {attemptCount < 3 && latestPercentage < 80 ? (
                   <div className="text-center max-w-2xl mx-auto py-10">
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
@@ -442,15 +415,12 @@ const ModuleView: React.FC = () => {
                     <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition shadow-xl">Recommencer ma leçon</button>
                   </div>
                 ) : (
-                  /* Case 2: Success OR 3rd attempt exhausted -> Show analysis and correct answers */
                   <div className="space-y-16">
-                    {/* Correction Section (Revealed only on 3rd attempt or success) */}
                     <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative">
                       <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] font-serif italic pointer-events-none">Audit</div>
                       <h4 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-14 flex items-center gap-3">
                          <HelpCircle className="w-5 h-5" /> Débriefing Expert Coach Kita
                       </h4>
-                      
                       <div className="space-y-12">
                          {module.quiz_questions.map((q, qIdx) => {
                            const userAns = answers[qIdx];
@@ -481,7 +451,6 @@ const ModuleView: React.FC = () => {
                       </div>
                     </section>
 
-                    {/* Success Outcome */}
                     {isCertified ? (
                       <>
                         <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
@@ -495,50 +464,6 @@ const ModuleView: React.FC = () => {
                             <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
                             <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
                             <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-12 mt-20 border-t border-slate-100 pt-16">
-                              <div className="text-left space-y-4">
-                                <div className="flex items-center gap-3 text-slate-400">
-                                  <Calendar className="w-4 h-4" />
-                                  <span className="text-[10px] font-black uppercase tracking-widest">{new Date().toLocaleDateString('fr-FR')}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-400">
-                                  <Award className="w-4 h-4" />
-                                  <span className="text-[10px] font-black uppercase tracking-widest">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
-                                </div>
-                              </div>
-                              <div className="gold-seal h-28 w-28 rounded-full flex items-center justify-center text-white relative group">
-                                <Sparkles className="w-12 h-12" />
-                                <div className="absolute inset-0 rounded-full border-4 border-white/20 scale-110"></div>
-                                <div className="absolute -bottom-2 font-black text-[8px] uppercase tracking-widest bg-slate-900 px-3 py-1 rounded-full whitespace-nowrap">Certifié Kita</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="mb-4 text-center"><img src={COACH_KITA_AVATAR} className="h-16 w-16 rounded-2xl mx-auto grayscale" alt="Kita Sig" /></div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Signature du Mentor</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-brand-950 rounded-[4rem] p-16 md:p-24 text-white shadow-2xl relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-16 opacity-[0.03] text-[15rem] pointer-events-none italic font-serif select-none">Action</div>
-                          <h4 className="text-brand-500 font-black uppercase text-[11px] tracking-[0.5em] mb-12 flex items-center gap-3"><Zap className="w-4 h-4 fill-current" /> Sceller ma réussite par l'action</h4>
-                          <p className="text-3xl font-serif mb-16 leading-relaxed italic text-slate-300 opacity-90">"{module.strategic_mantra}"</p>
-                          <div className="mb-14">
-                            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Mon premier engagement concret :</label>
-                            <textarea 
-                              value={commitment} 
-                              onChange={e => setCommitment(e.target.value)} 
-                              className="w-full bg-black/20 border border-white/10 rounded-[2.5rem] p-10 text-white placeholder-slate-500 outline-none ring-4 ring-transparent focus:ring-brand-gold/40 focus:bg-black/40 transition text-lg font-medium" 
-                              placeholder="Décrivez votre première étape concrète ici..." 
-                              rows={4} 
-                            />
-                          </div>
-                          <div className="flex flex-col sm:flex-row gap-6">
-                            <button onClick={handleCommit} disabled={isSaving || !commitment.trim()} className="flex-grow bg-brand-500 py-8 rounded-[2rem] font-black hover:bg-brand-400 transition-all disabled:opacity-20 shadow-2xl shadow-brand-500/20 uppercase tracking-[0.3em] text-xs flex items-center justify-center gap-4">
-                              {isSaving ? <Loader2 className="animate-spin" /> : "Terminer et sceller mon évolution"}
-                              {!isSaving && <ArrowRight className="w-6 h-6" />}
-                            </button>
-                            <button className="px-10 py-8 bg-white/10 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-white/20 transition"><Share2 className="w-5 h-5" /> Partager</button>
                           </div>
                         </div>
                       </>
@@ -546,7 +471,6 @@ const ModuleView: React.FC = () => {
                       <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
                         <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
-                        <p className="text-rose-700 text-xl font-medium mb-12 leading-relaxed max-w-2xl mx-auto italic">"Même avec l'audit complet sous vos yeux, le standard Go'Top n'est pas atteint. Un expert n'abandonne jamais. Renouvelez vos jetons pour prouver votre détermination."</p>
                         <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="bg-rose-600 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition shadow-2xl shadow-rose-200 flex items-center gap-4 mx-auto">
                            Renouveler mes jetons d'expert <ArrowRight className="w-5 h-5" />
                         </button>

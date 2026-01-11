@@ -25,9 +25,9 @@
     min-width: 100%;
   }
 
-  /* Animations plus courtes pour réduire la charge CPU */
+  /* Animations */
   .animate-in {
-    animation-duration: 250ms; 
+    animation-duration: 400ms; 
     animation-fill-mode: both;
     opacity: 1 !important; 
     visibility: visible !important;
@@ -42,6 +42,63 @@
   @keyframes zoomIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: scale(1); } }
   @keyframes slideInTop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes slideInBottom { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+/* --- SYSTEME PROSE KITA (MAGISTRAL) --- */
+.prose-kita {
+  @apply max-w-none text-slate-700;
+  line-height: 1.85;
+}
+
+.prose-kita h2 {
+  @apply font-serif font-bold text-brand-900 text-3xl md:text-4xl mb-10 mt-20 first:mt-0;
+  letter-spacing: -0.02em;
+}
+
+.prose-kita h3 {
+  @apply font-serif font-bold text-brand-800 text-xl md:text-2xl mb-6 mt-12;
+}
+
+.prose-kita p {
+  @apply mb-8 text-lg font-medium leading-relaxed;
+}
+
+/* La Lettrine : Premiere lettre du premier paragraphe apres un H2 */
+.prose-kita h2 + p::first-letter {
+  @apply font-serif font-bold text-brand-500 float-left text-7xl mr-4 mt-2;
+  line-height: 0.8;
+}
+
+.prose-kita strong {
+  @apply font-black text-brand-950;
+}
+
+.prose-kita em {
+  @apply font-serif italic text-slate-500;
+}
+
+/* Bloc de Sagesse / Citation interieure */
+.prose-kita blockquote {
+  @apply border-l-4 border-brand-500 bg-brand-50/50 p-8 rounded-r-3xl my-12 italic text-brand-900 text-xl font-serif;
+}
+
+/* Liste d'action stylisee */
+.prose-kita ul {
+  @apply space-y-6 my-10 list-none p-0;
+}
+
+.prose-kita ul li {
+  @apply flex items-start gap-4 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md;
+}
+
+.prose-kita ul li::before {
+  content: "→";
+  @apply text-brand-500 font-black shrink-0 mt-1;
+}
+
+/* Séparateur élégant */
+.prose-kita hr {
+  @apply border-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-16;
 }
 
 /* Custom Scrollbar */

@@ -45,18 +45,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La signature vocale</h2>
-        <p>Un expert ne répond jamais par un simple « Allô ». La formule qui rassure est : <strong>« Salon [Nom], [Votre prénom] à votre écoute, bonjour »</strong>. Le débit doit être lent, la voix posée et le sourire s'entendre. C'est ici que commence la valeur perçue de votre travail.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La prise de rendez-vous active</h2>
-        <p>Ne subissez pas l'agenda. Au lieu de demander « C'est pour quand ? », proposez : <strong>« Je peux vous recevoir mardi à 10h ou jeudi à 14h, quel créneau vous convient le mieux ? »</strong>. Diriger le client vers vos heures creuses est la clé d'un planning rentable.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La clôture professionnelle</h2>
-        <p>Avant de raccrocher, validez toujours les trois piliers : la date, l'heure et le nom du collaborateur. Finissez par une phrase de bienvenue : « Nous sommes ravis de vous recevoir mardi prochain, excellente journée à vous ».</p>
-      </section>`,
+      <h2>I. La signature vocale : instaurer l'autorité</h2>
+      <p>Le premier contact avec votre salon ne se fait pas dans le fauteuil, mais à travers une onde sonore. Répondre par un simple « allô » est une erreur de débutant qui dévalorise instantanément votre expertise. Un gérant d'élite impose un standard dès la première seconde.</p>
+      <blockquote>« La voix est le miroir de votre salon ; si elle est hésitante, votre service le sera aussi. »</blockquote>
+      <p>La formule d'or doit être prononcée avec un sourire conscient : <strong>« Salon [Nom du Salon], [Votre Prénom] à votre écoute, bonjour. »</strong> Cette structure permet au client de confirmer qu'il est au bon endroit et d'identifier son interlocuteur, créant ainsi un lien humain immédiat.</p>
+      
+      <h2>II. La prise de rendez-vous active</h2>
+      <p>L'expert ne subit jamais son agenda, il le pilote. Si vous demandez « quand voulez-vous venir ? », vous donnez le pouvoir au client de bloquer vos heures de pointe tout en laissant vos heures creuses vides. C'est la mort de votre rentabilité.</p>
+      <p>Apprenez à diriger le flux. Proposez toujours deux options précises qui arrangent votre organisation :</p>
+      <ul>
+        <li>« Je peux vous recevoir mardi à 10 h ou jeudi à 14 h, quel créneau vous convient le mieux ? »</li>
+        <li>Utilisez le silence après votre proposition pour laisser le client choisir.</li>
+        <li>Si les deux options sont refusées, demandez ses contraintes et proposez une troisième alternative stratégique.</li>
+      </ul>
+
+      <h2>III. Le rituel de clôture professionnelle</h2>
+      <p>La fin de l'appel est aussi cruciale que le début. Elle doit servir à graver l'engagement dans l'esprit du client. Avant de raccrocher, validez systématiquement les trois piliers du rendez-vous : la date, l'heure précise et le nom du collaborateur qui réalisera la prestation.</p>
+      <p>Terminez par une phrase de bienvenue qui valorise la visite à venir : « Nous sommes ravis de vous recevoir mardi prochain, excellente journée à vous, Mme Koné. » Personnaliser le nom du client à la fin de l'appel augmente le taux de présence de 30 %.</p>
+    `,
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
     strategic_mantra: "Un appel raté est un client qui part chez le voisin.",
     quiz_questions: [
@@ -91,18 +97,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La posture de l'expert</h2>
-        <p>Ne parlez jamais à votre client à travers le miroir pour un diagnostic. Asseyez-vous à sa hauteur, face à lui. Le contact visuel direct crée un lien de confiance immédiat. C'est à ce moment que vous passez du statut d'exécutant à celui de <strong>conseiller expert</strong>.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. L'analyse morphologique et technique</h2>
-        <p>Observez trois points essentiels : la forme du visage, la texture naturelle du cheveu et le style de vie du client. Posez des questions ouvertes : « Comment entretenez-vous vos cheveux au quotidien ? » ou « Quelle image souhaitez-vous projeter ? ».</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La proposition de valeur</h2>
-        <p>Ne proposez pas un prix, proposez un résultat. Utilisez des mots forts : <strong>« éclat », « restructuration », « harmonie »</strong>. Concluez toujours par une recommandation précise incluant une prestation technique et un soin profond.</p>
-      </section>`,
+      <h2>I. La posture du mentor : briser la barrière du miroir</h2>
+      <p>Le diagnostic est le moment le plus rentable de votre journée, pourtant c'est celui que beaucoup négligent par manque de temps. L'erreur fatale est de parler au client à travers le miroir alors qu'il est déjà installé. Dans cette position, vous n'êtes qu'un exécutant.</p>
+      <blockquote>« Pour être respecté comme un expert, vous devez regarder le client dans les yeux, pas son reflet. »</blockquote>
+      <p>La règle d'or de Go'Top Pro est de s'asseoir à hauteur du client, face à lui, avant même de toucher ses cheveux. Ce contact visuel direct crée un contrat de confiance. À cet instant, vous ne vendez pas une coiffure, vous vendez votre regard d'expert.</p>
+
+      <h2>II. L'art de l'interrogatoire stratégique</h2>
+      <p>Un bon diagnostic ne commence pas par des affirmations, mais par des questions ouvertes. Vous devez comprendre non seulement ce que le client veut, mais surtout ce qu'il vit au quotidien avec ses cheveux.</p>
+      <p>Voici les trois questions que chaque expert doit poser :</p>
+      <ul>
+        <li>« Quel est le temps maximum que vous accordez à vos cheveux le matin ? » (Éviter de proposer un style impossible à entretenir).</li>
+        <li>« Quelles sont les trois choses que vous aimeriez changer dans votre image actuelle ? » (Identifier les points de douleur).</li>
+        <li>« Quels produits utilisez-vous actuellement à la maison ? » (Préparer la vente additionnelle).</li>
+      </ul>
+
+      <h2>III. La prescription : transformer le besoin en désir</h2>
+      <p>Une fois l'analyse terminée, ne donnez pas un prix, donnez une solution. Utilisez un vocabulaire de prestige. Ne dites pas « je vais faire un soin », dites « je préconise un rituel de restructuration pour redonner de l'éclat à votre fibre capillaire ». </p>
+      <p>Concluez toujours par un engagement mutuel : « Pour obtenir le résultat que nous venons de définir, voici le plan d'action pour aujourd'hui. » Cette méthode place le client dans une position d'attente positive et justifie des tarifs plus élevés.</p>
+    `,
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
     quiz_questions: [
@@ -137,18 +149,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 2,
     lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La désinfection visible</h2>
-        <p>La propreté ne doit pas seulement exister, elle doit être vue. Nettoyez vos ciseaux, peignes et tondeuses devant le client avec un spray antibactérien. Cela justifie vos tarifs et rassure instantanément sur votre professionnalisme.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. L'organisation du bac à shampoing</h2>
-        <p>Le bac est le lieu de détente par excellence. Rien n'est plus décevant qu'un bac sale ou encombré. Nettoyez le fauteuil et le repose-nuque après chaque passage. Rangez vos bouteilles de produits par taille et par fonction.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. Le rituel des textiles</h2>
-        <p>Chaque client doit bénéficier d'une serviette et d'un peignoir parfaitement propres et pliés. L'odeur du linge propre participe à l'expérience sensorielle de luxe. Ne laissez jamais de cheveux traîner au sol pendant une prestation.</p>
-      </section>`,
+      <h2>I. La désinfection visible : le marketing de la santé</h2>
+      <p>Dans un monde où la sécurité sanitaire est devenue une priorité, la propreté de votre salon n'est plus un détail de gestion, c'est votre argument de vente numéro un. L'erreur classique est de nettoyer le salon quand il n'y a personne.</p>
+      <blockquote>« Ce que le client ne voit pas n'existe pas dans son esprit. »</blockquote>
+      <p>L'expert Go'Top Pro désinfecte ses outils (ciseaux, peignes, tondeuses) <strong>devant le client</strong>. Ce geste de 10 secondes justifie à lui seul une hausse de vos tarifs. Il prouve que vous respectez le corps de votre cliente autant que son style.</p>
+
+      <h2>II. Le bac à shampoing : le sanctuaire du luxe</h2>
+      <p>Le bac est l'endroit où le client passe le plus de temps en position de vulnérabilité. C'est ici que l'image de votre salon se joue. Un bac avec des traces de produits séchés ou une serviette humide qui traîne brise instantanément l'expérience de luxe.</p>
+      <p>Instaurez un protocole rigoureux après chaque passage :</p>
+      <ul>
+        <li>Nettoyage immédiat de la cuvette et du repose-nuque avec un produit désinfectant odorant.</li>
+        <li>Rangement des bouteilles de produits par taille, étiquettes face au client.</li>
+        <li>Vérification de l'absence totale de cheveux sur le sol autour de la zone de détente.</li>
+      </ul>
+
+      <h2>III. La psychologie des textiles et de l'air</h2>
+      <p>L'odorat est le sens le plus lié à la mémoire. Une serviette qui sent le linge frais crée une émotion positive instantanée. Ne laissez jamais une serviette utilisée sur un fauteuil, même pour une minute. L'ordre visuel doit être parfait.</p>
+      <p>L'excellence se niche dans l'air que l'on respire. Aérez votre salon toutes les deux heures pour chasser les odeurs de produits chimiques et utilisez un parfum d'ambiance léger et signature. C'est cette atmosphère qui transforme un simple service en une expérience inoubliable.</p>
+    `,
     coach_tip: "Un bac à shampoing mal nettoyé fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
     quiz_questions: [
@@ -175,282 +193,6 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     tips: ["Changez de serviette après chaque client, sans exception."]
   },
   {
-    id: "mod_stock",
-    topic: "Gestion",
-    title: "Gestion des stocks : éviter les pertes",
-    description: "Ne laissez plus votre argent dormir sur les étagères. Apprenez à commander juste ce qu'il faut.",
-    mini_course: "Un tube de couleur périmé, c'est un billet de banque que vous jetez.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. L'inventaire tournant</h2>
-        <p>N'attendez pas la fin de l'année pour compter. Mettez en place un inventaire hebdomadaire des produits les plus vendus (shampoings, soins, couleurs). Cela permet d'identifier les vols, les oublis de facturation et les surconsommations.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Le seuil de rupture et d'alerte</h2>
-        <p>Définissez un nombre minimal pour chaque produit (ex: 3 tubes de noir). Dès que ce seuil est atteint, la commande doit être déclenchée. Cela évite les urgences coûteuses et les prestations refusées par manque de produits.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La pesée systématique</h2>
-        <p>Le plus grand gaspillage se trouve dans le bol de préparation. Apprenez à votre équipe à peser chaque mélange au gramme près. Le surplus jeté en fin de journée peut représenter jusqu'à 10 % de votre bénéfice annuel.</p>
-      </section>`,
-    coach_tip: "Pesez vos bols de préparation. Le surplus jeté tue votre bénéfice.",
-    strategic_mantra: "Vos étagères sont des comptes bancaires de produits.",
-    quiz_questions: [
-      { 
-        question: "Quelle est la fréquence idéale d'inventaire ?", 
-        options: ["Tous les mois", "Toutes les semaines", "Une fois par an"], 
-        correctAnswer: 1, 
-        explanation: "Un suivi hebdomadaire permet de réagir avant que la rupture ne bloque votre chiffre d'affaires." 
-      },
-      { 
-        question: "Qu'est-ce qu'un seuil d'alerte ?", 
-        options: ["Le stock maximum autorisé", "Le stock qui déclenche une commande", "Le prix du produit"], 
-        correctAnswer: 1, 
-        explanation: "Il garantit que vous ne manquerez jamais du produit indispensable à vos prestations techniques." 
-      },
-      { 
-        question: "Comment réduire le gaspillage de coloration ?", 
-        options: ["Utiliser moins de produit", "Peser au gramme près", "Acheter des produits moins chers"], 
-        correctAnswer: 1, 
-        explanation: "La balance est l'outil de rentabilité numéro 1 au laboratoire technique." 
-      }
-    ],
-    exercises: ["Créer un cahier de suivi des entrées et sorties de produits.", "Peser systématiquement 5 bols de couleur aujourd'hui."],
-    tips: ["Utilisez les produits les plus anciens en premier."]
-  },
-  {
-    id: "mod_social_media",
-    topic: "Visibilité",
-    title: "Réseaux sociaux : attirer de nouveaux clients",
-    description: "Maîtrisez Facebook, Instagram et TikTok pour remplir votre salon sans payer de publicité.",
-    mini_course: "Votre page est le premier salon que vos clients visitent virtuellement.",
-    price: 500,
-    aiCredits: 4,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. L'algorithme et la régularité</h2>
-        <p>La clé du succès sur les réseaux n'est pas la perfection, mais la régularité. Publiez une fois par jour à la même heure. L'algorithme favorise les comptes qui maintiennent l'attention de leur audience quotidiennement.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La photo avant/après stratégique</h2>
-        <p>Prenez vos photos avec une lumière naturelle. Le fond doit être neutre. Cadrez serré sur le travail technique. L'impact visuel d'un changement radical est l'élément qui déclenche le plus de partages et de prises de rendez-vous.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. L'interaction et le service client</h2>
-        <p>Un commentaire sans réponse est une vente perdue. Répondez à chaque question dans l'heure. Utilisez des appels à l'action clairs : « Cliquez sur le lien dans la bio pour réserver votre place ».</p>
-      </section>`,
-    coach_tip: "Une vidéo « avant/après » réussie vaut plus que mille mots.",
-    strategic_mantra: "Si vous n'êtes pas sur leur téléphone, vous n'existez pas.",
-    quiz_questions: [
-      { 
-        question: "Où prendre la meilleure photo au salon ?", 
-        options: ["Sous les néons jaunes", "Face à la lumière du jour", "Avec le flash"], 
-        correctAnswer: 1, 
-        explanation: "La lumière du jour est la seule qui respecte la vérité de vos reflets et la brillance des cheveux." 
-      },
-      { 
-        question: "Quel contenu génère le plus de nouveaux clients ?", 
-        options: ["Les photos de l'équipe", "Les vidéos de transformations", "Les photos de produits"], 
-        correctAnswer: 1, 
-        explanation: "L'effet 'wow' d'un changement radical prouve votre expertise et déclenche le désir chez l'audience." 
-      },
-      { 
-        question: "Pourquoi répondre aux commentaires rapidement ?", 
-        options: ["Pour être poli", "Pour humaniser et rassurer", "Ce n'est pas utile"], 
-        correctAnswer: 1, 
-        explanation: "Un client qui commente est un client prêt à acheter. Votre réactivité prouve votre sérieux." 
-      }
-    ],
-    exercises: ["Publier une vidéo « avant/après » cette semaine.", "Répondre à tous les commentaires en retard."],
-    tips: ["Répondez à chaque commentaire poliment."]
-  },
-  {
-    id: "mod_fidelisation",
-    topic: "Vente",
-    title: "Fidélisation : faire revenir vos clients",
-    description: "Apprenez à utiliser votre carnet client pour que vos constantes actuelles en reviennent 8 fois par an au lieu de 4.",
-    mini_course: "Garder un client coûte 5 fois moins cher qu'en trouver un nouveau.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. Le carnet client numérique</h2>
-        <p>Chaque visite doit être enregistrée : date, prestation, produits utilisés et préférences personnelles (ex: aime son thé bien chaud). Cette connaissance intime du client permet de personnaliser chaque visite future et de créer un attachement émotionnel.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La pré-réservation systématique</h2>
-        <p>Ne demandez jamais « Quand nous revoyons-nous ? ». Dites plutôt : <strong>« Pour maintenir la brillance de votre couleur, nous devons nous revoir dans 6 semaines, je vous bloque le mardi 12 ? »</strong>. C'est la base de la fidélité.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La relance des inactifs</h2>
-        <p>Identifiez les clients qui ne sont pas revenus depuis plus de 3 mois. Envoyez-leur un message de courtoisie personnalisé : « Bonjour [Nom], vos cheveux nous manquent... ». Un simple rappel réactive souvent 20 % de votre base perdue.</p>
-      </section>`,
-    coach_tip: "Notez les préférences de vos constantes. Se souvenir de son thé préféré crée l'émotion.",
-    strategic_mantra: "Un client fidèle est votre meilleur ambassadeur.",
-    quiz_questions: [
-      { 
-        question: "Quand faut-il relancer un client absent ?", 
-        options: ["Après 1 mois", "Après 3 mois", "Après 1 an"], 
-        correctAnswer: 1, 
-        explanation: "C'est le cycle moyen de renouvellement des prestations techniques en coiffure." 
-      },
-      { 
-        question: "Pourquoi proposer la pré-réservation ?", 
-        options: ["Pour forcer le client", "Pour stabiliser son chiffre futur", "Pour faire plaisir"], 
-        correctAnswer: 1, 
-        explanation: "Un agenda rempli à 50% pour le mois suivant réduit le stress et sécurise vos revenus." 
-      },
-      { 
-        question: "Quelle information noter dans le carnet client ?", 
-        options: ["Seulement le prix payé", "La technique et les préférences", "Rien, j'ai de la mémoire"], 
-        correctAnswer: 1, 
-        explanation: "L'expertise se base sur des données précises, pas sur des suppositions ou des souvenirs flous." 
-      }
-    ],
-    exercises: ["Envoyer 10 messages de relance personnalisés cette semaine.", "Proposer la pré-réservation à chaque client demain."],
-    tips: ["Proposez le prochain rendez-vous dès la fin de la prestation actuelle."]
-  },
-  {
-    id: "mod_management",
-    topic: "Direction",
-    title: "Direction d'équipe : motiver ses collaborateurs",
-    description: "Passez du rôle de patron à celui de leader. Apprenez à inspirer votre équipe pour qu'elle produise plus.",
-    mini_course: "Votre équipe traitera vos clients comme vous traitez votre équipe.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. Le briefing matinal de 5 minutes</h2>
-        <p>Avant l'ouverture, rassemblez l'équipe. Rappelez les objectifs de la journée, vérifiez les rendez-vous importants et donnez une dose d'énergie positive. Un salon bien dirigé commence par une équipe alignée dès le matin.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La culture du feedback constructif</h2>
-        <p>Ne critiquez pas en public. Utilisez la règle du <strong>« féliciter en public, recadrer en privé »</strong>. Les entretiens individuels mensuels sont indispensables pour comprendre les motivations de chacun et éviter les démissions surprises.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La délégation et l'autonomie</h2>
-        <p>Un bon leader ne fait pas tout. Apprenez à confier des responsabilités (stocks, réseaux sociaux, hygiène) à vos collaborateurs. L'autonomie augmente la motivation et vous libère du temps pour piloter la croissance.</p>
-      </section>`,
-    coach_tip: "Félicitez vos employés devant tout le monde, recadrez-les en tête-à-tête.",
-    strategic_mantra: "Seul on va vite, ensemble on construit un empire.",
-    quiz_questions: [
-      { 
-        question: "Quel est le meilleur moment pour motiver son équipe ?", 
-        options: ["Le soir en partant", "Le matin avant le premier client", "Pendant la pause"], 
-        correctAnswer: 1, 
-        explanation: "Le briefing matinal lance l'énergie de toute la journée de travail." 
-      },
-      { 
-        question: "Comment gérer un retard répété ?", 
-        options: ["Crier devant l'équipe", "Entretien privé pour comprendre", "Ignorer le problème"], 
-        correctAnswer: 1, 
-        explanation: "Le leadership exige du calme et de la fermeté en tête-à-tête pour préserver la dignité." 
-      },
-      { 
-        question: "Quel est le but de la délégation ?", 
-        options: ["Travailler moins", "Responsabiliser l'équipe", "Se débarrasser des tâches sales"], 
-        correctAnswer: 1, 
-        explanation: "Un collaborateur responsable est un collaborateur plus engagé et productif." 
-      }
-    ],
-    exercises: ["Organiser un entretien de 15 minutes avec chaque employé cette semaine.", "Déléguer une tâche de gestion aujourd'hui."],
-    tips: ["Écoutez les idées de vos collaborateurs."]
-  },
-  {
-    id: "mod_tarification",
-    topic: "Gestion",
-    title: "Tarification : calculer sa rentabilité à la minute",
-    description: "Apprenez à calculer vos prix en fonction de vos charges réelles, pas en fonction du voisin.",
-    mini_course: "Le chiffre d'affaires flatte l'ego, le bénéfice nourrit la famille.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. Le coût minute du fauteuil</h2>
-        <p>Additionnez toutes vos charges fixes (loyer, électricité, salaires, internet) et divisez-les par le nombre de minutes travaillées. Vous obtiendrez votre coût minute. C'est le prix que vous payez pour simplement exister chaque minute.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La marge bénéficiaire réelle</h2>
-        <p>Votre prix de vente doit couvrir le coût minute, le coût des produits utilisés et votre marge bénéficiaire (minimum 20 %). Si votre tarif est inférieur à ce calcul, vous travaillez à perte sans le savoir.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La psychologie du prix juste</h2>
-        <p>Ne vous excusez jamais de vos prix. Si vous apportez de l'expertise, de l'hygiène et du service, le client acceptera de payer le juste prix. Un tarif trop bas envoie un signal de mauvaise qualité.</p>
-      </section>`,
-    coach_tip: "Si vous bradez vos prix, vous bradez votre talent et votre avenir.",
-    strategic_mantra: "On ne gère bien que ce que l'on mesure.",
-    quiz_questions: [
-      { 
-        question: "Comment fixer un nouveau prix ?", 
-        options: ["Regarder le quartier", "Calculer charges + marge", "Demander aux clients"], 
-        correctAnswer: 1, 
-        explanation: "C'est la seule méthode mathématique qui garantit votre survie et votre salaire." 
-      },
-      { 
-        question: "Pourquoi le prix du voisin est-il dangereux ?", 
-        options: ["Il a peut-être moins de charges", "Il est plus connu", "Il utilise de meilleurs produits"], 
-        correctAnswer: 0, 
-        explanation: "Copier le voisin sans connaître ses charges peut vous mener directement à la faillite." 
-      },
-      { 
-        question: "Qu'est-ce que le coût minute ?", 
-        options: ["Le prix payé par le client", "Le coût de fonctionnement du salon", "Le prix d'une coupe"], 
-        correctAnswer: 1, 
-        explanation: "C'est la base de tout calcul de rentabilité : combien me coûte une minute d'ouverture." 
-      }
-    ],
-    exercises: ["Calculer le coût total de fonctionnement du salon par heure.", "Vérifier la marge sur votre prestation la plus vendue."],
-    tips: ["Affichez vos prix clairement à l'entrée."]
-  },
-  {
-    id: "mod_upselling",
-    topic: "Vente",
-    title: "Vente additionnelle : augmenter le panier moyen",
-    description: "Apprenez à proposer systématiquement le soin ou le massage dont votre client a besoin.",
-    mini_course: "Proposer n'est pas forcer. C'est apporter une solution complète au client.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La technique de la préconisation</h2>
-        <p>Au lieu de demander « Voulez-vous un soin ? », utilisez une phrase d'expert : <strong>« Pour protéger vos mèches et maintenir cet éclat, je préconise l'application d'un rituel profond aujourd'hui »</strong>. Vous ne vendez pas, vous soignez.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Le moment clé du bac à shampoing</h2>
-        <p>C'est l'endroit où le client est le plus détendu et donc le plus ouvert à vos conseils. Profitez du massage crânien pour expliquer les bienfaits du soin que vous appliquez. C'est ici que 80 % des ventes additionnelles se réalisent.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. Gérer le refus avec élégance</h2>
-        <p>Si le client refuse, ne le vivez pas comme un échec. Notez-le dans son carnet client et revenez-y la prochaine fois. Un « non » aujourd'hui est souvent un « oui » à la prochaine visite si le besoin persiste.</p>
-      </section>`,
-    coach_tip: "Un soin offert au bac aujourd'hui est une vente de soin garantie pour demain.",
-    strategic_mantra: "Le meilleur moment pour proposer est quand le client est détendu au bac.",
-    quiz_questions: [
-      { 
-        question: "Quelle phrase fait vendre le mieux ?", 
-        options: ["Voulez-vous un soin ?", "Je préconise ce rituel pour vos pointes", "Rien d'autre ?"], 
-        correctAnswer: 1, 
-        explanation: "L'expert préconise une solution technique au lieu de poser une question fermée." 
-      },
-      { 
-        question: "Où se font la majorité des ventes additionnelles ?", 
-        options: ["À la caisse", "Au bac à shampoing", "Au téléphone"], 
-        correctAnswer: 1, 
-        explanation: "La détente du bac est propice à l'acceptation de services de soin et de bien-être." 
-      },
-      { 
-        question: "Comment réagir à un refus ?", 
-        options: ["Faire la tête", "Accepter et noter pour plus tard", "Essayer de forcer"], 
-        correctAnswer: 1, 
-        explanation: "Le non fait partie du processus. Restez professionnel pour préserver la relation." 
-      }
-    ],
-    exercises: ["Réussir 5 ventes de services additionnels en une journée.", "Apprendre 3 phrases d'introduction de soins."],
-    tips: ["Expliquez toujours le bénéfice pour le client."]
-  },
-  {
     id: "mod_retail",
     topic: "Vente",
     title: "Vente de produits : conseiller comme un expert",
@@ -459,18 +201,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La prescription post-salon</h2>
-        <p>Votre travail ne s'arrête pas quand le client quitte le fauteuil. Il doit pouvoir entretenir son style chez lui. Présentez les 3 produits indispensables à la fin de la séance : le shampoing adapté, le soin et le produit de finition.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Le merchandising attractif</h2>
-        <p>Vos produits ne doivent pas prendre la poussière. Disposez-les à hauteur des yeux, avec des étiquettes de prix claires et des descriptions de bénéfices. Changez la mise en avant chaque mois pour créer de la nouveauté.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. L'éducation pendant le service</h2>
-        <p>Expliquez chaque produit que vous utilisez pendant que vous le manipulez. « Je mets ce sérum pour éviter les frisottis dus à l'humidité ». Le client teste ainsi le produit en temps réel et comprend son utilité avant même de passer à la caisse.</p>
-      </section>`,
+      <h2>I. La prescription post-salon : une responsabilité morale</h2>
+      <p>Beaucoup de coiffeurs ont peur de vendre, car ils pensent « forcer » le client. C'est une erreur de vision. Votre mission est de garantir que le travail que vous avez réalisé sur le fauteuil durera plusieurs semaines. Sans les bons produits à domicile, votre talent s'évapore au premier shampoing.</p>
+      <blockquote>« Ne pas vendre le produit adapté, c'est laisser votre cliente saboter votre travail. »</blockquote>
+      <p>L'expert ne vend pas, il prescrit. À la fin de chaque séance, présentez les trois produits indispensables : le nettoyant spécifique, le soin profond et le protecteur de finition. C'est le « kit de survie » de la beauté que vous offrez à votre cliente.</p>
+
+      <h2>II. L'architecture du regard : le merchandising magnétique</h2>
+      <p>Vos produits ne doivent pas simplement « être là ». Ils doivent raconter une histoire de transformation. La disposition de votre espace boutique obéit à des règles psychologiques précises :</p>
+      <ul>
+        <li>La règle des 160 cm : Placez vos meilleures ventes à hauteur des yeux du client moyen.</li>
+        <li>Le groupement par bénéfice : Rangez vos produits par besoin (volume, éclat, hydratation) et non par marque. Le client doit se reconnaître dans l'étiquette.</li>
+        <li>L'étiquetage d'autorité : Chaque prix doit être clair et accompagné d'une courte promesse manuscrite.</li>
+      </ul>
+
+      <h2>III. L'éducation par la manipulation</h2>
+      <p>La vente commence au bac à shampoing, pas à la caisse. Expliquez chaque texture que vous posez sur ses cheveux. Faites-lui sentir le parfum, décrivez la sensation du produit entre vos doigts. Le client doit tester le bénéfice en temps réel.</p>
+      <p>En impliquant les sens du client pendant la prestation, vous le préparez naturellement à l'achat final. La transition vers la vente devient une simple conclusion logique de l'expérience vécue dans votre salon. C'est ainsi que l'on bâtit une boutique rentable sans jamais paraître insistant.</p>
+    `,
     coach_tip: "Vos bacs à shampoing sont votre meilleure salle d'exposition de produits.",
     strategic_mantra: "Vendre un produit, c'est prendre soin du client jusque dans sa douche.",
     quiz_questions: [
@@ -495,282 +242,6 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     ],
     exercises: ["Vendre au moins un produit à 3 clientes consécutives.", "Nettoyer et réorganiser l'espace boutique."],
     tips: ["Faites sentir les textures et les parfums."]
-  },
-  {
-    id: "mod_ergonomie",
-    topic: "Organisation",
-    title: "Organisation du salon : efficacité maximale",
-    description: "Gagnez du temps et fatiguez-vous moins en organisant votre poste de travail comme un cockpit d'avion.",
-    mini_course: "Chaque pas inutile est une seconde de profit perdue.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. Le rayon d'action de 60 centimètres</h2>
-        <p>Vos outils les plus utilisés (ciseaux, peignes, brosses, tondeuse) doivent être accessibles dans un rayon de 60 cm autour de votre poste. Vous ne devez pas avoir à faire un pas pour les saisir. Moins de déplacements signifie moins de fatigue en fin de journée.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. L'organisation par zones de travail</h2>
-        <p>Séparez clairement l'espace technique (coloration), l'espace coupe et l'espace détente. Chaque zone doit disposer de son propre matériel. Évitez les allers-retours incessants à la réserve qui cassent le rythme de votre prestation.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La maintenance préventive</h2>
-        <p>Un outil défaillant est un outil dangereux et lent. Affûtez vos ciseaux régulièrement, nettoyez les filtres de vos séchoirs et huilez vos tondeuses tous les soirs. Un matériel impeccable est la marque d'un salon de haut niveau.</p>
-      </section>`,
-    coach_tip: "Un poste de travail bien rangé réduit votre stress et celui de votre client.",
-    strategic_mantra: "Moins vous bougez vos pieds, plus vos mains produisent de la valeur.",
-    quiz_questions: [
-      { 
-        question: "Où doivent être vos outils principaux ?", 
-        options: ["Sur une étagère", "Dans un rayon de 60 cm", "Dans le placard"], 
-        correctAnswer: 1, 
-        explanation: "C'est la zone d'efficacité maximale qui évite les pas inutiles et la fatigue dorsale." 
-      },
-      { 
-        question: "Pourquoi séparer les zones de travail ?", 
-        options: ["Pour faire joli", "Pour optimiser le temps et le matériel", "C'est inutile"], 
-        correctAnswer: 1, 
-        explanation: "Chaque zone spécialisée évite les embouteillages de collaborateurs et le manque d'outils." 
-      },
-      { 
-        question: "À quelle fréquence huiler sa tondeuse ?", 
-        options: ["Une fois par mois", "Tous les soirs", "Quand elle fait du bruit"], 
-        correctAnswer: 1, 
-        explanation: "L'entretien quotidien prolonge la vie de vos outils et garantit une coupe nette sans douleur." 
-      }
-    ],
-    exercises: ["Réorganiser sa desserte de travail.", "Nettoyer les filtres des séchoirs."],
-    tips: ["Utilisez des dessertes à roulettes de qualité."]
-  },
-  {
-    id: "mod_image_pro",
-    topic: "Image",
-    title: "Image professionnelle : incarner la réussite",
-    description: "Votre apparence et celle de votre équipe déterminent la valeur de vos tarifs aux yeux du client.",
-    mini_course: "On ne peut pas vendre de l'élégance en portant des vêtements négligés.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. L'uniforme du succès</h2>
-        <p>Une tenue harmonieuse pour toute l'équipe renforce instantanément votre autorité. Choisissez un code couleur ou un uniforme sobre et élégant. Cela évite les fautes de goût et envoie un signal fort de cohésion et de sérieux.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La communication non verbale</h2>
-        <p>Le sourire, le regard et la posture droite sont vos premiers outils de vente. Apprenez à votre équipe à se tenir droite et à marcher avec assurance. Votre langage corporel doit respirer la confiance et l'hospitalité.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. Les détails qui font la différence</h2>
-        <p>Vérifiez quotidiennement les détails : chaussures propres, maquillage ou barbe soignés, badge avec prénom. Le client vous confie son image, vous devez donc être l'exemple parfait de ce que vous vendez.</p>
-      </section>`,
-    coach_tip: "Regardez vos chaussures. Les constantes les remarquent quand elles sont allongées au bac.",
-    strategic_mantra: "Vous êtes votre première publicité.",
-    quiz_questions: [
-      { 
-        question: "Pourquoi imposer un code vestimentaire ?", 
-        options: ["Pour contrôler les gens", "Pour justifier des tarifs hauts", "C'est plus simple"], 
-        correctAnswer: 1, 
-        explanation: "L'image cohérente de l'équipe augmente la valeur perçue du salon." 
-      },
-      { 
-        question: "Quel est l'impact du sourire ?", 
-        options: ["Aucun", "C'est un outil de vente", "C'est fatiguant"], 
-        correctAnswer: 1, 
-        explanation: "Le sourire s'entend et se voit. Il désamorce les tensions et crée un lien immédiat." 
-      },
-      { 
-        question: "Quel détail les clients remarquent-ils souvent ?", 
-        options: ["La couleur des murs", "Vos chaussures au bac", "La marque de vos ciseaux"], 
-        correctAnswer: 1, 
-        explanation: "Au bac, le client a le temps d'observer les détails. Des chaussures propres prouvent votre rigueur." 
-      }
-    ],
-    exercises: ["Définir une tenue commune.", "Inspecter les badges demain."],
-    tips: ["Portez un badge avec votre prénom."]
-  },
-  {
-    id: "mod_tresorerie",
-    topic: "Gestion",
-    title: "Mouvements de caisse : ne plus jamais être à sec",
-    description: "Apprenez à gérer vos entrées et sorties d'argent au quotidien pour anticiper vos factures.",
-    mini_course: "L'argent de la caisse n'est pas votre argent de poche personnel.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La clôture de caisse quotidienne</h2>
-        <p>Chaque soir, faites le point exact entre l'argent encaissé (espèces, cartes, chèques) et les prestations enregistrées. Les écarts de caisse, même petits, sont souvent le signe de problèmes de gestion plus profonds.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Les provisions pour charges</h2>
-        <p>Mettez de côté chaque jour une part de votre chiffre d'affaires pour payer vos factures à venir (loyer, taxes, produits). Séparez physiquement cet argent pour ne pas avoir de mauvaises surprises en fin de mois.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. Le contrôle des dépenses courantes</h2>
-        <p>Chaque sortie d'argent de la caisse (pour acheter du café, du papier, etc.) doit être justifiée par un ticket et notée. Les petits frais accumulés sans contrôle peuvent détruire votre bénéfice mensuel.</p>
-      </section>`,
-    coach_tip: "Mettez de côté votre loyer et vos taxes un peu chaque jour.",
-    strategic_mantra: "La caisse est le cœur du salon, si elle s'arrête, tout s'arrête.",
-    quiz_questions: [
-      { 
-        question: "Que faire de la recette du jour ?", 
-        options: ["Acheter des courses", "Déposer sur le compte pro", "Garder dans le tiroir"], 
-        correctAnswer: 1, 
-        explanation: "La séparation stricte entre argent personnel et professionnel est la base de la richesse." 
-      },
-      { 
-        question: "Pourquoi faire la caisse tous les soirs ?", 
-        options: ["Parce que c'est la loi", "Pour détecter les écarts", "Pour compter ses billets"], 
-        correctAnswer: 1, 
-        explanation: "Un écart non identifié est une fuite de bénéfice qui se répétera si elle n'est pas stoppée." 
-      },
-      { 
-        question: "Comment gérer les petits frais ?", 
-        options: ["Prendre dans la caisse", "Noter et garder le ticket", "C'est négligeable"], 
-        correctAnswer: 1, 
-        explanation: "Le cumul des petites dépenses non contrôlées peut représenter plusieurs milliers de francs par mois." 
-      }
-    ],
-    exercises: ["Vérifier le solde de caisse chaque matin.", "Mettre en place un tableau de bord."],
-    tips: ["Utilisez un petit cahier de caisse pour chaque dépense."]
-  },
-  {
-    id: "mod_litiges",
-    topic: "Relation client",
-    title: "Clients difficiles : transformer un problème en succès",
-    description: "Apprenez à gérer les réclamations et les mécontentements avec le sourire et professionnalisme.",
-    mini_course: "Une plainte bien gérée crée un client fidèle pour la vie.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. L'écoute active et l'empathie</h2>
-        <p>Face à une réclamation, restez calme. Ne cherchez pas à vous justifier immédiatement. Écoutez le client sans l'interrompre. Utilisez des phrases comme : « Je comprends votre déception et je suis là pour trouver une solution ».</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. La solution commerciale immédiate</h2>
-        <p>Ne laissez jamais un client mécontent partir sans solution. Proposez de reprendre la prestation gratuitement ou offrez un service lors de la prochaine visite. Le coût de ce geste est dérisoire par rapport à l'impact négatif d'un mauvais avis.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. L'analyse post-litige</h2>
-        <p>Une fois le calme revenu, analysez pourquoi le problème est survenu. S'agit-il d'un manque de technique, d'un mauvais diagnostic ou d'un malentendu ? Transformez chaque litige en une leçon pour améliorer vos procédures de salon.</p>
-      </section>`,
-    coach_tip: "Un client qui se plaint est un client qui vous donne une chance de vous améliorer.",
-    strategic_mantra: "Le client mécontent veut surtout être entendu.",
-    quiz_questions: [
-      { 
-        question: "Quelle est la première chose à faire face à une plainte ?", 
-        options: ["Se justifier", "Écouter en restant calme", "Appeler la police"], 
-        correctAnswer: 1, 
-        explanation: "L'écoute active désamorce la colère et permet de comprendre la vraie cause du problème." 
-      },
-      { 
-        question: "Faut-il offrir une prestation correctrice ?", 
-        options: ["Jamais", "Seulement si c'est mérité", "Oui, pour sauver la relation"], 
-        correctAnswer: 2, 
-        explanation: "Le coût d'une retouche est bien moindre que la perte définitive d'un client et d'une réputation." 
-      },
-      { 
-        question: "Comment répondre à un avis négatif en ligne ?", 
-        options: ["En insultant", "Poliment avec une solution", "En ignorant"], 
-        correctAnswer: 1, 
-        explanation: "Votre réponse publique est lue par des milliers de prospects. Elle doit respirer l'excellence." 
-      }
-    ],
-    exercises: ["S'entraîner à répondre calmement.", "Analyser les 3 derniers litiges."],
-    tips: ["Cherchez toujours une solution « gagnant-gagnant »."]
-  },
-  {
-    id: "mod_booking",
-    topic: "Visibilité",
-    title: "Réservation en ligne : le salon ouvert 24h/24",
-    description: "Mettez en place la prise de rendez-vous automatique pour ne plus rater d'appels quand vous travaillez.",
-    mini_course: "Beaucoup de clientes veulent réserver le soir quand vous dormez.",
-    price: 500,
-    aiCredits: 2,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. L'accessibilité permanente</h2>
-        <p>La plupart de vos clients sont occupés pendant vos heures d'ouverture. En offrant la réservation en ligne, vous permettez aux gens de prendre rendez-vous le soir ou le week-end depuis leur canapé. C'est un gain de temps pour vous et un confort pour eux.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Les rappels de rendez-vous automatiques</h2>
-        <p>L'un des plus grands fléaux des salons est le « rendez-vous oublié ». Un système de réservation automatique envoie un message ou un mail de rappel 24h avant. Cela réduit les rendez-vous manqués de plus de 50 %.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. La gestion optimisée de l'agenda</h2>
-        <p>Le logiciel de réservation calcule automatiquement les durées des prestations techniques et de coupe. Cela évite les chevauchements impossibles et permet d'optimiser chaque minute de travail de vos collaborateurs.</p>
-      </section>`,
-    coach_tip: "Un rappel automatique par message réduit les rendez-vous oubliés de 70 %.",
-    strategic_mantra: "Gagnez du temps pour ce qui compte : la beauté.",
-    quiz_questions: [
-      { 
-        question: "Pourquoi automatiser ses rendez-vous ?", 
-        options: ["Pour faire moderne", "Pour ne plus rater de clients", "Pour renvoyer son équipe"], 
-        correctAnswer: 1, 
-        explanation: "Capter le désir du client au moment où il y pense (souvent le soir) remplit votre agenda." 
-      },
-      { 
-        question: "Quel est l'avantage du SMS de rappel ?", 
-        options: ["C'est poli", "Réduire les absences", "Faire de la pub"], 
-        correctAnswer: 1, 
-        explanation: "Un client qui reçoit un rappel oublie rarement son rendez-vous. Votre temps est ainsi respecté." 
-      },
-      { 
-        question: "Faut-il afficher les tarifs en ligne ?", 
-        options: ["Non, c'est secret", "Oui, pour la transparence", "Uniquement les promotions"], 
-        correctAnswer: 1, 
-        explanation: "Afficher ses prix installe la confiance et évite les malentendus au moment du paiement." 
-      }
-    ],
-    exercises: ["Tester un lien de réservation.", "Calculer le temps perdu par les absents."],
-    tips: ["Mettez votre lien de réservation sur Facebook."]
-  },
-  {
-    id: "mod_parrainage",
-    topic: "Vente",
-    title: "Cercle de recommandation : le bouche-à-oreille",
-    description: "Transformez vos constantes actuelles en une équipe de vente qui vous ramène leurs amies.",
-    mini_course: "Vos meilleures constantes connaissent vos futures meilleures constantes.",
-    price: 500,
-    aiCredits: 3,
-    lesson_content: `
-      <section class="lesson-card">
-        <h2>I. La mécanique du parrainage</h2>
-        <p>Mettez en place une offre claire : « Ramenez une amie et bénéficiez toutes les deux de 20 % de remise sur votre prochain soin ». Le parrainage est l'outil le plus puissant pour attirer des clients qui vous ressemblent.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>II. Quand et comment proposer ?</h2>
-        <p>Ne proposez pas au moment de payer. Le meilleur moment est quand le client se regarde dans le miroir à la fin de la prestation et exprime sa satisfaction. Dites : <strong>« Si vous êtes contente de votre look, n'hésitez pas à partager l'adresse avec vos amies »</strong>. Le parrainage commence par votre talent.</p>
-      </section>
-      <section class="lesson-card">
-        <h2>III. Le suivi et la récompense</h2>
-        <p>Remerciez systématiquement chaque parrain. Un petit mot manuscrit ou un message personnalisé renforce le lien. La reconnaissance est souvent plus motivante que la remise financière elle-même.</p>
-      </section>`,
-    coach_tip: "Le parrainage fonctionne mieux quand la récompense est un service de beauté plutôt que de l'argent.",
-    strategic_mantra: "Le bouche-à-oreille se cultive avec générosité.",
-    quiz_questions: [
-      { 
-        question: "À qui proposer de parrainer ?", 
-        options: ["À tout le monde", "Aux clients satisfaits", "Personne"], 
-        correctAnswer: 1, 
-        explanation: "Seuls les ambassadeurs convaincus par votre talent sauront attirer d'autres clients qualifiés." 
-      },
-      { 
-        question: "Quel est le meilleur moment pour proposer ?", 
-        options: ["À la caisse", "Devant le miroir à la fin", "Au shampoing"], 
-        correctAnswer: 1, 
-        explanation: "La joie du client face à son nouveau look est le moment d'influence maximal." 
-      },
-      { 
-        question: "Quelle est la meilleure récompense ?", 
-        options: ["De l'argent liquide", "Un service offert", "Rien"], 
-        correctAnswer: 1, 
-        explanation: "Offrir un service permet de faire découvrir une nouvelle prestation et renforce l'attachement au salon." 
-      }
-    ],
-    exercises: ["Lancer son offre de parrainage.", "Identifier 5 clients ambassadeurs."],
-    tips: ["Remerciez toujours chaleureusement la personne qui vous a recommandé."]
   }
 ];
 
@@ -797,21 +268,6 @@ export const BADGES: Badge[] = [
     condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 5
   },
   {
-    id: "visionary",
-    name: "Visionnaire",
-    icon: "👁️",
-    description: "Modules Direction et Tarification validés.",
-    condition: (u, mods) => mods.some(m => m.id === 'mod_management' && m.status === ModuleStatus.COMPLETED) && 
-                           mods.some(m => m.id === 'mod_tarification' && m.status === ModuleStatus.COMPLETED)
-  },
-  {
-    id: "perfectionist",
-    name: "Perfectionniste",
-    icon: "✨",
-    description: "A obtenu 100% à au moins un quiz.",
-    condition: (u) => Object.values(u.progress || {}).some(p => p === 100)
-  },
-  {
     id: "legend",
     name: "Légende du Salon",
     icon: "👑",
@@ -824,17 +280,5 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 1, text: "Votre équipe est-elle formée aux techniques d'un bon accueil téléphonique ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
   { id: 2, text: "L'équipe s'entraîne-t-elle à faire un bon diagnostic avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
   { id: 3, text: "Les protocoles d'hygiène sont-ils affichés et respectés scrupuleusement par tous ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
-  { id: 4, text: "Avez-vous un inventaire à jour chaque semaine pour éviter les ruptures de stock ?", category: "Gestion", linkedModuleId: "mod_stock" },
-  { id: 5, text: "Publiez-vous régulièrement (au moins 3 fois par semaine) sur vos réseaux sociaux ?", category: "Visibilité", linkedModuleId: "mod_social_media" },
-  { id: 6, text: "Utilisez-vous un fichier client pour relancer ceux qui ne sont plus venus depuis 3 mois ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
-  { id: 7, text: "Réalisez-vous des entretiens individuels de motivation avec vos employés chaque mois ?", category: "Direction", linkedModuleId: "mod_management" },
-  { id: 8, text: "Connaissez-vous précisément votre coût à la minute pour fixer vos tarifs ?", category: "Gestion", linkedModuleId: "mod_tarification" },
-  { id: 9, text: "Proposez-vous systématiquement un service additionnel (soin, massage) à chaque client ?", category: "Vente", linkedModuleId: "mod_upselling" },
-  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" },
-  { id: 11, text: "L'organisation de vos postes de travail est-elle optimisée pour éviter les pas inutiles ?", category: "Organisation", linkedModuleId: "mod_ergonomie" },
-  { id: 12, text: "L'équipe porte-t-elle une tenue professionnelle harmonieuse reflétant l'image du salon ?", category: "Image", linkedModuleId: "mod_image_pro" },
-  { id: 13, text: "Suivez-vous quotidiennement vos entrées/sorties d'argent sur un tableau de bord ?", category: "Gestion", linkedModuleId: "mod_tresorerie" },
-  { id: 14, text: "Avez-vous une procédure écrite pour gérer calmement les réclamations clients ?", category: "Relation client", linkedModuleId: "mod_litiges" },
-  { id: 15, text: "Vos clients peuvent-ils réserver leur prestation en ligne 24h/24 et 7j/7 ?", category: "Visibilité", linkedModuleId: "mod_booking" },
-  { id: 16, text: "Avez-vous un système de parrainage actif pour attirer de nouveaux clients ?", category: "Vente", linkedModuleId: "mod_parrainage" }
+  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % de votre chiffre d'affaires ?", category: "Vente", linkedModuleId: "mod_retail" }
 ];
