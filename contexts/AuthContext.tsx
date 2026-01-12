@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone, isValidUUID, generateUUID } from '../services/supabase';
 import { UserProfile } from '../types';
@@ -34,11 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserSetup = async (authUser: any) => {
     const uid = authUser?.id;
 
-    if (!uid) {
-      if (lastUidRef.current !== null) {
-        lastUidRef.current = null;
-        setUser(null);
-      }
+    if (!uid || !isValidUUID(uid)) {
+      setUser(null);
+      lastUidRef.current = null;
       setLoading(false);
       return;
     }
@@ -93,18 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    // NETTOYAGE CRITIQUE : Si une ancienne session "guest_" existe, on la répare
-    const repairGuestSession = () => {
-      if (user && !isValidUUID(user.uid)) {
-        console.warn("Auth: Identifiant invalide détecté, réparation...");
-        // Si l'ID commence par guest, on force une déconnexion pour réinitialiser proprement
-        if (user.uid.includes('guest')) {
-          setUser(null);
-          lastUidRef.current = null;
-        }
-      }
-    };
-    repairGuestSession();
+    // PROTECTION CRITIQUE : Suppression des sessions fantômes "guest_"
+    if (user && !isValidUUID(user.uid)) {
+      console.warn("Session corrompue détectée, réinitialisation...");
+      setUser(null);
+      lastUidRef.current = null;
+    }
 
     if (!supabase) {
       setLoading(false);
@@ -114,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
       if (!mounted) return;
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user) {
+        if (session?.user && isValidUUID(session.user.id)) {
           handleUserSetup(session.user);
         } else {
           setLoading(false);
@@ -141,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginManually = async (phone: string): Promise<boolean> => {
     const profile = await getProfileByPhone(phone);
-    if (profile && profile.isActive) {
+    if (profile && profile.isActive && isValidUUID(profile.uid)) {
       lastUidRef.current = profile.uid;
       setUser(profile);
       localStorage.setItem('gotop_manual_phone', phone);
