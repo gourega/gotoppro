@@ -9,8 +9,27 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
+// Utilitaire pour générer un UUID v4 valide
+export const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Vérifie si un ID est un UUID valide
+export const isValidUUID = (uuid: string) => {
+  const s = "" + uuid;
+  const match = s.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  return !!match;
+};
+
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase) return null;
+  if (!supabase || !uid || uid.includes('guest')) return null; // Sécurité : ne pas interroger Supabase avec un guest ID
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
   return error ? null : data as UserProfile;
 };
@@ -22,25 +41,23 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 };
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(uid)) return [];
   const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', uid);
   return error ? [] : data as UserProfile[];
 };
 
-/**
- * Pour les créations de profil (nouveaux utilisateurs)
- */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
+  if (!isValidUUID(profile.uid)) {
+    throw new Error(`ID invalide pour Supabase: ${profile.uid}. Un format UUID est requis.`);
+  }
   const { error } = await supabase.from('profiles').upsert(profile);
   if (error) throw new Error(error.message);
 };
 
-/**
- * Pour les mises à jour partielles (ne supprime pas les champs manquants)
- */
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase) throw new Error("Supabase non initialisé");
+  if (!isValidUUID(uid)) throw new Error("ID invalide");
   const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
   if (error) throw new Error(error.message);
 };
@@ -61,10 +78,7 @@ export const grantModuleAccess = async (uid: string, moduleId: string) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  
-  // RESET DES TENTATIVES LORS DU GRANT
   const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: 0 };
-  
   await updateUserProfile(uid, { 
     purchasedModuleIds: updatedIds, 
     attempts: updatedAttempts,
@@ -90,7 +104,7 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
 
 // --- SERVICES (CATALOGUE) ---
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(s => ({
     id: s.id,
@@ -117,6 +131,8 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
 
 export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
   if (!supabase) throw new Error("Supabase non initialisé");
+  if (!isValidUUID(userId)) throw new Error("Identifiant utilisateur invalide (UUID requis)");
+  
   const payload = services.map(s => ({
     user_id: userId,
     name: s.name,
@@ -136,7 +152,6 @@ export const updateKitaService = async (id: string, service: Partial<KitaService
   if (service.category !== undefined) updates.category = service.category;
   if (service.defaultPrice !== undefined) updates.default_price = service.defaultPrice;
   if (service.isActive !== undefined) updates.is_active = service.isActive;
-
   const { error } = await supabase.from('kita_services').update(updates).eq('id', id);
   if (error) throw error;
 };
@@ -149,7 +164,7 @@ export const deleteKitaService = async (id: string) => {
 
 // --- TRANSACTIONS ---
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return error ? [] : data.map(t => ({
     id: t.id,
@@ -183,22 +198,6 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   return data;
 };
 
-export const updateKitaTransaction = async (id: string, transaction: Partial<KitaTransaction>) => {
-  if (!supabase) throw new Error("Supabase non initialisé");
-  const { error } = await supabase.from('kita_transactions').update({
-    type: transaction.type,
-    amount: transaction.amount,
-    label: transaction.label,
-    category: transaction.category,
-    payment_method: transaction.paymentMethod,
-    date: transaction.date,
-    staff_name: transaction.staffName,
-    commission_rate: transaction.commissionRate,
-    is_credit: transaction.isCredit
-  }).eq('id', id);
-  if (error) throw error;
-};
-
 export const deleteKitaTransaction = async (id: string) => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const { error } = await supabase.from('kita_transactions').delete().eq('id', id);
@@ -207,7 +206,7 @@ export const deleteKitaTransaction = async (id: string) => {
 
 // --- DETTES ---
 export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return error ? [] : data;
 };
@@ -237,7 +236,7 @@ export const markDebtAsPaid = async (debtId: string) => {
 
 // --- STOCK ---
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(p => ({
     id: p.id,
@@ -277,14 +276,13 @@ export const updateKitaProduct = async (id: string, product: Partial<KitaProduct
   if (product.alertThreshold !== undefined) updates.alert_threshold = product.alertThreshold;
   if (product.category !== undefined) updates.category = product.category;
   if (product.supplierId !== undefined) updates.supplier_id = product.supplierId;
-
   const { error } = await supabase.from('kita_products').update(updates).eq('id', id);
   if (error) throw error;
 };
 
 // --- FOURNISSEURS ---
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(s => ({
     id: s.id,
@@ -315,7 +313,7 @@ export const deleteKitaSupplier = async (id: string) => {
 
 // --- STAFF & CLIENTS ---
 export const getKitaStaff = async (userId: string): Promise<any[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
   return error ? [] : data;
 };
@@ -339,7 +337,7 @@ export const deleteKitaStaff = async (id: string) => {
 };
 
 export const getKitaClients = async (userId: string): Promise<any[]> => {
-  if (!supabase) return [];
+  if (!supabase || !isValidUUID(userId)) return [];
   const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId).order('total_spent', { ascending: false });
   return error ? [] : data;
 };

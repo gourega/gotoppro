@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -27,20 +28,8 @@ import {
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, saveUserProfile, getProfileByPhone, updateUserProfile } from '../services/supabase';
+import { supabase, saveUserProfile, getProfileByPhone, updateUserProfile, generateUUID } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
-
-// Utilitaire pour générer un UUID v4 valide compatible Postgres
-const generateUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
 
 const Results: React.FC = () => {
   const { user } = useAuth();
@@ -168,8 +157,8 @@ const Results: React.FC = () => {
         throw new Error("Votre panier est vide.");
       }
 
-      // UTILISATION D'UN UUID VALIDE
-      const targetUid = existingProfile ? existingProfile.uid : generateUUID();
+      // UTILISATION D'UN UUID VALIDE GÉNÉRÉ PAR LA NOUVELLE FONCTION
+      const targetUid = (existingProfile && existingProfile.uid) ? existingProfile.uid : generateUUID();
 
       if (existingProfile) {
         await updateUserProfile(existingProfile.uid, {
@@ -244,7 +233,6 @@ const Results: React.FC = () => {
     }
   };
 
-  // Fixed the line 45 error by adding the missing return statement
   return (
     <div className="min-h-screen bg-slate-50 pb-32">
       {/* Header avec Coach Kita */}
@@ -499,5 +487,4 @@ const Results: React.FC = () => {
   );
 };
 
-// Added missing default export
 export default Results;

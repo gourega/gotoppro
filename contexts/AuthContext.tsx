@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
+import { supabase, getUserProfile, getProfileByPhone, isValidUUID, generateUUID } from '../services/supabase';
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
@@ -28,14 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Ref pour suivre l'UID en cours de traitement de manière synchrone
   const lastUidRef = useRef<string | null>(null);
   const isSettingUpRef = useRef<boolean>(false);
 
   const handleUserSetup = async (authUser: any) => {
     const uid = authUser?.id;
 
-    // 1. Si pas d'utilisateur, on nettoie
     if (!uid) {
       if (lastUidRef.current !== null) {
         lastUidRef.current = null;
@@ -45,10 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // 2. VERROU ATOMIQUE : Si on traite déjà cet UID, on sort direct
     if (isSettingUpRef.current && lastUidRef.current === uid) return;
-    
-    // Si l'utilisateur est déjà le même dans le state, on ne refait pas le job
     if (lastUidRef.current === uid && user !== null) {
       setLoading(false);
       return;
@@ -61,12 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       if (email === MASTER_ADMIN_EMAIL) {
-        // Log unique pour confirmer que le verrou fonctionne
-        console.log("Auth: CONFIGURATION MASTER ADMIN (Unique)", uid);
-        
         const profile = await getUserProfile(uid).catch(() => null);
-
-        // Fix: Added missing 'hasStockPack' property required by UserProfile interface
         const adminProfile: UserProfile = {
           uid,
           phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
@@ -87,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: profile?.createdAt || new Date().toISOString(),
           photoURL: profile?.photoURL || COACH_KITA_AVATAR
         };
-
         setUser(adminProfile);
       } else {
         const profile = await getUserProfile(uid);
@@ -104,7 +93,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    // On s'appuie principalement sur onAuthStateChange qui gère aussi l'état initial
+    // NETTOYAGE CRITIQUE : Si une ancienne session "guest_" existe, on la répare
+    const repairGuestSession = () => {
+      if (user && !isValidUUID(user.uid)) {
+        console.warn("Auth: Identifiant invalide détecté, réparation...");
+        // Si l'ID commence par guest, on force une déconnexion pour réinitialiser proprement
+        if (user.uid.includes('guest')) {
+          setUser(null);
+          lastUidRef.current = null;
+        }
+      }
+    };
+    repairGuestSession();
+
     if (!supabase) {
       setLoading(false);
       return;
@@ -112,7 +113,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
       if (!mounted) return;
-      
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         if (session?.user) {
           handleUserSetup(session.user);
@@ -130,10 +130,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
 
   const refreshProfile = async () => {
-    if (user?.uid) {
+    if (user?.uid && isValidUUID(user.uid)) {
       const profile = await getUserProfile(user.uid);
       if (profile) setUser(profile);
     }
