@@ -77,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await getUserProfile(uid);
         if (profile) {
           setUser(profile);
-          // Si c'est un utilisateur auth standard, on nettoie le flag manuel
           localStorage.removeItem('gotop_manual_phone');
         }
       }
@@ -108,27 +107,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const initAuth = async () => {
-      // 1. Vérifier d'abord si une session manuelle existe
-      const savedPhone = localStorage.getItem('gotop_manual_phone');
-      if (savedPhone && !user) {
-        const success = await loginManually(savedPhone);
-        if (success) {
-          setLoading(false);
-          return;
+      try {
+        // 1. Tenter la reconnexion manuelle (WhatsApp)
+        const savedPhone = localStorage.getItem('gotop_manual_phone');
+        if (savedPhone && !user) {
+          const success = await loginManually(savedPhone);
+          if (success) return; // Le chargement est géré par loginManually (ou sera mis à false via le finally)
         }
-      }
 
-      // 2. Sinon, écouter Supabase Auth
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await handleUserSetup(session.user);
-      } else if (!savedPhone) {
-        setLoading(false);
+        // 2. Sinon, vérifier Supabase Auth (Admin)
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            await handleUserSetup(session.user);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Auth init error", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 
