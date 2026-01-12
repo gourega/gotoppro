@@ -44,7 +44,7 @@ const Profile: React.FC = () => {
     email: user?.email || '',
     bio: user?.bio || '',
     employeeCount: user?.employeeCount || 0,
-    yearsOfExistence: user?.yearsOfExistence || 0,
+    openingYear: user?.openingYear || new Date().getFullYear(),
     referredBy: user?.referredBy || ''
   });
 
@@ -71,6 +71,16 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (user) {
+      setFormData({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        establishmentName: user?.establishmentName || '',
+        email: user?.email || '',
+        bio: user?.bio || '',
+        employeeCount: user?.employeeCount || 0,
+        openingYear: user?.openingYear || new Date().getFullYear(),
+        referredBy: user?.referredBy || ''
+      });
       fetchFilleuls();
       if (isEditing) fetchSponsors();
     }
@@ -216,10 +226,10 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Années d'existence</label>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Année d'ouverture</label>
                       <div className="relative">
                         <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input type="number" placeholder="Années d'existence" value={formData.yearsOfExistence} onChange={e => setFormData({...formData, yearsOfExistence: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                        <input type="number" placeholder="Ex: 2020" value={formData.openingYear} onChange={e => setFormData({...formData, openingYear: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                       </div>
                     </div>
                   </div>
@@ -264,8 +274,8 @@ const Profile: React.FC = () => {
                         <Calendar className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Ancienneté</p>
-                        <p className="font-bold text-slate-900 text-lg">{user.yearsOfExistence || 0} an(s)</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Ouvert en</p>
+                        <p className="font-bold text-slate-900 text-lg">{user.openingYear || 'Non renseigné'}</p>
                       </div>
                     </div>
 

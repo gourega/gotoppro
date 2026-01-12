@@ -74,6 +74,7 @@ export interface UserProfile {
   bio?: string;
   employeeCount?: number;
   yearsOfExistence?: number;
+  openingYear?: number;
   role: UserRole;
   isActive: boolean;
   isAdmin: boolean;
