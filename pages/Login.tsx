@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getProfileByPhone } from '../services/supabase';
+import { getProfileByPhone, isValidUUID } from '../services/supabase';
 import { AlertCircle, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
 const Login: React.FC = () => {
@@ -11,16 +11,17 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'pending' | 'denied'>('idle');
   
-  const { user, loginManually } = useAuth();
+  const { user, loginManually, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Redirection automatique si déjà connecté
   useEffect(() => {
-    if (user) {
-      if (user.isAdmin) navigate('/admin');
-      else navigate('/dashboard');
+    if (user && !authLoading) {
+      if (user.isAdmin) navigate('/admin', { replace: true });
+      else navigate('/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -32,18 +33,21 @@ const Login: React.FC = () => {
 
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
     setError('');
     setStatus('idle');
-    if (!phone) return setError('Veuillez entrer votre numéro.');
+    
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (!cleanPhone) return setError('Veuillez entrer votre numéro.');
     
     setLoading(true);
     try {
-      const cleanPhone = phone.replace(/\s/g, '');
       const formattedPhone = cleanPhone.startsWith('0') ? `+225${cleanPhone}` : cleanPhone;
       const profile = await getProfileByPhone(formattedPhone);
       
       if (!profile) {
-        setError("Aucun compte associé. Faites d'abord le diagnostic.");
+        setError("Aucun compte trouvé. Veuillez faire le diagnostic d'abord.");
         setLoading(false);
         return;
       }
@@ -54,10 +58,21 @@ const Login: React.FC = () => {
         return;
       }
 
-      await loginManually(formattedPhone);
+      if (!isValidUUID(profile.uid)) {
+        setError("Format de compte obsolète. Contactez Coach Kita pour une mise à jour.");
+        setLoading(false);
+        return;
+      }
+
+      const success = await loginManually(formattedPhone);
+      if (!success) {
+        setError("Échec de l'ouverture de session.");
+        setLoading(false);
+      }
+      // La redirection se fera via le useEffect grâce au changement d'état 'user'
     } catch (err) {
-      setError("Erreur technique de connexion.");
-    } finally {
+      console.error(err);
+      setError("Erreur technique. Vérifiez votre connexion.");
       setLoading(false);
     }
   };
@@ -102,12 +117,13 @@ const Login: React.FC = () => {
               onChange={e => setPhone(e.target.value)} 
               className="w-full px-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-2xl text-center focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" 
               autoFocus
+              disabled={loading}
             />
           </div>
 
           <button 
             type="submit" 
-            disabled={loading} 
+            disabled={loading || authLoading} 
             className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl hover:bg-brand-950 active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

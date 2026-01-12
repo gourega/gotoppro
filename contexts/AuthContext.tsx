@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase, getUserProfile, getProfileByPhone, isValidUUID, generateUUID } from '../services/supabase';
+import { supabase, getUserProfile, getProfileByPhone, isValidUUID } from '../services/supabase';
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
@@ -34,8 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = authUser?.id;
 
     if (!uid || !isValidUUID(uid)) {
-      setUser(null);
-      lastUidRef.current = null;
       setLoading(false);
       return;
     }
@@ -77,7 +75,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(adminProfile);
       } else {
         const profile = await getUserProfile(uid);
-        if (profile) setUser(profile);
+        if (profile) {
+          setUser(profile);
+          // Si c'est un utilisateur auth standard, on nettoie le flag manuel
+          localStorage.removeItem('gotop_manual_phone');
+        }
       }
     } catch (err) {
       console.error("Auth: Error during profile setup", err);
@@ -87,32 +89,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginManually = async (phone: string): Promise<boolean> => {
+    try {
+      const profile = await getProfileByPhone(phone);
+      if (profile && profile.isActive && isValidUUID(profile.uid)) {
+        lastUidRef.current = profile.uid;
+        setUser(profile);
+        localStorage.setItem('gotop_manual_phone', phone);
+        return true;
+      }
+    } catch (err) {
+      console.error("Manual login failed", err);
+    }
+    return false;
+  };
+
   useEffect(() => {
     let mounted = true;
 
-    // PROTECTION CRITIQUE : Suppression des sessions fantômes "guest_"
-    if (user && !isValidUUID(user.uid)) {
-      console.warn("Session corrompue détectée, réinitialisation...");
-      setUser(null);
-      lastUidRef.current = null;
-    }
+    const initAuth = async () => {
+      // 1. Vérifier d'abord si une session manuelle existe
+      const savedPhone = localStorage.getItem('gotop_manual_phone');
+      if (savedPhone && !user) {
+        const success = await loginManually(savedPhone);
+        if (success) {
+          setLoading(false);
+          return;
+        }
+      }
 
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
+      // 2. Sinon, écouter Supabase Auth
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
 
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await handleUserSetup(session.user);
+      } else if (!savedPhone) {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = (supabase?.auth as any).onAuthStateChange(async (event: string, session: any) => {
       if (!mounted) return;
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         if (session?.user && isValidUUID(session.user.id)) {
           handleUserSetup(session.user);
-        } else {
-          setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         lastUidRef.current = null;
         setUser(null);
+        localStorage.removeItem('gotop_manual_phone');
         setLoading(false);
       }
     });
@@ -121,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [user]);
+  }, []);
 
   const refreshProfile = async () => {
     if (user?.uid && isValidUUID(user.uid)) {
@@ -130,20 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginManually = async (phone: string): Promise<boolean> => {
-    const profile = await getProfileByPhone(phone);
-    if (profile && profile.isActive && isValidUUID(profile.uid)) {
-      lastUidRef.current = profile.uid;
-      setUser(profile);
-      localStorage.setItem('gotop_manual_phone', phone);
-      return true;
-    }
-    return false;
-  };
-
   const logout = async () => {
     setLoading(true);
-    if (supabase) await (supabase.auth as any).signOut();
+    if (supabase) await supabase.auth.signOut();
     lastUidRef.current = null;
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);
