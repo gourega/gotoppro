@@ -32,11 +32,11 @@ export const LEGACY_ID_MAP: Record<string, string> = {
 
 export const DEFAULT_KITA_SERVICES = [
   "Bain d'huile", "Brushing", "Babyliss", "Balayage", "Chignon", 
-  "Coupe homme", "Coupe", "Défrisage", "Tresse", "Epilation sourcils", 
+  "Coupe homme", "Coupe dame", "Défrisage", "Tresse", "Epilation sourcils", 
   "Manicure", "Pédicure", "Mise en plis", "Maquillage", 
   "Pose de vernis + Nettoyage", "Pose vernis permanent", "Pose gel / Capsules", 
   "Massage", "Soins du corps", "Soins du visage", "Percing / Tatouage", 
-  "Shampoing", "Teinture", "Tissage", "Divers", "Vente de produits"
+  "Shampoing", "Teinture", "Tissage", "Divers", "Vente"
 ];
 
 export const DAILY_CHALLENGES = [
@@ -107,7 +107,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         explanation: "Ces trois piliers permettent de préparer le poste, de confirmer le créneau et de relancer en cas de besoin." 
       }
     ],
-    exercises: ["Pratiquer la signature vocale sur les 10 prochains appels.", "Noter le nombre d'appels transformés en rendez-vous."],
+    exercises: ["Pratiquer la signature vocale on les 10 prochains appels.", "Noter le nombre d'appels transformés en rendez-vous."],
     tips: ["Restez calme et notez le nom du client dès le début."]
   },
   {
