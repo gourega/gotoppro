@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -134,7 +133,6 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
   if (error) throw error;
 };
 
-// Add addKitaService function
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
   if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_services').insert({
