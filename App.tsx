@@ -16,7 +16,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
 import Magasin from './pages/Magasin';
-import MesFormations from './pages/MesFormations'; // Import de la nouvelle page
+import MesFormations from './pages/MesFormations'; 
+import PublicProfile from './pages/PublicProfile'; // Nouveau
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -57,6 +58,9 @@ const AppContent: React.FC = () => {
           <Route path="/audit-miroir" element={<AuditMiroir />} />
           <Route path="/results" element={<Results />} />
           
+          {/* Route publique accessible sans login */}
+          <Route path="/expert/:uid" element={<PublicProfile />} />
+
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />

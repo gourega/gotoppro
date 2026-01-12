@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -34,6 +35,17 @@ export const isValidUUID = (uuid: any): boolean => {
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase || !uid) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
+  return error ? null : data as UserProfile;
+};
+
+export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
+  if (!supabase || !uid) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('uid, firstName, lastName, establishmentName, photoURL, bio, badges, progress, isPublic')
+    .eq('uid', uid)
+    .eq('isPublic', true)
+    .maybeSingle();
   return error ? null : data as UserProfile;
 };
 
@@ -281,7 +293,7 @@ export const updateKitaProduct = async (id: string, product: Partial<KitaProduct
   if (product.alertThreshold !== undefined) updates.alert_threshold = product.alertThreshold;
   if (product.category !== undefined) updates.category = product.category;
   if (product.supplierId !== undefined) updates.supplier_id = product.supplierId;
-  await supabase.from('kita_products').update(updates).eq('id', id);
+  await supabase.from('profiles').update(updates).eq('id', id);
 };
 
 /**
