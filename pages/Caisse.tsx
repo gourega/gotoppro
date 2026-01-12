@@ -80,42 +80,31 @@ const Caisse: React.FC = () => {
   const [lastSavedTransaction, setLastSavedTransaction] = useState<KitaTransaction | null>(null);
 
   useEffect(() => {
-    if (user) loadData();
+    if (user?.uid) loadData();
   }, [user?.uid]);
 
   const loadData = async () => {
-    if (!user) return;
+    if (!user?.uid) return;
     setLoading(true);
     setError(null);
-    console.log("Caisse: Tentative de chargement pour", user.uid);
     
     try {
-      // 1. On vérifie d'abord si le profil existe en base (essentiel pour les clés étrangères)
-      const existingProfile = await getUserProfile(user.uid);
-      if (!existingProfile) {
-        console.log("Caisse: Profil absent de la DB, création en cours...");
+      // 1. Sécurité Profil
+      const profile = await getUserProfile(user.uid);
+      if (!profile) {
         await saveUserProfile({
           uid: user.uid,
           phoneNumber: user.phoneNumber,
           firstName: user.firstName || 'Gérant',
-          lastName: user.lastName || '',
           establishmentName: user.establishmentName || 'Mon Salon',
           role: 'CLIENT',
           isActive: true,
-          isAdmin: false,
-          isKitaPremium: false,
-          hasPerformancePack: false,
-          hasStockPack: false,
-          badges: [],
-          purchasedModuleIds: [],
-          pendingModuleIds: [],
-          actionPlan: [],
           createdAt: new Date().toISOString()
-        });
+        } as any);
         await refreshProfile();
       }
 
-      // 2. Chargement des données métier
+      // 2. Chargement des données
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
         getKitaDebts(user.uid),
@@ -124,134 +113,76 @@ const Caisse: React.FC = () => {
       
       setTransactions(transData);
       setDebts(debtData);
+      setServices(serviceData);
 
-      // 3. Gestion du catalogue
-      if (serviceData.length === 0) {
-        setServices([]);
-      } else {
-        setServices(serviceData);
+      // Auto-init si vide et pas déjà en cours
+      if (serviceData.length === 0 && !isInitializing) {
+        console.log("Caisse: Catalogue vide détecté, prêt pour initialisation.");
       }
 
     } catch (err: any) {
-      console.error("Caisse: Erreur de chargement", err);
-      setError("Impossible de contacter la base de données. Vérifiez vos tables Supabase.");
+      console.error("Caisse Error:", err);
+      setError("Erreur de connexion à la base de données.");
     } finally {
       setLoading(false);
     }
   };
 
   const initializeDefaultServices = async () => {
-    if (!user || isInitializing) return;
+    if (!user?.uid || isInitializing) return;
     setIsInitializing(true);
-    setLoading(true);
+    setError(null);
     
     try {
-      console.log("Caisse: Lancement de l'initialisation forcée...");
       for (const name of DEFAULT_KITA_SERVICES) {
         let cat = 'Autre';
-        if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) {
-          cat = 'Coiffure';
-        } else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) {
-          cat = 'Ongles';
-        } else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) {
-          cat = 'Soins';
-        } else if (name.match(/Vente/i)) {
-          cat = 'Vente';
-        }
+        if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) cat = 'Coiffure';
+        else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) cat = 'Ongles';
+        else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) cat = 'Soins';
+        else if (name.match(/Vente/i)) cat = 'Vente';
 
         await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
       }
+      
       const refreshedServices = await getKitaServices(user.uid);
       setServices(refreshedServices);
-    } catch (err) {
-      console.error("Caisse: Erreur init services", err);
-      alert("Erreur lors de la création des services. Vérifiez que la table 'kita_services' existe.");
+    } catch (err: any) {
+      console.error("Init Services Fail:", err);
+      setError("Échec de la génération. Vérifiez vos permissions Supabase.");
     } finally {
       setIsInitializing(false);
-      setLoading(false);
     }
   };
 
   const filteredTransactions = useMemo(() => {
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay() || 7;
-    if (day !== 1) startOfWeek.setHours(-24 * (day - 1));
-    startOfWeek.setHours(0,0,0,0);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-
+    const todayStr = new Date().toISOString().split('T')[0];
     return transactions.filter(t => {
       if (t.isCredit) return false;
-      const tDate = new Date(t.date).getTime();
       if (period === 'today') return t.date === todayStr;
-      if (period === 'week') return tDate >= startOfWeek.getTime();
-      if (period === 'month') return tDate >= startOfMonth;
       return true;
     });
   }, [transactions, period]);
 
   const totals = useMemo(() => {
-    const cashTotals = filteredTransactions.reduce((acc, t) => {
+    return filteredTransactions.reduce((acc, t) => {
       if (t.type === 'INCOME') acc.income += t.amount;
       else acc.expense += t.amount;
       return acc;
     }, { income: 0, expense: 0 });
-    const totalDebts = debts.filter(d => !d.isPaid).reduce((acc, d) => acc + d.amount, 0);
-    return { ...cashTotals, unpaidDebts: totalDebts };
-  }, [filteredTransactions, debts]);
+  }, [filteredTransactions]);
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || newTrans.amount <= 0 || !newTrans.label) return;
     setSaving(true);
     try {
-      let savedId = '';
-      if (newTrans.isCredit && newTrans.type === 'INCOME') {
-        await addKitaDebt(user.uid, {
-          personName: newTrans.label,
-          amount: newTrans.amount,
-          isPaid: false,
-          createdAt: new Date().toISOString(),
-          phone: ''
-        });
-        const trans = await addKitaTransaction(user.uid, { ...newTrans, category: 'Ardoise' });
-        savedId = trans.id;
-      } else {
-        const trans = await addKitaTransaction(user.uid, newTrans);
-        savedId = trans.id;
-      }
-      
+      const trans = await addKitaTransaction(user.uid, newTrans);
       await loadData();
-      setLastSavedTransaction({ ...newTrans, id: savedId } as any);
+      setLastSavedTransaction({ ...newTrans, id: trans.id } as any);
     } catch (err) {
       console.error(err);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCollectDebt = async (debt: KitaDebt) => {
-    if (!user) return;
-    if (!window.confirm(`Confirmer l'encaissement de ${debt.amount} F de ${debt.personName} ?`)) return;
-    
-    setLoading(true);
-    try {
-      await markDebtAsPaid(debt.id);
-      await addKitaTransaction(user.uid, {
-        type: 'INCOME',
-        amount: debt.amount,
-        label: `Recouvrement : ${debt.personName}`,
-        category: 'Recouvrement',
-        paymentMethod: 'Espèces',
-        date: new Date().toISOString().split('T')[0],
-        isCredit: false
-      });
-      await loadData();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -265,45 +196,6 @@ const Caisse: React.FC = () => {
     setSearchTerm('');
   };
 
-  const handlePrintTicket = (transaction: KitaTransaction) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const ticketHtml = `
-      <html>
-        <head>
-          <style>
-            @page { size: 80mm 200mm; margin: 0; }
-            body { width: 70mm; margin: 0 auto; padding: 10mm 5mm; font-family: sans-serif; font-size: 12px; line-height: 1.4; color: black; }
-            .text-center { text-align: center; }
-            .logo { width: 30mm; margin-bottom: 10px; }
-            .divider { border-bottom: 1px dashed black; margin: 10px 0; }
-            .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-            .bold { font-weight: bold; }
-            .footer { margin-top: 20px; font-size: 10px; }
-          </style>
-        </head>
-        <body onload="window.print(); window.close();">
-          <div class="header text-center">
-            <div class="bold" style="font-size: 14px;">${user?.establishmentName || "Go'Top Pro Salon"}</div>
-            <div>Tél: ${user?.phoneNumber}</div>
-          </div>
-          <div class="divider"></div>
-          <div class="text-center bold" style="margin-bottom: 10px;">REÇU DE CAISSE</div>
-          <div class="row"><span>Date:</span><span>${new Date(transaction.date).toLocaleDateString('fr-FR')}</span></div>
-          <div class="row"><span>Prestation:</span><span class="bold">${transaction.label}</span></div>
-          <div class="divider"></div>
-          <div class="row bold" style="font-size: 16px;"><span>TOTAL</span><span>${transaction.amount.toLocaleString()} F</span></div>
-          <div class="divider"></div>
-          <div class="footer text-center">Propulsé par Go'Top Pro KITA</div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(ticketHtml);
-    printWindow.document.close();
-  };
-
   const filteredServices = useMemo(() => {
     return services.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -315,15 +207,6 @@ const Caisse: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setLastSavedTransaction(null);
-    setNewTrans({
-      type: 'INCOME',
-      amount: 0,
-      label: '',
-      category: 'Prestation',
-      paymentMethod: 'Espèces',
-      date: new Date().toISOString().split('T')[0],
-      isCredit: false
-    });
   };
 
   return (
@@ -383,31 +266,7 @@ const Caisse: React.FC = () => {
         {loading ? (
           <div className="py-24 text-center">
             <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Chargement des chiffres...</p>
-          </div>
-        ) : period === 'debts' ? (
-          <div className="space-y-6">
-             {debts.filter(d => !d.isPaid).length === 0 ? (
-               <div className="bg-white rounded-[3rem] p-20 text-center border-2 border-dashed border-slate-200">
-                  <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-                  <p className="text-slate-500 font-bold italic">Toutes vos dettes sont recouvrées.</p>
-               </div>
-             ) : (
-               <div className="grid gap-4">
-                  {debts.filter(d => !d.isPaid).map(d => (
-                    <div key={d.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group">
-                       <div className="flex items-center gap-6">
-                          <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center"><Clock className="w-6 h-6" /></div>
-                          <div><p className="font-bold text-slate-900 text-xl mb-1">{d.personName}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Depuis le {new Date(d.createdAt).toLocaleDateString('fr-FR')}</p></div>
-                       </div>
-                       <div className="flex items-center gap-8">
-                          <p className="text-2xl font-black text-rose-600">{d.amount.toLocaleString()} F</p>
-                          <button onClick={() => handleCollectDebt(d)} className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 shadow-lg transition-all">Encaisser</button>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-             )}
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Liaison Cloud...</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -421,10 +280,7 @@ const Caisse: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-10">
                   <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F</p>
-                  <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
-                    {t.type === 'INCOME' && <button onClick={() => handlePrintTicket(t)} className="p-3 text-brand-600 hover:bg-brand-50 rounded-xl"><Printer className="w-4 h-4" /></button>}
-                    <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+                  <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
@@ -439,10 +295,8 @@ const Caisse: React.FC = () => {
               <div className="text-center space-y-8 animate-in fade-in">
                  <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="w-10 h-10" /></div>
                  <h2 className="text-3xl font-serif font-bold text-slate-900">Enregistré !</h2>
-                 <p className="text-slate-500 font-medium leading-relaxed italic">La prestation "${lastSavedTransaction.label}" de ${lastSavedTransaction.amount} F a bien été ajoutée.</p>
                  <div className="flex flex-col gap-4">
-                    <button onClick={() => handlePrintTicket(lastSavedTransaction)} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all"><Printer className="w-5 h-5" /> Imprimer le ticket</button>
-                    <button onClick={closeModal} className="w-full py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">Terminer</button>
+                    <button onClick={closeModal} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px]">Terminer</button>
                  </div>
               </div>
             ) : (
@@ -456,10 +310,10 @@ const Caisse: React.FC = () => {
                   
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prestation (Menu Visuel)</label>
-                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-brand-500/20 text-left flex justify-between items-center group transition-all">
-                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Sélectionner un service..."}</span>
-                        <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-brand-500" />
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Sélectionner la prestation</label>
+                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-brand-500/20 text-left flex justify-between items-center transition-all">
+                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Appuyez pour choisir..."}</span>
+                        <ChevronDown className="w-5 h-5 text-slate-400" />
                       </button>
                     </div>
 
@@ -467,20 +321,13 @@ const Caisse: React.FC = () => {
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Montant (F)</label>
                       <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" />
                     </div>
-
-                    {newTrans.type === 'INCOME' && (
-                      <label className="flex items-center gap-4 p-5 bg-amber-50 rounded-2xl border border-amber-100 cursor-pointer hover:bg-amber-100 transition-all">
-                        <input type="checkbox" checked={newTrans.isCredit} onChange={e => setNewTrans({...newTrans, isCredit: e.target.checked})} className="w-6 h-6 rounded-lg text-amber-500" />
-                        <p className="text-sm font-black text-amber-900 uppercase">Vente à crédit (Ardoise)</p>
-                      </label>
-                    )}
                   </div>
 
                   <div className="flex gap-4 pt-4">
                     <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all">
                       {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Valider
                     </button>
-                    <button type="button" onClick={closeModal} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Annuler</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Annuler</button>
                   </div>
                 </form>
               </>
@@ -497,7 +344,7 @@ const Caisse: React.FC = () => {
                  <div className="flex justify-between items-center mb-8">
                     <div>
                       <h3 className="text-3xl font-serif font-bold text-slate-900 mb-1">Catalogue Expert</h3>
-                      <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Sélectionnez une prestation</p>
+                      <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Choisissez une prestation</p>
                     </div>
                     <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all"><X /></button>
                  </div>
@@ -506,11 +353,10 @@ const Caisse: React.FC = () => {
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="text" 
-                      placeholder="Chercher une prestation (ex: Tresse...)" 
+                      placeholder="Chercher une prestation..." 
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                       className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold text-lg"
-                      autoFocus
                     />
                  </div>
 
@@ -531,14 +377,13 @@ const Caisse: React.FC = () => {
                  {isInitializing ? (
                    <div className="py-24 text-center">
                       <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
-                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Initialisation de votre catalogue...</p>
-                      <p className="text-slate-400 text-sm italic mt-2">Veuillez patienter quelques secondes.</p>
+                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Création du catalogue...</p>
                    </div>
                  ) : services.length === 0 ? (
                    <div className="py-20 text-center text-slate-400">
                       <ShoppingBag className="w-16 h-16 mx-auto mb-6 opacity-20" />
-                      <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue vide</h4>
-                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Votre catalogue ne semble pas avoir été initialisé. Souhaitez-vous générer les prestations par défaut ?</p>
+                      <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue non initialisé</h4>
+                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Pour commencer à utiliser la caisse, vous devez générer la liste des prestations standards.</p>
                       <button 
                         onClick={initializeDefaultServices}
                         className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto"
@@ -548,7 +393,7 @@ const Caisse: React.FC = () => {
                    </div>
                  ) : (
                    <div className="grid grid-cols-2 gap-4">
-                      {filteredServices.map(s => (
+                      {filteredServices.length > 0 ? filteredServices.map(s => (
                         <button 
                           key={s.id} 
                           onClick={() => handleSelectService(s)}
@@ -569,23 +414,11 @@ const Caisse: React.FC = () => {
                               </div>
                            </div>
                         </button>
-                      ))}
-                      
-                      {searchTerm && filteredServices.length === 0 && (
-                        <button 
-                          onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)}
-                          className="col-span-2 p-8 bg-brand-50 border-2 border-dashed border-brand-200 rounded-[2.5rem] text-center group hover:bg-brand-100 transition-all"
-                        >
-                           <p className="text-brand-900 font-bold mb-2">Libellé libre : "{searchTerm}"</p>
-                           <p className="text-brand-600 text-xs font-black uppercase tracking-widest">Utiliser ce nom personnalisé</p>
-                        </button>
-                      )}
-                      
-                      {filteredServices.length === 0 && !searchTerm && (
+                      )) : (
                         <div className="col-span-2 py-20 text-center text-slate-400">
                           <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                          <p className="italic font-medium">Aucun service dans cette catégorie.</p>
-                          <button onClick={() => navigate('/pilotage')} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Gérer mon catalogue</button>
+                          <p className="italic font-medium">Aucun service ne correspond.</p>
+                          <button onClick={() => { setSearchTerm(''); setActiveCategory('all'); }} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Réinitialiser les filtres</button>
                         </div>
                       )}
                    </div>
