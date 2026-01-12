@@ -18,7 +18,9 @@ import {
   Quote,
   Cloud,
   ShieldCheck,
-  Lock
+  Lock,
+  Calendar,
+  Briefcase
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -176,9 +178,16 @@ const Profile: React.FC = () => {
               {isEditing ? (
                 <form onSubmit={handleSave} className="space-y-8">
                   <div className="grid grid-cols-2 gap-6">
-                    <input type="text" placeholder="Prénom" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
-                    <input type="text" placeholder="Nom" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prénom</label>
+                      <input type="text" placeholder="Prénom" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom</label>
+                      <input type="text" placeholder="Nom" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                    </div>
                   </div>
+
                   {!user.referredBy && (
                     <div className="p-8 bg-brand-50/30 rounded-[2.5rem] border border-brand-100">
                       <label className="block text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-4">Qui vous a invité ?</label>
@@ -192,7 +201,29 @@ const Profile: React.FC = () => {
                       )}
                     </div>
                   )}
-                  <input type="text" placeholder="Nom du Salon" value={formData.establishmentName} onChange={e => setFormData({...formData, establishmentName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom du Salon</label>
+                    <input type="text" placeholder="Nom du Salon" value={formData.establishmentName} onChange={e => setFormData({...formData, establishmentName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nombre d'employés</label>
+                      <div className="relative">
+                        <Users className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input type="number" placeholder="Nombre d'employés" value={formData.employeeCount} onChange={e => setFormData({...formData, employeeCount: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Années d'existence</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input type="number" placeholder="Années d'existence" value={formData.yearsOfExistence} onChange={e => setFormData({...formData, yearsOfExistence: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex gap-4 pt-4">
                     <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl hover:bg-brand-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Sauvegarder</button>
                     <button type="button" onClick={() => setIsEditing(false)} className="px-8 py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">Annuler</button>
@@ -206,9 +237,47 @@ const Profile: React.FC = () => {
                       <p className="text-xl font-serif italic text-slate-700 leading-relaxed pl-6 relative z-10">{user.bio}</p>
                     </div>
                   )}
-                  <div className="bg-slate-50/80 p-10 rounded-[3rem] grid grid-cols-2 gap-10 border border-slate-100 shadow-sm">
-                    <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Établissement</p><p className="font-bold text-slate-900 text-lg">{user.establishmentName || 'Non défini'}</p></div>
-                    <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Taille Équipe</p><p className="font-black text-brand-600 flex items-center gap-2 text-lg"><Users className="w-5 h-5" /> {user.employeeCount || 0} employés</p></div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
+                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm">
+                        <Briefcase className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Établissement</p>
+                        <p className="font-bold text-slate-900 text-lg">{user.establishmentName || 'Non défini'}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
+                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Taille Équipe</p>
+                        <p className="font-bold text-slate-900 text-lg">{user.employeeCount || 0} employé(s)</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
+                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-amber-600 shadow-sm">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Ancienneté</p>
+                        <p className="font-bold text-slate-900 text-lg">{user.yearsOfExistence || 0} an(s)</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
+                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
+                        <ShieldCheck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Statut</p>
+                        <p className="font-bold text-slate-900 text-lg">{isElite ? 'Membre Elite' : 'Standard'}</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className={`p-8 rounded-[2.5rem] border ${isCloudActive ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'} relative overflow-hidden`}>
