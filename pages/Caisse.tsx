@@ -11,7 +11,7 @@ import {
   addKitaDebt,
   markDebtAsPaid,
   getKitaServices,
-  addKitaService,
+  bulkAddKitaServices,
   saveUserProfile,
   getUserProfile
 } from '../services/supabase';
@@ -35,7 +35,8 @@ import {
   ShoppingBag,
   MoreHorizontal,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Database
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
@@ -87,11 +88,13 @@ const Caisse: React.FC = () => {
     if (!user?.uid) return;
     setLoading(true);
     setError(null);
+    console.info("Caisse: Chargement des données pour", user.uid);
     
     try {
-      // 1. Sécurité Profil
+      // 1. On s'assure que le profil gérant est bien présent dans la DB
       const profile = await getUserProfile(user.uid);
       if (!profile) {
+        console.warn("Caisse: Profil absent de la DB, création forcée...");
         await saveUserProfile({
           uid: user.uid,
           phoneNumber: user.phoneNumber,
@@ -104,7 +107,7 @@ const Caisse: React.FC = () => {
         await refreshProfile();
       }
 
-      // 2. Chargement des données
+      // 2. Chargement des données métier
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
         getKitaDebts(user.uid),
@@ -115,14 +118,11 @@ const Caisse: React.FC = () => {
       setDebts(debtData);
       setServices(serviceData);
 
-      // Auto-init si vide et pas déjà en cours
-      if (serviceData.length === 0 && !isInitializing) {
-        console.log("Caisse: Catalogue vide détecté, prêt pour initialisation.");
-      }
+      console.info(`Caisse: ${serviceData.length} services chargés.`);
 
     } catch (err: any) {
       console.error("Caisse Error:", err);
-      setError("Erreur de connexion à la base de données.");
+      setError("Erreur de liaison avec la base de données.");
     } finally {
       setLoading(false);
     }
@@ -132,23 +132,28 @@ const Caisse: React.FC = () => {
     if (!user?.uid || isInitializing) return;
     setIsInitializing(true);
     setError(null);
+    console.info("Caisse: Lancement de l'initialisation groupée...");
     
     try {
-      for (const name of DEFAULT_KITA_SERVICES) {
+      const servicesToCreate = DEFAULT_KITA_SERVICES.map(name => {
         let cat = 'Autre';
         if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) cat = 'Coiffure';
         else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) cat = 'Ongles';
         else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) cat = 'Soins';
         else if (name.match(/Vente/i)) cat = 'Vente';
+        
+        return { name, category: cat, defaultPrice: 0, isActive: true };
+      });
 
-        await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
-      }
+      // Insertion groupée (une seule requête)
+      await bulkAddKitaServices(user.uid, servicesToCreate);
+      console.info("Caisse: Catalogue inséré avec succès.");
       
       const refreshedServices = await getKitaServices(user.uid);
       setServices(refreshedServices);
     } catch (err: any) {
       console.error("Init Services Fail:", err);
-      setError("Échec de la génération. Vérifiez vos permissions Supabase.");
+      setError("Échec de la génération. Vérifiez que la table 'kita_services' existe sur Supabase.");
     } finally {
       setIsInitializing(false);
     }
@@ -377,13 +382,16 @@ const Caisse: React.FC = () => {
                  {isInitializing ? (
                    <div className="py-24 text-center">
                       <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
-                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Création du catalogue...</p>
+                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Génération du catalogue...</p>
+                      <p className="text-slate-400 text-xs mt-2 italic">Création des 26 prestations standards en cours</p>
                    </div>
                  ) : services.length === 0 ? (
                    <div className="py-20 text-center text-slate-400">
-                      <ShoppingBag className="w-16 h-16 mx-auto mb-6 opacity-20" />
+                      <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                         <Database className="w-10 h-10 opacity-20" />
+                      </div>
                       <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue non initialisé</h4>
-                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Pour commencer à utiliser la caisse, vous devez générer la liste des prestations standards.</p>
+                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Pour commencer à utiliser la caisse, vous devez générer la liste des prestations standards de Go'Top Pro.</p>
                       <button 
                         onClick={initializeDefaultServices}
                         className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto"

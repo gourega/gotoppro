@@ -115,6 +115,20 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
   return data;
 };
 
+export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
+  if (!supabase) throw new Error("Supabase non initialisé");
+  const payload = services.map(s => ({
+    user_id: userId,
+    name: s.name,
+    category: s.category,
+    default_price: s.defaultPrice,
+    is_active: s.isActive
+  }));
+  const { data, error } = await supabase.from('kita_services').insert(payload).select();
+  if (error) throw error;
+  return data;
+};
+
 export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const updates: any = {};
