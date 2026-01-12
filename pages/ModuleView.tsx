@@ -221,6 +221,7 @@ const ModuleView: React.FC = () => {
     });
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     try {
+      // 1. Préparation des données mises à jour
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
@@ -231,18 +232,26 @@ const ModuleView: React.FC = () => {
       const prevBest = Number(updatedUser.progress[module.id]) || 0;
       if (percentage > prevBest) updatedUser.progress[module.id] = percentage;
       
+      if (percentage >= 80 && !updatedUser.badges.includes('first_module')) {
+        updatedUser.badges.push('first_module');
+      }
+
+      // 2. SAUVEGARDE IMMÉDIATE DU SCORE ET DU JETON DANS SUPABASE
+      // C'est l'étape cruciale pour éviter que l'engagement n'écrase le résultat.
+      await saveUserProfile(updatedUser);
+      
+      // 3. Rafraîchissement du profil global pour que 'user' soit à jour
+      await refreshProfile();
+      
       if (percentage >= 80) {
         setShouldFire(true);
-        if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
-        // On attend d'abord l'engagement avant de montrer les résultats finaux
+        // On affiche la modale d'engagement car le profil est maintenant synchronisé
         setShowEngagementModal(true);
       } else {
-        await saveUserProfile(updatedUser);
-        await refreshProfile();
         setQuizState('results');
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Erreur lors de la fin du quiz:", err);
       setQuizState('results');
     } finally {
       setIsFinishingQuiz(false);
@@ -253,6 +262,7 @@ const ModuleView: React.FC = () => {
     if (!commitment.trim()) return;
     setIsSaving(true);
     try {
+      // On récupère le 'user' qui a été rafraîchi dans finishQuiz
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.actionPlan) updatedUser.actionPlan = [];
       
@@ -265,12 +275,15 @@ const ModuleView: React.FC = () => {
       };
       
       updatedUser.actionPlan.push(newCommitment);
+      
+      // Sauvegarde de l'engagement (sans risquer de perdre le score du quiz)
       await saveUserProfile(updatedUser);
       await refreshProfile();
       setShowEngagementModal(false);
       setQuizState('results');
     } catch (err) {
       console.error("Erreur sauvegarde engagement:", err);
+      alert("Erreur lors de l'enregistrement de l'engagement.");
     } finally {
       setIsSaving(false);
     }
@@ -280,10 +293,11 @@ const ModuleView: React.FC = () => {
     window.print();
   };
 
-  const handleShareCert = async () => {
+  const handleShareCert = async (moduleId: string) => {
+    const moduleTitle = TRAINING_CATALOG.find(m => m.id === moduleId)?.title || "Formation Go'Top Pro";
     const shareData = {
       title: "Nouvelle Certification Go'Top Pro",
-      text: `Je viens de valider mon expertise en "${module.title}" ! Découvrez mon profil expert :`,
+      text: `Je viens de valider mon expertise en "${moduleTitle}" ! Découvrez mon profil expert :`,
       url: user.isPublic ? `${window.location.origin}/#/expert/${user.uid}` : window.location.origin
     };
 
@@ -521,7 +535,7 @@ const ModuleView: React.FC = () => {
                               <Download className="w-5 h-5" /> Télécharger
                             </button>
                             <button 
-                              onClick={handleShareCert}
+                              onClick={() => handleShareCert(module.id)}
                               className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20"
                             >
                               <Share2 className="w-5 h-5" /> Partager
