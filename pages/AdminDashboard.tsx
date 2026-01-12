@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -5,7 +6,6 @@ import {
   getAllUsers, 
   deleteUserProfile, 
   grantModuleAccess, 
-  saveUserProfile,
   updateUserProfile
 } from '../services/supabase';
 import { TRAINING_CATALOG, BADGES } from '../constants';
@@ -19,34 +19,22 @@ import {
   Search, 
   Trash2, 
   MessageCircle, 
-  Filter,
-  TrendingUp,
   ChevronRight,
   X,
   ShieldAlert,
-  Gift,
-  Coins,
-  UserPlus,
   ShieldCheck,
   Plus,
   UserX,
   UserCheck,
-  Zap,
   Award,
   Crown,
-  Handshake,
   CheckCircle,
-  Medal,
-  Star,
   Trophy,
-  Gem,
-  LayoutDashboard,
   Activity,
   ArrowUpRight,
   AlertCircle,
   Package,
   Wifi,
-  SearchCode,
   ShoppingCart
 } from 'lucide-react';
 
@@ -117,8 +105,8 @@ const AdminDashboard: React.FC = () => {
     try {
       await deleteUserProfile(user.uid);
       showNotification("Profil gérant supprimé avec succès");
-      setSelectedUser(null); // On ferme le panneau de détails
-      await fetchUsers(); // On rafraîchit la liste
+      setSelectedUser(null);
+      await fetchUsers();
     } catch (err: any) {
       showNotification(`Erreur lors de la suppression : ${err.message}`, "error");
     } finally {
@@ -139,7 +127,6 @@ const AdminDashboard: React.FC = () => {
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_ELITE');
         
-        // RESET TOTAL DES TENTATIVES POUR ELITE
         const resetAttempts: Record<string, number> = { ...currentAttempts };
         allIds.forEach(id => { resetAttempts[id] = 0; });
         updates.attempts = resetAttempts;
@@ -155,7 +142,6 @@ const AdminDashboard: React.FC = () => {
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
         
-        // RESET DES TENTATIVES POUR LES MODULES DU PANIER
         const resetAttempts: Record<string, number> = { ...currentAttempts };
         modulesToGrant.forEach(id => { resetAttempts[id] = 0; });
         updates.attempts = resetAttempts;
@@ -448,7 +434,7 @@ const AdminDashboard: React.FC = () => {
                       <ActionBtn onClick={() => handleActivatePack('INDIVIDUAL')} loading={processingId === 'INDIVIDUAL'} icon={<CheckCircle />} label="Activer Panier" price="Modules unitaires" color="blue" />
                     )}
                     {selectedUser.pendingModuleIds.includes('REQUEST_PERFORMANCE') && (
-                      <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
+                      <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Award />} label="Activer Perf+" price="5.000 F" color="emerald" />
                     )}
                     {selectedUser.pendingModuleIds.includes('REQUEST_STOCK') && (
                       <ActionBtn onClick={() => handleActivatePack('STOCK')} loading={processingId === 'STOCK'} icon={<Package />} label="Activer Stock" price="5.000 F" color="sky" />
@@ -536,7 +522,7 @@ const AdminDashboard: React.FC = () => {
                     selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
                   } disabled:opacity-30`}
                  >
-                    {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                    {selectedUser.isActive ? <X className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                     {selectedUser.isActive ? 'Suspendre Gérant' : 'Activer Gérant'}
                  </button>
                  

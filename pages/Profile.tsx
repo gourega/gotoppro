@@ -26,7 +26,6 @@ import {
   ExternalLink,
   Crown,
   X,
-  // Fix: Import missing ChevronRight component
   ChevronRight
 } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -413,7 +412,7 @@ const Profile: React.FC = () => {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
            <div className="max-w-2xl w-full animate-in zoom-in-95 duration-300">
               <div className="bg-white border-[12px] border-double border-slate-100 p-12 md:p-20 rounded-[3rem] text-center relative overflow-hidden shadow-2xl">
-                <button onClick={() => setSelectedCert(null)} className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full hover:bg-rose-500 hover:text-white transition-all"><XIcon /></button>
+                <button onClick={() => setSelectedCert(null)} className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full hover:bg-rose-500 hover:text-white transition-all"><X /></button>
                 <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[2.5rem] m-1.5"></div>
                 <div className="relative z-10">
                   <div className="mb-10">
@@ -441,9 +440,5 @@ const Profile: React.FC = () => {
     </div>
   );
 };
-
-const XIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-);
 
 export default Profile;

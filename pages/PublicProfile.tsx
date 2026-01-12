@@ -13,7 +13,8 @@ import {
   ShieldCheck, 
   ChevronRight,
   ExternalLink,
-  Briefcase
+  Briefcase,
+  X
 } from 'lucide-react';
 
 const PublicProfile: React.FC = () => {
@@ -78,12 +79,8 @@ const PublicProfile: React.FC = () => {
                 </div>
              </div>
              <h1 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-2">{profile.firstName} {profile.lastName}</h1>
-             <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="text-brand-600 font-black uppercase text-[10px] tracking-[0.2em]">{profile.establishmentName}</span>
-                <div className="h-1.5 w-1.5 rounded-full bg-slate-200"></div>
-                <div className="flex items-center gap-1.5 text-emerald-600 font-black uppercase text-[9px] tracking-widest bg-emerald-50 px-3 py-1 rounded-full">
-                   <ShieldCheck className="w-3 h-3" /> Expert Certifié
-                </div>
+             <div className="flex items-center gap-1.5 text-emerald-600 font-black uppercase text-[9px] tracking-widest bg-emerald-50 px-3 py-1 rounded-full justify-center w-fit mx-auto mb-6">
+                <ShieldCheck className="w-3 h-3" /> Expert Certifié
              </div>
              {profile.bio && (
                <div className="max-w-2xl mx-auto relative px-8 py-6 bg-brand-50/20 rounded-[2rem] border border-brand-100/30">
@@ -188,9 +185,5 @@ const PublicProfile: React.FC = () => {
     </div>
   );
 };
-
-const X = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-);
 
 export default PublicProfile;
