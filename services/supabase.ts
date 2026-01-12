@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -127,7 +126,7 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
     user_id: userId,
     name: s.name,
     category: s.category,
-    default_price: s.default_price,
+    default_price: s.defaultPrice,
     is_active: s.isActive
   }));
   const { error } = await supabase.from('kita_services').insert(payload);
@@ -272,7 +271,6 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   return data;
 };
 
-// Fix: corrected property access from product.alert_threshold to product.alertThreshold
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
   if (!supabase) return;
   const updates: any = {};
