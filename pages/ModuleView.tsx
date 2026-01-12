@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP, BRAND_LOGO } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
-import { ModuleStatus, UserActionCommitment } from '../types';
+import { UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
 import { GoogleGenAI, Modality } from "@google/genai";
 import ReactCanvasConfetti from 'react-canvas-confetti';
@@ -27,7 +27,9 @@ import {
   HelpCircle,
   Coins,
   Download,
-  X
+  X,
+  Target,
+  PenTool
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -71,6 +73,7 @@ const ModuleView: React.FC = () => {
   const [answers, setAnswers] = useState<number[]>([]);
   const [shouldFire, setShouldFire] = useState(false);
   const [commitment, setCommitment] = useState('');
+  const [showEngagementModal, setShowEngagementModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
 
@@ -221,22 +224,55 @@ const ModuleView: React.FC = () => {
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
+      
       const currentAttempts = (Number(updatedUser.attempts[module.id]) || 0) + 1;
       updatedUser.attempts[module.id] = currentAttempts;
+      
       const prevBest = Number(updatedUser.progress[module.id]) || 0;
       if (percentage > prevBest) updatedUser.progress[module.id] = percentage;
+      
       if (percentage >= 80) {
         setShouldFire(true);
         if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
+        // On attend d'abord l'engagement avant de montrer les résultats finaux
+        setShowEngagementModal(true);
+      } else {
+        await saveUserProfile(updatedUser);
+        await refreshProfile();
+        setQuizState('results');
       }
-      await saveUserProfile(updatedUser);
-      await refreshProfile();
-      setQuizState('results');
     } catch (err: any) {
       console.error(err);
       setQuizState('results');
     } finally {
       setIsFinishingQuiz(false);
+    }
+  };
+
+  const handleSaveCommitment = async () => {
+    if (!commitment.trim()) return;
+    setIsSaving(true);
+    try {
+      const updatedUser = JSON.parse(JSON.stringify(user));
+      if (!updatedUser.actionPlan) updatedUser.actionPlan = [];
+      
+      const newCommitment: UserActionCommitment = {
+        moduleId: module.id,
+        moduleTitle: module.title,
+        action: commitment,
+        date: new Date().toISOString(),
+        isCompleted: false
+      };
+      
+      updatedUser.actionPlan.push(newCommitment);
+      await saveUserProfile(updatedUser);
+      await refreshProfile();
+      setShowEngagementModal(false);
+      setQuizState('results');
+    } catch (err) {
+      console.error("Erreur sauvegarde engagement:", err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -514,6 +550,47 @@ const ModuleView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* MODALE D'ENGAGEMENT POST-QUIZ */}
+      {showEngagementModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+           <div className="max-w-2xl w-full bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 border border-slate-100 relative overflow-hidden animate-in zoom-in-95 duration-500">
+              <div className="absolute top-0 right-0 p-10 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none">Engagement</div>
+              
+              <div className="relative z-10 flex flex-col items-center text-center">
+                 <div className="h-32 w-32 rounded-[2.5rem] overflow-hidden border-4 border-emerald-500 shadow-2xl mb-8">
+                    <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
+                 </div>
+                 
+                 <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Parole d'Expert</h2>
+                 <p className="text-slate-500 font-medium italic text-lg leading-relaxed mb-10 max-w-md">
+                    "Félicitations pour votre réussite ! Mais un certificat sans action n'est que du papier. Quelle action concrète allez-vous mettre en place dans votre salon dès demain pour honorer ce titre ?"
+                 </p>
+
+                 <div className="w-full relative group">
+                    <PenTool className="absolute left-6 top-6 w-5 h-5 text-brand-400 group-focus-within:text-brand-600 transition-colors" />
+                    <textarea 
+                      value={commitment}
+                      onChange={(e) => setCommitment(e.target.value)}
+                      placeholder="Ex: Je vais peser chaque dose de coloration pour réduire le gaspillage de 20%..."
+                      className="w-full min-h-[150px] pl-16 pr-8 py-6 rounded-[2.5rem] bg-slate-50 border-2 border-transparent focus:border-brand-500 focus:bg-white outline-none font-bold text-slate-800 transition-all text-lg placeholder:italic placeholder:font-normal"
+                    />
+                 </div>
+
+                 <button 
+                  onClick={handleSaveCommitment}
+                  disabled={!commitment.trim() || isSaving}
+                  className="mt-10 w-full bg-brand-900 text-white py-6 rounded-3xl font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
+                 >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Target className="w-5 h-5" />}
+                    Enregistrer mon engagement
+                 </button>
+                 
+                 <p className="mt-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">Cet engagement sera ajouté à votre Plan de Transformation</p>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
