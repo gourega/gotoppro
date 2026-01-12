@@ -221,7 +221,6 @@ const ModuleView: React.FC = () => {
     });
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
     try {
-      // 1. Préparation des données mises à jour
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
@@ -236,16 +235,13 @@ const ModuleView: React.FC = () => {
         updatedUser.badges.push('first_module');
       }
 
-      // 2. SAUVEGARDE IMMÉDIATE DU SCORE ET DU JETON DANS SUPABASE
-      // C'est l'étape cruciale pour éviter que l'engagement n'écrase le résultat.
+      // Sauvegarde immédiate du score
       await saveUserProfile(updatedUser);
-      
-      // 3. Rafraîchissement du profil global pour que 'user' soit à jour
-      await refreshProfile();
+      // On rafraîchit en arrière-plan
+      refreshProfile();
       
       if (percentage >= 80) {
         setShouldFire(true);
-        // On affiche la modale d'engagement car le profil est maintenant synchronisé
         setShowEngagementModal(true);
       } else {
         setQuizState('results');
@@ -262,7 +258,6 @@ const ModuleView: React.FC = () => {
     if (!commitment.trim()) return;
     setIsSaving(true);
     try {
-      // On récupère le 'user' qui a été rafraîchi dans finishQuiz
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.actionPlan) updatedUser.actionPlan = [];
       
@@ -275,15 +270,12 @@ const ModuleView: React.FC = () => {
       };
       
       updatedUser.actionPlan.push(newCommitment);
-      
-      // Sauvegarde de l'engagement (sans risquer de perdre le score du quiz)
       await saveUserProfile(updatedUser);
       await refreshProfile();
       setShowEngagementModal(false);
       setQuizState('results');
     } catch (err) {
       console.error("Erreur sauvegarde engagement:", err);
-      alert("Erreur lors de l'enregistrement de l'engagement.");
     } finally {
       setIsSaving(false);
     }
@@ -321,7 +313,9 @@ const ModuleView: React.FC = () => {
   }, [answers, module]);
 
   const latestPercentage = Math.round((latestAttemptScore / module.quiz_questions.length) * 100);
-  const isCertified = currentScore >= 80;
+  // Correction BUG visuel : On se base sur la réussite de la tentative actuelle SI on est sur l'écran résultat
+  const hasJustPassed = latestPercentage >= 80;
+  
   const attemptCount = Number(user.attempts?.[module.id]) || 0;
   const tokensRemaining = Math.max(0, 3 - attemptCount);
 
@@ -453,16 +447,16 @@ const ModuleView: React.FC = () => {
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
                 <div className="text-center mb-16 print:hidden">
-                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${hasJustPassed ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
                    <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">
-                     {latestPercentage >= 80 ? "Excellence Atteinte !" : "Objectif manqué"}
+                     {hasJustPassed ? "Excellence Atteinte !" : "Objectif manqué"}
                    </h2>
                    <p className="text-slate-500 text-lg font-medium">Tentative effectuée : {attemptCount} / 3</p>
                 </div>
 
-                {attemptCount < 3 && latestPercentage < 80 ? (
+                {attemptCount < 3 && !hasJustPassed ? (
                   <div className="text-center max-w-2xl mx-auto py-10 print:hidden">
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
                        <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
@@ -514,7 +508,7 @@ const ModuleView: React.FC = () => {
                       </div>
                     </section>
 
-                    {isCertified ? (
+                    {hasJustPassed ? (
                       <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl print:shadow-none print:border-none print:rounded-none">
                         <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2 print:hidden"></div>
                         <div className="relative z-10">
