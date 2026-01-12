@@ -195,8 +195,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commission_rate: t.commission_rate,
-    is_credit: t.is_credit
+    commissionRate: t.commission_rate,
+    isCredit: t.is_credit
   }));
 };
 
@@ -214,8 +214,21 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit || false
   }).select().single();
+  
   if (error) throw error;
-  return data;
+  
+  return {
+    id: data.id,
+    type: data.type,
+    amount: data.amount,
+    label: data.label,
+    category: data.category,
+    paymentMethod: data.payment_method,
+    date: data.date,
+    staffName: data.staff_name,
+    commissionRate: data.commission_rate,
+    isCredit: data.is_credit
+  };
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -228,7 +241,15 @@ export const deleteKitaTransaction = async (id: string) => {
 export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
   if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  return error ? [] : data;
+  return error ? [] : data.map(d => ({
+    id: d.id,
+    personName: d.person_name,
+    amount: d.amount,
+    phone: d.phone,
+    isPaid: d.is_paid,
+    createdAt: d.created_at,
+    paidAt: d.paid_at
+  }));
 };
 
 export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) => {
@@ -241,8 +262,17 @@ export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) =>
     is_paid: debt.isPaid,
     created_at: debt.createdAt
   }).select().single();
+  
   if (error) throw error;
-  return data;
+  
+  return {
+    id: data.id,
+    personName: data.person_name,
+    amount: data.amount,
+    phone: data.phone,
+    isPaid: data.is_paid,
+    createdAt: data.created_at
+  };
 };
 
 export const markDebtAsPaid = async (debtId: string) => {
@@ -279,8 +309,19 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     category: product.category,
     supplier_id: product.supplierId
   }).select().single();
+  
   if (error) throw error;
-  return data;
+  
+  return {
+    id: data.id,
+    name: data.name,
+    quantity: data.quantity,
+    purchasePrice: data.purchase_price,
+    sellPrice: data.sell_price,
+    alertThreshold: data.alert_threshold,
+    category: data.category,
+    supplierId: data.supplier_id
+  };
 };
 
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
@@ -293,7 +334,7 @@ export const updateKitaProduct = async (id: string, product: Partial<KitaProduct
   if (product.alertThreshold !== undefined) updates.alert_threshold = product.alertThreshold;
   if (product.category !== undefined) updates.category = product.category;
   if (product.supplierId !== undefined) updates.supplier_id = product.supplierId;
-  await supabase.from('profiles').update(updates).eq('id', id);
+  await supabase.from('kita_products').update(updates).eq('id', id);
 };
 
 /**
