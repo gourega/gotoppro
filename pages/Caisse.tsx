@@ -79,6 +79,7 @@ const Caisse: React.FC = () => {
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
+    console.log("Caisse: Chargement des données pour", user.uid);
     try {
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
@@ -87,25 +88,37 @@ const Caisse: React.FC = () => {
       ]);
       
       if (serviceData.length === 0) {
+        console.log("Caisse: Catalogue vide, lancement de l'initialisation automatique...");
         for (const name of DEFAULT_KITA_SERVICES) {
           let cat = 'Autre';
-          if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) cat = 'Coiffure';
-          else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules/i)) cat = 'Ongles';
-          else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage/i)) cat = 'Soins';
-          else if (name.match(/Vente/i)) cat = 'Vente';
+          if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) {
+            cat = 'Coiffure';
+          } else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) {
+            cat = 'Ongles';
+          } else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) {
+            cat = 'Soins';
+          } else if (name.match(/Vente/i)) {
+            cat = 'Vente';
+          }
 
-          await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
+          try {
+            await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
+          } catch (e) {
+            console.error("Caisse: Erreur lors de l'ajout du service", name, e);
+          }
         }
         const refreshedServices = await getKitaServices(user.uid);
         setServices(refreshedServices);
+        console.log("Caisse: Catalogue initialisé avec succès.");
       } else {
+        console.log(`Caisse: ${serviceData.length} services chargés.`);
         setServices(serviceData);
       }
       
       setTransactions(transData);
       setDebts(debtData);
     } catch (err) {
-      console.error("Erreur chargement données:", err);
+      console.error("Caisse: Erreur critique chargement données:", err);
     } finally {
       setLoading(false);
     }
@@ -162,7 +175,7 @@ const Caisse: React.FC = () => {
       }
       
       await loadData();
-      setLastSavedTransaction({ ...newTrans, id: savedId });
+      setLastSavedTransaction({ ...newTrans, id: savedId } as any);
     } catch (err) {
       console.error(err);
     } finally {
@@ -468,7 +481,7 @@ const Caisse: React.FC = () => {
                             <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
                          </div>
                          <div className="mt-4 flex items-center justify-between">
-                            <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
+                            <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
                                {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
                             </span>
                             <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
