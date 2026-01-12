@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getProfileByPhone, isValidUUID } from '../services/supabase';
+import { getProfileByPhone } from '../services/supabase';
 import { AlertCircle, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
 const Login: React.FC = () => {
@@ -58,12 +57,7 @@ const Login: React.FC = () => {
         return;
       }
 
-      if (!isValidUUID(profile.uid)) {
-        setError("Format de compte obsolète. Contactez Coach Kita pour une mise à jour.");
-        setLoading(false);
-        return;
-      }
-
+      // On procède à la connexion manuelle (le AuthContext gère maintenant les identifiants legacy)
       const success = await loginManually(formattedPhone);
       if (!success) {
         setError("Échec de l'ouverture de session.");
@@ -123,7 +117,7 @@ const Login: React.FC = () => {
 
           <button 
             type="submit" 
-            disabled={loading || authLoading} 
+            disabled={loading} 
             className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl hover:bg-brand-950 active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

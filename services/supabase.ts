@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -32,7 +33,7 @@ export const isValidUUID = (uuid: any): boolean => {
  * PROFILS
  */
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase || !isValidUUID(uid)) return null;
+  if (!supabase || !uid) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
   return error ? null : data as UserProfile;
 };
@@ -45,8 +46,8 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  if (!isValidUUID(profile.uid)) {
-    throw new Error("Format d'identifiant invalide. UUID requis.");
+  if (!profile.uid) {
+    throw new Error("Identifiant requis.");
   }
   const { error } = await supabase.from('profiles').upsert(profile);
   if (error) throw new Error(error.message);
@@ -54,13 +55,13 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  if (!isValidUUID(uid)) return; // Protection silencieuse
+  if (!uid) return;
   const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
   if (error) throw new Error(error.message);
 };
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
-  if (!supabase || !isValidUUID(uid)) return [];
+  if (!supabase || !uid) return [];
   const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', uid);
   return error ? [] : data as UserProfile[];
 };
@@ -72,7 +73,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
 };
 
 export const deleteUserProfile = async (uid: string) => {
-  if (!supabase || !isValidUUID(uid)) return;
+  if (!supabase || !uid) return;
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
   if (error) throw error;
 };
@@ -81,7 +82,7 @@ export const deleteUserProfile = async (uid: string) => {
  * MODULES & ACCÈS
  */
 export const grantModuleAccess = async (uid: string, moduleId: string) => {
-  if (!isValidUUID(uid)) return;
+  if (!uid) return;
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
@@ -94,7 +95,7 @@ export const grantModuleAccess = async (uid: string, moduleId: string) => {
 };
 
 export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const fileName = `${userId}_${Date.now()}`;
   const { error } = await supabase.storage.from('avatars').upload(fileName, file);
   if (error) throw error;
@@ -106,7 +107,7 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
  * KITA SERVICES (CATALOGUE)
  */
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(s => ({
     id: s.id,
@@ -120,13 +121,13 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
 
 export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  if (!isValidUUID(userId)) throw new Error("Identifiant invalide");
+  if (!userId) throw new Error("Identifiant invalide");
   
   const payload = services.map(s => ({
     user_id: userId,
     name: s.name,
     category: s.category,
-    default_price: s.defaultPrice,
+    default_price: s.default_price,
     is_active: s.isActive
   }));
   const { error } = await supabase.from('kita_services').insert(payload);
@@ -134,7 +135,7 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
 };
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_services').insert({
     user_id: userId,
     name: service.name,
@@ -172,7 +173,7 @@ export const deleteKitaService = async (id: string) => {
  * KITA TRANSACTIONS
  */
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return error ? [] : data.map(t => ({
     id: t.id,
@@ -189,7 +190,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
 };
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_transactions').insert({
     user_id: userId,
     type: transaction.type,
@@ -214,13 +215,13 @@ export const deleteKitaTransaction = async (id: string) => {
  * KITA DETTES
  */
 export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return error ? [] : data;
 };
 
 export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_debts').insert({
     user_id: userId,
     person_name: debt.personName,
@@ -241,7 +242,7 @@ export const markDebtAsPaid = async (debtId: string) => {
  * KITA STOCK
  */
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(p => ({
     id: p.id,
@@ -256,7 +257,7 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
 };
 
 export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_products').insert({
     user_id: userId,
     name: product.name,
@@ -271,6 +272,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   return data;
 };
 
+// Fix: corrected property access from product.alert_threshold to product.alertThreshold
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
   if (!supabase) return;
   const updates: any = {};
@@ -288,7 +290,7 @@ export const updateKitaProduct = async (id: string, product: Partial<KitaProduct
  * KITA FOURNISSEURS
  */
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId).order('name', { ascending: true });
   return error ? [] : data.map(s => ({
     id: s.id,
@@ -300,7 +302,7 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
 };
 
 export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplier, 'id' | 'userId'>) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_suppliers').insert({
     user_id: userId,
     name: supplier.name,
@@ -319,13 +321,13 @@ export const deleteKitaSupplier = async (id: string) => {
  * KITA STAFF & CLIENTS
  */
 export const getKitaStaff = async (userId: string): Promise<any[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
   return error ? [] : data;
 };
 
 export const addKitaStaff = async (userId: string, staff: { name: string, commission_rate: number, specialty: string }) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_staff').insert({
     user_id: userId,
     name: staff.name,
@@ -341,13 +343,13 @@ export const deleteKitaStaff = async (id: string) => {
 };
 
 export const getKitaClients = async (userId: string): Promise<any[]> => {
-  if (!supabase || !isValidUUID(userId)) return [];
+  if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId).order('total_spent', { ascending: false });
   return error ? [] : data;
 };
 
 export const addKitaClient = async (userId: string, client: { name: string, phone: string }) => {
-  if (!supabase || !isValidUUID(userId)) throw new Error("ID Invalide");
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const { data, error } = await (supabase as any).from('kita_clients').insert({
     user_id: userId,
     name: client.name,

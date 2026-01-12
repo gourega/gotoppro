@@ -33,7 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserSetup = async (authUser: any) => {
     const uid = authUser?.id;
 
-    if (!uid || !isValidUUID(uid)) {
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
+
+    // Pour l'auth Supabase standard (Admins), on exige un UUID
+    if (!isValidUUID(uid)) {
+      console.warn("Auth: Identifiant non-UUID détecté pour une session standard.");
       setLoading(false);
       return;
     }
@@ -91,7 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginManually = async (phone: string): Promise<boolean> => {
     try {
       const profile = await getProfileByPhone(phone);
-      if (profile && profile.isActive && isValidUUID(profile.uid)) {
+      // On accepte même les anciens identifiants (non-UUID) pour les gérants
+      if (profile && profile.isActive) {
         lastUidRef.current = profile.uid;
         setUser(profile);
         localStorage.setItem('gotop_manual_phone', phone);
@@ -110,9 +118,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // 1. Tenter la reconnexion manuelle (WhatsApp)
         const savedPhone = localStorage.getItem('gotop_manual_phone');
-        if (savedPhone && !user) {
+        if (savedPhone) {
           const success = await loginManually(savedPhone);
-          if (success) return; // Le chargement est géré par loginManually (ou sera mis à false via le finally)
+          if (success) {
+            if (mounted) setLoading(false);
+            return;
+          }
         }
 
         // 2. Sinon, vérifier Supabase Auth (Admin)
@@ -135,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = (supabase?.auth as any).onAuthStateChange(async (event: string, session: any) => {
       if (!mounted) return;
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user && isValidUUID(session.user.id)) {
+        if (session?.user) {
           handleUserSetup(session.user);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -153,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshProfile = async () => {
-    if (user?.uid && isValidUUID(user.uid)) {
+    if (user?.uid) {
       const profile = await getUserProfile(user.uid);
       if (profile) setUser(profile);
     }
