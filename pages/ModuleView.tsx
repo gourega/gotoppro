@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP } from '../constants';
+import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP, BRAND_LOGO } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment } from '../types';
 import { saveUserProfile } from '../services/supabase';
@@ -25,7 +25,9 @@ import {
   RotateCcw,
   AlertTriangle,
   HelpCircle,
-  Coins
+  Coins,
+  Download,
+  X
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -76,14 +78,12 @@ const ModuleView: React.FC = () => {
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // Fix: Added missing 'const' declarations for useRef hooks
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const cachedAudioBufferRef = useRef<AudioBuffer | null>(null);
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
-  // Récupération du score unifié (Legacy + New)
   const currentScore = useMemo(() => {
     if (!user?.progress || !module) return 0;
     const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
@@ -185,19 +185,12 @@ const ModuleView: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Erreur Masterclass Audio:", err);
-      if (err.message?.includes("429") || err.message?.includes("quota")) {
-        alert("Coach Kita est très sollicité en ce moment. Veuillez réessayer dans quelques minutes.");
-      } else {
-        alert(`Masterclass indisponible : ${err.message || "Erreur de connexion"}`);
-      }
+      alert(`Masterclass indisponible.`);
     } finally {
       setIsAudioLoading(false);
     }
   };
 
-  /**
-   * INITIALISATION SÉCURISÉE DU QUIZ
-   */
   const startQuizAttempt = () => {
     setAnswers([]);
     setCurrentIdx(0);
@@ -206,10 +199,8 @@ const ModuleView: React.FC = () => {
 
   const handleAnswer = (idx: number) => {
     if (isFinishingQuiz || quizState !== 'active') return;
-    
     const newAnswers = [...answers, idx];
     setAnswers(newAnswers);
-
     if (currentIdx < module.quiz_questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
@@ -220,72 +211,58 @@ const ModuleView: React.FC = () => {
   const finishQuiz = async (finalAnswers: number[]) => {
     setIsFinishingQuiz(true);
     let score = 0;
-    
-    // Sécurité anti-crash : on ne boucle que sur les questions existantes
     module.quiz_questions.forEach((q, i) => { 
       if (finalAnswers[i] !== undefined && finalAnswers[i] === q.correctAnswer) {
         score++; 
       }
     });
-    
     const percentage = Math.round((score / module.quiz_questions.length) * 100);
-    
     try {
-      const updatedUser = JSON.parse(JSON.stringify(user)); // Deep copy simple
+      const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
       if (!updatedUser.attempts) updatedUser.attempts = {};
-
       const currentAttempts = (Number(updatedUser.attempts[module.id]) || 0) + 1;
       updatedUser.attempts[module.id] = currentAttempts;
-      
       const prevBest = Number(updatedUser.progress[module.id]) || 0;
-      if (percentage > prevBest) {
-        updatedUser.progress[module.id] = percentage;
-      }
-
+      if (percentage > prevBest) updatedUser.progress[module.id] = percentage;
       if (percentage >= 80) {
         setShouldFire(true);
         if (!updatedUser.badges.includes('first_module')) updatedUser.badges.push('first_module');
       }
-
       await saveUserProfile(updatedUser);
       await refreshProfile();
       setQuizState('results');
     } catch (err: any) {
-      console.error("Erreur critique quiz:", err);
+      console.error(err);
       setQuizState('results');
     } finally {
       setIsFinishingQuiz(false);
     }
   };
 
-  const handleCommit = async () => {
-    if (!commitment.trim() || !user || !module || isSaving) return;
-    setIsSaving(true);
+  const handleDownloadCert = () => {
+    window.print();
+  };
+
+  const handleShareCert = async () => {
+    const shareData = {
+      title: "Nouvelle Certification Go'Top Pro",
+      text: `Je viens de valider mon expertise en "${module.title}" ! Découvrez mon profil expert :`,
+      url: user.isPublic ? `${window.location.origin}/#/expert/${user.uid}` : window.location.origin
+    };
+
     try {
-      const newAction: UserActionCommitment = {
-        moduleId: module.id,
-        moduleTitle: module.title,
-        action: commitment.trim(),
-        date: new Date().toLocaleDateString('fr-FR'),
-        isCompleted: false
-      };
-      const updatedUser = {
-        ...user,
-        actionPlan: [newAction, ...(user.actionPlan || [])]
-      };
-      await saveUserProfile(updatedUser);
-      await refreshProfile();
-      setCommitment('');
-      navigate('/dashboard');
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        navigator.clipboard.writeText(shareData.url);
+        alert("Lien copié !");
+      }
     } catch (err) {
-      console.error("Error saving commitment:", err);
-    } finally {
-      setIsSaving(false);
+      console.error(err);
     }
   };
 
-  // Calcul sécurisé du score de la tentative en cours pour l'affichage
   const latestAttemptScore = useMemo(() => {
     return answers.reduce((acc, ans, i) => {
       const question = module.quiz_questions[i];
@@ -310,7 +287,7 @@ const ModuleView: React.FC = () => {
         />
       )}
       
-      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 h-20 flex items-center">
+      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 h-20 flex items-center print:hidden">
         <div className="max-w-5xl mx-auto w-full px-6 flex items-center justify-between">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors font-black text-[10px] uppercase tracking-widest group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -372,7 +349,7 @@ const ModuleView: React.FC = () => {
         ) : (
           <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             {quizState === 'intro' && (
-              <div className="text-center max-w-2xl mx-auto">
+              <div className="text-center max-w-2xl mx-auto print:hidden">
                 <div className="h-36 w-36 bg-slate-900 text-white rounded-[3.5rem] flex items-center justify-center mx-auto mb-14 shadow-2xl relative overflow-hidden group">
                   <Award className="w-16 h-16 relative z-10" />
                 </div>
@@ -425,7 +402,7 @@ const ModuleView: React.FC = () => {
 
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
-                <div className="text-center mb-16">
+                <div className="text-center mb-16 print:hidden">
                    <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
@@ -436,7 +413,7 @@ const ModuleView: React.FC = () => {
                 </div>
 
                 {attemptCount < 3 && latestPercentage < 80 ? (
-                  <div className="text-center max-w-2xl mx-auto py-10">
+                  <div className="text-center max-w-2xl mx-auto py-10 print:hidden">
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
                        <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
                        <p className="text-amber-900 text-xl font-medium leading-relaxed italic">
@@ -452,7 +429,7 @@ const ModuleView: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-16">
-                    <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative">
+                    <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative print:hidden">
                       <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] font-serif italic pointer-events-none">Audit</div>
                       <h4 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-14 flex items-center gap-3">
                          <HelpCircle className="w-5 h-5" /> Débriefing Expert Coach Kita
@@ -488,8 +465,8 @@ const ModuleView: React.FC = () => {
                     </section>
 
                     {isCertified ? (
-                      <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2"></div>
+                      <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl print:shadow-none print:border-none print:rounded-none">
+                        <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[3.5rem] m-2 print:hidden"></div>
                         <div className="relative z-10">
                           <div className="mb-14">
                             <Crown className="w-16 h-16 text-brand-500 mx-auto mb-6" />
@@ -498,11 +475,31 @@ const ModuleView: React.FC = () => {
                           </div>
                           <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
                           <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
-                          <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
+                          <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-12 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
+                          
+                          <div className="flex justify-center gap-4 mb-16 print:hidden">
+                            <button 
+                              onClick={handleDownloadCert}
+                              className="inline-flex items-center gap-2 px-8 py-4 bg-brand-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-brand-900/20"
+                            >
+                              <Download className="w-5 h-5" /> Télécharger
+                            </button>
+                            <button 
+                              onClick={handleShareCert}
+                              className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20"
+                            >
+                              <Share2 className="w-5 h-5" /> Partager
+                            </button>
+                          </div>
+
+                          <div className="flex flex-col items-center gap-2 opacity-30 mt-8">
+                             <img src={BRAND_LOGO} alt="" className="h-10 w-10 grayscale" />
+                             <p className="text-[10px] font-black uppercase tracking-widest tracking-[0.3em]">Verify on gotop.pro</p>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center">
+                      <div className="bg-rose-50 border border-rose-100 p-16 rounded-[4rem] text-center print:hidden">
                         <AlertTriangle className="w-16 h-16 text-rose-500 mx-auto mb-8" />
                         <h2 className="text-4xl font-serif font-bold text-rose-900 mb-6">Échec de Certification</h2>
                         <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="bg-rose-600 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition shadow-2xl shadow-rose-200 flex items-center gap-4 mx-auto">

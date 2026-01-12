@@ -26,7 +26,9 @@ import {
   ExternalLink,
   Crown,
   X,
-  ChevronRight
+  ChevronRight,
+  Download,
+  Share2
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -68,7 +70,10 @@ const Profile: React.FC = () => {
 
   const certifiedModules = useMemo(() => {
     if (!user?.progress) return [];
-    return TRAINING_CATALOG.filter(m => (user.progress?.[m.id] || 0) >= 80);
+    return TRAINING_CATALOG.filter(m => {
+      const score = user.progress?.[m.id] || 0;
+      return score >= 80;
+    });
   }, [user]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
@@ -158,6 +163,30 @@ const Profile: React.FC = () => {
     navigator.clipboard.writeText(link);
     setCopyingExpert(true);
     setTimeout(() => setCopyingExpert(false), 2000);
+  };
+
+  const handleDownloadCert = () => {
+    window.print();
+  };
+
+  const handleShareCert = async (moduleId: string) => {
+    const moduleTitle = TRAINING_CATALOG.find(m => m.id === moduleId)?.title || "Formation Go'Top Pro";
+    const shareData = {
+      title: "Ma Certification d'Excellence",
+      text: `Fier(e) d'avoir validé avec succès le module "${moduleTitle}" chez Go'Top Pro ! Découvrez mon expertise ici :`,
+      url: user.isPublic ? `${window.location.origin}/#/expert/${user.uid}` : window.location.origin
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        copyExpertLink();
+        showNotification("Lien copié ! Vous pouvez le partager.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const filteredSponsors = allPotentialSponsors.filter(s => {
@@ -411,9 +440,9 @@ const Profile: React.FC = () => {
       {selectedCert && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
            <div className="max-w-2xl w-full animate-in zoom-in-95 duration-300">
-              <div className="bg-white border-[12px] border-double border-slate-100 p-12 md:p-20 rounded-[3rem] text-center relative overflow-hidden shadow-2xl">
-                <button onClick={() => setSelectedCert(null)} className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full hover:bg-rose-500 hover:text-white transition-all"><X /></button>
-                <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[2.5rem] m-1.5"></div>
+              <div className="bg-white border-[12px] border-double border-slate-100 p-12 md:p-20 rounded-[3rem] text-center relative overflow-hidden shadow-2xl print:shadow-none print:border-none print:rounded-none">
+                <button onClick={() => setSelectedCert(null)} className="absolute top-8 right-8 p-3 bg-slate-100 rounded-full hover:bg-rose-500 hover:text-white transition-all print:hidden"><X /></button>
+                <div className="absolute top-0 left-0 w-full h-full border-[1px] border-slate-200 pointer-events-none rounded-[2.5rem] m-1.5 print:hidden"></div>
                 <div className="relative z-10">
                   <div className="mb-10">
                     <Crown className="w-12 h-12 text-brand-500 mx-auto mb-4" />
@@ -428,7 +457,23 @@ const Profile: React.FC = () => {
                       "{TRAINING_CATALOG.find(m => m.id === selectedCert)?.title}"
                     </span>
                   </p>
-                  <div className="flex flex-col items-center gap-2 opacity-30 mt-12">
+
+                  <div className="flex justify-center gap-4 mb-12 print:hidden">
+                    <button 
+                      onClick={handleDownloadCert}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-brand-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-brand-900/20"
+                    >
+                      <Download className="w-4 h-4" /> Télécharger (PDF)
+                    </button>
+                    <button 
+                      onClick={() => handleShareCert(selectedCert)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20"
+                    >
+                      <Share2 className="w-4 h-4" /> Partager
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2 opacity-30 mt-4">
                      <img src={BRAND_LOGO} alt="" className="h-8 w-8 grayscale" />
                      <p className="text-[8px] font-black uppercase tracking-widest tracking-[0.3em]">Official Certification</p>
                   </div>
