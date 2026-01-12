@@ -46,11 +46,16 @@ const Profile: React.FC = () => {
     referredBy: user?.referredBy || ''
   });
 
-  const isPremium = useMemo(() => {
-    if (!user?.isKitaPremium) return false;
-    if (!user.kitaPremiumUntil) return false;
-    return new Date(user.kitaPremiumUntil) > new Date();
-  }, [user]);
+  // Logique unifiée Elite / Cloud
+  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
+  
+  const isCloudActive = useMemo(() => {
+    if (isElite) return true;
+    if (user?.kitaPremiumUntil) {
+      return new Date(user.kitaPremiumUntil) > new Date();
+    }
+    return false;
+  }, [user, isElite]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     if (type === 'success') {
@@ -130,7 +135,7 @@ const Profile: React.FC = () => {
       <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100">
         <div className="h-40 bg-brand-900 relative">
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-          {isPremium && (
+          {isCloudActive && (
             <div className="absolute top-6 right-8 flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border border-emerald-400">
                <ShieldCheck className="w-4 h-4" /> Cloud Protégé
             </div>
@@ -206,15 +211,20 @@ const Profile: React.FC = () => {
                     <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Taille Équipe</p><p className="font-black text-brand-600 flex items-center gap-2 text-lg"><Users className="w-5 h-5" /> {user.employeeCount || 0} employés</p></div>
                   </div>
 
-                  <div className={`p-8 rounded-[2.5rem] border ${isPremium ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'} relative overflow-hidden`}>
+                  <div className={`p-8 rounded-[2.5rem] border ${isCloudActive ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'} relative overflow-hidden`}>
                      <div className="flex items-start gap-6 relative z-10">
-                        <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg ${isPremium ? 'bg-white text-emerald-500' : 'bg-white text-amber-500'}`}>{isPremium ? <Cloud className="w-7 h-7" /> : <Lock className="w-7 h-7" />}</div>
+                        <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg ${isCloudActive ? 'bg-white text-emerald-500' : 'bg-white text-amber-500'}`}>{isCloudActive ? <Cloud className="w-7 h-7" /> : <Lock className="w-7 h-7" />}</div>
                         <div>
-                           <h3 className={`text-lg font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-emerald-900' : 'text-amber-900'}`}>{isPremium ? 'Sauvegarde Cloud Active' : 'Sauvegarde Cloud Inactive'}</h3>
-                           <p className={`text-sm font-medium leading-relaxed ${isPremium ? 'text-emerald-700' : 'text-amber-700'}`}>
-                             {isPremium ? `Vos chiffres sont sécurisés jusqu'au ${new Date(user.kitaPremiumUntil!).toLocaleDateString('fr-FR')}.` : "Vos données de caisse sont sur ce téléphone uniquement. Passez à l'Elite pour les protéger."}
+                           <h3 className={`text-lg font-black uppercase tracking-widest mb-1 ${isCloudActive ? 'text-emerald-900' : 'text-amber-900'}`}>{isCloudActive ? 'Sauvegarde Cloud Active' : 'Sauvegarde Cloud Inactive'}</h3>
+                           <p className={`text-sm font-medium leading-relaxed ${isCloudActive ? 'text-emerald-700' : 'text-amber-700'}`}>
+                             {isElite 
+                               ? "Protection Cloud illimitée (Statut Membre Élite acquis à vie)." 
+                               : isCloudActive 
+                                 ? `Vos chiffres sont sécurisés jusqu'au ${new Date(user.kitaPremiumUntil!).toLocaleDateString('fr-FR')}.` 
+                                 : "Vos données de caisse sont sur ce téléphone uniquement. Passez à l'Élite pour les protéger."
+                             }
                            </p>
-                           {!isPremium && <button onClick={() => navigate('/results')} className="mt-4 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Activer ma protection</button>}
+                           {!isCloudActive && <button onClick={() => navigate('/results')} className="mt-4 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">Activer ma protection</button>}
                         </div>
                      </div>
                   </div>
