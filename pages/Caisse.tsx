@@ -11,7 +11,9 @@ import {
   addKitaDebt,
   markDebtAsPaid,
   getKitaServices,
-  addKitaService
+  addKitaService,
+  saveUserProfile,
+  getUserProfile
 } from '../services/supabase';
 import { 
   Plus, 
@@ -31,7 +33,9 @@ import {
   Sparkles,
   Zap,
   ShoppingBag,
-  MoreHorizontal
+  MoreHorizontal,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
@@ -48,12 +52,15 @@ const CATEGORIES = [
 ];
 
 const Caisse: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   const [debts, setDebts] = useState<KitaDebt[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   const [period, setPeriod] = useState<PeriodFilter>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isServiceListOpen, setIsServiceListOpen] = useState(false);
@@ -74,52 +81,93 @@ const Caisse: React.FC = () => {
 
   useEffect(() => {
     if (user) loadData();
-  }, [user]);
+  }, [user?.uid]);
 
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
-    console.log("Caisse: Chargement des données pour", user.uid);
+    setError(null);
+    console.log("Caisse: Tentative de chargement pour", user.uid);
+    
     try {
+      // 1. On vérifie d'abord si le profil existe en base (essentiel pour les clés étrangères)
+      const existingProfile = await getUserProfile(user.uid);
+      if (!existingProfile) {
+        console.log("Caisse: Profil absent de la DB, création en cours...");
+        await saveUserProfile({
+          uid: user.uid,
+          phoneNumber: user.phoneNumber,
+          firstName: user.firstName || 'Gérant',
+          lastName: user.lastName || '',
+          establishmentName: user.establishmentName || 'Mon Salon',
+          role: 'CLIENT',
+          isActive: true,
+          isAdmin: false,
+          isKitaPremium: false,
+          hasPerformancePack: false,
+          hasStockPack: false,
+          badges: [],
+          purchasedModuleIds: [],
+          pendingModuleIds: [],
+          actionPlan: [],
+          createdAt: new Date().toISOString()
+        });
+        await refreshProfile();
+      }
+
+      // 2. Chargement des données métier
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
         getKitaDebts(user.uid),
         getKitaServices(user.uid)
       ]);
       
-      if (serviceData.length === 0) {
-        console.log("Caisse: Catalogue vide, lancement de l'initialisation automatique...");
-        for (const name of DEFAULT_KITA_SERVICES) {
-          let cat = 'Autre';
-          if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) {
-            cat = 'Coiffure';
-          } else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) {
-            cat = 'Ongles';
-          } else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) {
-            cat = 'Soins';
-          } else if (name.match(/Vente/i)) {
-            cat = 'Vente';
-          }
-
-          try {
-            await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
-          } catch (e) {
-            console.error("Caisse: Erreur lors de l'ajout du service", name, e);
-          }
-        }
-        const refreshedServices = await getKitaServices(user.uid);
-        setServices(refreshedServices);
-        console.log("Caisse: Catalogue initialisé avec succès.");
-      } else {
-        console.log(`Caisse: ${serviceData.length} services chargés.`);
-        setServices(serviceData);
-      }
-      
       setTransactions(transData);
       setDebts(debtData);
-    } catch (err) {
-      console.error("Caisse: Erreur critique chargement données:", err);
+
+      // 3. Gestion du catalogue
+      if (serviceData.length === 0) {
+        setServices([]);
+      } else {
+        setServices(serviceData);
+      }
+
+    } catch (err: any) {
+      console.error("Caisse: Erreur de chargement", err);
+      setError("Impossible de contacter la base de données. Vérifiez vos tables Supabase.");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeDefaultServices = async () => {
+    if (!user || isInitializing) return;
+    setIsInitializing(true);
+    setLoading(true);
+    
+    try {
+      console.log("Caisse: Lancement de l'initialisation forcée...");
+      for (const name of DEFAULT_KITA_SERVICES) {
+        let cat = 'Autre';
+        if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) {
+          cat = 'Coiffure';
+        } else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) {
+          cat = 'Ongles';
+        } else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) {
+          cat = 'Soins';
+        } else if (name.match(/Vente/i)) {
+          cat = 'Vente';
+        }
+
+        await addKitaService(user.uid, { name, category: cat, defaultPrice: 0, isActive: true });
+      }
+      const refreshedServices = await getKitaServices(user.uid);
+      setServices(refreshedServices);
+    } catch (err) {
+      console.error("Caisse: Erreur init services", err);
+      alert("Erreur lors de la création des services. Vérifiez que la table 'kita_services' existe.");
+    } finally {
+      setIsInitializing(false);
       setLoading(false);
     }
   };
@@ -298,6 +346,16 @@ const Caisse: React.FC = () => {
         </div>
       </header>
 
+      {error && (
+        <div className="max-w-6xl mx-auto px-6 mt-8">
+          <div className="bg-rose-50 border border-rose-100 p-6 rounded-3xl flex items-center gap-4 text-rose-600">
+            <AlertCircle className="w-6 h-6 shrink-0" />
+            <p className="font-bold text-sm">{error}</p>
+            <button onClick={loadData} className="ml-auto bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase">Réessayer</button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
         <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
           {(['today', 'week', 'month', 'debts'] as PeriodFilter[]).map((p) => (
@@ -323,7 +381,10 @@ const Caisse: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="py-24 text-center"><Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto" /></div>
+          <div className="py-24 text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Chargement des chiffres...</p>
+          </div>
         ) : period === 'debts' ? (
           <div className="space-y-6">
              {debts.filter(d => !d.isPaid).length === 0 ? (
@@ -467,46 +528,66 @@ const Caisse: React.FC = () => {
               </div>
 
               <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
-                 <div className="grid grid-cols-2 gap-4">
-                    {filteredServices.map(s => (
-                      <button 
-                        key={s.id} 
-                        onClick={() => handleSelectService(s)}
-                        className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
-                      >
-                         <div>
-                            <div className="flex justify-between items-start mb-3">
-                               <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
-                            </div>
-                            <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
-                         </div>
-                         <div className="mt-4 flex items-center justify-between">
-                            <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
-                               {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
-                            </span>
-                            <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
-                               <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
-                            </div>
-                         </div>
-                      </button>
-                    ))}
-                    
-                    {searchTerm && filteredServices.length === 0 && (
-                      <button 
-                        onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)}
-                        className="col-span-2 p-8 bg-brand-50 border-2 border-dashed border-brand-200 rounded-[2.5rem] text-center group hover:bg-brand-100 transition-all"
-                      >
-                         <p className="text-brand-900 font-bold mb-2">Libellé libre : "{searchTerm}"</p>
-                         <p className="text-brand-600 text-xs font-black uppercase tracking-widest">Utiliser ce nom personnalisé</p>
-                      </button>
-                    )}
-                 </div>
-
-                 {filteredServices.length === 0 && !searchTerm && (
+                 {isInitializing ? (
+                   <div className="py-24 text-center">
+                      <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
+                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Initialisation de votre catalogue...</p>
+                      <p className="text-slate-400 text-sm italic mt-2">Veuillez patienter quelques secondes.</p>
+                   </div>
+                 ) : services.length === 0 ? (
                    <div className="py-20 text-center text-slate-400">
-                      <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                      <p className="italic font-medium">Aucun service dans cette catégorie.</p>
-                      <button onClick={() => navigate('/pilotage')} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Gérer mon catalogue</button>
+                      <ShoppingBag className="w-16 h-16 mx-auto mb-6 opacity-20" />
+                      <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue vide</h4>
+                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Votre catalogue ne semble pas avoir été initialisé. Souhaitez-vous générer les prestations par défaut ?</p>
+                      <button 
+                        onClick={initializeDefaultServices}
+                        className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Générer mes prestations
+                      </button>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-2 gap-4">
+                      {filteredServices.map(s => (
+                        <button 
+                          key={s.id} 
+                          onClick={() => handleSelectService(s)}
+                          className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
+                        >
+                           <div>
+                              <div className="flex justify-between items-start mb-3">
+                                 <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
+                              </div>
+                              <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
+                           </div>
+                           <div className="mt-4 flex items-center justify-between">
+                              <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
+                                 {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
+                              </span>
+                              <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
+                                 <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
+                              </div>
+                           </div>
+                        </button>
+                      ))}
+                      
+                      {searchTerm && filteredServices.length === 0 && (
+                        <button 
+                          onClick={() => handleSelectService({ name: searchTerm, defaultPrice: 0 } as any)}
+                          className="col-span-2 p-8 bg-brand-50 border-2 border-dashed border-brand-200 rounded-[2.5rem] text-center group hover:bg-brand-100 transition-all"
+                        >
+                           <p className="text-brand-900 font-bold mb-2">Libellé libre : "{searchTerm}"</p>
+                           <p className="text-brand-600 text-xs font-black uppercase tracking-widest">Utiliser ce nom personnalisé</p>
+                        </button>
+                      )}
+                      
+                      {filteredServices.length === 0 && !searchTerm && (
+                        <div className="col-span-2 py-20 text-center text-slate-400">
+                          <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                          <p className="italic font-medium">Aucun service dans cette catégorie.</p>
+                          <button onClick={() => navigate('/pilotage')} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Gérer mon catalogue</button>
+                        </div>
+                      )}
                    </div>
                  )}
               </div>
