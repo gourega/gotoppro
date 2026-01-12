@@ -88,13 +88,11 @@ const Caisse: React.FC = () => {
     if (!user?.uid) return;
     setLoading(true);
     setError(null);
-    console.info("Caisse: Chargement des données pour", user.uid);
     
     try {
       // 1. On s'assure que le profil gérant est bien présent dans la DB
       const profile = await getUserProfile(user.uid);
       if (!profile) {
-        console.warn("Caisse: Profil absent de la DB, création forcée...");
         await saveUserProfile({
           uid: user.uid,
           phoneNumber: user.phoneNumber,
@@ -117,11 +115,8 @@ const Caisse: React.FC = () => {
       setTransactions(transData);
       setDebts(debtData);
       setServices(serviceData);
-
-      console.info(`Caisse: ${serviceData.length} services chargés.`);
-
     } catch (err: any) {
-      console.error("Caisse Error:", err);
+      console.error("Caisse Load Error:", err);
       setError("Erreur de liaison avec la base de données.");
     } finally {
       setLoading(false);
@@ -130,11 +125,29 @@ const Caisse: React.FC = () => {
 
   const initializeDefaultServices = async () => {
     if (!user?.uid || isInitializing) return;
+    
+    // Feedback immédiat console
+    console.log("Caisse: Déclenchement de la génération...");
     setIsInitializing(true);
     setError(null);
-    console.info("Caisse: Lancement de l'initialisation groupée...");
     
     try {
+      // Étape de sécurité : recréer le profil si nécessaire
+      const currentProfile = await getUserProfile(user.uid);
+      if (!currentProfile) {
+        console.log("Caisse: Création du profil manquant avant services...");
+        await saveUserProfile({
+          uid: user.uid,
+          phoneNumber: user.phoneNumber,
+          firstName: user.firstName || 'Gérant',
+          establishmentName: user.establishmentName || 'Mon Salon',
+          role: 'CLIENT',
+          isActive: true,
+          createdAt: new Date().toISOString()
+        } as any);
+      }
+
+      // Préparation du catalogue
       const servicesToCreate = DEFAULT_KITA_SERVICES.map(name => {
         let cat = 'Autre';
         if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) cat = 'Coiffure';
@@ -145,15 +158,23 @@ const Caisse: React.FC = () => {
         return { name, category: cat, defaultPrice: 0, isActive: true };
       });
 
-      // Insertion groupée (une seule requête)
+      console.log(`Caisse: Envoi de ${servicesToCreate.length} prestations à Supabase...`);
+
+      // Insertion groupée (Bulk)
       await bulkAddKitaServices(user.uid, servicesToCreate);
-      console.info("Caisse: Catalogue inséré avec succès.");
       
+      console.log("Caisse: Initialisation réussie.");
+      alert("✅ Félicitations ! Vos 26 prestations ont été générées avec succès.");
+      
+      // Rafraîchir les services locaux
       const refreshedServices = await getKitaServices(user.uid);
       setServices(refreshedServices);
+      
     } catch (err: any) {
-      console.error("Init Services Fail:", err);
-      setError("Échec de la génération. Vérifiez que la table 'kita_services' existe sur Supabase.");
+      console.error("Caisse Init Error Detail:", err);
+      const errorMessage = err.message || "Erreur inconnue";
+      setError(`Échec : ${errorMessage}`);
+      alert(`❌ Erreur de génération : ${errorMessage}\n\nVérifiez que votre connexion internet est stable.`);
     } finally {
       setIsInitializing(false);
     }
@@ -224,9 +245,7 @@ const Caisse: React.FC = () => {
            <div className="flex items-center gap-6">
               <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0"><Wallet className="w-full h-full text-amber-500" /></div>
               <div>
-                 <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest">
-                    <ChevronLeft className="w-3 h-3" /> Dashboard
-                 </button>
+                 <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest group"><ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" /> Dashboard</button>
                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 tracking-tight">Pilotage <span className="text-white italic">Financier</span></h1>
               </div>
            </div>
@@ -271,11 +290,11 @@ const Caisse: React.FC = () => {
         {loading ? (
           <div className="py-24 text-center">
             <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Liaison Cloud...</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Connexion Sécurisée...</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredTransactions.map(t => (
+            {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
               <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group">
                 <div className="flex items-center gap-6">
                   <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
@@ -288,13 +307,15 @@ const Caisse: React.FC = () => {
                   <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="py-20 text-center text-slate-400 italic">Aucune opération enregistrée pour cette période.</div>
+            )}
           </div>
         )}
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
             {lastSavedTransaction ? (
               <div className="text-center space-y-8 animate-in fade-in">
@@ -343,7 +364,7 @@ const Caisse: React.FC = () => {
 
       {/* Menu Visuel des Services */}
       {isServiceListOpen && (
-        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-900/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/95 backdrop-blur-md">
            <div className="bg-white w-full max-w-2xl h-[90vh] md:h-[80vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
               <div className="p-8 border-b border-slate-100 bg-white">
                  <div className="flex justify-between items-center mb-8">
@@ -380,10 +401,10 @@ const Caisse: React.FC = () => {
 
               <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
                  {isInitializing ? (
-                   <div className="py-24 text-center">
+                   <div className="py-24 text-center animate-pulse">
                       <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
                       <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Génération du catalogue...</p>
-                      <p className="text-slate-400 text-xs mt-2 italic">Création des 26 prestations standards en cours</p>
+                      <p className="text-slate-400 text-xs mt-2 italic">Merci de ne pas fermer cette fenêtre</p>
                    </div>
                  ) : services.length === 0 ? (
                    <div className="py-20 text-center text-slate-400">
@@ -391,12 +412,13 @@ const Caisse: React.FC = () => {
                          <Database className="w-10 h-10 opacity-20" />
                       </div>
                       <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue non initialisé</h4>
-                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Pour commencer à utiliser la caisse, vous devez générer la liste des prestations standards de Go'Top Pro.</p>
+                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Appuyez sur le bouton ci-dessous pour créer instantanément vos 26 prestations standards.</p>
                       <button 
                         onClick={initializeDefaultServices}
-                        className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto"
+                        className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto active:scale-95"
                       >
-                        <RefreshCw className="w-4 h-4" /> Générer mes prestations
+                        <RefreshCw className={`w-4 h-4 ${isInitializing ? 'animate-spin' : ''}`} /> 
+                        Générer mes prestations
                       </button>
                    </div>
                  ) : (
