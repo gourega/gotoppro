@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -22,13 +21,26 @@ import {
   MessageCircle,
   QrCode,
   CreditCard,
-  Check
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, saveUserProfile, getProfileByPhone, updateUserProfile } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
+
+// Utilitaire pour générer un UUID v4 valide compatible Postgres
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 const Results: React.FC = () => {
   const { user } = useAuth();
@@ -52,24 +64,21 @@ const Results: React.FC = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const packParam = params.get('pack');
     const rechargeId = params.get('recharge');
+    const packParam = params.get('pack');
     
     if (packParam === 'performance') setActivePack('none');
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'stock') setActivePack('stock');
 
-    // INITIALISATION DU PANIER
     let initialCart: TrainingModule[] = [];
 
-    // Cas 1: Si c'est un rachat, on ne met QUE ce module
     if (rechargeId) {
       const moduleToRecharge = TRAINING_CATALOG.find(m => m.id === rechargeId);
       if (moduleToRecharge) {
         initialCart = [moduleToRecharge];
       }
     } 
-    // Cas 2: Si pas de rachat, on regarde le diagnostic
     else {
       const raw = localStorage.getItem('temp_quiz_results');
       const results = raw ? JSON.parse(raw) : null;
@@ -83,7 +92,6 @@ const Results: React.FC = () => {
 
         setRecommendedModuleIds(negativeIds);
         
-        // On n'ajoute que les modules recommandés que le gérant ne possède pas déjà
         const diagnosticModules = TRAINING_CATALOG.filter(m => 
           negativeIds.includes(m.id) && 
           !(user?.purchasedModuleIds || []).includes(m.id)
@@ -94,7 +102,6 @@ const Results: React.FC = () => {
 
     setCart(initialCart);
 
-    // GÉNÉRATION DE L'AUDIT
     const rawResults = localStorage.getItem('temp_quiz_results');
     if (rawResults) {
       const results = JSON.parse(rawResults);
@@ -112,7 +119,7 @@ const Results: React.FC = () => {
       setLoadingAdvice(false);
       setAiAdvice(rechargeId ? "Concentrez-vous sur la validation de ce module pour franchir une nouvelle étape." : "Explorez notre catalogue expert pour transformer votre salon.");
     }
-  }, [user?.uid, location.search]); // Ajout de user.uid pour recalculer si l'utilisateur change
+  }, [user?.uid, location.search]);
 
   const toggleModuleInCart = (mod: TrainingModule) => {
     setActivePack('none');
@@ -124,23 +131,8 @@ const Results: React.FC = () => {
   };
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { 
-      total: 10000, 
-      unitPrice: 625, 
-      discount: 50, 
-      label: 'Pack Elite (Accès Total)',
-      nextThreshold: 0,
-      nextDiscount: 0
-    };
-    
-    if (activePack === 'stock') return { 
-      total: 5000, 
-      unitPrice: 5000, 
-      discount: 0, 
-      label: 'Pack Stock Expert (Magasin)',
-      nextThreshold: 0,
-      nextDiscount: 0
-    };
+    if (activePack === 'elite') return { total: 10000, label: 'Pack Elite (Accès Total)', discount: 50, nextThreshold: 0, nextDiscount: 0, unitPrice: 625 };
+    if (activePack === 'stock') return { total: 5000, label: 'Pack Stock Expert (Magasin)', discount: 0, nextThreshold: 0, nextDiscount: 0, unitPrice: 5000 };
 
     const count = cart.length;
     let unitPrice = 500;
@@ -155,14 +147,7 @@ const Results: React.FC = () => {
 
     const total = count === 16 ? 10000 : count * unitPrice;
     
-    return { 
-      total, 
-      unitPrice, 
-      discount,
-      label: count > 0 ? `${count} module(s) sélectionné(s)` : 'Sélectionnez vos modules',
-      nextThreshold,
-      nextDiscount
-    };
+    return { total, unitPrice, discount, label: count > 0 ? `${count} module(s) sélectionné(s)` : 'Sélectionnez vos modules', nextThreshold, nextDiscount };
   }, [cart, activePack]);
 
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
@@ -183,16 +168,15 @@ const Results: React.FC = () => {
         throw new Error("Votre panier est vide.");
       }
 
-      const targetUid = existingProfile ? existingProfile.uid : `guest_${Date.now()}_${formattedPhone.replace(/\D/g, '')}`;
+      // UTILISATION D'UN UUID VALIDE
+      const targetUid = existingProfile ? existingProfile.uid : generateUUID();
 
-      // Si le gérant existe déjà, on utilise updateUserProfile pour ne pas l'écraser
       if (existingProfile) {
         await updateUserProfile(existingProfile.uid, {
           establishmentName: regStoreName,
           pendingModuleIds: [...new Set([...(existingProfile.pendingModuleIds || []), ...pendingIds])]
         });
       } else {
-        // Nouveau profil : on peut utiliser saveUserProfile (upsert) car il n'y a pas de données à préserver
         const profileToSave: any = {
           uid: targetUid,
           phoneNumber: formattedPhone,
@@ -250,360 +234,270 @@ const Results: React.FC = () => {
       else newPendingIds = cart.map(m => m.id);
       
       const updatedPending = [...new Set([...(user.pendingModuleIds || []), ...newPendingIds])];
-      
-      // CRITIQUE : Utiliser update au lieu d'upsert pour préserver les purchasedModuleIds
       await updateUserProfile(user.uid, { pendingModuleIds: updatedPending });
-      
-      const message = `Bonjour Coach Kita, je viens de valider une nouvelle demande (${pricingData.total} F). Je procède au transfert Wave.`;
-      window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(message)}`, '_blank');
-      
-      navigate('/dashboard');
+      setRegStep('success');
+      setIsRegisterModalOpen(true);
     } catch (err: any) {
-      alert(`Erreur : ${err.message}`);
+      alert("Erreur: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderFormattedText = (text: string) => {
-    return text.split('\n').map((line, i) => {
-      let formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-black">$1</strong>');
-      return <p key={i} className="mb-4 text-slate-600 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
-    });
-  };
-
+  // Fixed the line 45 error by adding the missing return statement
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-32">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        
-        <header className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-           <div>
-              <div className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-4">
-                 <ShoppingBag className="w-4 h-4" /> Boutique de l'excellence
-              </div>
-              <h1 className="text-4xl md:text-6xl font-serif font-bold text-[#0f172a] tracking-tight">
-                Votre Plan de <span className="text-brand-500 italic">Réussite</span>
-              </h1>
-           </div>
-           
-           <div className="bg-white border border-slate-200 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Diagnostic terminé</span>
-           </div>
-        </header>
+    <div className="min-h-screen bg-slate-50 pb-32">
+      {/* Header avec Coach Kita */}
+      <div className="bg-brand-900 pt-24 pb-48 px-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none text-[20rem] font-serif italic text-white leading-none -mr-20">Audit</div>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12 relative z-10">
+          <div className="h-48 w-48 rounded-[3.5rem] bg-white p-1.5 shadow-2xl shrink-0 rotate-3 transition-transform hover:rotate-0">
+            <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover rounded-[2.8rem]" />
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6">Votre Plan de <span className="text-brand-500 italic">Succès</span></h1>
+            <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl leading-relaxed opacity-90">
+              J'ai analysé vos réponses. Voici votre feuille de route stratégique pour transformer votre salon en institution de prestige.
+            </p>
+          </div>
+        </div>
+      </div>
 
-        <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
+      <div className="max-w-5xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
+        {/* Analyse du Mentor */}
+        <section className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 p-10 md:p-16 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[10rem] font-serif italic pointer-events-none group-hover:scale-110 transition-transform duration-1000">Vision</div>
+          <div className="flex items-center gap-4 mb-10">
+            <Zap className="text-brand-600 w-6 h-6" />
+            <h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Débriefing de Coach Kita</h2>
+          </div>
           
-          <div className="space-y-16">
-            {/* Audit Section */}
-            <section className="bg-white rounded-[3.5rem] border border-slate-100 p-10 md:p-16 shadow-2xl shadow-slate-200/50 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none select-none">Kita</div>
-              <div className="flex flex-col md:flex-row gap-12 items-start relative z-10">
-                <div className="h-44 w-44 rounded-[3rem] overflow-hidden border-[8px] border-slate-50 shadow-xl shrink-0 rotate-2">
-                  <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-serif font-bold text-[#0f172a] mb-8 flex items-center gap-4">
-                    L'Audit du Mentor
-                    <Zap className="w-6 h-6 text-amber-500 fill-current" />
-                  </h2>
-                  {loadingAdvice ? (
-                    <div className="flex flex-col gap-4 py-4">
-                      <div className="h-4 w-full bg-slate-100 animate-pulse rounded"></div>
-                      <div className="h-4 w-3/4 bg-slate-100 animate-pulse rounded"></div>
-                      <div className="h-4 w-5/6 bg-slate-100 animate-pulse rounded"></div>
-                      <Loader2 className="animate-spin text-brand-600 mt-4" />
+          {loadingAdvice ? (
+            <div className="flex flex-col items-center py-12 gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Analyse IA en cours...</p>
+            </div>
+          ) : (
+            <div className="prose-kita text-slate-700">
+              {aiAdvice ? (
+                <div className="whitespace-pre-wrap leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: aiAdvice.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900 font-bold">$1</strong>') }} />
+              ) : (
+                <p>Analyse indisponible pour le moment.</p>
+              )}
+            </div>
+          )}
+        </section>
+
+        <div className="grid lg:grid-cols-12 gap-10">
+          {/* Panier et Catalogue */}
+          <div className="lg:col-span-7 space-y-8">
+            <div className="flex items-center justify-between px-4">
+              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Modules Recommandés</h3>
+              <div className="h-px bg-slate-200 flex-grow ml-6"></div>
+            </div>
+
+            <div className="grid gap-4">
+              {TRAINING_CATALOG.map(module => {
+                const isInCart = cart.find(m => m.id === module.id);
+                const isRecommended = recommendedModuleIds.includes(module.id);
+                const isOwned = (user?.purchasedModuleIds || []).includes(module.id);
+
+                return (
+                  <button 
+                    key={module.id} 
+                    onClick={() => !isOwned && toggleModuleInCart(module)}
+                    disabled={isOwned}
+                    className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all relative overflow-hidden group ${
+                      isOwned ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed' :
+                      isInCart ? 'bg-brand-50 border-brand-500 shadow-xl' : 'bg-white border-slate-100 hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-[8px] font-black text-brand-600 uppercase tracking-[0.2em]">{module.topic}</span>
+                          {isRecommended && <span className="text-[7px] font-black bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full uppercase tracking-widest">Prioritaire</span>}
+                          {isOwned && <span className="text-[7px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1"><Check className="w-2 h-2" /> Débloqué</span>}
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-900 group-hover:text-brand-900 transition-colors">{module.title}</h4>
+                      </div>
+                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${isOwned ? 'bg-emerald-100 text-emerald-600' : isInCart ? 'bg-brand-500 text-white shadow-lg' : 'bg-slate-50 text-slate-300 group-hover:bg-slate-100'}`}>
+                        {isOwned ? <CheckCircle2 className="w-6 h-6" /> : isInCart ? <Check className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="prose prose-slate max-w-none">
-                       {renderFormattedText(aiAdvice || "")}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Caisse et Paiement */}
+          <div className="lg:col-span-5">
+            <div className="sticky top-32 space-y-8">
+              <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.02] text-8xl font-serif italic pointer-events-none">Prix</div>
+                <h3 className="text-xl font-serif font-bold text-slate-900 mb-8 border-b border-slate-50 pb-6 flex items-center gap-4">
+                  <ShoppingBag className="w-6 h-6 text-brand-500" /> Votre Panier
+                </h3>
+
+                <div className="space-y-6 mb-10">
+                  <div className="flex justify-between items-end">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{pricingData.label}</p>
+                    <p className="text-4xl font-black text-brand-900">{pricingData.total.toLocaleString()} <span className="text-sm font-bold opacity-30 uppercase">F</span></p>
+                  </div>
+                  {pricingData.discount > 0 && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl text-emerald-700 font-black text-[10px] uppercase tracking-widest border border-emerald-100">
+                      <TrendingUp className="w-3 h-3" /> Remise Exceptionnelle de {pricingData.discount}% appliquée
+                    </div>
+                  )}
+                  {pricingData.nextThreshold > 0 && (
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <p className="text-[9px] font-medium text-slate-500 leading-relaxed italic">
+                        Astuce : Atteignez {pricingData.nextThreshold} modules pour passer à {pricingData.nextDiscount}% de remise.
+                      </p>
                     </div>
                   )}
                 </div>
-              </div>
-            </section>
 
-            {/* Recommandations */}
-            <section>
-               <div className="flex items-center gap-4 mb-10">
-                  <Target className="w-6 h-6 text-brand-600" />
-                  <h3 className="text-2xl font-serif font-bold text-slate-900">Modules prioritaires de Coach Kita</h3>
-               </div>
-               
-               <div className="grid md:grid-cols-2 gap-6">
-                  {TRAINING_CATALOG
-                    .filter(m => recommendedModuleIds.includes(m.id))
-                    .map(mod => (
-                      <ModuleCard 
-                        key={mod.id} 
-                        module={mod} 
-                        isSelected={cart.some(c => c.id === mod.id)}
-                        onToggle={() => toggleModuleInCart(mod)}
-                        isRecommended
-                        isAlreadyOwned={(user?.purchasedModuleIds || []).includes(mod.id)}
-                      />
-                    ))}
-               </div>
-            </section>
+                <button 
+                  onClick={handleValidateEngagement}
+                  disabled={loading || (cart.length === 0 && activePack === 'none')}
+                  className="w-full bg-brand-600 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-brand-200 hover:bg-brand-700 hover:-translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-4"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  Valider mon plan d'action
+                </button>
 
-            {/* Catalogue Complet */}
-            <section>
-               <div className="flex items-center gap-4 mb-10 pt-10 border-t border-slate-100">
-                  <ShoppingBag className="w-6 h-6 text-slate-400" />
-                  <h3 className="text-2xl font-serif font-bold text-slate-900">Perfectionner d'autres domaines</h3>
-               </div>
-               
-               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {TRAINING_CATALOG
-                    .filter(m => !recommendedModuleIds.includes(m.id))
-                    .map(mod => (
-                      <ModuleCard 
-                        key={mod.id} 
-                        module={mod} 
-                        isSelected={cart.some(c => c.id === mod.id)}
-                        onToggle={() => toggleModuleInCart(mod)}
-                        isAlreadyOwned={(user?.purchasedModuleIds || []).includes(mod.id)}
-                      />
-                    ))}
-               </div>
-            </section>
-          </div>
-
-          {/* Sidebar Panier avec Jauge rétablie */}
-          <div className="lg:sticky lg:top-28">
-            <div className="bg-[#0f172a] rounded-[3.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                <Crown className="w-40 h-40 text-amber-500" />
-              </div>
-              
-              <h3 className="text-2xl font-black mb-10 relative z-10 flex items-center gap-3">
-                <TrendingUp className="text-emerald-500 w-6 h-6" />
-                VOTRE PLAN
-              </h3>
-
-              {/* Jauge de Réduction */}
-              {cart.length > 0 && cart.length < 16 && activePack === 'none' && (
-                <div className="mb-10 p-5 bg-white/5 rounded-2xl border border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-2">
-                   <div className="flex justify-between items-center mb-3">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Jauge de Réduction</p>
-                      <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                         <Percent className="w-3 h-3" /> -{pricingData.discount}% débloqués
-                      </span>
-                   </div>
-                   <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden mb-4">
-                      <div 
-                        className="h-full bg-gradient-to-r from-emerald-500 to-brand-500 transition-all duration-1000" 
-                        style={{ width: `${(cart.length / 16) * 100}%` }}
-                      ></div>
-                   </div>
-                   {pricingData.nextThreshold > 0 && (
-                      <div className="flex items-center gap-3 text-brand-400 text-[10px] font-bold italic">
-                         <Gift className="w-3.5 h-3.5 shrink-0" />
-                         <span>Plus que {pricingData.nextThreshold - cart.length} module(s) pour passer à {pricingData.nextDiscount}% de remise !</span>
-                      </div>
-                   )}
+                <div className="mt-8 flex items-center justify-center gap-6 opacity-40">
+                  <div className="flex flex-col items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    <span className="text-[7px] font-black uppercase tracking-widest">Sécurisé</span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200"></div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    <span className="text-[7px] font-black uppercase tracking-widest">Inclus</span>
+                  </div>
                 </div>
-              )}
-
-              <div className="space-y-8 mb-12 relative z-10">
-                 <div className="space-y-2">
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{pricingData.label}</p>
-                    <div className="flex items-baseline gap-2">
-                       <p className="text-6xl font-black tracking-tighter">{pricingData.total.toLocaleString()}</p>
-                       <p className="text-xl font-bold text-brand-500">FCFA</p>
-                    </div>
-                 </div>
-
-                 {/* Panier détaillé */}
-                 {cart.length > 0 && activePack === 'none' && (
-                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                       {cart.map(m => (
-                         <div key={m.id} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5 group/item hover:bg-white/10 transition-all">
-                            <div className="flex flex-col">
-                               <span className="text-[11px] font-black text-white truncate max-w-[180px]">{m.title}</span>
-                               <span className="text-[9px] font-bold text-slate-500 uppercase">{pricingData.unitPrice} F</span>
-                            </div>
-                            <button 
-                              onClick={() => toggleModuleInCart(m)} 
-                              className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
-                            >
-                               <Trash2 className="w-4 h-4" />
-                            </button>
-                         </div>
-                       ))}
-                    </div>
-                 )}
               </div>
 
-              <div className="space-y-4 relative z-10">
-                 {!isElite && activePack !== 'elite' && pricingData.total >= 3000 && (
-                   <button 
-                    onClick={() => setActivePack('elite')}
-                    className="w-full py-5 bg-amber-400 text-brand-900 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-amber-300 transition-all animate-bounce-short"
-                   >
-                      <Crown className="w-4 h-4" /> Passer au Pack Elite (10.000 F)
-                   </button>
-                 )}
-
-                 <button 
-                    onClick={handleValidateEngagement}
-                    disabled={loading || (pricingData.total === 0 && activePack === 'none')}
-                    className="w-full py-7 bg-[#0ea5e9] text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-brand-500/20 hover:bg-[#0284c7] transition-all flex items-center justify-center gap-4 disabled:opacity-20 active:scale-95"
-                 >
-                    {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Valider mon engagement"}
-                    {!loading && <ArrowRight className="w-5 h-5" />}
-                 </button>
+              {/* Promo Packs */}
+              <div className="grid gap-4">
+                <button onClick={() => setActivePack('elite')} className={`p-8 rounded-[2.5rem] border-2 text-left transition-all flex items-center gap-6 group ${activePack === 'elite' ? 'bg-amber-400 border-amber-500 shadow-xl' : 'bg-white border-slate-100 hover:border-amber-400 shadow-sm'}`}>
+                  <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                    <Crown className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className={`text-lg font-black uppercase tracking-tight mb-1 ${activePack === 'elite' ? 'text-brand-900' : 'text-slate-900'}`}>Pack Académie Elite</h4>
+                    <p className={`text-xs font-bold ${activePack === 'elite' ? 'text-brand-800' : 'text-slate-500'}`}>10 000 F • Accès illimité 16 modules</p>
+                  </div>
+                </button>
+                <button onClick={() => setActivePack('stock')} className={`p-8 rounded-[2.5rem] border-2 text-left transition-all flex items-center gap-6 group ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 shadow-xl' : 'bg-white border-slate-100 hover:border-sky-500 shadow-sm'}`}>
+                   <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg ${activePack === 'stock' ? 'bg-white text-sky-500' : 'bg-sky-50 text-sky-600'}`}>
+                      <Store className="w-8 h-8" />
+                   </div>
+                   <div className={activePack === 'stock' ? 'text-white' : 'text-slate-900'}>
+                      <h4 className="text-lg font-black uppercase tracking-tight mb-1">Pack Stock Expert</h4>
+                      <p className={`text-xs font-bold ${activePack === 'stock' ? 'text-white/80' : 'text-slate-500'}`}>5 000 F • Magasin & Fournisseurs</p>
+                   </div>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Registration Modal */}
+      {/* Modale d'inscription / Confirmation */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md animate-in fade-in">
-           <div className="bg-white w-full max-w-md rounded-[3.5rem] shadow-2xl p-10 relative overflow-hidden border border-white/20">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Kita</div>
-              
-              <button 
-                onClick={() => { setIsRegisterModalOpen(false); if(regStep === 'success') navigate('/login'); }}
-                className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 p-2"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              {regStep === 'form' ? (
-                <>
-                  <div className="text-center mb-10">
-                    <div className="h-24 w-24 rounded-[2rem] overflow-hidden border-4 border-brand-50 shadow-xl mx-auto mb-6">
-                      <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
-                    </div>
-                    <h2 className="text-2xl font-serif font-bold text-slate-900 mb-2">Identifiez-vous</h2>
-                    <p className="text-slate-500 text-xs font-medium max-w-[200px] mx-auto">Pour que Coach Kita enregistre votre plan de réussite.</p>
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+          <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
+            {regStep === 'form' ? (
+              <>
+                <div className="text-center mb-10">
+                  <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <Store className="w-10 h-10" />
                   </div>
+                  <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2">Prescription d'Excellence</h2>
+                  <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Inscription au registre Coach Kita</p>
+                </div>
 
-                  <form onSubmit={handleRegisterAndValidate} className="space-y-6 relative z-10">
-                    <div className="space-y-4">
-                      <div className="relative group">
-                        <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
+                <form onSubmit={handleRegisterAndValidate} className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Numéro WhatsApp</label>
+                      <div className="relative">
+                        <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                         <input 
                           type="tel" 
-                          placeholder="Numéro WhatsApp (ex: 0708...)" 
+                          placeholder="0708047914" 
                           value={regPhone} 
                           onChange={e => setRegPhone(e.target.value)} 
-                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
-                          required 
-                        />
-                      </div>
-                      <div className="relative group">
-                        <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-600 transition-colors" />
-                        <input 
-                          type="text" 
-                          placeholder="Nom de votre Salon" 
-                          value={regStoreName} 
-                          onChange={e => setRegStoreName(e.target.value)} 
-                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/50 transition-all shadow-inner" 
-                          required 
+                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 focus:ring-2 focus:ring-brand-500/20" 
+                          required
                         />
                       </div>
                     </div>
-
-                    <button 
-                      type="submit" 
-                      disabled={loading} 
-                      className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-brand-950 transition shadow-xl shadow-brand-900/20 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
-                    >
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5 text-emerald-400" />}
-                      Finaliser mon engagement
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <div className="text-center animate-in zoom-in-95 duration-500">
-                   <div className="h-24 w-24 bg-emerald-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                      <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-                   </div>
-                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Plan Enregistré !</h2>
-                   <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10 text-center">
-                      Coach Kita attend la confirmation de votre transfert <strong className="text-slate-900">Wave</strong> pour le salon <strong className="text-slate-900">"{regStoreName || user?.establishmentName}"</strong>.
-                   </p>
-
-                   <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] mb-10 text-left">
-                      <div className="space-y-4">
-                         <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-500">Montant :</span>
-                            <span className="text-xl font-black text-brand-900">{pricingData.total.toLocaleString()} F</span>
-                         </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-500">Numéro :</span>
-                            <span className="text-xs font-black text-slate-900">01 03 43 84 56</span>
-                         </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom de votre établissement</label>
+                      <div className="relative">
+                        <Store className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <input 
+                          type="text" 
+                          placeholder="Ex: Salon Beauté d'Or" 
+                          value={regStoreName} 
+                          onChange={e => setRegStoreName(e.target.value)} 
+                          className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 focus:ring-2 focus:ring-brand-500/20" 
+                          required
+                        />
                       </div>
-                   </div>
+                    </div>
+                  </div>
 
-                   <button 
-                    onClick={finalizeAndRedirect}
-                    className="w-full bg-[#25D366] text-white py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-green-200 flex items-center justify-center gap-3 hover:scale-[1.02] transition-all"
-                   >
-                      <CreditCard className="w-5 h-5" />
-                      Procéder au paiement
-                   </button>
-                   
-                   <p className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                      L'App va vous rediriger vers la connexion.
-                   </p>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-black transition-all"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                    Valider mon plan
+                  </button>
+                  <button type="button" onClick={() => setIsRegisterModalOpen(false)} className="w-full py-4 text-[10px] font-black uppercase text-slate-300">Annuler</button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center space-y-10 animate-in fade-in">
+                <div className="h-24 w-24 bg-emerald-50 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl">
+                  <CheckCircle2 className="w-12 h-12" />
                 </div>
-              )}
-           </div>
+                <div>
+                  <h2 className="text-4xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Plan Validé !</h2>
+                  <p className="text-slate-500 font-medium leading-relaxed italic">
+                    "Félicitations pour cet engagement. Pour activer vos accès, veuillez procéder au règlement du plan d'action ({pricingData.total} F) via Wave."
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col items-center gap-4">
+                  <div className="flex items-center gap-4">
+                    <img src="https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/wave_logo.png" className="h-8 object-contain" alt="Wave" />
+                    <span className="text-2xl font-black text-brand-900 tracking-tighter">01 03 43 84 56</span>
+                  </div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Titulaire : OUREGA GOBLE</p>
+                </div>
+
+                <button 
+                  onClick={finalizeAndRedirect} 
+                  className="w-full bg-emerald-500 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-emerald-600 transition-all shadow-emerald-200"
+                >
+                  <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const ModuleCard = ({ module, isSelected, onToggle, isRecommended, isAlreadyOwned }: any) => {
-  return (
-    <div 
-      onClick={onToggle}
-      className={`p-8 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 relative overflow-hidden group ${
-        isSelected 
-        ? 'bg-white border-brand-500 shadow-xl ring-2 ring-brand-500/10' 
-        : 'bg-white border-slate-100 hover:border-brand-200 shadow-sm hover:shadow-md'
-      } ${isAlreadyOwned && !isSelected ? 'opacity-40 grayscale-[0.5]' : ''}`}
-    >
-      {isRecommended && (
-        <div className="absolute top-0 right-0 px-4 py-1.5 bg-amber-400 text-brand-900 text-[8px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-2">
-           <Zap className="w-3 h-3 fill-current" /> Urgent
-        </div>
-      )}
-      
-      {isAlreadyOwned && (
-        <div className="absolute top-10 -right-8 px-10 py-1 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-widest rotate-45 flex items-center gap-1 shadow-lg">
-           Déjà acquis
-        </div>
-      )}
-      
-      <div className="flex justify-between items-start mb-6">
-         <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isSelected ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:text-brand-600'}`}>
-           {module.topic}
-         </span>
-         <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-brand-500 text-white shadow-lg' : 'bg-slate-50 text-slate-200 group-hover:bg-brand-500 group-hover:text-white'}`}>
-            {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-         </div>
-      </div>
-      
-      <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight group-hover:text-brand-600 transition-colors">{module.title}</h3>
-      <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-6">{module.description}</p>
-      
-      <div className="flex justify-between items-center pt-6 border-t border-slate-50">
-         <div className="flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Masterclass</span>
-         </div>
-         <p className="font-black text-brand-900">{module.price.toLocaleString()} F</p>
-      </div>
-    </div>
-  );
-};
-
+// Added missing default export
 export default Results;
