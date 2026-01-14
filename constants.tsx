@@ -20,7 +20,7 @@ export const COACH_KITA_BIO = "Expert mentor avec plus de 25 ans d'immersion sur
 export const COACH_KITA_SLOGAN = "Le talent attire le client, la stratégie bâtit l’empire.";
 
 // Partenaire Officiel
-export const RAYMOND_LOGO = "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=400&q=80"; // Placeholder haute qualité pour le salon
+export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/RAYMOND_LOGO.jpg";
 export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
 export const RAYMOND_PHONE = "+2250707949706";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
@@ -72,7 +72,7 @@ export const DAILY_CHALLENGES = [
   "Répondre à un avis ou commentaire sur les réseaux sociaux",
   "Réorganiser sa desserte de travail pour gagner 1 minute",
   "Vérifier ses chaussures et sa tenue devant le miroir",
-  "Faire un diagnostic assis à hauteur de la cliente",
+  "Faire un diagnostic assis à hauteur de la finale",
   "Proposer un produit de revente à la fin d'une prestation"
 ];
 
@@ -454,7 +454,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     price: 500,
     aiCredits: 3,
     lesson_content: `<h2>1. Les codes de l'hospitalité de luxe</h2><p>Du peignoir en soie à la boisson signature.</p>`,
-    coach_tip: "L'exclusivité crée le désir.",
+    coach_tip: "L'exclusivité crée le d&eacute;sir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
     quiz_questions: [],
     exercises: [],
