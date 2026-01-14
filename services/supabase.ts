@@ -79,6 +79,17 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   return error ? null : mapProfileFromDB(data);
 };
 
+export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
+  if (!supabase || !uid) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('uid', uid)
+    .eq('is_public', true)
+    .maybeSingle();
+  return error ? null : mapProfileFromDB(data);
+};
+
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
@@ -190,7 +201,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commissionRate: t.commission_rate,
+    commission_rate: t.commission_rate,
     isCredit: t.is_credit
   }));
 };
@@ -219,7 +230,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     paymentMethod: data.payment_method,
     date: data.date,
     staffName: data.staff_name,
-    commissionRate: data.commission_rate,
+    commission_rate: data.commission_rate,
     isCredit: data.is_credit
   } as KitaTransaction;
 };

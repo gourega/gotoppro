@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase, getUserProfile, getProfileByPhone, isValidUUID } from '../services/supabase';
+import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
 import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG } from '../constants';
 
@@ -33,15 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleUserSetup = async (authUser: any) => {
     const uid = authUser?.id;
-
     if (!uid) {
-      setLoading(false);
-      return;
-    }
-
-    // Pour l'auth Supabase standard (Admins), on exige un UUID
-    if (!isValidUUID(uid)) {
-      console.warn("Auth: Identifiant non-UUID détecté pour une session standard.");
       setLoading(false);
       return;
     }
@@ -54,13 +45,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     isSettingUpRef.current = true;
     lastUidRef.current = uid;
-    
     const email = (authUser.email || '').toLowerCase().trim();
 
     try {
       if (email === MASTER_ADMIN_EMAIL) {
         const profile = await getUserProfile(uid).catch(() => null);
-        // Fix: Added missing 'isPublic' property to comply with UserProfile interface
         const adminProfile: UserProfile = {
           uid,
           phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
@@ -91,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (err) {
-      console.error("Auth: Error during profile setup", err);
+      console.error("Auth: Profile setup error", err);
     } finally {
       isSettingUpRef.current = false;
       setLoading(false);
@@ -101,7 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginManually = async (phone: string): Promise<boolean> => {
     try {
       const profile = await getProfileByPhone(phone);
-      // On accepte même les anciens identifiants (non-UUID) pour les gérants
       if (profile && profile.isActive) {
         lastUidRef.current = profile.uid;
         setUser(profile);
@@ -116,10 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     const initAuth = async () => {
       try {
-        // 1. Tenter la reconnexion manuelle (WhatsApp)
         const savedPhone = localStorage.getItem('gotop_manual_phone');
         if (savedPhone) {
           const success = await loginManually(savedPhone);
@@ -128,13 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
         }
-
-        // 2. Sinon, vérifier Supabase Auth (Admin)
+        
         if (supabase) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             await handleUserSetup(session.user);
-            return;
           }
         }
       } catch (err) {
@@ -143,26 +129,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) setLoading(false);
       }
     };
-
+    
     initAuth();
 
-    const { data: { subscription } } = (supabase?.auth as any).onAuthStateChange(async (event: string, session: any) => {
-      if (!mounted) return;
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user) {
-          handleUserSetup(session.user);
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+        if (!mounted) return;
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          if (session?.user) handleUserSetup(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          lastUidRef.current = null;
+          setUser(null);
+          localStorage.removeItem('gotop_manual_phone');
+          setLoading(false);
         }
-      } else if (event === 'SIGNED_OUT') {
-        lastUidRef.current = null;
-        setUser(null);
-        localStorage.removeItem('gotop_manual_phone');
-        setLoading(false);
-      }
-    });
+      });
+      authSubscription = subscription;
+    }
     
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      if (authSubscription) authSubscription.unsubscribe();
     };
   }, []);
 
