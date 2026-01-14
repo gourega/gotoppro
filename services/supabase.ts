@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -10,7 +9,8 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   : null;
 
 /**
- * GÉNÉRATION & VALIDATION UUID
+ * GÉNÉRATION & VALIDATION ID
+ * Accepte désormais les chaînes simples (guest, whatsapp, legacy ids)
  */
 export const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -25,8 +25,49 @@ export const generateUUID = () => {
 
 export const isValidUUID = (uuid: any): boolean => {
   if (typeof uuid !== 'string') return false;
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return regex.test(uuid);
+  return uuid.length > 0;
+};
+
+/**
+ * MAPPING DATA (DB <=> APP)
+ * Assure la traduction entre snake_case (DB) et camelCase (App)
+ */
+const mapProfileFromDB = (data: any): UserProfile | null => {
+  if (!data) return null;
+  return {
+    ...data,
+    isPublic: data.is_public ?? false,
+    isKitaPremium: data.is_kita_premium ?? false,
+    hasPerformancePack: data.has_performance_pack ?? false,
+    hasStockPack: data.has_stock_pack ?? false,
+    purchasedModuleIds: data.purchased_module_ids || [],
+    pendingModuleIds: data.pending_module_ids || [],
+    referralCount: data.referral_count || 0,
+    actionPlan: data.action_plan || [],
+    createdAt: data.created_at || data.createdAt
+  } as UserProfile;
+};
+
+const mapProfileToDB = (profile: Partial<UserProfile>) => {
+  const data: any = { ...profile };
+  if (profile.isPublic !== undefined) data.is_public = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) data.is_kita_premium = profile.isKitaPremium;
+  if (profile.hasPerformancePack !== undefined) data.has_performance_pack = profile.hasPerformancePack;
+  if (profile.hasStockPack !== undefined) data.has_stock_pack = profile.hasStockPack;
+  if (profile.purchasedModuleIds !== undefined) data.purchased_module_ids = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) data.pending_module_ids = profile.pendingModuleIds;
+  if (profile.actionPlan !== undefined) data.action_plan = profile.actionPlan;
+  
+  // Supprimer les versions camelCase avant envoi en DB
+  delete data.isPublic;
+  delete data.isKitaPremium;
+  delete data.hasPerformancePack;
+  delete data.hasStockPack;
+  delete data.purchasedModuleIds;
+  delete data.pendingModuleIds;
+  delete data.actionPlan;
+  
+  return data;
 };
 
 /**
@@ -35,84 +76,40 @@ export const isValidUUID = (uuid: any): boolean => {
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase || !uid) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-  return error ? null : data as UserProfile;
-};
-
-// Utilisé pour les pages de profil partagées publiquement
-export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase || !uid) return null;
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('uid', uid)
-    .eq('isPublic', true)
-    .maybeSingle();
-  return error ? null : data as UserProfile;
+  return error ? null : mapProfileFromDB(data);
 };
 
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
-  return error ? null : data as UserProfile;
+  return error ? null : mapProfileFromDB(data);
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  if (!profile.uid) {
-    throw new Error("Identifiant requis.");
-  }
-  const { error } = await supabase.from('profiles').upsert(profile);
+  if (!profile.uid) throw new Error("Identifiant requis.");
+  const dbData = mapProfileToDB(profile);
+  const { error } = await supabase.from('profiles').upsert(dbData);
   if (error) throw new Error(error.message);
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase) throw new Error("Supabase non initialisé");
-  if (!uid) return;
-  const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
+  if (!supabase || !uid) return;
+  const dbData = mapProfileToDB(updates);
+  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
   if (error) throw new Error(error.message);
-};
-
-export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
-  if (!supabase || !uid) return [];
-  const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', uid);
-  return error ? [] : data as UserProfile[];
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('profiles').select('*').order('createdAt', { ascending: false });
-  return error ? [] : data as UserProfile[];
+  const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+  return error ? [] : data.map(mapProfileFromDB) as UserProfile[];
 };
 
 export const deleteUserProfile = async (uid: string) => {
   if (!supabase || !uid) return;
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
   if (error) throw error;
-};
-
-/**
- * MODULES & ACCÈS
- */
-export const grantModuleAccess = async (uid: string, moduleId: string) => {
-  if (!uid) return;
-  const profile = await getUserProfile(uid);
-  if (!profile) return;
-  const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: 0 };
-  await updateUserProfile(uid, { 
-    purchasedModuleIds: updatedIds, 
-    attempts: updatedAttempts,
-    isActive: true 
-  });
-};
-
-export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
-  const fileName = `${userId}_${Date.now()}`;
-  const { error } = await supabase.storage.from('avatars').upload(fileName, file);
-  if (error) throw error;
-  const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-  return publicUrl;
 };
 
 /**
@@ -132,9 +129,7 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
 };
 
 export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
-  if (!supabase) throw new Error("Supabase non initialisé");
-  if (!userId) throw new Error("Identifiant invalide");
-  
+  if (!supabase || !userId) throw new Error("ID Invalide");
   const payload = services.map(s => ({
     user_id: userId,
     name: s.name,
@@ -177,8 +172,7 @@ export const updateKitaService = async (id: string, service: Partial<KitaService
 };
 
 export const deleteKitaService = async (id: string) => {
-  if (!supabase) return;
-  await supabase.from('kita_services').delete().eq('id', id);
+  if (supabase) await supabase.from('kita_services').delete().eq('id', id);
 };
 
 /**
@@ -215,9 +209,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit || false
   }).select().single();
-  
   if (error) throw error;
-  
   return {
     id: data.id,
     type: data.type,
@@ -263,9 +255,7 @@ export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) =>
     is_paid: debt.isPaid,
     created_at: debt.createdAt
   }).select().single();
-  
   if (error) throw error;
-  
   return {
     id: data.id,
     personName: data.person_name,
@@ -310,9 +300,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     category: product.category,
     supplier_id: product.supplierId
   }).select().single();
-  
   if (error) throw error;
-  
   return {
     id: data.id,
     name: data.name,
@@ -361,9 +349,7 @@ export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplie
     phone: supplier.phone,
     category: supplier.category
   }).select().single();
-  
   if (error) throw error;
-  
   return {
     id: data.id,
     name: data.name,
@@ -419,4 +405,32 @@ export const addKitaClient = async (userId: string, client: { name: string, phon
   }).select().single();
   if (error) throw error;
   return data;
+};
+
+export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
+  if (!supabase || !uid) return [];
+  const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', uid);
+  return error ? [] : data.map(mapProfileFromDB) as UserProfile[];
+};
+
+export const grantModuleAccess = async (uid: string, moduleId: string) => {
+  if (!uid) return;
+  const profile = await getUserProfile(uid);
+  if (!profile) return;
+  const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
+  const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: 0 };
+  await updateUserProfile(uid, { 
+    purchasedModuleIds: updatedIds, 
+    attempts: updatedAttempts,
+    isActive: true 
+  });
+};
+
+export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
+  if (!supabase || !userId) throw new Error("ID Invalide");
+  const fileName = `${userId}_${Date.now()}`;
+  const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+  return publicUrl;
 };

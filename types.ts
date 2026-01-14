@@ -1,4 +1,3 @@
-
 export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface UserActionCommitment {
@@ -18,7 +17,6 @@ export interface KitaService {
   userId: string;
 }
 
-// Structures pour KITA Comptabilité
 export interface KitaTransaction {
   id: string;
   type: 'INCOME' | 'EXPENSE';
@@ -31,7 +29,7 @@ export interface KitaTransaction {
   productId?: string;
   staffName?: string;
   commissionRate?: number;
-  isCredit?: boolean; // Si c'est une vente à crédit
+  isCredit?: boolean;
 }
 
 export interface KitaDebt {
@@ -52,14 +50,14 @@ export interface KitaProduct {
   sellPrice: number;
   alertThreshold: number;
   category: string;
-  supplierId?: string; // Lien optionnel vers un fournisseur
+  supplierId?: string;
 }
 
 export interface KitaSupplier {
   id: string;
   name: string;
   phone: string;
-  category: string; // Ex: "Mèches", "Coloration", "Matériel technique"
+  category: string;
   userId: string;
 }
 
@@ -78,13 +76,12 @@ export interface UserProfile {
   role: UserRole;
   isActive: boolean;
   isAdmin: boolean;
-  isPublic: boolean; // Ajouté pour les profils publics
+  isPublic: boolean;
   
-  // Statuts KITA
   isKitaPremium: boolean;
   kitaPremiumUntil?: string; 
-  hasPerformancePack: boolean; // Pack Humains
-  hasStockPack: boolean;       // Pack Matériel
+  hasPerformancePack: boolean;
+  hasStockPack: boolean;
   
   badges: string[];
   purchasedModuleIds: string[];
