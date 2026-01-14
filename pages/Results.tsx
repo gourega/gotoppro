@@ -205,10 +205,10 @@ const Results: React.FC = () => {
           badges: [],
           purchasedModuleIds: [],
           pendingModuleIds: pendingIds,
-          actionPlan: [],
           createdAt: new Date().toISOString(),
           role: 'CLIENT'
         };
+        // On n'envoie pas actionPlan ici au cas où la colonne manque
         await saveUserProfile(profileToSave);
       }
       

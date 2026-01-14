@@ -25,42 +25,27 @@ export const generateUUID = () => {
 
 /**
  * MAPPING DATA (DB <=> APP)
+ * Garantit la correspondance parfaite avec les colonnes créées par le script SQL
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     ...data,
-    isAdmin: data.isAdmin ?? data.is_admin ?? false,
-    isPublic: data.is_public ?? data.isPublic ?? true,
-    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
-    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
-    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
+    // On conserve les noms camelCase car le script SQL a été créé avec des guillemets
+    // pour "firstName", "lastName", etc. ce qui est compatible avec le JS direct.
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) 
-      ? (data.purchased_module_ids || data.purchasedModuleIds) 
-      : [],
-    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) 
-      ? (data.pending_module_ids || data.pendingModuleIds) 
-      : [],
-    referralCount: data.referral_count || data.referralCount || 0,
-    actionPlan: Array.isArray(data.action_plan || data.actionPlan) 
-      ? (data.action_plan || data.actionPlan) 
-      : [],
-    createdAt: data.created_at || data.createdAt || new Date().toISOString()
+    purchasedModuleIds: Array.isArray(data.purchasedModuleIds) ? data.purchasedModuleIds : [],
+    pendingModuleIds: Array.isArray(data.pendingModuleIds) ? data.pendingModuleIds : [],
+    actionPlan: Array.isArray(data.actionPlan) ? data.actionPlan : [],
+    referralCount: data.referralCount || 0,
+    createdAt: data.createdAt || new Date().toISOString()
   } as UserProfile;
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
-  const data: any = { ...profile };
-  if (profile.isAdmin !== undefined) data.is_admin = profile.isAdmin;
-  if (profile.isPublic !== undefined) data.is_public = profile.isPublic;
-  if (profile.isKitaPremium !== undefined) data.is_kita_premium = profile.isKitaPremium;
-  if (profile.hasPerformancePack !== undefined) data.has_performance_pack = profile.hasPerformancePack;
-  if (profile.hasStockPack !== undefined) data.has_stock_pack = profile.hasStockPack;
-  if (profile.purchasedModuleIds !== undefined) data.purchased_module_ids = profile.purchasedModuleIds;
-  if (profile.pendingModuleIds !== undefined) data.pending_module_ids = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) data.action_plan = profile.actionPlan;
-  return data;
+  // Le script SQL utilisant des guillemets (ex: "firstName"), 
+  // les colonnes sont sensibles à la casse en SQL mais directes en JS.
+  return { ...profile };
 };
 
 /**
@@ -70,26 +55,6 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   if (!supabase || !uid) return null;
   try {
     const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-    if (error) throw error;
-    return mapProfileFromDB(data);
-  } catch (err) {
-    return null;
-  }
-};
-
-/**
- * Récupère un profil public par UID
- */
-export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase || !uid) return null;
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('uid', uid)
-      .eq('is_public', true)
-      .maybeSingle();
-    
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
@@ -154,7 +119,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commission_rate: t.commission_rate,
+    commissionRate: t.commission_rate,
     isCredit: t.is_credit
   }));
 };
@@ -185,7 +150,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     paymentMethod: data.payment_method,
     date: data.date,
     staffName: data.staff_name,
-    commission_rate: data.commission_rate,
+    commissionRate: data.commission_rate,
     isCredit: data.is_credit
   };
 };
@@ -414,6 +379,23 @@ export const addKitaClient = async (userId: string, client: { name: string, phon
     total_visits: 0
   }).select().single();
   return error ? null : data;
+};
+
+export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
+  if (!supabase || !uid) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('uid', uid)
+      .eq('isPublic', true)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return mapProfileFromDB(data);
+  } catch (err) {
+    return null;
+  }
 };
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
