@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
@@ -36,7 +37,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     ...data,
-    isPublic: data.is_public ?? false,
+    isPublic: data.is_public ?? true, // NATIVEMENT PUBLIC SI NUL
     isKitaPremium: data.is_kita_premium ?? false,
     hasPerformancePack: data.has_performance_pack ?? false,
     hasStockPack: data.has_stock_pack ?? false,

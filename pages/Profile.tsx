@@ -31,7 +31,9 @@ import {
   Award,
   MapPin,
   Mail,
-  Phone
+  Phone,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -56,7 +58,8 @@ const Profile: React.FC = () => {
     bio: user?.bio || '',
     employeeCount: user?.employeeCount || 0,
     openingYear: user?.openingYear || new Date().getFullYear(),
-    referredBy: user?.referredBy || ''
+    referredBy: user?.referredBy || '',
+    isPublic: user?.isPublic ?? true
   });
 
   // Logique unifiée Elite / Cloud
@@ -90,7 +93,8 @@ const Profile: React.FC = () => {
         bio: user?.bio || '',
         employeeCount: user?.employeeCount || 0,
         openingYear: user?.openingYear || new Date().getFullYear(),
-        referredBy: user?.referredBy || ''
+        referredBy: user?.referredBy || '',
+        isPublic: user?.isPublic ?? true
       });
       fetchFilleuls();
       if (isEditing) fetchSponsors();
@@ -192,7 +196,14 @@ const Profile: React.FC = () => {
                 <h1 className="text-4xl font-serif font-bold text-slate-900">{user.firstName} {user.lastName}</h1>
                 {user.isAdmin && <Sparkles className="text-amber-500 w-6 h-6 fill-current" />}
               </div>
-              <p className="text-brand-600 font-black tracking-widest text-sm mb-4">{user.isAdmin ? COACH_KITA_TITLE : user.phoneNumber}</p>
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mb-4">
+                 <p className="text-brand-600 font-black tracking-widest text-sm">{user.isAdmin ? COACH_KITA_TITLE : user.phoneNumber}</p>
+                 <span className="h-1.5 w-1.5 bg-slate-200 rounded-full"></span>
+                 <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isPublic ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+                    {user.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    {user.isPublic ? 'Profil Public' : 'Profil Privé'}
+                 </div>
+              </div>
               <div className="flex flex-wrap justify-center md:justify-start gap-3">
                 <button onClick={copyRefLink} className="inline-flex items-center gap-2 px-6 py-3 bg-brand-50 text-brand-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-100 transition-all shadow-sm border border-brand-200">
                   {copying ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copying ? 'Lien copié !' : 'Mon lien de parrainage'}
@@ -215,7 +226,6 @@ const Profile: React.FC = () => {
 
               {isEditing ? (
                 <form onSubmit={handleSave} className="space-y-8">
-                  {/* Formulaire inchangé */}
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prénom</label>
@@ -226,7 +236,84 @@ const Profile: React.FC = () => {
                       <input type="text" placeholder="Nom" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                     </div>
                   </div>
-                  {/* ... suite du formulaire ... */}
+
+                  {!user.referredBy && (
+                    <div className="p-8 bg-brand-50/30 rounded-[2.5rem] border border-brand-100">
+                      <label className="block text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-4">Qui vous a invité ?</label>
+                      <input type="text" placeholder="Nom ou numéro..." value={sponsorSearch} onChange={e => setSponsorSearch(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-200 text-sm font-bold shadow-sm outline-none" />
+                      {sponsorSearch && (
+                        <div className="mt-4 space-y-2">
+                          {filteredSponsors.map(s => (
+                            <button key={s.uid} type="button" onClick={() => { setFormData({...formData, referredBy: s.uid}); setSponsorSearch(''); }} className="w-full flex items-center justify-between p-4 bg-white hover:bg-brand-500 hover:text-white rounded-2xl transition-all border border-brand-100 group shadow-sm"><span className="text-xs font-bold">{s.firstName} {s.lastName}</span><UserPlus className="w-4 h-4" /></button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                     <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-colors ${formData.isPublic ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-white'}`}>
+                        {formData.isPublic ? <Eye className="w-6 h-6" /> : <EyeOff className="w-6 h-6" />}
+                     </div>
+                     <div className="flex-grow">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Visibilité Publique</p>
+                        <p className="text-xs font-bold text-slate-600 leading-tight">Autoriser Coach Kita à afficher mon profil dans l'annuaire de l'Excellence.</p>
+                     </div>
+                     <button 
+                        type="button" 
+                        onClick={() => setFormData({...formData, isPublic: !formData.isPublic})}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.isPublic ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                     >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                     </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom du Salon</label>
+                    <input type="text" placeholder="Nom du Salon" value={formData.establishmentName} onChange={e => setFormData({...formData, establishmentName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nombre d'employés</label>
+                      <div className="relative">
+                        <Users className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input type="number" placeholder="Nombre d'employés" value={formData.employeeCount} onChange={e => setFormData({...formData, employeeCount: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Année d'ouverture</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input type="number" placeholder="Ex: 2020" value={formData.openingYear} onChange={e => setFormData({...formData, openingYear: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Bio Professionnelle</label>
+                    {/* INDICATIONS COULISSES : Uniquement visible en mode édition */}
+                    <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 mb-2 flex items-start gap-4">
+                      <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                      <div>
+                         <p className="text-[11px] font-black text-indigo-900 uppercase tracking-widest mb-1">Conseil Marketing (Privé)</p>
+                         <p className="text-[11px] font-medium text-indigo-800 leading-relaxed italic">
+                           "Votre profil est votre véritable carte d'identité marketing d'élite. Rédigez une bio professionnelle et inspirante pour attirer des partenaires et clients VIP. Ce conseil n'apparaîtra pas sur votre profil final."
+                         </p>
+                      </div>
+                    </div>
+                    <textarea 
+                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience, spécialisé dans les rituels de soins capillaires de luxe et le management d'équipes haute performance." 
+                      value={formData.bio} 
+                      onChange={e => setFormData({...formData, bio: e.target.value})} 
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none min-h-[150px] resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button type="submit" disabled={loading} className="flex-grow bg-brand-600 text-white px-8 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl hover:bg-brand-700 transition-all flex items-center justify-center gap-3">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Sauvegarder</button>
+                    <button type="button" onClick={() => setIsEditing(false)} className="px-8 py-5 rounded-2xl font-black text-[10px] uppercase text-slate-400 hover:bg-slate-50 transition-all">Annuler</button>
+                  </div>
                 </form>
               ) : (
                 <div className="space-y-12">
@@ -331,11 +418,27 @@ const Profile: React.FC = () => {
               <div className="bg-slate-50/50 rounded-[3rem] p-10 border border-slate-100">
                 <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 pb-4 mb-8">Trophées</h2>
                 <div className="grid grid-cols-2 gap-4">
-                  {BADGES.map(badge => (
-                    <div key={badge.id} title={badge.description} className={`p-5 rounded-[2rem] border-2 flex flex-col items-center text-center transition-all ${user.badges.includes(badge.id) ? 'bg-white border-brand-100 shadow-lg scale-100' : 'bg-slate-100 border-transparent opacity-30 grayscale scale-90'}`}>
-                      <span className="text-4xl mb-3">{badge.icon}</span><p className="text-[9px] font-black uppercase tracking-tight text-slate-600">{badge.name}</p>
-                    </div>
-                  ))}
+                  {BADGES.map(badge => {
+                    const isUnlocked = user.isAdmin || user.badges.includes(badge.id);
+                    return (
+                      <div 
+                        key={badge.id} 
+                        title={badge.description} 
+                        className={`p-5 rounded-[2rem] border-2 flex flex-col items-center text-center transition-all ${
+                          isUnlocked 
+                            ? user.isAdmin 
+                               ? 'bg-amber-50 border-amber-400 shadow-xl scale-105' 
+                               : 'bg-white border-brand-100 shadow-lg scale-100'
+                            : 'bg-slate-100 border-transparent opacity-30 grayscale scale-90'
+                        }`}
+                      >
+                        <span className="text-4xl mb-3">{badge.icon}</span>
+                        <p className={`text-[9px] font-black uppercase tracking-tight ${isUnlocked && user.isAdmin ? 'text-amber-700' : 'text-slate-600'}`}>
+                          {badge.name}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

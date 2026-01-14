@@ -157,7 +157,6 @@ const Results: React.FC = () => {
         throw new Error("Votre panier est vide.");
       }
 
-      // UTILISATION D'UN UUID VALIDE GÉNÉRÉ PAR LA NOUVELLE FONCTION
       const targetUid = (existingProfile && existingProfile.uid) ? existingProfile.uid : generateUUID();
 
       if (existingProfile) {
@@ -174,6 +173,7 @@ const Results: React.FC = () => {
           lastName: '',
           isActive: false,
           isAdmin: false,
+          isPublic: true, // NATIVEMENT PUBLIC
           isKitaPremium: false,
           hasPerformancePack: false,
           hasStockPack: false,

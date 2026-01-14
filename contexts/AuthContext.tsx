@@ -9,7 +9,8 @@ import {
   COACH_KITA_BIO, 
   COACH_KITA_ESTABLISHMENT,
   COACH_KITA_OPENING_YEAR,
-  COACH_KITA_EMPLOYEES
+  COACH_KITA_EMPLOYEES,
+  BADGES
 } from '../constants';
 
 const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL && process.env.VITE_ADMIN_EMAIL.trim() !== "" 
@@ -76,7 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isKitaPremium: true,
           hasPerformancePack: true,
           hasStockPack: true,
-          badges: profile?.badges || [],
+          // Attribuer tous les badges au Super Admin
+          badges: BADGES.map(b => b.id),
           purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
           pendingModuleIds: [],
           actionPlan: profile?.actionPlan || [],
