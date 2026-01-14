@@ -11,7 +11,6 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
 
 /**
  * GÉNÉRATION & VALIDATION ID
- * Accepte désormais les chaînes simples (guest, whatsapp, legacy ids)
  */
 export const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -24,33 +23,38 @@ export const generateUUID = () => {
   });
 };
 
-export const isValidUUID = (uuid: any): boolean => {
-  if (typeof uuid !== 'string') return false;
-  return uuid.length > 0;
-};
-
 /**
  * MAPPING DATA (DB <=> APP)
- * Assure la traduction entre snake_case (DB) et camelCase (App)
+ * Sécurisation des tableaux pour éviter les erreurs .includes() ou .map()
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     ...data,
-    isPublic: data.is_public ?? true, // NATIVEMENT PUBLIC SI NUL
-    isKitaPremium: data.is_kita_premium ?? false,
-    hasPerformancePack: data.has_performance_pack ?? false,
-    hasStockPack: data.has_stock_pack ?? false,
-    purchasedModuleIds: data.purchased_module_ids || [],
-    pendingModuleIds: data.pending_module_ids || [],
-    referralCount: data.referral_count || 0,
-    actionPlan: data.action_plan || [],
-    createdAt: data.created_at || data.createdAt
+    isAdmin: data.isAdmin ?? data.is_admin ?? false,
+    isPublic: data.is_public ?? data.isPublic ?? true,
+    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
+    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
+    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
+    badges: Array.isArray(data.badges) ? data.badges : [],
+    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) 
+      ? (data.purchased_module_ids || data.purchasedModuleIds) 
+      : [],
+    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) 
+      ? (data.pending_module_ids || data.pendingModuleIds) 
+      : [],
+    referralCount: data.referral_count || data.referralCount || 0,
+    actionPlan: Array.isArray(data.action_plan || data.actionPlan) 
+      ? (data.action_plan || data.actionPlan) 
+      : [],
+    createdAt: data.created_at || data.createdAt || new Date().toISOString()
   } as UserProfile;
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const data: any = { ...profile };
+  // On s'assure d'envoyer les deux formats pour être compatible avec n'importe quelle structure de table
+  if (profile.isAdmin !== undefined) data.is_admin = profile.isAdmin;
   if (profile.isPublic !== undefined) data.is_public = profile.isPublic;
   if (profile.isKitaPremium !== undefined) data.is_kita_premium = profile.isKitaPremium;
   if (profile.hasPerformancePack !== undefined) data.has_performance_pack = profile.hasPerformancePack;
@@ -58,15 +62,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.purchasedModuleIds !== undefined) data.purchased_module_ids = profile.purchasedModuleIds;
   if (profile.pendingModuleIds !== undefined) data.pending_module_ids = profile.pendingModuleIds;
   if (profile.actionPlan !== undefined) data.action_plan = profile.actionPlan;
-  
-  // Supprimer les versions camelCase avant envoi en DB
-  delete data.isPublic;
-  delete data.isKitaPremium;
-  delete data.hasPerformancePack;
-  delete data.hasStockPack;
-  delete data.purchasedModuleIds;
-  delete data.pendingModuleIds;
-  delete data.actionPlan;
   
   return data;
 };
@@ -76,46 +71,52 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
  */
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   if (!supabase || !uid) return null;
-  const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-  return error ? null : mapProfileFromDB(data);
-};
-
-export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase || !uid) return null;
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('uid', uid)
-    .eq('is_public', true)
-    .maybeSingle();
-  return error ? null : mapProfileFromDB(data);
+  try {
+    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
+    if (error) throw error;
+    return mapProfileFromDB(data);
+  } catch (err) {
+    console.error("Supabase: Error fetching profile", err);
+    return null;
+  }
 };
 
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
-  const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
-  return error ? null : mapProfileFromDB(data);
+  try {
+    const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
+    if (error) throw error;
+    return mapProfileFromDB(data);
+  } catch (err) {
+    return null;
+  }
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
-  if (!profile.uid) throw new Error("Identifiant requis.");
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData);
-  if (error) throw new Error(error.message);
+  if (error) throw error;
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
   const dbData = mapProfileToDB(updates);
   const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-  if (error) throw new Error(error.message);
+  if (error) throw error;
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-  return error ? [] : data.map(mapProfileFromDB) as UserProfile[];
+  try {
+    // Suppression du tri automatique par created_at qui cause l'erreur 400 si la colonne manque
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) throw error;
+    return (data || []).map(mapProfileFromDB) as UserProfile[];
+  } catch (err) {
+    console.error("Supabase: Error in getAllUsers", err);
+    return [];
+  }
 };
 
 export const deleteUserProfile = async (uid: string) => {
@@ -125,11 +126,11 @@ export const deleteUserProfile = async (uid: string) => {
 };
 
 /**
- * KITA SERVICES (CATALOGUE)
+ * KITA SERVICES
  */
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId).order('name', { ascending: true });
+  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
   return error ? [] : data.map(s => ({
     id: s.id,
     name: s.name,
@@ -141,7 +142,7 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
 };
 
 export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return;
   const payload = services.map(s => ({
     user_id: userId,
     name: s.name,
@@ -149,12 +150,11 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
     default_price: s.defaultPrice,
     is_active: s.isActive
   }));
-  const { error } = await supabase.from('kita_services').insert(payload);
-  if (error) throw error;
+  await supabase.from('kita_services').insert(payload);
 };
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_services').insert({
     user_id: userId,
     name: service.name,
@@ -162,15 +162,14 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
     default_price: service.defaultPrice,
     is_active: service.isActive
   }).select().single();
-  if (error) throw error;
-  return {
+  return error ? null : {
     id: data.id,
     name: data.name,
     category: data.category,
     defaultPrice: data.default_price,
     isActive: data.is_active,
     userId: data.user_id
-  } as KitaService;
+  };
 };
 
 export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
@@ -192,7 +191,7 @@ export const deleteKitaService = async (id: string) => {
  */
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
+  const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId);
   return error ? [] : data.map(t => ({
     id: t.id,
     type: t.type,
@@ -208,7 +207,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
 };
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_transactions').insert({
     user_id: userId,
     type: transaction.type,
@@ -221,8 +220,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit || false
   }).select().single();
-  if (error) throw error;
-  return {
+  return error ? null : {
     id: data.id,
     type: data.type,
     amount: data.amount,
@@ -233,7 +231,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     staffName: data.staff_name,
     commission_rate: data.commission_rate,
     isCredit: data.is_credit
-  } as KitaTransaction;
+  };
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -245,7 +243,7 @@ export const deleteKitaTransaction = async (id: string) => {
  */
 export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('kita_debts').select('*').eq('user_id', userId);
   return error ? [] : data.map(d => ({
     id: d.id,
     personName: d.person_name,
@@ -258,7 +256,7 @@ export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
 };
 
 export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_debts').insert({
     user_id: userId,
     person_name: debt.personName,
@@ -267,15 +265,14 @@ export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) =>
     is_paid: debt.isPaid,
     created_at: debt.createdAt
   }).select().single();
-  if (error) throw error;
-  return {
+  return error ? null : {
     id: data.id,
     personName: data.person_name,
     amount: data.amount,
     phone: data.phone,
     isPaid: data.is_paid,
     createdAt: data.created_at
-  } as KitaDebt;
+  };
 };
 
 export const markDebtAsPaid = async (debtId: string) => {
@@ -287,7 +284,7 @@ export const markDebtAsPaid = async (debtId: string) => {
  */
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId).order('name', { ascending: true });
+  const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId);
   return error ? [] : data.map(p => ({
     id: p.id,
     name: p.name,
@@ -301,7 +298,7 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
 };
 
 export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_products').insert({
     user_id: userId,
     name: product.name,
@@ -312,8 +309,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     category: product.category,
     supplier_id: product.supplierId
   }).select().single();
-  if (error) throw error;
-  return {
+  return error ? null : {
     id: data.id,
     name: data.name,
     quantity: data.quantity,
@@ -322,7 +318,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     alertThreshold: data.alert_threshold,
     category: data.category,
     supplierId: data.supplier_id
-  } as KitaProduct;
+  };
 };
 
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
@@ -343,7 +339,7 @@ export const updateKitaProduct = async (id: string, product: Partial<KitaProduct
  */
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId).order('name', { ascending: true });
+  const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId);
   return error ? [] : data.map(s => ({
     id: s.id,
     name: s.name,
@@ -354,21 +350,20 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
 };
 
 export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplier, 'id' | 'userId'>) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_suppliers').insert({
     user_id: userId,
     name: supplier.name,
     phone: supplier.phone,
     category: supplier.category
   }).select().single();
-  if (error) throw error;
-  return {
+  return error ? null : {
     id: data.id,
     name: data.name,
     phone: data.phone,
     category: data.category,
     userId: data.user_id
-  } as KitaSupplier;
+  };
 };
 
 export const deleteKitaSupplier = async (id: string) => {
@@ -385,15 +380,14 @@ export const getKitaStaff = async (userId: string): Promise<any[]> => {
 };
 
 export const addKitaStaff = async (userId: string, staff: { name: string, commission_rate: number, specialty: string }) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_staff').insert({
     user_id: userId,
     name: staff.name,
     commission_rate: staff.commission_rate,
     specialty: staff.specialty
   }).select().single();
-  if (error) throw error;
-  return data;
+  return error ? null : data;
 };
 
 export const deleteKitaStaff = async (id: string) => {
@@ -402,12 +396,12 @@ export const deleteKitaStaff = async (id: string) => {
 
 export const getKitaClients = async (userId: string): Promise<any[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId).order('total_spent', { ascending: false });
+  const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId);
   return error ? [] : data;
 };
 
 export const addKitaClient = async (userId: string, client: { name: string, phone: string }) => {
-  if (!supabase || !userId) throw new Error("ID Invalide");
+  if (!supabase || !userId) return null;
   const { data, error } = await (supabase as any).from('kita_clients').insert({
     user_id: userId,
     name: client.name,
@@ -415,8 +409,7 @@ export const addKitaClient = async (userId: string, client: { name: string, phon
     total_spent: 0,
     total_visits: 0
   }).select().single();
-  if (error) throw error;
-  return data;
+  return error ? null : data;
 };
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
@@ -430,12 +423,7 @@ export const grantModuleAccess = async (uid: string, moduleId: string) => {
   const profile = await getUserProfile(uid);
   if (!profile) return;
   const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  const updatedAttempts = { ...(profile.attempts || {}), [moduleId]: 0 };
-  await updateUserProfile(uid, { 
-    purchasedModuleIds: updatedIds, 
-    attempts: updatedAttempts,
-    isActive: true 
-  });
+  await updateUserProfile(uid, { purchasedModuleIds: updatedIds, isActive: true });
 };
 
 export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {

@@ -16,8 +16,6 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Users, 
-  Search, 
-  Handshake, 
   Copy,
   Check,
   UserPlus,
@@ -117,7 +115,7 @@ const Profile: React.FC = () => {
       const data = await getAllUsers();
       setAllPotentialSponsors(data.filter(u => u.uid !== user?.uid && !u.isAdmin));
     } catch (err) {
-      console.error("Erreur parrains", err);
+      console.warn("Erreur chargement parrains");
     }
   };
 
@@ -198,11 +196,15 @@ const Profile: React.FC = () => {
               </div>
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mb-4">
                  <p className="text-brand-600 font-black tracking-widest text-sm">{user.isAdmin ? COACH_KITA_TITLE : user.phoneNumber}</p>
-                 <span className="h-1.5 w-1.5 bg-slate-200 rounded-full"></span>
-                 <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isPublic ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
-                    {user.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                    {user.isPublic ? 'Profil Public' : 'Profil Privé'}
-                 </div>
+                 {!user.isAdmin && (
+                   <>
+                    <span className="h-1.5 w-1.5 bg-slate-200 rounded-full"></span>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isPublic ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+                        {user.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        {user.isPublic ? 'Profil Public' : 'Profil Privé'}
+                    </div>
+                   </>
+                 )}
               </div>
               <div className="flex flex-wrap justify-center md:justify-start gap-3">
                 <button onClick={copyRefLink} className="inline-flex items-center gap-2 px-6 py-3 bg-brand-50 text-brand-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-100 transition-all shadow-sm border border-brand-200">
@@ -237,20 +239,6 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  {!user.referredBy && (
-                    <div className="p-8 bg-brand-50/30 rounded-[2.5rem] border border-brand-100">
-                      <label className="block text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-4">Qui vous a invité ?</label>
-                      <input type="text" placeholder="Nom ou numéro..." value={sponsorSearch} onChange={e => setSponsorSearch(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-200 text-sm font-bold shadow-sm outline-none" />
-                      {sponsorSearch && (
-                        <div className="mt-4 space-y-2">
-                          {filteredSponsors.map(s => (
-                            <button key={s.uid} type="button" onClick={() => { setFormData({...formData, referredBy: s.uid}); setSponsorSearch(''); }} className="w-full flex items-center justify-between p-4 bg-white hover:bg-brand-500 hover:text-white rounded-2xl transition-all border border-brand-100 group shadow-sm"><span className="text-xs font-bold">{s.firstName} {s.lastName}</span><UserPlus className="w-4 h-4" /></button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-colors ${formData.isPublic ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-white'}`}>
                         {formData.isPublic ? <Eye className="w-6 h-6" /> : <EyeOff className="w-6 h-6" />}
@@ -278,7 +266,7 @@ const Profile: React.FC = () => {
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nombre d'employés</label>
                       <div className="relative">
                         <Users className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input type="number" placeholder="Nombre d'employés" value={formData.employeeCount} onChange={e => setFormData({...formData, employeeCount: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                        <input type="number" placeholder="0" value={formData.employeeCount} onChange={e => setFormData({...formData, employeeCount: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                       </div>
                     </div>
                     <div>
@@ -292,7 +280,6 @@ const Profile: React.FC = () => {
 
                   <div className="space-y-4">
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Bio Professionnelle</label>
-                    {/* INDICATIONS COULISSES : Uniquement visible en mode édition */}
                     <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 mb-2 flex items-start gap-4">
                       <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                       <div>
@@ -303,7 +290,7 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     <textarea 
-                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience, spécialisé dans les rituels de soins capillaires de luxe et le management d'équipes haute performance." 
+                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience, spécialisé dans les rituels de soins capillaires de luxe..." 
                       value={formData.bio} 
                       onChange={e => setFormData({...formData, bio: e.target.value})} 
                       className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none min-h-[150px] resize-none"
@@ -419,7 +406,8 @@ const Profile: React.FC = () => {
                 <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 pb-4 mb-8">Trophées</h2>
                 <div className="grid grid-cols-2 gap-4">
                   {BADGES.map(badge => {
-                    const isUnlocked = user.isAdmin || user.badges.includes(badge.id);
+                    // Sécurisation de l'accès aux badges
+                    const isUnlocked = user.isAdmin || (Array.isArray(user.badges) && user.badges.includes(badge.id));
                     return (
                       <div 
                         key={badge.id} 
