@@ -24,7 +24,8 @@ import {
   AlertTriangle,
   HelpCircle,
   Coins,
-  MessageSquareQuote
+  MessageSquareQuote,
+  FileQuestion
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -92,6 +93,8 @@ const ModuleView: React.FC = () => {
 
   const attemptCount = useMemo(() => Number(user?.attempts?.[moduleId || ''] || 0), [user?.attempts, moduleId]);
   const tokensRemaining = useMemo(() => Math.max(0, 3 - attemptCount), [attemptCount]);
+
+  const quizQuestions = useMemo(() => module?.quiz_questions || [], [module]);
 
   useEffect(() => {
     if (!user?.purchasedModuleIds.includes(moduleId || '')) {
@@ -166,6 +169,7 @@ const ModuleView: React.FC = () => {
   };
 
   const startQuizAttempt = () => {
+    if (quizQuestions.length === 0) return;
     setAnswers([]);
     setCurrentIdx(0);
     setQuizState('active');
@@ -175,7 +179,7 @@ const ModuleView: React.FC = () => {
     if (isFinishingQuiz || quizState !== 'active') return;
     const newAnswers = [...answers, idx];
     setAnswers(newAnswers);
-    if (currentIdx < module.quiz_questions.length - 1) {
+    if (currentIdx < quizQuestions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
       finishQuiz(newAnswers);
@@ -185,12 +189,12 @@ const ModuleView: React.FC = () => {
   const finishQuiz = async (finalAnswers: number[]) => {
     setIsFinishingQuiz(true);
     let score = 0;
-    module.quiz_questions.forEach((q, i) => { 
+    quizQuestions.forEach((q, i) => { 
       if (finalAnswers[i] !== undefined && finalAnswers[i] === q.correctAnswer) {
         score++; 
       }
     });
-    const percentage = Math.round((score / module.quiz_questions.length) * 100);
+    const percentage = Math.round((score / (quizQuestions.length || 1)) * 100);
     
     try {
       const updatedUser = JSON.parse(JSON.stringify(user));
@@ -206,7 +210,6 @@ const ModuleView: React.FC = () => {
       await saveUserProfile(updatedUser);
       await refreshProfile();
 
-      // LOGIQUE DE DIRECTION
       if (percentage >= 80) {
         setShouldFire(true);
         setQuizState('expert_speech');
@@ -249,12 +252,12 @@ const ModuleView: React.FC = () => {
 
   const currentAttemptScore = useMemo(() => {
     return answers.reduce((acc, ans, i) => {
-      const question = module.quiz_questions[i];
+      const question = quizQuestions[i];
       return (question && ans === question.correctAnswer) ? acc + 1 : acc;
     }, 0);
-  }, [answers, module]);
+  }, [answers, quizQuestions]);
 
-  const latestPercentage = Math.round((currentAttemptScore / (module.quiz_questions.length || 1)) * 100);
+  const latestPercentage = Math.round((currentAttemptScore / (quizQuestions.length || 1)) * 100);
 
   return (
     <div className="min-h-screen bg-white">
@@ -331,43 +334,55 @@ const ModuleView: React.FC = () => {
                   <Award className="w-16 h-16" />
                 </div>
                 <h2 className="text-5xl font-bold text-slate-900 mb-8 font-serif tracking-tight">Certification Excellence</h2>
-                <div className="flex items-center justify-center gap-4 mb-16">
-                   <div className={`px-6 py-3 rounded-2xl flex items-center gap-3 border ${tokensRemaining > 0 ? 'bg-brand-50 border-brand-100 text-brand-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
-                      <Coins className="w-5 h-5" />
-                      <span className="font-black text-xs uppercase tracking-widest">{tokensRemaining} Jetons restants</span>
-                   </div>
-                   <div className="text-slate-400 text-xs font-medium">Tentative {attemptCount}/3</div>
-                </div>
-                {tokensRemaining > 0 ? (
-                  <button onClick={startQuizAttempt} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-4">
-                     Utiliser 1 jeton & Commencer <ArrowRight className="w-5 h-5" />
-                  </button>
+                
+                {quizQuestions.length > 0 ? (
+                  <>
+                    <div className="flex items-center justify-center gap-4 mb-16">
+                       <div className={`px-6 py-3 rounded-2xl flex items-center gap-3 border ${tokensRemaining > 0 ? 'bg-brand-50 border-brand-100 text-brand-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
+                          <Coins className="w-5 h-5" />
+                          <span className="font-black text-xs uppercase tracking-widest">{tokensRemaining} Jetons restants</span>
+                       </div>
+                       <div className="text-slate-400 text-xs font-medium">Tentative {attemptCount}/3</div>
+                    </div>
+                    {tokensRemaining > 0 ? (
+                      <button onClick={startQuizAttempt} className="w-full bg-brand-600 text-white py-8 rounded-[2.5rem] font-black hover:bg-brand-700 transition shadow-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-4">
+                         Utiliser 1 jeton & Commencer <ArrowRight className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <div className="bg-rose-50 border border-rose-100 p-10 rounded-[3rem] text-center">
+                         <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-6" />
+                         <h3 className="text-2xl font-bold text-rose-900 font-serif mb-4 tracking-tight">Accès Verrouillé</h3>
+                         <p className="text-rose-700 font-medium mb-10 leading-relaxed italic">Vous avez utilisé vos 3 jetons sans valider l'excellence. Relancez le processus pour continuer votre perfectionnement.</p>
+                         <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition">Racheter le module</button>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="bg-rose-50 border border-rose-100 p-10 rounded-[3rem] text-center">
-                     <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-6" />
-                     <h3 className="text-2xl font-bold text-rose-900 font-serif mb-4 tracking-tight">Accès Verrouillé</h3>
-                     <p className="text-rose-700 font-medium mb-10 leading-relaxed italic">Vous avez utilisé vos 3 jetons sans valider l'excellence. Relancez le processus pour continuer votre perfectionnement.</p>
-                     <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition">Racheter le module</button>
+                  <div className="bg-slate-50 border border-slate-200 p-12 rounded-[3rem] text-center">
+                     <FileQuestion className="w-16 h-16 text-slate-300 mx-auto mb-6" />
+                     <h3 className="text-2xl font-bold text-slate-900 font-serif mb-4 tracking-tight">Quiz en préparation</h3>
+                     <p className="text-slate-500 font-medium leading-relaxed italic">Coach Kita prépare les questions pour ce module. Revenez très bientôt pour passer votre certification.</p>
+                     <button onClick={() => setActiveTab('lesson')} className="mt-8 text-[10px] font-black uppercase tracking-widest text-brand-600">Retourner au cours</button>
                   </div>
                 )}
               </div>
             )}
 
             {/* ETAT ACTIF (QUESTIONS) */}
-            {quizState === 'active' && module.quiz_questions[currentIdx] && (
+            {quizState === 'active' && quizQuestions[currentIdx] && (
               <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500">
                 <div className="mb-20">
                   <div className="flex justify-between items-center mb-10">
-                    <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Question {currentIdx + 1} / {module.quiz_questions.length}</span>
+                    <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Question {currentIdx + 1} / {quizQuestions.length}</span>
                     <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
                        <Coins className="w-3.5 h-3.5 text-brand-600" />
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tentative {attemptCount + 1}</span>
                     </div>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{module.quiz_questions[currentIdx].question}</h3>
+                  <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{quizQuestions[currentIdx].question}</h3>
                 </div>
                 <div className="grid gap-6">
-                  {module.quiz_questions[currentIdx].options.map((opt, i) => (
+                  {quizQuestions[currentIdx].options.map((opt, i) => (
                     <button key={i} onClick={() => handleAnswer(i)} className="w-full text-left p-10 rounded-[3rem] border-2 border-slate-100 bg-white hover:border-brand-500 hover:shadow-2xl transition-all font-bold text-slate-800 text-xl flex items-center justify-between group">
                       {opt} <div className="h-8 w-8 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
                     </button>
@@ -413,7 +428,7 @@ const ModuleView: React.FC = () => {
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
                 <div className="text-center mb-16">
-                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-white'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
                    <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">
@@ -443,7 +458,7 @@ const ModuleView: React.FC = () => {
                          <HelpCircle className="w-5 h-5" /> Débriefing de votre Maîtrise
                       </h4>
                       <div className="space-y-12">
-                         {module.quiz_questions.map((q, qIdx) => {
+                         {quizQuestions.map((q, qIdx) => {
                            const userAns = answers[qIdx];
                            return (
                              <div key={qIdx} className="border-b border-slate-50 pb-10 last:border-0">

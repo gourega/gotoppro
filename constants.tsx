@@ -100,6 +100,18 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], 
         correctAnswer: 1, 
         explanation: "Cette formule établit immédiatement votre autorité professionnelle et rassure le client sur l'identité du salon." 
+      },
+      {
+        question: "Pourquoi faut-il sourire en parlant au téléphone ?",
+        options: ["Pour s'exercer les muscles faciaux", "Le sourire s'entend dans la voix et crée un climat chaleureux", "Ce n'est pas nécessaire si la cliente ne nous voit pas"],
+        correctAnswer: 1,
+        explanation: "L'attitude physique influence la tonalité de la voix. Un sourire rend l'accueil plus engageant."
+      },
+      {
+        question: "Que faut-il faire si vous êtes occupé lors d'un appel ?",
+        options: ["Décrocher et dire de patienter sans explication", "Laisser sonner jusqu'à ce que vous soyez libre", "Répondre avec le protocole et demander poliment si vous pouvez rappeler dans 5 minutes"],
+        correctAnswer: 2,
+        explanation: "Le respect du temps du client est crucial. Lui proposer un rappel rapide montre que vous maîtrisez votre organisation."
       }
     ],
     exercises: ["Pratiquer la signature vocale lors des 10 prochains appels."],
@@ -119,7 +131,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     `,
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
-    quiz_questions: [],
+    quiz_questions: [
+      {
+        question: "Où doit se situer le gérant pendant le diagnostic ?",
+        options: ["Derrière le fauteuil, en regardant le miroir", "Assis ou accroupi à hauteur des yeux de la cliente", "Au comptoir en consultant son agenda"],
+        correctAnswer: 1,
+        explanation: "Se mettre à hauteur d'yeux casse la hiérarchie et instaure une relation de confiance et de conseil expert."
+      },
+      {
+        question: "Quelle est la première étape d'un bon diagnostic ?",
+        options: ["Proposer le prix le plus bas", "Toucher les cheveux et observer leur état naturel", "Sortir immédiatement ses ciseaux"],
+        correctAnswer: 1,
+        explanation: "L'observation tactile est la base de l'expertise. Elle permet de justifier techniquement les soins que vous allez proposer."
+      },
+      {
+        question: "Le but ultime du diagnostic est de :",
+        options: ["Gagner du temps pour finir la journée plus tôt", "Transformer une demande de prestation en une solution globale de beauté", "Vérifier si la cliente a assez d'argent"],
+        correctAnswer: 1,
+        explanation: "Un expert ne se contente pas d'exécuter, il prescrit les solutions adaptées pour un résultat durable."
+      }
+    ],
     exercises: [],
     tips: []
   },
