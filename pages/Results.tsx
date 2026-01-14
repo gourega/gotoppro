@@ -34,7 +34,8 @@ import {
   Award,
   CalendarDays,
   Users,
-  Package
+  Package,
+  Banknote
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -153,7 +154,7 @@ const Results: React.FC = () => {
     const total = count === 16 ? 10000 : count * unitPrice;
     const savings = rawTotal - total;
     
-    return { total, unitPrice, discount, label: count > 0 ? `${count} module(s) sél.` : 'Panier vide', nextThreshold, nextDiscount, rawTotal, savings };
+    return { total, unitPrice, discount, label: count > 0 ? `${count} module(s) sélectionné(s)` : 'Panier vide', nextThreshold, nextDiscount, rawTotal, savings };
   }, [cart, activePack]);
 
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
@@ -327,6 +328,7 @@ const Results: React.FC = () => {
                       <div className="flex-grow">
                         <div className="flex items-center gap-3 mb-2">
                           <span className="text-[8px] font-black text-brand-600 uppercase tracking-[0.2em]">{module.topic}</span>
+                          <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-tight border border-slate-200">500 F</span>
                           {isRecommended && (
                             <span className="text-[7px] font-black bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1">
                                <Star className="w-2 h-2 fill-current" /> Priorité Mentor
@@ -358,12 +360,14 @@ const Results: React.FC = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-grow">
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{pricingData.label}</p>
-                       {pricingData.savings > 0 && (
+                       {pricingData.savings > 0 ? (
                          <div className="flex flex-wrap items-center gap-2">
                            <span className="text-slate-300 line-through font-bold text-base">{pricingData.rawTotal.toLocaleString()} F</span>
                            <span className="text-[9px] font-black bg-emerald-500 text-white px-2 py-1 rounded-md uppercase tracking-tighter shadow-sm">Remise appliquée</span>
                          </div>
-                       )}
+                       ) : cart.length > 0 ? (
+                         <p className="text-xs font-bold text-slate-400">Tarif : 500 F / module</p>
+                       ) : null}
                     </div>
                     <div className="text-right shrink-0">
                        <p className="text-5xl font-black text-brand-900 leading-none">
