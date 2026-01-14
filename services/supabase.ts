@@ -25,14 +25,11 @@ export const generateUUID = () => {
 
 /**
  * MAPPING DATA (DB <=> APP)
- * Garantit la correspondance parfaite avec les colonnes créées par le script SQL
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     ...data,
-    // On conserve les noms camelCase car le script SQL a été créé avec des guillemets
-    // pour "firstName", "lastName", etc. ce qui est compatible avec le JS direct.
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds) ? data.purchasedModuleIds : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds) ? data.pendingModuleIds : [],
@@ -43,9 +40,14 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
-  // Le script SQL utilisant des guillemets (ex: "firstName"), 
-  // les colonnes sont sensibles à la casse en SQL mais directes en JS.
-  return { ...profile };
+  // On nettoie les champs undefined pour éviter les erreurs SQL
+  const cleanData: any = {};
+  Object.keys(profile).forEach(key => {
+    if ((profile as any)[key] !== undefined) {
+      cleanData[key] = (profile as any)[key];
+    }
+  });
+  return cleanData;
 };
 
 /**
@@ -76,8 +78,15 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const dbData = mapProfileToDB(profile);
-  const { error } = await supabase.from('profiles').upsert(dbData);
-  if (error) throw error;
+  // Utilisation de upsert avec onConflict sur uid pour gérer création et mise à jour
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(dbData, { onConflict: 'uid' });
+    
+  if (error) {
+    console.error("Supabase Save Error:", error);
+    throw error;
+  }
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
@@ -105,7 +114,7 @@ export const deleteUserProfile = async (uid: string) => {
 };
 
 /**
- * KITA TRANSACTIONS
+ * KITA TRANSACTIONS (Caisse)
  */
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
