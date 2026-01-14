@@ -8,8 +8,6 @@ import {
   addKitaTransaction, 
   deleteKitaTransaction,
   getKitaDebts,
-  addKitaDebt,
-  markDebtAsPaid,
   getKitaServices,
   bulkAddKitaServices,
   saveUserProfile,
@@ -24,10 +22,6 @@ import {
   Loader2, 
   Wallet,
   CheckCircle2,
-  Clock,
-  Printer,
-  ChevronDown,
-  Search,
   X,
   Scissors,
   Sparkles,
@@ -36,7 +30,9 @@ import {
   MoreHorizontal,
   RefreshCw,
   AlertCircle,
-  Database
+  Database,
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
@@ -88,9 +84,7 @@ const Caisse: React.FC = () => {
     if (!user?.uid) return;
     setLoading(true);
     setError(null);
-    
     try {
-      // 1. On s'assure que le profil gérant est bien présent dans la DB
       const profile = await getUserProfile(user.uid);
       if (!profile) {
         await saveUserProfile({
@@ -105,7 +99,6 @@ const Caisse: React.FC = () => {
         await refreshProfile();
       }
 
-      // 2. Chargement des données métier
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
         getKitaDebts(user.uid),
@@ -116,65 +109,50 @@ const Caisse: React.FC = () => {
       setDebts(debtData);
       setServices(serviceData);
     } catch (err: any) {
-      console.error("Caisse Load Error:", err);
       setError("Erreur de liaison avec la base de données.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || newTrans.amount <= 0 || !newTrans.label) return;
+    setSaving(true);
+    try {
+      const trans = await addKitaTransaction(user.uid, newTrans);
+      if (trans) {
+        await loadData();
+        setLastSavedTransaction(trans);
+      } else {
+        throw new Error("Erreur lors de l'enregistrement");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur est survenue lors de l'enregistrement.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const initializeDefaultServices = async () => {
     if (!user?.uid || isInitializing) return;
-    
-    // Feedback immédiat console
-    console.log("Caisse: Déclenchement de la génération...");
     setIsInitializing(true);
     setError(null);
-    
     try {
-      // Étape de sécurité : recréer le profil si nécessaire
-      const currentProfile = await getUserProfile(user.uid);
-      if (!currentProfile) {
-        console.log("Caisse: Création du profil manquant avant services...");
-        await saveUserProfile({
-          uid: user.uid,
-          phoneNumber: user.phoneNumber,
-          firstName: user.firstName || 'Gérant',
-          establishmentName: user.establishmentName || 'Mon Salon',
-          role: 'CLIENT',
-          isActive: true,
-          createdAt: new Date().toISOString()
-        } as any);
-      }
-
-      // Préparation du catalogue
       const servicesToCreate = DEFAULT_KITA_SERVICES.map(name => {
         let cat = 'Autre';
         if (name.match(/Coupe|Brushing|Tresse|Chignon|Teinture|Mise en plis|Shampoing|Bain|Défrisage|Babyliss|Balayage|Tissage/i)) cat = 'Coiffure';
         else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) cat = 'Ongles';
         else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) cat = 'Soins';
         else if (name.match(/Vente/i)) cat = 'Vente';
-        
         return { name, category: cat, defaultPrice: 0, isActive: true };
       });
-
-      console.log(`Caisse: Envoi de ${servicesToCreate.length} prestations à Supabase...`);
-
-      // Insertion groupée (Bulk)
       await bulkAddKitaServices(user.uid, servicesToCreate);
-      
-      console.log("Caisse: Initialisation réussie.");
-      alert("✅ Félicitations ! Vos 26 prestations ont été générées avec succès.");
-      
-      // Rafraîchir les services locaux
       const refreshedServices = await getKitaServices(user.uid);
       setServices(refreshedServices);
-      
     } catch (err: any) {
-      console.error("Caisse Init Error Detail:", err);
-      const errorMessage = err.message || "Erreur inconnue";
-      setError(`Échec : ${errorMessage}`);
-      alert(`❌ Erreur de génération : ${errorMessage}\n\nVérifiez que votre connexion internet est stable.`);
+      alert("Erreur de génération du catalogue.");
     } finally {
       setIsInitializing(false);
     }
@@ -196,21 +174,6 @@ const Caisse: React.FC = () => {
       return acc;
     }, { income: 0, expense: 0 });
   }, [filteredTransactions]);
-
-  const handleSaveTransaction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || newTrans.amount <= 0 || !newTrans.label) return;
-    setSaving(true);
-    try {
-      const trans = await addKitaTransaction(user.uid, newTrans);
-      await loadData();
-      setLastSavedTransaction({ ...newTrans, id: trans.id } as any);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleSelectService = (s: KitaService) => {
     setNewTrans({
@@ -362,7 +325,6 @@ const Caisse: React.FC = () => {
         </div>
       )}
 
-      {/* Menu Visuel des Services */}
       {isServiceListOpen && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/95 backdrop-blur-md">
            <div className="bg-white w-full max-w-2xl h-[90vh] md:h-[80vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
@@ -404,7 +366,6 @@ const Caisse: React.FC = () => {
                    <div className="py-24 text-center animate-pulse">
                       <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
                       <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Génération du catalogue...</p>
-                      <p className="text-slate-400 text-xs mt-2 italic">Merci de ne pas fermer cette fenêtre</p>
                    </div>
                  ) : services.length === 0 ? (
                    <div className="py-20 text-center text-slate-400">
@@ -412,7 +373,6 @@ const Caisse: React.FC = () => {
                          <Database className="w-10 h-10 opacity-20" />
                       </div>
                       <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue non initialisé</h4>
-                      <p className="italic font-medium mb-10 max-w-sm mx-auto">Appuyez sur le bouton ci-dessous pour créer instantanément vos 26 prestations standards.</p>
                       <button 
                         onClick={initializeDefaultServices}
                         className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto active:scale-95"
@@ -446,17 +406,11 @@ const Caisse: React.FC = () => {
                         </button>
                       )) : (
                         <div className="col-span-2 py-20 text-center text-slate-400">
-                          <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
                           <p className="italic font-medium">Aucun service ne correspond.</p>
-                          <button onClick={() => { setSearchTerm(''); setActiveCategory('all'); }} className="mt-4 text-brand-600 font-bold text-sm hover:underline">Réinitialiser les filtres</button>
                         </div>
                       )}
                    </div>
                  )}
-              </div>
-              
-              <div className="p-6 border-t border-slate-100 md:hidden bg-white">
-                 <button onClick={() => setIsServiceListOpen(false)} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs">Fermer</button>
               </div>
            </div>
         </div>

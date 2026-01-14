@@ -25,7 +25,6 @@ export const generateUUID = () => {
 
 /**
  * MAPPING DATA (DB <=> APP)
- * Sécurisation des tableaux pour éviter les erreurs .includes() ou .map()
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -53,7 +52,6 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const data: any = { ...profile };
-  // On s'assure d'envoyer les deux formats pour être compatible avec n'importe quelle structure de table
   if (profile.isAdmin !== undefined) data.is_admin = profile.isAdmin;
   if (profile.isPublic !== undefined) data.is_public = profile.isPublic;
   if (profile.isKitaPremium !== undefined) data.is_kita_premium = profile.isKitaPremium;
@@ -62,7 +60,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.purchasedModuleIds !== undefined) data.purchased_module_ids = profile.purchasedModuleIds;
   if (profile.pendingModuleIds !== undefined) data.pending_module_ids = profile.pendingModuleIds;
   if (profile.actionPlan !== undefined) data.action_plan = profile.actionPlan;
-  
   return data;
 };
 
@@ -76,7 +73,26 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("Supabase: Error fetching profile", err);
+    return null;
+  }
+};
+
+/**
+ * Récupère un profil public par UID
+ */
+export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
+  if (!supabase || !uid) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('uid', uid)
+      .eq('is_public', true)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return mapProfileFromDB(data);
+  } catch (err) {
     return null;
   }
 };
@@ -109,12 +125,10 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
 export const getAllUsers = async (): Promise<UserProfile[]> => {
   if (!supabase) return [];
   try {
-    // Suppression du tri automatique par created_at qui cause l'erreur 400 si la colonne manque
     const { data, error } = await supabase.from('profiles').select('*');
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (err) {
-    console.error("Supabase: Error in getAllUsers", err);
     return [];
   }
 };
@@ -123,67 +137,6 @@ export const deleteUserProfile = async (uid: string) => {
   if (!supabase || !uid) return;
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
   if (error) throw error;
-};
-
-/**
- * KITA SERVICES
- */
-export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
-  if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
-  return error ? [] : data.map(s => ({
-    id: s.id,
-    name: s.name,
-    category: s.category,
-    defaultPrice: s.default_price,
-    isActive: s.is_active,
-    userId: s.user_id
-  }));
-};
-
-export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
-  if (!supabase || !userId) return;
-  const payload = services.map(s => ({
-    user_id: userId,
-    name: s.name,
-    category: s.category,
-    default_price: s.defaultPrice,
-    is_active: s.isActive
-  }));
-  await supabase.from('kita_services').insert(payload);
-};
-
-export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
-  if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_services').insert({
-    user_id: userId,
-    name: service.name,
-    category: service.category,
-    default_price: service.defaultPrice,
-    is_active: service.isActive
-  }).select().single();
-  return error ? null : {
-    id: data.id,
-    name: data.name,
-    category: data.category,
-    defaultPrice: data.default_price,
-    isActive: data.is_active,
-    userId: data.user_id
-  };
-};
-
-export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
-  if (!supabase) return;
-  const updates: any = {};
-  if (service.name !== undefined) updates.name = service.name;
-  if (service.category !== undefined) updates.category = service.category;
-  if (service.defaultPrice !== undefined) updates.default_price = service.defaultPrice;
-  if (service.isActive !== undefined) updates.is_active = service.isActive;
-  await supabase.from('kita_services').update(updates).eq('id', id);
-};
-
-export const deleteKitaService = async (id: string) => {
-  if (supabase) await supabase.from('kita_services').delete().eq('id', id);
 };
 
 /**
@@ -220,7 +173,10 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit || false
   }).select().single();
-  return error ? null : {
+  
+  if (error || !data) return null;
+  
+  return {
     id: data.id,
     type: data.type,
     amount: data.amount,
@@ -321,17 +277,65 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   };
 };
 
-export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
+/**
+ * KITA SERVICES
+ */
+export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
+  if (!supabase || !userId) return [];
+  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
+  return error ? [] : data.map(s => ({
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    defaultPrice: s.default_price,
+    isActive: s.is_active,
+    userId: s.user_id
+  }));
+};
+
+export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
+  if (!supabase || !userId) return;
+  const payload = services.map(s => ({
+    user_id: userId,
+    name: s.name,
+    category: s.category,
+    default_price: s.defaultPrice,
+    is_active: s.isActive
+  }));
+  await supabase.from('kita_services').insert(payload);
+};
+
+export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
+  if (!supabase || !userId) return null;
+  const { data, error } = await (supabase as any).from('kita_services').insert({
+    user_id: userId,
+    name: service.name,
+    category: service.category,
+    default_price: service.defaultPrice,
+    is_active: service.isActive
+  }).select().single();
+  return error ? null : {
+    id: data.id,
+    name: data.name,
+    category: data.category,
+    defaultPrice: data.default_price,
+    isActive: data.is_active,
+    userId: data.user_id
+  };
+};
+
+export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
   if (!supabase) return;
   const updates: any = {};
-  if (product.name !== undefined) updates.name = product.name;
-  if (product.quantity !== undefined) updates.quantity = product.quantity;
-  if (product.purchasePrice !== undefined) updates.purchase_price = product.purchasePrice;
-  if (product.sellPrice !== undefined) updates.sell_price = product.sellPrice;
-  if (product.alertThreshold !== undefined) updates.alert_threshold = product.alertThreshold;
-  if (product.category !== undefined) updates.category = product.category;
-  if (product.supplierId !== undefined) updates.supplier_id = product.supplierId;
-  await supabase.from('kita_products').update(updates).eq('id', id);
+  if (service.name !== undefined) updates.name = service.name;
+  if (service.category !== undefined) updates.category = service.category;
+  if (service.defaultPrice !== undefined) updates.default_price = service.defaultPrice;
+  if (service.isActive !== undefined) updates.is_active = service.isActive;
+  await supabase.from('kita_services').update(updates).eq('id', id);
+};
+
+export const deleteKitaService = async (id: string) => {
+  if (supabase) await supabase.from('kita_services').delete().eq('id', id);
 };
 
 /**
