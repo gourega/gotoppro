@@ -4,7 +4,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getProfileByPhone } from '../services/supabase';
 import { RAYMOND_LOGO, RAYMOND_FB_URL } from '../constants';
-import { AlertCircle, Clock, Loader2, CheckCircle2, Star, ExternalLink } from 'lucide-react';
+// Added MessageCircle to imports to fix the error on line 117
+import { AlertCircle, Clock, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -39,16 +40,19 @@ const Login: React.FC = () => {
     setError('');
     setStatus('idle');
     
-    const cleanPhone = phone.replace(/\s/g, '');
+    let cleanPhone = phone.replace(/\s/g, '');
     if (!cleanPhone) return setError('Veuillez entrer votre numéro.');
     
+    // Formatage auto
+    if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
+    if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
+
     setLoading(true);
     try {
-      const formattedPhone = cleanPhone.startsWith('0') ? `+225${cleanPhone}` : cleanPhone;
-      const profile = await getProfileByPhone(formattedPhone);
+      const profile = await getProfileByPhone(cleanPhone);
       
       if (!profile) {
-        setError("Aucun compte trouvé. Veuillez faire le diagnostic d'abord.");
+        setError("Aucun compte trouvé. Veuillez faire le diagnostic d'abord pour créer votre compte.");
         setLoading(false);
         return;
       }
@@ -59,7 +63,7 @@ const Login: React.FC = () => {
         return;
       }
 
-      const success = await loginManually(formattedPhone);
+      const success = await loginManually(cleanPhone);
       if (!success) {
         setError("Échec de l'ouverture de session.");
         setLoading(false);
@@ -81,23 +85,38 @@ const Login: React.FC = () => {
             📱
           </div>
           <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2">Espace Gérant</h2>
-          <p className="text-slate-500 font-medium text-sm">Accédez à votre académie de réussite.</p>
+          <p className="text-slate-500 font-medium text-sm">Entrez votre numéro pour continuer.</p>
         </div>
 
         {error && (
-          <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl mb-6 text-xs font-bold border border-rose-100 flex items-center gap-3 animate-in shake duration-300">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+          <div className="bg-rose-50 text-rose-600 p-6 rounded-[2rem] mb-6 text-xs font-bold border border-rose-100 flex items-start gap-4 animate-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <div className="space-y-3">
+              <p>{error}</p>
+              <Link to="/quiz" className="inline-block bg-rose-600 text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[9px] font-black">Lancer le diagnostic</Link>
+            </div>
           </div>
         )}
 
         {status === 'pending' && (
-          <div className="bg-amber-50 text-amber-700 p-6 rounded-[2rem] mb-6 border border-amber-100">
-            <div className="flex items-center gap-4 mb-3">
-              <Clock className="w-6 h-6 text-amber-500 animate-pulse" />
-              <p className="font-black uppercase text-[10px] tracking-widest">Paiement en attente</p>
+          <div className="bg-amber-50 text-amber-700 p-8 rounded-[2.5rem] mb-6 border border-amber-100 animate-in zoom-in-95">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-10 w-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg animate-pulse">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <p className="font-black uppercase text-[10px] tracking-widest">Compte en attente d'activation</p>
             </div>
-            <p className="text-xs font-medium leading-relaxed italic">Coach Kita valide votre accès après réception de votre paiement Wave.</p>
+            <p className="text-sm font-medium leading-relaxed italic mb-6">
+              Coach Kita a bien reçu votre demande de création de compte. L'accès sera activé après réception de votre paiement de validation.
+            </p>
+            <a 
+              href="https://wa.me/2250103438456" 
+              target="_blank" 
+              rel="noreferrer"
+              className="w-full bg-brand-900 text-white py-4 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-3"
+            >
+              <MessageCircle className="w-4 h-4" /> Relancer Coach Kita
+            </a>
           </div>
         )}
 
@@ -121,7 +140,7 @@ const Login: React.FC = () => {
             className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl hover:bg-brand-950 active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            {loading ? 'Authentification...' : 'Entrer dans mon espace'}
+            {loading ? 'Recherche du profil...' : 'Accéder à mon salon'}
           </button>
         </form>
       </div>

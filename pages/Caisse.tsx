@@ -32,7 +32,12 @@ import {
   AlertCircle,
   Database,
   ChevronDown,
-  Search
+  Search,
+  Lock,
+  Cloud,
+  ShieldAlert,
+  ShieldHalf,
+  Info
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
@@ -76,6 +81,12 @@ const Caisse: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [lastSavedTransaction, setLastSavedTransaction] = useState<KitaTransaction | null>(null);
 
+  // LOGIQUE ÉLITE : 16 modules possédés
+  const isElite = useMemo(() => {
+    if (!user) return false;
+    return user.isKitaPremium || (user.purchasedModuleIds?.length || 0) >= 16;
+  }, [user]);
+
   useEffect(() => {
     if (user?.uid) loadData();
   }, [user?.uid]);
@@ -85,20 +96,6 @@ const Caisse: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const profile = await getUserProfile(user.uid);
-      if (!profile) {
-        await saveUserProfile({
-          uid: user.uid,
-          phoneNumber: user.phoneNumber,
-          firstName: user.firstName || 'Gérant',
-          establishmentName: user.establishmentName || 'Mon Salon',
-          role: 'CLIENT',
-          isActive: true,
-          createdAt: new Date().toISOString()
-        } as any);
-        await refreshProfile();
-      }
-
       const [transData, debtData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
         getKitaDebts(user.uid),
@@ -199,11 +196,11 @@ const Caisse: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfdfe] pb-24">
+    <div className="min-h-screen bg-[#fcfdfe] pb-24 relative">
       <KitaTopNav />
       
       <header className="bg-amber-500 pt-16 pb-32 px-6 md:px-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none select-none italic font-serif text-[15rem] leading-none text-white">CFA</div>
+        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none text-white text-[15rem] font-serif italic leading-none">CFA</div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
            <div className="flex items-center gap-6">
               <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0"><Wallet className="w-full h-full text-amber-500" /></div>
@@ -216,13 +213,26 @@ const Caisse: React.FC = () => {
         </div>
       </header>
 
-      {error && (
-        <div className="max-w-6xl mx-auto px-6 mt-8">
-          <div className="bg-rose-50 border border-rose-100 p-6 rounded-3xl flex items-center gap-4 text-rose-600">
-            <AlertCircle className="w-6 h-6 shrink-0" />
-            <p className="font-bold text-sm">{error}</p>
-            <button onClick={loadData} className="ml-auto bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase">Réessayer</button>
-          </div>
+      {/* BANDEAU PSYCHOLOGIQUE POUR NON-ÉLITE DANS LA CAISSE */}
+      {!isElite && !loading && (
+        <div className="max-w-6xl mx-auto px-6 -mt-12 mb-12 relative z-50">
+           <div className="bg-white rounded-[3rem] p-8 shadow-2xl border-l-[12px] border-amber-500 flex flex-col md:flex-row items-center justify-between gap-8 animate-in slide-in-from-top-4">
+              <div className="flex items-center gap-6">
+                 <div className="h-14 w-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
+                    <ShieldHalf className="w-7 h-7" />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-black text-brand-900 uppercase tracking-tight">Mode Stockage Local</h2>
+                    <p className="text-slate-500 text-sm font-medium">Attention : vos chiffres ne sont pas certifiés sur le Cloud. En cas de perte ou de formatage, vos données seront perdues. <span className="text-amber-600 font-bold">Passez Élite pour sécuriser.</span></p>
+                 </div>
+              </div>
+              <button 
+                onClick={() => navigate('/results?pack=elite')} 
+                className="bg-brand-900 text-white px-8 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-black transition-all flex items-center gap-3 shrink-0"
+              >
+                <Cloud className="w-4 h-4 text-brand-500" /> Sécuriser mon salon
+              </button>
+           </div>
         </div>
       )}
 
@@ -253,7 +263,7 @@ const Caisse: React.FC = () => {
         {loading ? (
           <div className="py-24 text-center">
             <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Connexion Sécurisée...</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Chargement sécurisé...</p>
           </div>
         ) : (
           <div className="space-y-4">
