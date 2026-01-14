@@ -38,17 +38,6 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   return error ? null : data as UserProfile;
 };
 
-export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
-  if (!supabase || !uid) return null;
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('uid, firstName, lastName, establishmentName, photoURL, bio, badges, progress, isPublic')
-    .eq('uid', uid)
-    .eq('isPublic', true)
-    .maybeSingle();
-  return error ? null : data as UserProfile;
-};
-
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
@@ -228,7 +217,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     staffName: data.staff_name,
     commissionRate: data.commission_rate,
     isCredit: data.is_credit
-  };
+  } as KitaTransaction;
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -272,7 +261,7 @@ export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) =>
     phone: data.phone,
     isPaid: data.is_paid,
     createdAt: data.created_at
-  };
+  } as KitaDebt;
 };
 
 export const markDebtAsPaid = async (debtId: string) => {
@@ -321,7 +310,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     alertThreshold: data.alert_threshold,
     category: data.category,
     supplierId: data.supplier_id
-  };
+  } as KitaProduct;
 };
 
 export const updateKitaProduct = async (id: string, product: Partial<KitaProduct>) => {
@@ -360,8 +349,16 @@ export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplie
     phone: supplier.phone,
     category: supplier.category
   }).select().single();
+  
   if (error) throw error;
-  return data;
+  
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    category: data.category,
+    userId: data.user_id
+  } as KitaSupplier;
 };
 
 export const deleteKitaSupplier = async (id: string) => {
