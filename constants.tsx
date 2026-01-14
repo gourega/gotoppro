@@ -6,6 +6,12 @@ export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/o
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
+// Bio Officielle
+export const COACH_KITA_FULL_NAME = "Ouréga Kouassi Goblé";
+export const COACH_KITA_TITLE = "L’Architecte de la Rentabilité Beauté";
+export const COACH_KITA_BIO = "Expert mentor avec plus de 25 ans d'immersion sur le terrain en Afrique de l’Ouest, Ouréga est le cerveau derrière le standard d'excellence KITA. Il a identifié les 16 leviers critiques qui séparent les gérants qui stagnent de ceux qui règnent. Sa mission : injecter la rigueur du management moderne dans l'ADN des leaders de la beauté ivoirienne.";
+export const COACH_KITA_SLOGAN = "Le talent attire le client, la stratégie bâtit l’empire.";
+
 // Partenaire Officiel
 export const RAYMOND_LOGO = "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=400&q=80"; // Placeholder haute qualité pour le salon
 export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
@@ -325,7 +331,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_fidelisation",
     topic: "Vente",
     title: "Fidélisation : transformer le client en fan",
-    description: "Il coûte 5 fois plus cher d'acquérir un nouveau client que d'en garder un. Maîtrisez le cycle de vie du client.",
+    description: "Il coûte 5 fois plus cher d'acquérir un nouveau client que d'en garder un. Maîtrisez le client.",
     mini_course: "Un client fidèle est votre meilleur ambassadeur gratuit.",
     price: 500,
     aiCredits: 3,

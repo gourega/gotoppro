@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE } from '../constants';
+import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE } from '../constants';
 import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart, ExternalLink, MapPin, Phone } from 'lucide-react';
 
 const Vision: React.FC = () => {
@@ -35,7 +35,7 @@ const Vision: React.FC = () => {
                 Notre mission est d'apporter aux professionnels de la beauté ivoirienne et africaine les outils de gestion, de marketing et de management utilisés par les plus grands salons mondiaux, tout en les adaptant à nos réalités locales.
               </p>
               <p className="font-serif italic text-brand-900 text-2xl">
-                "Nous ne formons pas des coiffeurs, nous bâtissons des entrepreneurs."
+                "{COACH_KITA_SLOGAN}"
               </p>
             </div>
           </div>
@@ -72,15 +72,18 @@ const Vision: React.FC = () => {
                   </svg>
                 </div>
                 
-                <p className="text-2xl md:text-4xl text-[#334155] font-serif italic leading-[1.6] tracking-tight">
-                  "Après 25 ans à observer les salons d'Afrique de l'Ouest, j'ai identifié 16 points de rupture qui séparent ceux qui survivent de ceux qui règnent. Go'Top Pro est la synthèse de ces solutions."
+                <p className="text-xl md:text-2xl text-[#334155] font-serif italic leading-[1.8] tracking-tight">
+                  {COACH_KITA_BIO}
                 </p>
                 
                 <div className="flex items-center justify-center md:justify-start gap-5 pt-4">
                   <div className="h-1.5 w-14 bg-[#0ea5e9] rounded-full"></div>
-                  <span className="font-black text-[12px] uppercase tracking-[0.3em] text-[#0c4a6e]">
-                    Coach Kita — Fondateur & Mentor d'Élite
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-black text-[12px] uppercase tracking-[0.3em] text-[#0c4a6e]">
+                      Coach Kita
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{COACH_KITA_TITLE}</span>
+                  </div>
                 </div>
               </div>
             </div>
