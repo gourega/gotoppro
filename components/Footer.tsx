@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, KeyRound, Phone } from 'lucide-react';
-import { BRAND_LOGO } from '../constants';
+import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, KeyRound, Phone, ExternalLink } from 'lucide-react';
+import { BRAND_LOGO, RAYMOND_FB_URL } from '../constants';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           
-          {/* Bloc 1: Identité & Invitation */}
+          {/* Bloc 1: Identité & Partenaire */}
           <div className="md:col-span-5 space-y-8">
             <Link to="/" className="flex items-center gap-3">
               <img src={BRAND_LOGO} alt="Go'Top Pro" className="h-10 w-10 object-contain" />
@@ -76,6 +76,16 @@ const Footer: React.FC = () => {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm font-medium">
               Une question ? Notre équipe d'experts est à votre disposition pour vous accompagner vers l'excellence et la rentabilité de votre salon.
             </p>
+            <div className="pt-4">
+              <a 
+                href={RAYMOND_FB_URL} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-bold text-slate-300"
+              >
+                Partenaire Officiel : Salon Chez Raymond <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
           {/* Bloc 2: Contacts & Services */}
@@ -156,6 +166,7 @@ const Footer: React.FC = () => {
               <div className="space-y-4">
                 <div className="relative group">
                   <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-brand-500 transition-colors" />
+                  {/* Fix: changed email.target.value to e.target.value */}
                   <input 
                     type="email" 
                     placeholder="Email Master Admin" 
@@ -168,6 +179,7 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="relative group">
                   <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-brand-500 transition-colors" />
+                  {/* Fix: changed password.target.value to e.target.value */}
                   <input 
                     type="password" 
                     placeholder="Mot de passe" 

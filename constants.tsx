@@ -6,6 +6,12 @@ export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/o
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
+// Partenaire Officiel
+export const RAYMOND_LOGO = "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=400&q=80"; // Placeholder haute qualité pour le salon
+export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
+export const RAYMOND_PHONE = "+2250707949706";
+export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
+
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
 
 /**
@@ -98,7 +104,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         question: "Un client appelle pendant que vous êtes en prestation, que faites-vous ?", 
         options: ["Vous ignorez l'appel", "Vous décrochez et prenez le rendez-vous vite", "Vous vous excusez et proposez de rappeler"], 
         correctAnswer: 2, 
-        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la person sur le fauteuil." 
+        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la personne sur le fauteuil." 
       },
       { 
         question: "Quelle information est la plus critique lors d'un rendez-vous ?", 
@@ -107,7 +113,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         explanation: "Ces trois piliers permettent de préparer le poste, de confirmer le créneau et de relancer en cas de besoin." 
       }
     ],
-    exercises: ["Pratiquer la signature vocale on les 10 prochains appels.", "Noter le nombre d'appels transformés en rendez-vous."],
+    exercises: ["Pratiquer la signature vocale lors des 10 prochains appels.", "Noter le nombre d'appels transformés en rendez-vous."],
     tips: ["Restez calme et notez le nom du client dès le début."]
   },
   {
@@ -153,7 +159,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         explanation: "Inutile de proposer une coiffure complexe à quelqu'un qui n'a que 5 minutes pour se préparer chaque jour." 
       },
       { 
-        question: "Comme présenter une prestation technique coûteuse ?", 
+        question: "Comment présenter une prestation technique coûteuse ?", 
         options: ["En annonçant le prix d'abord", "En parlant du résultat et du bénéfice", "En disant que c'est la mode"], 
         correctAnswer: 1, 
         explanation: "Le client accepte le prix quand il comprend la valeur et le changement positif que cela lui apportera." 

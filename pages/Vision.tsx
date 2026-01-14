@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { COACH_KITA_AVATAR } from '../constants';
-import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart } from 'lucide-react';
+import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE } from '../constants';
+import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart, ExternalLink, MapPin, Phone } from 'lucide-react';
 
 const Vision: React.FC = () => {
   return (
@@ -52,15 +52,13 @@ const Vision: React.FC = () => {
         </div>
       </section>
 
-      {/* La Méthode Kita - Design Fidèle au visuel fourni */}
+      {/* La Méthode Kita */}
       <section className="py-24 bg-slate-50 border-y border-slate-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-white rounded-[3.5rem] p-10 md:p-20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] relative overflow-hidden group border border-slate-100 max-w-5xl mx-auto">
-            {/* Watermark "K" aligned like in the image */}
             <div className="absolute top-1/2 -right-12 -translate-y-1/2 opacity-[0.03] text-[25rem] pointer-events-none italic font-serif select-none transition-transform duration-1000 group-hover:scale-110 leading-none">K</div>
             
             <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-center relative z-10">
-              {/* Avatar with specific blue border */}
               <div className="relative shrink-0">
                 <div className="h-64 w-64 rounded-[3rem] overflow-hidden border-[6px] border-[#0ea5e9] shadow-2xl transition-transform duration-700 group-hover:scale-105">
                   <img src={COACH_KITA_AVATAR} alt="Coach Kita" className="w-full h-full object-cover" />
@@ -68,19 +66,16 @@ const Vision: React.FC = () => {
               </div>
               
               <div className="space-y-8 flex-grow text-center md:text-left">
-                {/* Quotation Icon "99" */}
                 <div className="flex justify-center md:justify-start">
                   <svg className="w-14 h-14 text-slate-900" viewBox="0 0 40 32" fill="currentColor">
                     <path d="M11.111 0C4.975 0 0 4.975 0 11.111v11.111c0 6.136 4.975 11.111 11.111 11.111h4.444V22.222h-4.444v-11.111h8.889V0h-8.889zm20 0c-6.136 0-11.111 4.975-11.111 11.111v11.111c0 6.136 4.975 11.111 11.111 11.111h4.444V22.222h-4.444v-11.111h8.889V0h-8.889z" />
                   </svg>
                 </div>
                 
-                {/* Quote Text - 25 Years */}
                 <p className="text-2xl md:text-4xl text-[#334155] font-serif italic leading-[1.6] tracking-tight">
                   "Après 25 ans à observer les salons d'Afrique de l'Ouest, j'ai identifié 16 points de rupture qui séparent ceux qui survivent de ceux qui règnent. Go'Top Pro est la synthèse de ces solutions."
                 </p>
                 
-                {/* Signature with blue line */}
                 <div className="flex items-center justify-center md:justify-start gap-5 pt-4">
                   <div className="h-1.5 w-14 bg-[#0ea5e9] rounded-full"></div>
                   <span className="font-black text-[12px] uppercase tracking-[0.3em] text-[#0c4a6e]">
@@ -94,35 +89,60 @@ const Vision: React.FC = () => {
       </section>
 
       {/* L'Histoire de Go'Top Pro - Projet APB */}
-      <section className="py-24 max-w-5xl mx-auto px-6">
-        <div className="space-y-16">
-          <div className="flex flex-col md:flex-row gap-12 items-start">
-            <div className="md:w-1/3 sticky top-32">
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="space-y-20">
+          <div className="flex flex-col md:flex-row gap-16 items-start">
+            <div className="md:w-1/3 md:sticky md:top-32">
               <div className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-6">
                 <History className="w-4 h-4" /> Notre Histoire
               </div>
-              <h2 className="text-4xl font-serif font-bold text-slate-900 leading-tight">Le Projet APB : Une décennie d'impact.</h2>
-            </div>
-            <div className="md:w-2/3 space-y-8 text-lg text-slate-600 leading-relaxed font-medium">
-              <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 mb-10">
-                <p className="italic text-slate-500 mb-0">
-                  En Côte d’Ivoire, les métiers de la beauté sont souvent considérés comme des options de dernier recours. Pourtant, ils absorbent chaque année plus de 40 % des jeunes du secteur informel.
+              <h2 className="text-4xl font-serif font-bold text-slate-900 leading-tight mb-8">Le Projet APB : Une décennie d'impact.</h2>
+              <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                <p className="italic text-slate-500 mb-0 font-medium">
+                  En Côte d’Ivoire, les métiers de la beauté absorbent chaque année plus de 40 % des jeunes du secteur informel. La formalisation est notre combat.
                 </p>
               </div>
-              
-              <p>
-                Lancé en 2014, le projet **APB (Amicale des Professionnels de la Beauté)** est né d'une volonté de formaliser et moderniser ce secteur crucial. En partenariat avec la **COOPEC**, nous avons apporté un accompagnement financier et stratégique aux gérants désireux de changer de dimension.
-              </p>
-              
-              <p>
-                En moins de deux ans, les résultats ont dépassé nos attentes. De modestes salons se sont transformés en établissements haut de gamme. Go’Top Pro est l'héritier direct de cette aventure humaine, synthétisant les "Bonnes pratiques" pour les rendre accessibles à tous via la technologie.
-              </p>
-
-              <div className="pt-10 border-t border-slate-100 flex items-center gap-6">
-                <Heart className="w-8 h-8 text-rose-500 fill-current" />
-                <p className="text-sm italic font-serif leading-relaxed">
-                  "Merci au Président de l'APB, M. Raymond Kouami Koffi - Propriétaire du <a href="https://web.facebook.com/salondecoiffurechezraymond" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline font-bold">Salon de coiffure Chez Raymond</a>, pour la fraternité et la confiance depuis plus de 25 ans."
+            </div>
+            
+            <div className="md:w-2/3 space-y-12">
+              <div className="prose prose-slate max-w-none text-lg text-slate-600 leading-relaxed font-medium">
+                <p>
+                  Lancé en 2014, le projet <strong>APB (Amicale des Professionnels de la Beauté)</strong> est né d'une volonté de moderniser ce secteur crucial. En partenariat avec la <strong>COOPEC</strong>, nous avons apporté un accompagnement stratégique aux gérants désireux de changer de dimension.
                 </p>
+                <p>
+                  Go’Top Pro est l'héritier direct de cette aventure humaine, synthétisant les "Bonnes pratiques" pour les rendre accessibles à tous via la technologie.
+                </p>
+              </div>
+
+              {/* Carte Ambassadeur - Salon Chez Raymond */}
+              <div className="bg-white rounded-[3rem] p-10 md:p-14 border border-slate-100 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-8xl font-serif italic group-hover:scale-110 transition-transform">Ambassadeur</div>
+                <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
+                  <div className="h-40 w-40 rounded-[2rem] overflow-hidden border-4 border-brand-500 shadow-xl flex-shrink-0">
+                    <img src={RAYMOND_LOGO} alt="M. Raymond Koffi" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="space-y-6 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-3">
+                      <Heart className="w-5 h-5 text-rose-500 fill-current" />
+                      <span className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Hommage & Partenariat</span>
+                    </div>
+                    <h3 className="text-2xl font-serif font-bold text-slate-900">M. Raymond Kouami Koffi</h3>
+                    <p className="text-slate-500 italic">
+                      "Merci au Président de l'APB, Propriétaire du <strong>Salon de coiffure Chez Raymond</strong>, pour la fraternité et la confiance depuis plus de 25 ans. Il est la preuve vivante qu'avec de la méthode, un salon devient une institution."
+                    </p>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                      <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl text-[9px] font-bold text-slate-500">
+                        <MapPin className="w-3.5 h-3.5 text-brand-500" /> {RAYMOND_ADDRESS}
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl text-[9px] font-bold text-slate-500">
+                        <Phone className="w-3.5 h-3.5 text-brand-500" /> {RAYMOND_PHONE}
+                      </div>
+                      <a href={RAYMOND_FB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-brand-900 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-brand-950 transition-all">
+                        Visiter Facebook <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

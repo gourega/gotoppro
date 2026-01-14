@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getProfileByPhone } from '../services/supabase';
-import { AlertCircle, Clock, Loader2, CheckCircle2 } from 'lucide-react';
+import { RAYMOND_LOGO, RAYMOND_FB_URL } from '../constants';
+import { AlertCircle, Clock, Loader2, CheckCircle2, Star, ExternalLink } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -57,13 +59,11 @@ const Login: React.FC = () => {
         return;
       }
 
-      // On procède à la connexion manuelle (le AuthContext gère maintenant les identifiants legacy)
       const success = await loginManually(formattedPhone);
       if (!success) {
         setError("Échec de l'ouverture de session.");
         setLoading(false);
       }
-      // La redirection se fera via le useEffect grâce au changement d'état 'user'
     } catch (err) {
       console.error(err);
       setError("Erreur technique. Vérifiez votre connexion.");
@@ -72,8 +72,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 overflow-hidden relative">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 overflow-hidden relative mb-8">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Go'Top</div>
         
         <div className="text-center mb-10 relative z-10">
@@ -125,6 +125,25 @@ const Login: React.FC = () => {
           </button>
         </form>
       </div>
+
+      {/* Partenaire Footer Login */}
+      <a 
+        href={RAYMOND_FB_URL} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="flex items-center gap-4 bg-white/50 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 group hover:bg-white hover:shadow-xl transition-all duration-300"
+      >
+        <div className="h-8 w-8 rounded-lg overflow-hidden border border-brand-200 shadow-sm flex-shrink-0">
+          <img src={RAYMOND_LOGO} alt="Raymond" className="h-full w-full object-cover" />
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Partenaire d'Excellence</span>
+            <Star className="w-2.5 h-2.5 text-amber-500 fill-current" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-900">Salon Chez Raymond <ExternalLink className="w-3 h-3 inline-block ml-1 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+        </div>
+      </a>
     </div>
   );
 };
