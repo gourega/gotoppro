@@ -16,11 +16,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
 import Magasin from './pages/Magasin';
-import MesFormations from './pages/MesFormations'; 
-import PublicProfile from './pages/PublicProfile'; // Nouveau
+import MesFormations from './pages/MesFormations';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
+import ScrollToTop from './components/ScrollToTop';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -47,6 +47,7 @@ const AppContent: React.FC = () => {
   
   return (
     <div className="min-h-screen w-full flex flex-col bg-slate-50 font-sans text-slate-900 items-stretch">
+      <ScrollToTop />
       <Navbar />
       <main className="flex-grow flex flex-col w-full opacity-100 items-stretch">
         <Routes>
@@ -58,9 +59,6 @@ const AppContent: React.FC = () => {
           <Route path="/audit-miroir" element={<AuditMiroir />} />
           <Route path="/results" element={<Results />} />
           
-          {/* Route publique accessible sans login */}
-          <Route path="/expert/:uid" element={<PublicProfile />} />
-
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
