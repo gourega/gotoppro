@@ -112,3 +112,39 @@
   background: #e2e8f0;
   border-radius: 10px;
 }
+
+/* --- PRINT RULES (DIPLOMA) --- */
+@media print {
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  nav, footer, .print-hidden, .print\:hidden {
+    display: none !important;
+  }
+  
+  #root, main {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .diploma-paper {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90% !important;
+    height: auto !important;
+    border: 10px double #0c4a6e !important;
+    padding: 60px !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}

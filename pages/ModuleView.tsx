@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
-import { ModuleStatus, UserActionCommitment } from '../types';
+import { ModuleStatus, UserActionCommitment, QuizQuestion } from '../types';
 import { saveUserProfile } from '../services/supabase';
 import { GoogleGenAI, Modality } from "@google/genai";
 import ReactCanvasConfetti from 'react-canvas-confetti';
@@ -25,7 +25,10 @@ import {
   HelpCircle,
   Coins,
   MessageSquareQuote,
-  FileQuestion
+  FileQuestion,
+  Printer,
+  Share2,
+  Download
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -67,6 +70,7 @@ const ModuleView: React.FC = () => {
   const [quizState, setQuizState] = useState<'intro' | 'active' | 'expert_speech' | 'results'>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
   const [shouldFire, setShouldFire] = useState(false);
   const [commitment, setCommitment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -82,19 +86,10 @@ const ModuleView: React.FC = () => {
 
   const module = useMemo(() => TRAINING_CATALOG.find(m => m.id === moduleId), [moduleId]);
 
-  const currentScore = useMemo(() => {
-    if (!user?.progress || !module) return 0;
-    const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
-    return Math.max(
-      Number(user.progress?.[module.id] || 0),
-      legacyId ? Number(user.progress?.[legacyId] || 0) : 0
-    );
-  }, [user?.progress, module]);
-
   const attemptCount = useMemo(() => Number(user?.attempts?.[moduleId || ''] || 0), [user?.attempts, moduleId]);
   const tokensRemaining = useMemo(() => Math.max(0, 3 - attemptCount), [attemptCount]);
 
-  const quizQuestions = useMemo(() => module?.quiz_questions || [], [module]);
+  const originalQuestions = useMemo(() => module?.quiz_questions || [], [module]);
 
   useEffect(() => {
     if (!user?.purchasedModuleIds.includes(moduleId || '')) {
@@ -169,7 +164,35 @@ const ModuleView: React.FC = () => {
   };
 
   const startQuizAttempt = () => {
-    if (quizQuestions.length === 0) return;
+    if (originalQuestions.length === 0) return;
+    
+    // Logique de Shuffle des questions ET des options
+    const shuffled = originalQuestions.map(q => {
+      const optionsWithInfo = q.options.map((opt, idx) => ({ 
+        text: opt, 
+        isCorrect: idx === q.correctAnswer 
+      }));
+      
+      // Mélange des options
+      for (let i = optionsWithInfo.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [optionsWithInfo[i], optionsWithInfo[j]] = [optionsWithInfo[j], optionsWithInfo[i]];
+      }
+
+      return {
+        ...q,
+        options: optionsWithInfo.map(o => o.text),
+        correctAnswer: optionsWithInfo.findIndex(o => o.isCorrect)
+      };
+    });
+
+    // Mélange des questions
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    setShuffledQuestions(shuffled);
     setAnswers([]);
     setCurrentIdx(0);
     setQuizState('active');
@@ -179,7 +202,7 @@ const ModuleView: React.FC = () => {
     if (isFinishingQuiz || quizState !== 'active') return;
     const newAnswers = [...answers, idx];
     setAnswers(newAnswers);
-    if (currentIdx < quizQuestions.length - 1) {
+    if (currentIdx < shuffledQuestions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
       finishQuiz(newAnswers);
@@ -189,12 +212,12 @@ const ModuleView: React.FC = () => {
   const finishQuiz = async (finalAnswers: number[]) => {
     setIsFinishingQuiz(true);
     let score = 0;
-    quizQuestions.forEach((q, i) => { 
+    shuffledQuestions.forEach((q, i) => { 
       if (finalAnswers[i] !== undefined && finalAnswers[i] === q.correctAnswer) {
         score++; 
       }
     });
-    const percentage = Math.round((score / (quizQuestions.length || 1)) * 100);
+    const percentage = Math.round((score / (shuffledQuestions.length || 1)) * 100);
     
     try {
       const updatedUser = JSON.parse(JSON.stringify(user));
@@ -252,15 +275,38 @@ const ModuleView: React.FC = () => {
 
   const currentAttemptScore = useMemo(() => {
     return answers.reduce((acc, ans, i) => {
-      const question = quizQuestions[i];
+      const question = shuffledQuestions[i];
       return (question && ans === question.correctAnswer) ? acc + 1 : acc;
     }, 0);
-  }, [answers, quizQuestions]);
+  }, [answers, shuffledQuestions]);
 
-  const latestPercentage = Math.round((currentAttemptScore / (quizQuestions.length || 1)) * 100);
+  const latestPercentage = Math.round((currentAttemptScore / (shuffledQuestions.length || 1)) * 100);
+
+  const handlePrintCertificate = () => {
+    window.print();
+  };
+
+  const handleShareCertificate = async () => {
+    const shareText = `Je viens de valider avec succès le module "${module.title}" sur Go'Top Pro avec un score d'excellence de ${latestPercentage}% ! Fier(e) de mon parcours vers l'Excellence Beauté.`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Mon Certificat Go'Top Pro",
+          text: shareText,
+          url: window.location.origin
+        });
+      } catch (err) {
+        console.warn("Share failed, falling back to WhatsApp", err);
+      }
+    } else {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      window.open(waUrl, '_blank');
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white print:bg-white print:p-0">
       {shouldFire && (
         <ReactCanvasConfetti
           style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
@@ -271,7 +317,7 @@ const ModuleView: React.FC = () => {
         />
       )}
       
-      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 h-20 flex items-center">
+      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 h-20 flex items-center print:hidden">
         <div className="max-w-5xl mx-auto w-full px-6 flex items-center justify-between">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-brand-900 transition-colors font-black text-[10px] uppercase tracking-widest group">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -288,9 +334,9 @@ const ModuleView: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-20 pb-32">
+      <div className="max-w-4xl mx-auto px-6 py-20 pb-32 print:py-0 print:px-0">
         {activeTab === 'lesson' ? (
-          <article className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <article className="animate-in fade-in slide-in-from-bottom-5 duration-700 print:hidden">
             <header className="text-center mb-24">
               <span className="text-[10px] font-black text-brand-500 bg-brand-50 px-6 py-2.5 rounded-full uppercase tracking-[0.4em] inline-block mb-8 border border-brand-100">{module.topic}</span>
               <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 leading-[1.1] mb-10 tracking-tight">{module.title}</h1>
@@ -329,13 +375,13 @@ const ModuleView: React.FC = () => {
           <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             {/* ETAT INTRO */}
             {quizState === 'intro' && (
-              <div className="text-center max-w-2xl mx-auto">
+              <div className="text-center max-w-2xl mx-auto print:hidden">
                 <div className="h-36 w-36 bg-slate-900 text-white rounded-[3.5rem] flex items-center justify-center mx-auto mb-14 shadow-2xl">
                   <Award className="w-16 h-16" />
                 </div>
                 <h2 className="text-5xl font-bold text-slate-900 mb-8 font-serif tracking-tight">Certification Excellence</h2>
                 
-                {quizQuestions.length > 0 ? (
+                {originalQuestions.length > 0 ? (
                   <>
                     <div className="flex items-center justify-center gap-4 mb-16">
                        <div className={`px-6 py-3 rounded-2xl flex items-center gap-3 border ${tokensRemaining > 0 ? 'bg-brand-50 border-brand-100 text-brand-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
@@ -369,20 +415,20 @@ const ModuleView: React.FC = () => {
             )}
 
             {/* ETAT ACTIF (QUESTIONS) */}
-            {quizState === 'active' && quizQuestions[currentIdx] && (
-              <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500">
+            {quizState === 'active' && shuffledQuestions[currentIdx] && (
+              <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500 print:hidden">
                 <div className="mb-20">
                   <div className="flex justify-between items-center mb-10">
-                    <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Question {currentIdx + 1} / {quizQuestions.length}</span>
+                    <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Question {currentIdx + 1} / {shuffledQuestions.length}</span>
                     <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
                        <Coins className="w-3.5 h-3.5 text-brand-600" />
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tentative {attemptCount + 1}</span>
                     </div>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{quizQuestions[currentIdx].question}</h3>
+                  <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{shuffledQuestions[currentIdx].question}</h3>
                 </div>
                 <div className="grid gap-6">
-                  {quizQuestions[currentIdx].options.map((opt, i) => (
+                  {shuffledQuestions[currentIdx].options.map((opt, i) => (
                     <button key={i} onClick={() => handleAnswer(i)} className="w-full text-left p-10 rounded-[3rem] border-2 border-slate-100 bg-white hover:border-brand-500 hover:shadow-2xl transition-all font-bold text-slate-800 text-xl flex items-center justify-between group">
                       {opt} <div className="h-8 w-8 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
                     </button>
@@ -393,7 +439,7 @@ const ModuleView: React.FC = () => {
 
             {/* ETAT PAROLE D'EXPERT (SUCCÈS >= 80%) */}
             {quizState === 'expert_speech' && (
-              <div className="text-center space-y-12 animate-in zoom-in-95">
+              <div className="text-center space-y-12 animate-in zoom-in-95 print:hidden">
                 <div className="h-32 w-32 rounded-full mx-auto p-1.5 bg-emerald-500 shadow-xl shadow-emerald-200">
                   <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover rounded-full" alt="Mentor" />
                 </div>
@@ -427,7 +473,7 @@ const ModuleView: React.FC = () => {
             {/* ETAT RÉSULTATS (DÉBRIEFING) */}
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
-                <div className="text-center mb-16">
+                <div className="text-center mb-16 print:hidden">
                    <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-white'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
@@ -438,7 +484,7 @@ const ModuleView: React.FC = () => {
                 </div>
 
                 {latestPercentage < 80 ? (
-                  <div className="text-center max-w-2xl mx-auto py-10">
+                  <div className="text-center max-w-2xl mx-auto py-10 print:hidden">
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
                        <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
                        <p className="text-amber-900 text-xl font-medium leading-relaxed italic">
@@ -453,12 +499,12 @@ const ModuleView: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-16">
-                    <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative">
+                    <section className="bg-white rounded-[4rem] border border-slate-100 shadow-xl p-12 md:p-20 overflow-hidden relative print:hidden">
                       <h4 className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em] mb-14 flex items-center gap-3">
                          <HelpCircle className="w-5 h-5" /> Débriefing de votre Maîtrise
                       </h4>
                       <div className="space-y-12">
-                         {quizQuestions.map((q, qIdx) => {
+                         {shuffledQuestions.map((q, qIdx) => {
                            const userAns = answers[qIdx];
                            return (
                              <div key={qIdx} className="border-b border-slate-50 pb-10 last:border-0">
@@ -486,7 +532,7 @@ const ModuleView: React.FC = () => {
                       </div>
                     </section>
 
-                    <div className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl">
+                    <div id="certificate-area" className="diploma-paper border-[16px] border-double border-slate-100 p-12 md:p-24 rounded-[4rem] text-center relative overflow-hidden shadow-2xl bg-white print:border-none print:shadow-none print:rounded-none print:w-full print:p-10">
                       <div className="relative z-10">
                         <div className="mb-14">
                           <Crown className="w-16 h-16 text-brand-500 mx-auto mb-6" />
@@ -496,8 +542,40 @@ const ModuleView: React.FC = () => {
                         <p className="text-xl font-serif text-slate-500 mb-8 italic">Ce document atteste que l'expert(e)</p>
                         <h3 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-10 tracking-tight">{user.firstName} {user.lastName}</h3>
                         <p className="text-lg font-medium text-slate-500 max-w-xl mx-auto mb-16 leading-relaxed">A validé avec succès le module de formation magistrale :<br/><span className="text-brand-900 font-black uppercase tracking-widest text-xl mt-4 block">"{module.title}"</span></p>
-                        <button onClick={() => navigate('/dashboard')} className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl">Retour au Dashboard</button>
+                        <div className="flex items-center justify-center gap-10 mt-12 opacity-80 border-t border-slate-100 pt-10">
+                           <div className="text-left">
+                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date de validation</p>
+                              <p className="text-xs font-bold text-slate-900">{new Date().toLocaleDateString('fr-FR')}</p>
+                           </div>
+                           <div className="h-12 w-px bg-slate-100"></div>
+                           <div className="text-right">
+                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">ID Certificat</p>
+                              <p className="text-[9px] font-mono font-bold text-slate-500">{module.id.toUpperCase()}-{user.uid.substring(0,8).toUpperCase()}</p>
+                           </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* ACTIONS DU CERTIFICAT */}
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 print:hidden">
+                       <button 
+                        onClick={handlePrintCertificate}
+                        className="bg-brand-900 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"
+                       >
+                         <Printer className="w-4 h-4" /> Imprimer / PDF
+                       </button>
+                       <button 
+                        onClick={handleShareCertificate}
+                        className="bg-emerald-500 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"
+                       >
+                         <Share2 className="w-4 h-4" /> Partager ma réussite
+                       </button>
+                       <button 
+                        onClick={() => navigate('/dashboard')}
+                        className="text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-brand-900 px-6"
+                       >
+                         Retour au Dashboard
+                       </button>
                     </div>
                   </div>
                 )}
