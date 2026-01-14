@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone, isValidUUID } from '../services/supabase';
 import { UserProfile } from '../types';
@@ -59,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (email === MASTER_ADMIN_EMAIL) {
         const profile = await getUserProfile(uid).catch(() => null);
+        // Fix: Added missing 'isPublic' property to comply with UserProfile interface
         const adminProfile: UserProfile = {
           uid,
           phoneNumber: profile?.phoneNumber || SUPER_ADMIN_PHONE_NUMBER,
@@ -69,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'SUPER_ADMIN',
           isActive: true,
           isAdmin: true,
+          isPublic: profile?.isPublic ?? true,
           isKitaPremium: true,
           hasPerformancePack: true,
           hasStockPack: true,

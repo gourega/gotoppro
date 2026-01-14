@@ -38,6 +38,18 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   return error ? null : data as UserProfile;
 };
 
+// Utilisé pour les pages de profil partagées publiquement
+export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
+  if (!supabase || !uid) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('uid', uid)
+    .eq('isPublic', true)
+    .maybeSingle();
+  return error ? null : data as UserProfile;
+};
+
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();

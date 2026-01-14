@@ -78,7 +78,7 @@ export interface UserProfile {
   role: UserRole;
   isActive: boolean;
   isAdmin: boolean;
-  isPublic?: boolean; // Nouveau : Profil consultable par tous
+  isPublic: boolean; // Ajouté pour les profils publics
   
   // Statuts KITA
   isKitaPremium: boolean;
