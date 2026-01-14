@@ -6,9 +6,16 @@ export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/o
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
-// Bio Officielle
+// Bio & Coordonnées Officielles (CANTIC THINK IA)
 export const COACH_KITA_FULL_NAME = "Ouréga Kouassi Goblé";
 export const COACH_KITA_TITLE = "L’Architecte de la Rentabilité Beauté";
+export const COACH_KITA_ESTABLISHMENT = "CANTIC THINK IA";
+export const COACH_KITA_ADDRESS = "544, 2 Plateaux Agban - Rue 70 - Carrefour Kratos - Abidjan Cocody";
+export const COACH_KITA_EMAIL = "ourega.goble@canticthinkia.ci";
+export const COACH_KITA_PHONE = "+225 01 03 43 84 56";
+export const COACH_KITA_OPENING_YEAR = 2014;
+export const COACH_KITA_EMPLOYEES = 10;
+
 export const COACH_KITA_BIO = "Expert mentor avec plus de 25 ans d'immersion sur le terrain en Afrique de l’Ouest, Ouréga est le cerveau derrière le standard d'excellence KITA. Il a identifié les 16 leviers critiques qui séparent les gérants qui stagnent de ceux qui règnent. Sa mission : injecter la rigueur du management moderne dans l'ADN des leaders de la beauté ivoirienne.";
 export const COACH_KITA_SLOGAN = "Le talent attire le client, la stratégie bâtit l’empire.";
 
@@ -18,7 +25,7 @@ export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymo
 export const RAYMOND_PHONE = "+2250707949706";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
 
-export const SUPER_ADMIN_PHONE_NUMBER = "+2250001020304";
+export const SUPER_ADMIN_PHONE_NUMBER = "+2250103438456";
 
 /**
  * Table de migration pour restaurer les anciens comptes
@@ -110,7 +117,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
         question: "Un client appelle pendant que vous êtes en prestation, que faites-vous ?", 
         options: ["Vous ignorez l'appel", "Vous décrochez et prenez le rendez-vous vite", "Vous vous excusez et proposez de rappeler"], 
         correctAnswer: 2, 
-        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la personne sur le fauteuil." 
+        explanation: "L'expert gère ses priorités. On décroche pour ne pas perdre le client, mais on écourte poliment pour respecter la person sur le fauteuil." 
       },
       { 
         question: "Quelle information est la plus critique lors d'un rendez-vous ?", 

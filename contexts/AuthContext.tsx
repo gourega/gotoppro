@@ -2,7 +2,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
-import { COACH_KITA_AVATAR, SUPER_ADMIN_PHONE_NUMBER, TRAINING_CATALOG, COACH_KITA_BIO } from '../constants';
+import { 
+  COACH_KITA_AVATAR, 
+  SUPER_ADMIN_PHONE_NUMBER, 
+  TRAINING_CATALOG, 
+  COACH_KITA_BIO, 
+  COACH_KITA_ESTABLISHMENT,
+  COACH_KITA_OPENING_YEAR,
+  COACH_KITA_EMPLOYEES
+} from '../constants';
 
 const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL && process.env.VITE_ADMIN_EMAIL.trim() !== "" 
   ? process.env.VITE_ADMIN_EMAIL 
@@ -57,7 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: email,
           firstName: 'Coach',
           lastName: 'Kita',
-          establishmentName: profile?.establishmentName || "Go'Top Pro HQ",
+          establishmentName: COACH_KITA_ESTABLISHMENT,
+          openingYear: COACH_KITA_OPENING_YEAR,
+          employeeCount: COACH_KITA_EMPLOYEES,
           bio: COACH_KITA_BIO,
           role: 'SUPER_ADMIN',
           isActive: true,
