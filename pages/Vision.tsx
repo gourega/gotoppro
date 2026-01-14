@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE } from '../constants';
+import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE, RAYMOND_STYLING_PHOTO } from '../constants';
 import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart, ExternalLink, MapPin, Phone } from 'lucide-react';
 
 const Vision: React.FC = () => {
@@ -41,7 +41,7 @@ const Vision: React.FC = () => {
           </div>
           <div className="md:col-span-5 relative">
             <div className="aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl border-8 border-slate-50 relative group">
-              <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80" alt="Excellence Beauté" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+              <img src={RAYMOND_STYLING_PHOTO} alt="Raymond en action" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
               <div className="absolute inset-0 bg-brand-900/20"></div>
             </div>
             <div className="absolute -bottom-10 -left-10 bg-white p-8 rounded-[2rem] shadow-xl max-w-[250px] border border-slate-100 hidden md:block">

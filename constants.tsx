@@ -21,6 +21,7 @@ export const COACH_KITA_SLOGAN = "Le talent attire le client, la stratégie bât
 
 // Partenaire Officiel
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/RAYMOND_LOGO.jpg";
+export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
 export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
 export const RAYMOND_PHONE = "+2250707949706";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
@@ -212,7 +213,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
     quiz_questions: [
       { 
-        question: "Quand faut-il nettoyer ses outils ?", 
+        question: "Quand faut-it nettoyer ses outils ?", 
         options: ["Le soir après la fermeture", "Une fois par semaine", "Devant chaque client"], 
         correctAnswer: 2, 
         explanation: "La visibilité de l'hygiène est un acte de marketing puissant qui justifie vos prix." 
@@ -435,7 +436,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Accueil",
     title: "Psychologie de la Cliente : comprendre l'inexprimé",
     description: "Apprenez à lire entre les lignes pour satisfaire les désirs cachés de vos clients.",
-    mini_course: "On coiffe une personne, pas seulement des cheveux.",
+    mini_course: "On coiffe une person, pas seulement des cheveux.",
     price: 500,
     aiCredits: 3,
     lesson_content: `<h2>1. L'écoute active augmentée</h2><p>Décoder le langage corporel pour adapter son discours de vente.</p>`,
