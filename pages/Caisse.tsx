@@ -9,9 +9,7 @@ import {
   deleteKitaTransaction,
   getKitaDebts,
   getKitaServices,
-  bulkAddKitaServices,
-  saveUserProfile,
-  getUserProfile
+  bulkAddKitaServices
 } from '../services/supabase';
 import { 
   Plus, 
@@ -33,11 +31,9 @@ import {
   Database,
   ChevronDown,
   Search,
-  Lock,
-  Cloud,
-  ShieldAlert,
   ShieldHalf,
-  Info
+  Info,
+  Cloud
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
@@ -54,10 +50,9 @@ const CATEGORIES = [
 ];
 
 const Caisse: React.FC = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
-  const [debts, setDebts] = useState<KitaDebt[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -95,18 +90,15 @@ const Caisse: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [transData, debtData, serviceData] = await Promise.all([
+      const [transData, serviceData] = await Promise.all([
         getKitaTransactions(user.uid),
-        getKitaDebts(user.uid),
         getKitaServices(user.uid)
       ]);
-      
       setTransactions(transData);
-      setDebts(debtData);
       setServices(serviceData);
     } catch (err: any) {
       console.error("Caisse loadData Error:", err);
-      setError("Erreur de liaison avec la base de données. " + (err.message || ""));
+      setError("Synchronisation impossible. Vérifiez votre table 'kita_services'.");
     } finally {
       setLoading(false);
     }
@@ -121,12 +113,9 @@ const Caisse: React.FC = () => {
       if (trans) {
         await loadData();
         setLastSavedTransaction(trans);
-      } else {
-        throw new Error("Erreur lors de l'enregistrement");
       }
     } catch (err) {
-      console.error(err);
-      alert("Une erreur est survenue lors de l'enregistrement.");
+      alert("Erreur lors de l'enregistrement.");
     } finally {
       setSaving(false);
     }
@@ -134,15 +123,9 @@ const Caisse: React.FC = () => {
 
   const initializeDefaultServices = async () => {
     if (!user?.uid || isInitializing) return;
-    
-    // Sécurité supplémentaire: si des services existent déjà, on ne génère pas
-    if (services.length > 0) {
-      alert("Votre catalogue contient déjà des prestations.");
-      return;
-    }
+    if (services.length > 0) return alert("Catalogue déjà existant.");
 
     setIsInitializing(true);
-    setError(null);
     try {
       const servicesToCreate = DEFAULT_KITA_SERVICES.map(name => {
         let cat = 'Autre';
@@ -152,16 +135,11 @@ const Caisse: React.FC = () => {
         else if (name.match(/Vente/i)) cat = 'Vente';
         return { name, category: cat, defaultPrice: 0, isActive: true };
       });
-      
       await bulkAddKitaServices(user.uid, servicesToCreate);
-      
-      // On force un rechargement complet de la base
       await loadData();
-      
-      alert("Succès ! Votre catalogue KITA a été généré.");
+      alert("Catalogue généré avec succès !");
     } catch (err: any) {
-      console.error("Initialization Error:", err);
-      alert("Erreur technique : " + (err.message || "Impossible de générer le catalogue. Vérifiez votre connexion."));
+      alert("Erreur : " + err.message);
     } finally {
       setIsInitializing(false);
     }
@@ -170,7 +148,6 @@ const Caisse: React.FC = () => {
   const filteredTransactions = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     return transactions.filter(t => {
-      if (t.isCredit) return false;
       if (period === 'today') return t.date === todayStr;
       return true;
     });
@@ -202,11 +179,6 @@ const Caisse: React.FC = () => {
     });
   }, [services, searchTerm, activeCategory]);
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setLastSavedTransaction(null);
-  };
-
   return (
     <div className="min-h-screen bg-[#fcfdfe] pb-24 relative">
       <KitaTopNav />
@@ -221,7 +193,12 @@ const Caisse: React.FC = () => {
                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 tracking-tight">Pilotage <span className="text-white italic">Financier</span></h1>
               </div>
            </div>
-           <button onClick={() => setIsModalOpen(true)} className="h-20 w-20 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
+           <div className="flex gap-4">
+              <button onClick={loadData} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all">
+                <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button onClick={() => setIsModalOpen(true)} className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
+           </div>
         </div>
       </header>
 
@@ -233,49 +210,39 @@ const Caisse: React.FC = () => {
                     <ShieldHalf className="w-7 h-7" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-black text-brand-900 uppercase tracking-tight">Mode Stockage Local</h2>
-                    <p className="text-slate-500 text-sm font-medium">Attention : vos chiffres ne sont pas certifiés sur le Cloud. En cas de perte ou de formatage, vos données seront perdues. <span className="text-amber-600 font-bold">Passez Élite pour sécuriser.</span></p>
+                    <h2 className="text-xl font-black text-brand-900 uppercase tracking-tight">Données en local</h2>
+                    <p className="text-slate-500 text-sm font-medium">Vos chiffres ne sont pas encore sauvegardés sur le Cloud. <span className="text-amber-600 font-bold">Passez Élite pour sécuriser votre salon.</span></p>
                  </div>
               </div>
-              <button 
-                onClick={() => navigate('/results?pack=elite')} 
-                className="bg-brand-900 text-white px-8 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-black transition-all flex items-center gap-3 shrink-0"
-              >
-                <Cloud className="w-4 h-4 text-brand-500" /> Sécuriser mon salon
-              </button>
+              <button onClick={() => navigate('/results?pack=elite')} className="bg-brand-900 text-white px-8 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-black transition-all flex items-center gap-3 shrink-0"><Cloud className="w-4 h-4 text-brand-500" /> Sécuriser mon salon</button>
            </div>
         </div>
       )}
 
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
         <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
-          {(['today', 'week', 'month', 'debts'] as PeriodFilter[]).map((p) => (
+          {(['today', 'week', 'month'] as PeriodFilter[]).map((p) => (
             <button key={p} onClick={() => setPeriod(p)} className={`px-8 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
-              {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : p === 'month' ? "Mois" : "Ardoises"}
+              {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : "Mois"}
             </button>
           ))}
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-16 space-y-12">
-        {period !== 'debts' && (
-          <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden">
-             <div className="grid grid-cols-2 gap-16 md:gap-24 flex-grow">
-                <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes (Cash)</p><p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
-                <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
-             </div>
-             <div className="bg-brand-900 p-10 rounded-[3rem] text-white min-w-[300px] shadow-2xl">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance Cash</p>
-                <div className="flex items-baseline gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
-             </div>
-          </div>
-        )}
+        <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden">
+           <div className="grid grid-cols-2 gap-16 md:gap-24 flex-grow">
+              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes</p><p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
+              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
+           </div>
+           <div className="bg-brand-900 p-10 rounded-[3rem] text-white min-w-[300px] shadow-2xl">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance du jour</p>
+              <div className="flex items-baseline gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
+           </div>
+        </div>
 
         {loading ? (
-          <div className="py-24 text-center">
-            <Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" />
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Chargement sécurisé...</p>
-          </div>
+          <div className="py-24 text-center"><Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" /><p className="text-slate-400 font-bold uppercase text-[10px]">Chargement des données...</p></div>
         ) : (
           <div className="space-y-4">
             {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
@@ -292,7 +259,7 @@ const Caisse: React.FC = () => {
                 </div>
               </div>
             )) : (
-              <div className="py-20 text-center text-slate-400 italic">Aucune opération enregistrée pour cette période.</div>
+              <div className="py-20 text-center text-slate-400 italic">Aucune opération pour cette période.</div>
             )}
           </div>
         )}
@@ -300,14 +267,12 @@ const Caisse: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
-          <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 animate-in zoom-in-95 duration-300">
             {lastSavedTransaction ? (
               <div className="text-center space-y-8 animate-in fade-in">
-                 <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="w-10 h-10" /></div>
-                 <h2 className="text-3xl font-serif font-bold text-slate-900">Enregistré !</h2>
-                 <div className="flex flex-col gap-4">
-                    <button onClick={closeModal} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px]">Terminer</button>
-                 </div>
+                 <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto"><CheckCircle2 className="w-10 h-10" /></div>
+                 <h2 className="text-3xl font-serif font-bold text-slate-900">Validé !</h2>
+                 <button onClick={() => { setIsModalOpen(false); setLastSavedTransaction(null); }} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px]">Continuer</button>
               </div>
             ) : (
               <>
@@ -317,27 +282,24 @@ const Caisse: React.FC = () => {
                     <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
                     <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
                   </div>
-                  
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Sélectionner la prestation</label>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prestation</label>
                       <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-brand-500/20 text-left flex justify-between items-center transition-all">
-                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Appuyez pour choisir..."}</span>
+                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Choisir..."}</span>
                         <ChevronDown className="w-5 h-5 text-slate-400" />
                       </button>
                     </div>
-
                     <div>
                       <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Montant (F)</label>
                       <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" />
                     </div>
                   </div>
-
                   <div className="flex gap-4 pt-4">
-                    <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-950 transition-all">
-                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Valider
+                    <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
+                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer
                     </button>
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Annuler</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Fermer</button>
                   </div>
                 </form>
               </>
@@ -349,104 +311,40 @@ const Caisse: React.FC = () => {
       {isServiceListOpen && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/95 backdrop-blur-md">
            <div className="bg-white w-full max-w-2xl h-[90vh] md:h-[80vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
-              <div className="p-8 border-b border-slate-100 bg-white">
+              <div className="p-8 border-b border-slate-100">
                  <div className="flex justify-between items-center mb-8">
-                    <div>
-                      <h3 className="text-3xl font-serif font-bold text-slate-900 mb-1">Catalogue Expert</h3>
-                      <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Choisissez une prestation</p>
-                    </div>
-                    <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all"><X /></button>
+                    <div><h3 className="text-3xl font-serif font-bold text-slate-900">Catalogue Expert</h3><p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Sélectionnez une prestation</p></div>
+                    <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500"><X /></button>
                  </div>
-                 
                  {services.length > 0 && (
-                   <>
-                    <div className="relative mb-8">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input 
-                          type="text" 
-                          placeholder="Chercher une prestation..." 
-                          value={searchTerm}
-                          onChange={e => setSearchTerm(e.target.value)}
-                          className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold text-lg"
-                        />
-                    </div>
-
+                   <div className="space-y-6">
+                    <div className="relative"><Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none font-bold text-lg" /></div>
                     <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                         {CATEGORIES.map(cat => (
-                          <button 
-                            key={cat.id} 
-                            onClick={() => setActiveCategory(cat.id)}
-                            className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                          >
-                            {cat.icon} {cat.label}
-                          </button>
+                          <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{cat.icon} {cat.label}</button>
                         ))}
                     </div>
-                   </>
+                   </div>
                  )}
               </div>
-
               <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar flex flex-col">
                  {isInitializing ? (
-                   <div className="m-auto text-center animate-pulse">
-                      <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
-                      <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Génération du catalogue...</p>
-                   </div>
+                   <div className="m-auto text-center"><Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" /><p className="text-brand-900 font-black uppercase text-xs">Création du catalogue en cours...</p></div>
                  ) : services.length === 0 ? (
                    <div className="m-auto text-center space-y-8 max-w-sm">
-                      <div className="h-32 w-32 bg-brand-50 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-inner">
-                         <Database className="w-16 h-16 text-brand-500 opacity-40" />
-                      </div>
-                      <div>
-                        <h4 className="text-slate-900 font-serif font-bold text-2xl mb-3">Catalogue non configuré</h4>
-                        <p className="text-slate-500 text-sm leading-relaxed mb-8">Votre espace de travail est vierge. Générez le catalogue standard KITA pour commencer à piloter vos chiffres immédiatement.</p>
-                      </div>
-                      <button 
-                        onClick={initializeDefaultServices}
-                        className="w-full bg-brand-900 text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-[0_15px_30px_rgba(12,74,110,0.2)] hover:bg-brand-950 transition-all flex items-center justify-center gap-4 active:scale-95"
-                      >
-                        <RefreshCw className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} /> 
-                        Générer mon catalogue KITA
-                      </button>
+                      <div className="h-32 w-32 bg-brand-50 rounded-[2.5rem] flex items-center justify-center mx-auto"><Database className="w-16 h-16 text-brand-500 opacity-40" /></div>
+                      <div><h4 className="text-slate-900 font-serif font-bold text-2xl mb-3">Catalogue vierge</h4><p className="text-slate-500 text-sm">Générez le catalogue standard KITA pour commencer à piloter vos ventes immédiatement.</p></div>
+                      <button onClick={initializeDefaultServices} className="w-full bg-brand-900 text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-brand-950 transition-all flex items-center justify-center gap-4"><RefreshCw className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} /> Générer mon catalogue KITA</button>
                    </div>
                  ) : (
-                   <>
-                    <div className="grid grid-cols-2 gap-4">
-                        {filteredServices.length > 0 ? filteredServices.map(s => (
-                          <button 
-                            key={s.id} 
-                            onClick={() => handleSelectService(s)}
-                            className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
-                          >
-                            <div>
-                                <div className="flex justify-between items-start mb-3">
-                                  <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
-                                </div>
-                                <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
-                            </div>
-                            <div className="mt-4 flex items-center justify-between">
-                                <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-50 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
-                                  {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
-                                </span>
-                                <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
-                                  <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
-                                </div>
-                            </div>
-                          </button>
-                        )) : (
-                          <div className="col-span-2 py-20 text-center text-slate-400 m-auto flex flex-col items-center gap-6">
-                            <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center shadow-inner">
-                               <Info className="w-8 h-8 opacity-20" />
-                            </div>
-                            <div className="space-y-2">
-                               <p className="text-slate-900 font-bold text-lg">Aucun résultat</p>
-                               <p className="text-sm max-w-[200px] italic">Aucune prestation de la catégorie "{activeCategory}" n'a été trouvée.</p>
-                            </div>
-                            <button onClick={() => setActiveCategory('all')} className="text-brand-600 font-black text-[10px] uppercase tracking-widest border-b-2 border-brand-100 pb-1">Voir tout le catalogue</button>
-                          </div>
-                        )}
-                    </div>
-                   </>
+                   <div className="grid grid-cols-2 gap-4">
+                      {filteredServices.map(s => (
+                        <button key={s.id} onClick={() => handleSelectService(s)} className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl transition-all group flex flex-col justify-between min-h-[160px]">
+                          <div><div className="mb-3"><span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase">{s.category}</span></div><p className="font-bold text-slate-900 text-lg leading-tight">{s.name}</p></div>
+                          <div className="mt-4 flex items-center justify-between"><span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-50 text-slate-500 uppercase text-[9px]'}`}>{s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}</span><div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center"><Plus className="w-4 h-4 text-transparent group-hover:text-white" /></div></div>
+                        </button>
+                      ))}
+                   </div>
                  )}
               </div>
            </div>

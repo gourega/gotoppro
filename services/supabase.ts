@@ -24,30 +24,80 @@ export const generateUUID = () => {
 };
 
 /**
- * MAPPING DATA (DB <=> APP)
+ * MAPPING PROFILES (DB <=> APP)
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
-    ...data,
-    pinCode: data.pinCode || '1234', 
+    uid: data.uid,
+    phoneNumber: data.phoneNumber || data.phone_number || '',
+    pinCode: data.pinCode || data.pin_code || '1234',
+    email: data.email,
+    firstName: data.firstName || data.first_name || '',
+    lastName: data.lastName || data.last_name || '',
+    establishmentName: data.establishmentName || data.establishment_name || '',
+    photoURL: data.photoURL || data.photo_url || '',
+    bio: data.bio || '',
+    employeeCount: data.employeeCount || data.employee_count || 0,
+    openingYear: data.openingYear || data.opening_year || 0,
+    role: data.role || 'CLIENT',
+    isActive: data.isActive ?? data.is_active ?? false,
+    isAdmin: data.isAdmin ?? data.is_admin ?? false,
+    isPublic: data.isPublic ?? data.is_public ?? true,
+    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
+    kitaPremiumUntil: data.kitaPremiumUntil || data.kita_premium_until,
+    hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
+    hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchasedModuleIds) ? data.purchasedModuleIds : [],
-    pendingModuleIds: Array.isArray(data.pendingModuleIds) ? data.pendingModuleIds : [],
-    actionPlan: Array.isArray(data.actionPlan) ? data.actionPlan : [],
-    referralCount: data.referralCount || 0,
-    createdAt: data.createdAt || new Date().toISOString()
+    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
+    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
+    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
+    referralCount: data.referralCount || data.referral_count || 0,
+    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+    progress: data.progress || {},
+    attempts: data.attempts || {}
   } as UserProfile;
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
-  const cleanData: any = {};
+  const dbData: any = {};
+  const mapping: any = {
+    uid: 'uid',
+    phoneNumber: 'phone_number',
+    pinCode: 'pin_code',
+    email: 'email',
+    firstName: 'first_name',
+    lastName: 'last_name',
+    establishmentName: 'establishment_name',
+    photoURL: 'photo_url',
+    bio: 'bio',
+    employeeCount: 'employee_count',
+    openingYear: 'opening_year',
+    role: 'role',
+    isActive: 'is_active',
+    isAdmin: 'is_admin',
+    isPublic: 'is_public',
+    isKitaPremium: 'is_kita_premium',
+    kitaPremiumUntil: 'kita_premium_until',
+    hasPerformancePack: 'has_performance_pack',
+    hasStockPack: 'has_stock_pack',
+    badges: 'badges',
+    purchasedModuleIds: 'purchased_module_ids',
+    pendingModuleIds: 'pending_module_ids',
+    actionPlan: 'action_plan',
+    referralCount: 'referral_count',
+    createdAt: 'created_at',
+    progress: 'progress',
+    attempts: 'attempts'
+  };
+
   Object.keys(profile).forEach(key => {
+    const dbKey = mapping[key] || key;
     if ((profile as any)[key] !== undefined) {
-      cleanData[key] = (profile as any)[key];
+      dbData[dbKey] = (profile as any)[key];
     }
   });
-  return cleanData;
+  return dbData;
 };
 
 /**
@@ -60,6 +110,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
+    console.error("Fetch Profile Error:", err);
     return null;
   }
 };
@@ -67,7 +118,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfile | null> => {
   if (!supabase) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').eq('phoneNumber', phoneNumber).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${phoneNumber},phone_number.eq.${phoneNumber}`).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
@@ -83,7 +134,7 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
     .upsert(dbData, { onConflict: 'uid' });
     
   if (error) {
-    console.error("Supabase Save Error:", error);
+    console.error("Supabase Upsert Error:", error);
     throw error;
   }
 };
@@ -113,11 +164,11 @@ export const deleteUserProfile = async (uid: string) => {
 };
 
 /**
- * KITA TRANSACTIONS (Caisse)
+ * KITA TRANSACTIONS
  */
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId);
+  const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return error ? [] : data.map(t => ({
     id: t.id,
     type: t.type,
@@ -128,13 +179,17 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     date: t.date,
     staffName: t.staff_name,
     commissionRate: t.commission_rate,
-    isCredit: t.is_credit
+    isCredit: t.is_credit,
+    clientId: t.client_id,
+    productId: t.product_id
   }));
 };
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_transactions').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_transactions').insert({
+    id: newId,
     user_id: userId,
     type: transaction.type,
     amount: transaction.amount,
@@ -144,28 +199,17 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     date: transaction.date,
     staff_name: transaction.staffName,
     commission_rate: transaction.commissionRate,
-    is_credit: transaction.isCredit || false
-  }).select().single();
+    is_credit: transaction.isCredit || false,
+    client_id: transaction.clientId,
+    product_id: transaction.productId
+  });
   
-  if (error || !data) {
-    console.error("Transaction Error:", error);
+  if (error) {
+    console.error("Transaction Insert Error:", error);
     return null;
   }
-  return mapTransactionFromDB(data);
+  return { ...transaction, id: newId } as KitaTransaction;
 };
-
-const mapTransactionFromDB = (data: any): KitaTransaction => ({
-  id: data.id,
-  type: data.type,
-  amount: data.amount,
-  label: data.label,
-  category: data.category,
-  paymentMethod: data.payment_method,
-  date: data.date,
-  staffName: data.staff_name,
-  commissionRate: data.commission_rate,
-  isCredit: data.is_credit
-});
 
 export const deleteKitaTransaction = async (id: string) => {
   if (supabase) await supabase.from('kita_transactions').delete().eq('id', id);
@@ -188,32 +232,8 @@ export const getKitaDebts = async (userId: string): Promise<KitaDebt[]> => {
   }));
 };
 
-export const addKitaDebt = async (userId: string, debt: Omit<KitaDebt, 'id'>) => {
-  if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_debts').insert({
-    user_id: userId,
-    person_name: debt.personName,
-    amount: debt.amount,
-    phone: debt.phone,
-    is_paid: debt.isPaid,
-    created_at: debt.createdAt
-  }).select().single();
-  return error ? null : {
-    id: data.id,
-    personName: data.person_name,
-    amount: data.amount,
-    phone: data.phone,
-    isPaid: data.is_paid,
-    createdAt: data.created_at
-  };
-};
-
-export const markDebtAsPaid = async (debtId: string) => {
-  if (supabase) await supabase.from('kita_debts').update({ is_paid: true, paid_at: new Date().toISOString() }).eq('id', debtId);
-};
-
 /**
- * KITA STOCK
+ * KITA STOCK (MAGASIN)
  */
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
@@ -222,8 +242,8 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
     id: p.id,
     name: p.name,
     quantity: p.quantity,
-    purchasePrice: p.purchase_price,
-    sellPrice: p.sell_price,
+    purchasePrice: Number(p.purchase_price),
+    sellPrice: Number(p.sell_price),
     alertThreshold: p.alert_threshold,
     category: p.category,
     supplierId: p.supplier_id
@@ -232,7 +252,9 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
 
 export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_products').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_products').insert({
+    id: newId,
     user_id: userId,
     name: product.name,
     quantity: product.quantity,
@@ -241,17 +263,14 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     alert_threshold: product.alertThreshold,
     category: product.category,
     supplier_id: product.supplierId
-  }).select().single();
-  return error ? null : {
-    id: data.id,
-    name: data.name,
-    quantity: data.quantity,
-    purchasePrice: data.purchase_price,
-    sellPrice: data.sell_price,
-    alertThreshold: data.alert_threshold,
-    category: data.category,
-    supplierId: data.supplier_id
-  };
+  });
+  
+  if (error) {
+    console.error("Product Insert Error:", error);
+    throw error;
+  }
+  
+  return { ...product, id: newId } as KitaProduct;
 };
 
 /**
@@ -259,30 +278,33 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
  */
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
-  const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
-  if (error) throw error;
-  return (data || []).map(s => ({
-    id: s.id,
-    name: s.name,
-    category: s.category,
-    defaultPrice: s.default_price,
-    isActive: s.is_active,
-    userId: s.user_id
-  }));
+  try {
+    const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
+    if (error) throw error;
+    return (data || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      category: s.category,
+      defaultPrice: Number(s.default_price),
+      isActive: s.is_active,
+      userId: s.user_id
+    }));
+  } catch (err) {
+    return [];
+  }
 };
 
 export const bulkAddKitaServices = async (userId: string, services: Omit<KitaService, 'id' | 'userId'>[]) => {
   if (!supabase || !userId) return;
   const payload = services.map(s => ({
+    id: generateUUID(),
     user_id: userId,
     name: s.name,
     category: s.category,
-    default_price: s.defaultPrice,
-    is_active: s.isActive
+    default_price: s.defaultPrice || 0,
+    is_active: s.isActive ?? true
   }));
   
-  // Correction RLS : On retire le .select() final car l'insertion peut être autorisée 
-  // mais la lecture immédiate du résultat (select) peut être bloquée par une police RLS différente.
   const { error } = await (supabase as any).from('kita_services').insert(payload);
   if (error) {
     console.error("Bulk Insert Error:", error);
@@ -292,27 +314,22 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_services').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_services').insert({
+    id: newId,
     user_id: userId,
     name: service.name,
     category: service.category,
     default_price: service.defaultPrice,
     is_active: service.isActive
-  }).select().single();
+  });
   
   if (error) {
-    console.error("Service Add Error:", error);
+    console.error("Service Insert Error:", error);
     throw error;
   }
   
-  return {
-    id: data.id,
-    name: data.name,
-    category: data.category,
-    defaultPrice: data.default_price,
-    isActive: data.is_active,
-    userId: data.user_id
-  };
+  return { ...service, id: newId, userId } as KitaService;
 };
 
 export const updateKitaService = async (id: string, service: Partial<KitaService>) => {
@@ -333,7 +350,7 @@ export const deleteKitaService = async (id: string) => {
 };
 
 /**
- * KITA FOURNISSEURS
+ * KITA FOURNISSEURS (MAGASIN)
  */
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
   if (!supabase || !userId) return [];
@@ -349,19 +366,15 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
 
 export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplier, 'id' | 'userId'>) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_suppliers').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_suppliers').insert({
+    id: newId,
     user_id: userId,
     name: supplier.name,
     phone: supplier.phone,
     category: supplier.category
-  }).select().single();
-  return error ? null : {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    category: data.category,
-    userId: data.user_id
-  };
+  });
+  return error ? null : { ...supplier, id: newId, userId };
 };
 
 export const deleteKitaSupplier = async (id: string) => {
@@ -374,18 +387,29 @@ export const deleteKitaSupplier = async (id: string) => {
 export const getKitaStaff = async (userId: string): Promise<any[]> => {
   if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
-  return error ? [] : data;
+  return error ? [] : data.map(s => ({
+    id: s.id,
+    name: s.name,
+    phone: s.phone,
+    commissionRate: s.commission_rate,
+    specialty: s.specialty,
+    isActive: s.is_active,
+    userId: s.user_id
+  }));
 };
 
 export const addKitaStaff = async (userId: string, staff: { name: string, commission_rate: number, specialty: string }) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_staff').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_staff').insert({
+    id: newId,
     user_id: userId,
     name: staff.name,
     commission_rate: staff.commission_rate,
-    specialty: staff.specialty
-  }).select().single();
-  return error ? null : data;
+    specialty: staff.specialty,
+    is_active: true
+  });
+  return error ? null : { id: newId, ...staff, user_id: userId, isActive: true };
 };
 
 export const deleteKitaStaff = async (id: string) => {
@@ -395,19 +419,30 @@ export const deleteKitaStaff = async (id: string) => {
 export const getKitaClients = async (userId: string): Promise<any[]> => {
   if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_clients').select('*').eq('user_id', userId);
-  return error ? [] : data;
+  return error ? [] : data.map(c => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    totalSpent: Number(c.total_spent || 0),
+    totalVisits: Number(c.total_visits || 0),
+    lastVisit: c.last_visit,
+    notes: c.notes,
+    userId: c.user_id
+  }));
 };
 
 export const addKitaClient = async (userId: string, client: { name: string, phone: string }) => {
   if (!supabase || !userId) return null;
-  const { data, error } = await (supabase as any).from('kita_clients').insert({
+  const newId = generateUUID();
+  const { error } = await (supabase as any).from('kita_clients').insert({
+    id: newId,
     user_id: userId,
     name: client.name,
     phone: client.phone,
     total_spent: 0,
     total_visits: 0
-  }).select().single();
-  return error ? null : data;
+  });
+  return error ? null : { id: newId, ...client, user_id: userId, totalSpent: 0, totalVisits: 0 };
 };
 
 export const getPublicProfile = async (uid: string): Promise<UserProfile | null> => {
@@ -417,7 +452,7 @@ export const getPublicProfile = async (uid: string): Promise<UserProfile | null>
       .from('profiles')
       .select('*')
       .eq('uid', uid)
-      .eq('isPublic', true)
+      .eq('is_public', true)
       .maybeSingle();
     
     if (error) throw error;
@@ -429,16 +464,8 @@ export const getPublicProfile = async (uid: string): Promise<UserProfile | null>
 
 export const getReferrals = async (uid: string): Promise<UserProfile[]> => {
   if (!supabase || !uid) return [];
-  const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', uid);
+  const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', uid);
   return error ? [] : data.map(mapProfileFromDB) as UserProfile[];
-};
-
-export const grantModuleAccess = async (uid: string, moduleId: string) => {
-  if (!uid) return;
-  const profile = await getUserProfile(uid);
-  if (!profile) return;
-  const updatedIds = [...new Set([...(profile.purchasedModuleIds || []), moduleId])];
-  await updateUserProfile(uid, { purchasedModuleIds: updatedIds, isActive: true });
 };
 
 export const uploadProfilePhoto = async (file: File, userId: string): Promise<string> => {
