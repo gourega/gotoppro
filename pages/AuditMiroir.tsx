@@ -85,6 +85,10 @@ const AuditMiroir: React.FC = () => {
     });
   };
 
+  /**
+   * Processes the diagnostic using gemini-3-pro-preview.
+   * Pro model is selected for its superior complex analysis capabilities.
+   */
   const processDiagnostic = async (audioOrText: Blob | string) => {
     setLoading(true);
     setDiagnostic(null);
@@ -106,20 +110,26 @@ const AuditMiroir: React.FC = () => {
         };
       }
 
+      // Using gemini-3-pro-preview for complex reasoning task
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents,
         config: {
-          systemInstruction: `Tu es Coach Kita, mentor d'élite. Un gérant se confie à toi dans ton cabinet privé (Le Miroir du Succès).
+          systemInstruction: `Tu es Coach Kita, mentor d'élite basé en Côte d'Ivoire. Un gérant se confie à toi dans ton cabinet privé (Le Miroir du Succès).
+          
+          CONTEXTE MONÉTAIRE CRITIQUE : Utilise exclusivement le Franc CFA (FCFA). Ne mentionne JAMAIS l'Euro. Parle en termes de rentabilité locale.
+          
           1. Analyse son problème avec empathie et autorité stratégique.
-          2. Structure ton diagnostic en 3 parties claires : [L'URGENCE] (ce qui bloque son CA), [L'OPPORTUNITÉ] (le gain potentiel), [LE PLAN D'ACTION].
+          2. Structure ton diagnostic en 3 parties claires : [L'URGENCE] (ce qui bloque son CA), [L'OPPORTUNITÉ] (le gain potentiel en FCFA), [LE PLAN D'ACTION].
           3. Recommande UN SEUL module du catalogue Go'Top Pro à la fin (mentionne son titre exact).
           
           TON : Prestigieux, inspirant, direct. Utilise Markdown. 
           Important : Ne pas utiliser d'anglicismes comme "Retail" ou "Dashboard".`,
+          thinkingConfig: { thinkingBudget: 0 }
         }
       });
 
+      // Using property .text
       const result = response.text || "Coach Kita réfléchit à votre situation...";
       setDiagnostic(result);
       setStep('results');
