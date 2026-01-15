@@ -2,14 +2,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { KitaTransaction, KitaDebt, KitaService } from '../types';
+import { KitaTransaction, KitaService } from '../types';
 import { 
   getKitaTransactions, 
   addKitaTransaction, 
   deleteKitaTransaction,
-  getKitaDebts,
   getKitaServices,
-  bulkAddKitaServices
+  bulkAddKitaServices,
+  getKitaStaff
 } from '../services/supabase';
 import { 
   Plus, 
@@ -27,18 +27,17 @@ import {
   ShoppingBag,
   MoreHorizontal,
   RefreshCw,
-  AlertCircle,
   Database,
   ChevronDown,
   Search,
+  Cloud,
   ShieldHalf,
-  Info,
-  Cloud
+  Users
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
 
-type PeriodFilter = 'today' | 'week' | 'month' | 'debts';
+type PeriodFilter = 'today' | 'week' | 'month';
 
 const CATEGORIES = [
   { id: 'all', label: 'Tout', icon: <Sparkles className="w-4 h-4" /> },
@@ -54,13 +53,15 @@ const Caisse: React.FC = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
   const [period, setPeriod] = useState<PeriodFilter>('today');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isServiceListOpen, setIsServiceListOpen] = useState(false);
+  const [isStaffListOpen, setIsStaffListOpen] = useState(false);
+  
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -71,15 +72,15 @@ const Caisse: React.FC = () => {
     category: 'Prestation',
     paymentMethod: 'Espèces',
     date: new Date().toISOString().split('T')[0],
-    isCredit: false
+    isCredit: false,
+    staffName: '',
+    commissionRate: 0
   });
+  
   const [saving, setSaving] = useState(false);
   const [lastSavedTransaction, setLastSavedTransaction] = useState<KitaTransaction | null>(null);
 
-  const isElite = useMemo(() => {
-    if (!user) return false;
-    return user.isKitaPremium || (user.purchasedModuleIds?.length || 0) >= 16;
-  }, [user]);
+  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
 
   useEffect(() => {
     if (user?.uid) loadData();
@@ -88,17 +89,17 @@ const Caisse: React.FC = () => {
   const loadData = async () => {
     if (!user?.uid) return;
     setLoading(true);
-    setError(null);
     try {
-      const [transData, serviceData] = await Promise.all([
+      const [transData, serviceData, staffData] = await Promise.all([
         getKitaTransactions(user.uid),
-        getKitaServices(user.uid)
+        getKitaServices(user.uid),
+        getKitaStaff(user.uid)
       ]);
       setTransactions(transData);
       setServices(serviceData);
-    } catch (err: any) {
-      console.error("Caisse loadData Error:", err);
-      setError("Synchronisation impossible. Vérifiez votre table 'kita_services'.");
+      setStaff(staffData);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -115,7 +116,7 @@ const Caisse: React.FC = () => {
         setLastSavedTransaction(trans);
       }
     } catch (err) {
-      alert("Erreur lors de l'enregistrement.");
+      alert("Erreur enregistrement.");
     } finally {
       setSaving(false);
     }
@@ -123,8 +124,6 @@ const Caisse: React.FC = () => {
 
   const initializeDefaultServices = async () => {
     if (!user?.uid || isInitializing) return;
-    if (services.length > 0) return alert("Catalogue déjà existant.");
-
     setIsInitializing(true);
     try {
       const servicesToCreate = DEFAULT_KITA_SERVICES.map(name => {
@@ -133,13 +132,12 @@ const Caisse: React.FC = () => {
         else if (name.match(/Vernis|Gel|Manicure|Pédicure|Capsules|Pose/i)) cat = 'Ongles';
         else if (name.match(/Massage|Visage|Corps|Soins|Epilation|Maquillage|Sourcils|Percing|Tatouage/i)) cat = 'Soins';
         else if (name.match(/Vente/i)) cat = 'Vente';
-        return { name, category: cat, defaultPrice: 0, isActive: true };
+        return { name, category: cat, defaultPrice: 0 };
       });
       await bulkAddKitaServices(user.uid, servicesToCreate);
       await loadData();
-      alert("Catalogue généré avec succès !");
-    } catch (err: any) {
-      alert("Erreur : " + err.message);
+    } catch (err) {
+      alert("Erreur génération.");
     } finally {
       setIsInitializing(false);
     }
@@ -162,16 +160,25 @@ const Caisse: React.FC = () => {
   }, [filteredTransactions]);
 
   const handleSelectService = (s: KitaService) => {
-    setNewTrans({
-      ...newTrans,
+    setNewTrans(prev => ({
+      ...prev,
       label: s.name,
-      amount: s.defaultPrice > 0 ? s.defaultPrice : newTrans.amount
-    });
+      category: s.category,
+      amount: s.defaultPrice > 0 ? s.defaultPrice : prev.amount
+    }));
     setIsServiceListOpen(false);
-    setSearchTerm('');
   };
 
-  const filteredServices = useMemo(() => {
+  const handleSelectStaff = (member: any) => {
+    setNewTrans(prev => ({
+      ...prev,
+      staffName: member.name,
+      commissionRate: member.commissionRate || member.commission_rate || 0
+    }));
+    setIsStaffListOpen(false);
+  };
+
+  const filteredServicesList = useMemo(() => {
     return services.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCat = activeCategory === 'all' || s.category.toLowerCase() === activeCategory.toLowerCase();
@@ -197,21 +204,21 @@ const Caisse: React.FC = () => {
               <button onClick={loadData} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all">
                 <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
               </button>
-              <button onClick={() => setIsModalOpen(true)} className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
+              <button onClick={() => { setIsModalOpen(true); setLastSavedTransaction(null); }} className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
            </div>
         </div>
       </header>
 
       {!isElite && !loading && (
-        <div className="max-w-6xl mx-auto px-6 -mt-12 mb-12 relative z-50">
+        <div className="max-w-6xl mx-auto px-6 -mt-12 mb-12 relative z-40">
            <div className="bg-white rounded-[3rem] p-8 shadow-2xl border-l-[12px] border-amber-500 flex flex-col md:flex-row items-center justify-between gap-8 animate-in slide-in-from-top-4">
               <div className="flex items-center gap-6">
                  <div className="h-14 w-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
                     <ShieldHalf className="w-7 h-7" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-black text-brand-900 uppercase tracking-tight">Données en local</h2>
-                    <p className="text-slate-500 text-sm font-medium">Vos chiffres ne sont pas encore sauvegardés sur le Cloud. <span className="text-amber-600 font-bold">Passez Élite pour sécuriser votre salon.</span></p>
+                    <h2 className="text-xl font-black text-brand-900 uppercase tracking-tight">Stockage Local</h2>
+                    <p className="text-slate-500 text-sm font-medium">Activez le Pack Elite pour sauvegarder vos chiffres sur le Cloud.</p>
                  </div>
               </div>
               <button onClick={() => navigate('/results?pack=elite')} className="bg-brand-900 text-white px-8 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:bg-black transition-all flex items-center gap-3 shrink-0"><Cloud className="w-4 h-4 text-brand-500" /> Sécuriser mon salon</button>
@@ -220,9 +227,9 @@ const Caisse: React.FC = () => {
       )}
 
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
-        <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
+        <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50">
           {(['today', 'week', 'month'] as PeriodFilter[]).map((p) => (
-            <button key={p} onClick={() => setPeriod(p)} className={`px-8 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={p} onClick={() => setPeriod(p)} className={`px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : "Mois"}
             </button>
           ))}
@@ -242,16 +249,21 @@ const Caisse: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="py-24 text-center"><Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" /><p className="text-slate-400 font-bold uppercase text-[10px]">Chargement des données...</p></div>
+          <div className="py-24 text-center"><Loader2 className="w-10 h-10 animate-spin text-amber-500 mx-auto mb-4" /><p className="text-slate-400 font-bold uppercase text-[10px]">Synchronisation...</p></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-20">
             {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
-              <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group">
+              <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group animate-in slide-in-from-bottom-2">
                 <div className="flex items-center gap-6">
                   <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
                     {t.type === 'INCOME' ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                   </div>
-                  <div><p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.category} • {new Date(t.date).toLocaleDateString('fr-FR')}</p></div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {t.category} • {t.staffName ? `Par ${t.staffName}` : 'Gérant'} • {new Date(t.date).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-10">
                   <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F</p>
@@ -259,12 +271,13 @@ const Caisse: React.FC = () => {
                 </div>
               </div>
             )) : (
-              <div className="py-20 text-center text-slate-400 italic">Aucune opération pour cette période.</div>
+              <div className="py-20 text-center text-slate-400 italic">Aucune opération.</div>
             )}
           </div>
         )}
       </div>
 
+      {/* MODAL TRANSACTION */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 animate-in zoom-in-95 duration-300">
@@ -272,35 +285,48 @@ const Caisse: React.FC = () => {
               <div className="text-center space-y-8 animate-in fade-in">
                  <div className="h-20 w-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto"><CheckCircle2 className="w-10 h-10" /></div>
                  <h2 className="text-3xl font-serif font-bold text-slate-900">Validé !</h2>
-                 <button onClick={() => { setIsModalOpen(false); setLastSavedTransaction(null); }} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px]">Continuer</button>
+                 <button onClick={() => setIsModalOpen(false)} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px]">Fermer</button>
               </div>
             ) : (
               <>
-                <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Nouvelle opération</h2>
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-2xl font-serif font-bold text-slate-900">Nouvelle opération</h2>
+                  <button onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-rose-500"><X /></button>
+                </div>
                 <form onSubmit={handleSaveTransaction} className="space-y-8">
                   <div className="flex bg-slate-100 p-1.5 rounded-[2rem]">
                     <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
                     <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
                   </div>
+                  
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prestation</label>
-                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-brand-500/20 text-left flex justify-between items-center transition-all">
-                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Choisir..."}</span>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prestation / Article</label>
+                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
+                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Choisir dans le catalogue..."}</span>
                         <ChevronDown className="w-5 h-5 text-slate-400" />
                       </button>
                     </div>
+
+                    {newTrans.type === 'INCOME' && (
+                      <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Collaborateur (Staff)</label>
+                        <button type="button" onClick={() => setIsStaffListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
+                          <span className={newTrans.staffName ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.staffName || "Qui a encaissé ?"}</span>
+                          <Users className="w-5 h-5 text-slate-400" />
+                        </button>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Montant (F)</label>
-                      <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 border-none outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" />
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Montant (F)</label>
+                      <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" required />
                     </div>
                   </div>
-                  <div className="flex gap-4 pt-4">
-                    <button type="submit" disabled={saving} className="flex-grow bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
-                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer
-                    </button>
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 rounded-2xl font-black text-[10px] uppercase text-slate-300">Fermer</button>
-                  </div>
+
+                  <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer
+                  </button>
                 </form>
               </>
             )}
@@ -308,42 +334,68 @@ const Caisse: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL CATALOGUE SERVICES */}
       {isServiceListOpen && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/95 backdrop-blur-md">
-           <div className="bg-white w-full max-w-2xl h-[90vh] md:h-[80vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
+           <div className="bg-white w-full max-w-2xl h-[85vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
               <div className="p-8 border-b border-slate-100">
                  <div className="flex justify-between items-center mb-8">
-                    <div><h3 className="text-3xl font-serif font-bold text-slate-900">Catalogue Expert</h3><p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Sélectionnez une prestation</p></div>
-                    <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500"><X /></button>
+                    <h3 className="text-2xl font-serif font-bold text-slate-900">Catalogue de Vente</h3>
+                    <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400"><X /></button>
                  </div>
-                 {services.length > 0 && (
-                   <div className="space-y-6">
-                    <div className="relative"><Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none font-bold text-lg" /></div>
-                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                        {CATEGORIES.map(cat => (
-                          <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{cat.icon} {cat.label}</button>
-                        ))}
-                    </div>
+                 {services.length > 0 ? (
+                   <div className="relative">
+                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input type="text" placeholder="Rechercher une prestation..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none font-bold text-lg" />
                    </div>
-                 )}
+                 ) : null}
               </div>
-              <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar flex flex-col">
+              <div className="flex-grow overflow-y-auto p-8 bg-slate-50/50 custom-scrollbar">
                  {isInitializing ? (
-                   <div className="m-auto text-center"><Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" /><p className="text-brand-900 font-black uppercase text-xs">Création du catalogue en cours...</p></div>
+                   <div className="m-auto text-center py-20"><Loader2 className="w-12 h-12 animate-spin text-brand-600 mx-auto" /></div>
                  ) : services.length === 0 ? (
-                   <div className="m-auto text-center space-y-8 max-w-sm">
-                      <div className="h-32 w-32 bg-brand-50 rounded-[2.5rem] flex items-center justify-center mx-auto"><Database className="w-16 h-16 text-brand-500 opacity-40" /></div>
-                      <div><h4 className="text-slate-900 font-serif font-bold text-2xl mb-3">Catalogue vierge</h4><p className="text-slate-500 text-sm">Générez le catalogue standard KITA pour commencer à piloter vos ventes immédiatement.</p></div>
-                      <button onClick={initializeDefaultServices} className="w-full bg-brand-900 text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-brand-950 transition-all flex items-center justify-center gap-4"><RefreshCw className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} /> Générer mon catalogue KITA</button>
+                   <div className="text-center py-20 space-y-8">
+                      <Database className="w-16 h-16 text-slate-300 mx-auto" />
+                      <p className="text-slate-500 font-medium">Votre catalogue est vide. Générez la base standard KITA.</p>
+                      <button onClick={initializeDefaultServices} className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[11px]">Générer le catalogue</button>
                    </div>
                  ) : (
                    <div className="grid grid-cols-2 gap-4">
-                      {filteredServices.map(s => (
-                        <button key={s.id} onClick={() => handleSelectService(s)} className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl transition-all group flex flex-col justify-between min-h-[160px]">
-                          <div><div className="mb-3"><span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase">{s.category}</span></div><p className="font-bold text-slate-900 text-lg leading-tight">{s.name}</p></div>
-                          <div className="mt-4 flex items-center justify-between"><span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-50 text-slate-500 uppercase text-[9px]'}`}>{s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}</span><div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center"><Plus className="w-4 h-4 text-transparent group-hover:text-white" /></div></div>
+                      {filteredServicesList.map(s => (
+                        <button key={s.id} onClick={() => handleSelectService(s)} className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-xl transition-all flex flex-col justify-between min-h-[140px]">
+                          <div><span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase mb-3 block w-fit">{s.category}</span><p className="font-bold text-slate-900 text-lg leading-tight">{s.name}</p></div>
+                          <p className="mt-4 font-black text-emerald-600 text-sm">{s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}</p>
                         </button>
                       ))}
+                   </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL STAFF SELECTION */}
+      {isStaffListOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md">
+           <div className="bg-white w-full max-w-md rounded-[4rem] shadow-2xl p-10 animate-in zoom-in-95">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-serif font-bold text-slate-900">Qui a travaillé ?</h3>
+                <button onClick={() => setIsStaffListOpen(false)} className="text-slate-300"><X /></button>
+              </div>
+              <div className="space-y-3">
+                 <button onClick={() => handleSelectStaff({ name: '', commission_rate: 0 })} className="w-full p-6 text-left bg-slate-50 rounded-3xl hover:bg-slate-100 font-bold transition-all border border-transparent hover:border-brand-200">Gérant (Sans commission)</button>
+                 {staff.length > 0 ? staff.map(member => (
+                   <button key={member.id} onClick={() => handleSelectStaff(member)} className="w-full p-6 text-left bg-emerald-50 rounded-3xl hover:bg-emerald-100 transition-all border border-emerald-100 flex justify-between items-center group">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 font-black shadow-sm group-hover:scale-110 transition-transform">{member.name[0]}</div>
+                        <span className="font-bold text-emerald-900">{member.name}</span>
+                      </div>
+                      <span className="text-[10px] font-black uppercase text-emerald-600 bg-white px-3 py-1 rounded-full">{member.commissionRate || member.commission_rate}% Com.</span>
+                   </button>
+                 )) : (
+                   <div className="py-10 text-center space-y-4">
+                      <p className="text-slate-400 italic">Aucun collaborateur enregistré.</p>
+                      <button onClick={() => navigate('/pilotage')} className="text-[10px] font-black uppercase text-brand-600 underline">Gérer mon staff</button>
                    </div>
                  )}
               </div>
