@@ -2,16 +2,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowRight, 
   Loader2, 
   ShoppingBag, 
   Plus, 
   Crown, 
   Zap, 
-  Star, 
   CheckCircle2, 
-  Phone,
-  Store,
   MessageCircle,
   Check,
   Package,
@@ -19,7 +15,7 @@ import {
   Lock
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
-import { TrainingModule } from '../types';
+import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, getProfileByPhone, updateUserProfile, generateUUID } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
@@ -56,7 +52,6 @@ const Results: React.FC = () => {
     else if (packParam === 'stock') setActivePack('stock');
 
     let initialCart: TrainingModule[] = [];
-
     const raw = localStorage.getItem('temp_quiz_results');
     const results = raw ? JSON.parse(raw) : null;
     
@@ -128,26 +123,37 @@ const Results: React.FC = () => {
       let cleanPhone = regPhone.replace(/\s/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
+      
       const existing = await getProfileByPhone(cleanPhone);
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
-      if (pendingIds.length === 0) throw new Error("Panier vide.");
-      const targetUid = existing?.uid || generateUUID();
+      
       if (existing) {
-        await updateUserProfile(existing.uid, { establishmentName: regStoreName, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
+        await updateUserProfile(existing.uid, { 
+          establishmentName: regStoreName, 
+          pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
+        });
       } else {
-        await saveUserProfile({ 
-          uid: targetUid, 
+        const newUser: UserProfile = { 
+          uid: generateUUID(), 
           phoneNumber: cleanPhone, 
           pinCode: '1234', 
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
+          lastName: 'Elite',
           isActive: false, 
           role: 'CLIENT', 
+          isAdmin: false,
+          isPublic: true,
+          isKitaPremium: false,
+          hasPerformancePack: false,
+          hasStockPack: false,
           pendingModuleIds: pendingIds, 
           createdAt: new Date().toISOString(), 
           badges: [], 
-          purchasedModuleIds: [] 
-        });
+          purchasedModuleIds: [],
+          actionPlan: []
+        };
+        await saveUserProfile(newUser);
       }
       setRegStep('success');
     } catch (err: any) { alert(err.message); } finally { setLoading(false); }
@@ -281,7 +287,7 @@ const Results: React.FC = () => {
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
                   <button type="submit" disabled={loading} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
-                    {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider mon plan et créer mon compte
+                    {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider et créer mon compte
                   </button>
                   <button type="button" onClick={() => setIsRegisterModalOpen(false)} className="w-full py-2 text-[10px] font-black uppercase text-slate-300">Annuler</button>
                 </form>

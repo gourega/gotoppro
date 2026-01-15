@@ -30,6 +30,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     ...data,
+    pinCode: data.pinCode || '1234', 
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds) ? data.purchasedModuleIds : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds) ? data.pendingModuleIds : [],
@@ -147,20 +148,21 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   }).select().single();
   
   if (error || !data) return null;
-  
-  return {
-    id: data.id,
-    type: data.type,
-    amount: data.amount,
-    label: data.label,
-    category: data.category,
-    paymentMethod: data.payment_method,
-    date: data.date,
-    staffName: data.staff_name,
-    commissionRate: data.commission_rate,
-    isCredit: data.is_credit
-  };
+  return mapTransactionFromDB(data);
 };
+
+const mapTransactionFromDB = (data: any): KitaTransaction => ({
+  id: data.id,
+  type: data.type,
+  amount: data.amount,
+  label: data.label,
+  category: data.category,
+  paymentMethod: data.payment_method,
+  date: data.date,
+  staffName: data.staff_name,
+  commissionRate: data.commission_rate,
+  isCredit: data.is_credit
+});
 
 export const deleteKitaTransaction = async (id: string) => {
   if (supabase) await supabase.from('kita_transactions').delete().eq('id', id);
@@ -255,10 +257,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
-  if (error) {
-    console.error("Erreur getKitaServices:", error);
-    throw error;
-  }
+  if (error) throw error;
   return (data || []).map(s => ({
     id: s.id,
     name: s.name,
@@ -278,11 +277,8 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
     default_price: s.defaultPrice,
     is_active: s.isActive
   }));
-  const { error } = await supabase.from('kita_services').insert(payload);
-  if (error) {
-    console.error("Erreur bulkAddKitaServices:", error);
-    throw error;
-  }
+  const { error } = await supabase.from('kita_services').insert(payload).select();
+  if (error) throw error;
 };
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {

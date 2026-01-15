@@ -5,8 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   getAllUsers, 
   deleteUserProfile, 
-  grantModuleAccess, 
-  saveUserProfile,
   updateUserProfile
 } from '../services/supabase';
 import { TRAINING_CATALOG, BADGES, COACH_KITA_PHONE } from '../constants';
@@ -20,38 +18,27 @@ import {
   Search, 
   Trash2, 
   MessageCircle, 
-  Filter,
-  TrendingUp,
   ChevronRight,
   X,
   ShieldAlert,
-  Gift,
-  Coins,
-  UserPlus,
   ShieldCheck,
   Plus,
   UserX,
   UserCheck,
-  Zap,
-  Award,
-  Crown,
-  Handshake,
-  CheckCircle,
-  Medal,
-  Star,
-  Trophy,
-  Gem,
-  LayoutDashboard,
   Activity,
   ArrowUpRight,
   AlertCircle,
   Package,
   Wifi,
-  SearchCode,
   ShoppingCart,
   Cloud,
   Lock,
-  Edit2
+  Edit2,
+  Crown,
+  Gem,
+  Award,
+  // Added CheckCircle2 to fix the 'Cannot find name CheckCircle' error
+  CheckCircle2
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -65,7 +52,6 @@ const AdminDashboard: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  // États pour modification PIN
   const [editingPin, setEditingPin] = useState(false);
   const [newPinValue, setNewPinValue] = useState('');
 
@@ -133,8 +119,7 @@ const AdminDashboard: React.FC = () => {
     if (!user) return;
     if (user.uid === currentUser?.uid) return showNotification("Vous ne pouvez pas vous supprimer vous-même", "error");
     
-    const confirmDelete = window.confirm(`⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement le profil de ${user.firstName} ${user.lastName} ?\n\nCette action supprimera ses formations achetées, ses certificats et ses données de caisse. C'est irréversible.`);
-    
+    const confirmDelete = window.confirm(`⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement le profil de ${user.firstName} ${user.lastName} ?`);
     if (!confirmDelete) return;
 
     setProcessingId('delete');
@@ -163,7 +148,6 @@ const AdminDashboard: React.FC = () => {
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_ELITE');
         updates.attempts = { ...(selectedUser.attempts || {}) };
         allIds.forEach(id => { updates.attempts![id] = 0; });
-
       } else if (packType === 'PERFORMANCE') {
         updates.hasPerformancePack = true;
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_PERFORMANCE');
@@ -187,7 +171,7 @@ const AdminDashboard: React.FC = () => {
       await updateUserProfile(selectedUser.uid, updates);
       showNotification(`Accès validé avec succès !`);
       await fetchUsers();
-      setSelectedUser(prev => prev ? { ...prev, ...updates } as any : null);
+      setSelectedUser(prev => prev ? ({ ...prev, ...updates } as UserProfile) : null);
     } catch (err) {
       showNotification("Erreur lors de l'activation", "error");
     } finally {
@@ -231,11 +215,9 @@ const AdminDashboard: React.FC = () => {
         (u.establishmentName || '').toLowerCase().includes(search);
       
       if (!matchesSearch) return false;
-      
       if (viewMode === 'admins') return u.isAdmin;
       if (viewMode === 'pending') return !u.isAdmin && u.pendingModuleIds && u.pendingModuleIds.length > 0;
       if (viewMode === 'active') return !u.isAdmin && u.isActive;
-      
       return true;
     });
   }, [users, searchTerm, viewMode]);
@@ -246,7 +228,8 @@ const AdminDashboard: React.FC = () => {
         <div className={`fixed top-8 right-8 z-[200] px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 animate-in slide-in-from-right-10 duration-500 ${
           notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-rose-500/20 border-rose-500/50 text-rose-400'
         }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          {/* Replaced CheckCircle with CheckCircle2 to fix the error */}
+          {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-bold text-xs uppercase tracking-widest">{notification.message}</span>
         </div>
       )}
@@ -270,7 +253,6 @@ const AdminDashboard: React.FC = () => {
               onClick={fetchUsers} 
               disabled={loading} 
               className="bg-white/5 border border-white/10 p-5 rounded-[2rem] hover:bg-white/10 transition-all group active:scale-95"
-              title="Rafraîchir les données"
             >
               <RefreshCcw className={`w-6 h-6 text-slate-400 group-hover:text-white transition-all ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -288,7 +270,7 @@ const AdminDashboard: React.FC = () => {
           <StatCard title="Recettes Totales" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" sub="Revenue to date" />
         </div>
 
-        <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[3.5rem] border border-white/10 overflow-hidden shadow-2xl">
+        <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl">
           <div className="p-10 border-b border-white/5 flex flex-col xl:flex-row justify-between items-center gap-10">
             <div className="relative w-full xl:max-w-2xl">
               <Search className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${searchTerm ? 'text-brand-500' : 'text-slate-500'}`} />
@@ -381,7 +363,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="h-24 w-24 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center animate-pulse">
                            <Wifi className="w-10 h-10 text-slate-700" />
                         </div>
-                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-500">Aucun gérant ne nécessite d'action urgente</p>
+                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-500">Aucun gérant à traiter</p>
                       </div>
                     </td>
                   </tr>
@@ -417,7 +399,6 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="p-12 space-y-12 flex-grow">
-              {/* SECTION SÉCURITÉ & PIN */}
               <div className="bg-indigo-500/10 rounded-[3rem] p-10 border border-indigo-500/30">
                  <h3 className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                     <Lock className="w-5 h-5" /> Sécurité & Accès
@@ -435,7 +416,7 @@ const AdminDashboard: React.FC = () => {
                               className="bg-white/5 border border-white/20 rounded-xl px-4 py-2 text-2xl font-black text-white w-24 tracking-[0.2em]"
                              />
                              <button onClick={handleUpdatePin} disabled={processingId === 'pin' || newPinValue.length !== 4} className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 transition-all">
-                                {processingId === 'pin' ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                                {processingId === 'pin' ? <Loader2 className="animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
                              </button>
                              <button onClick={() => setEditingPin(false)} className="text-slate-500 hover:text-white p-3"><X /></button>
                           </div>
@@ -448,9 +429,9 @@ const AdminDashboard: React.FC = () => {
                           </div>
                        )}
                     </div>
-                    <div className="bg-white/5 p-6 rounded-2xl border border-white/5 max-w-xs">
+                    <div className="bg-white/5 p-6 rounded-2xl border border-white/5 max-w-xs text-right">
                        <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
-                         "Communiquez ce code au gérant pour qu'il puisse se connecter. Recommandé : demandez-lui de le garder secret."
+                         "Communiquez ce code au gérant pour qu'il puisse se connecter."
                        </p>
                     </div>
                  </div>
@@ -487,7 +468,7 @@ const AdminDashboard: React.FC = () => {
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="10.000 F" color="amber" />
                     )}
                     {selectedUser.pendingModuleIds.some(id => id.startsWith('mod_')) && (
-                      <ActionBtn onClick={() => handleActivatePack('INDIVIDUAL')} loading={processingId === 'INDIVIDUAL'} icon={<CheckCircle />} label="Activer Panier" price="Modules unitaires" color="blue" />
+                      <ActionBtn onClick={() => handleActivatePack('INDIVIDUAL')} loading={processingId === 'INDIVIDUAL'} icon={<ShieldCheck />} label="Activer Panier" price="Modules unitaires" color="blue" />
                     )}
                     {selectedUser.pendingModuleIds.includes('REQUEST_PERFORMANCE') && (
                       <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
@@ -520,7 +501,7 @@ const AdminDashboard: React.FC = () => {
                           disabled={!!processingId}
                           className="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2"
                         >
-                          <Plus className="w-3 h-3" /> Ajouter +30 jours (Maintenance)
+                          <Plus className="w-3 h-3" /> Ajouter +30 jours
                         </button>
                       )}
                    </div>
@@ -548,7 +529,7 @@ const AdminDashboard: React.FC = () => {
                   } disabled:opacity-30`}
                  >
                     {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                    {selectedUser.isActive ? 'Suspendre Gérant' : 'Activer Gérant'}
+                    {selectedUser.isActive ? 'Suspendre' : 'Activer'}
                  </button>
                  
                  {currentUser?.role === 'SUPER_ADMIN' && (
@@ -556,7 +537,6 @@ const AdminDashboard: React.FC = () => {
                      onClick={() => handleDeleteUser(selectedUser)}
                      disabled={processingId === 'delete'}
                      className="p-5 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-600 hover:text-white transition-all active:scale-90"
-                     title="Supprimer définitivement"
                    >
                       {processingId === 'delete' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                    </button>
@@ -641,7 +621,8 @@ const ActionBtn = ({ onClick, loading, icon, label, price, color }: any) => {
       disabled={loading}
       className={`w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95 shadow-xl ${colors[color]}`}
     >
-      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : React.cloneElement(icon, { className: "w-6 h-6" })}
+      {/* Added React.ReactElement<any> to fix the className prop error */}
+      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : React.cloneElement(icon as React.ReactElement<any>, { className: "w-6 h-6" })}
       <div className="text-center">
         <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{label}</p>
         <p className="text-[9px] font-bold opacity-70">{price}</p>

@@ -1,3 +1,4 @@
+
 export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface UserActionCommitment {
@@ -64,6 +65,7 @@ export interface KitaSupplier {
 export interface UserProfile {
   uid: string;
   phoneNumber: string;
+  pinCode?: string; // Code secret à 4 chiffres (obligatoire pour la prod)
   email?: string;
   firstName?: string;
   lastName?: string;

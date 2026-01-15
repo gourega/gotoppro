@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getProfileByPhone } from '../services/supabase';
 import { RAYMOND_LOGO, RAYMOND_FB_URL, COACH_KITA_PHONE } from '../constants';
-import { AlertCircle, Clock, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle, Lock } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -12,7 +11,7 @@ const Login: React.FC = () => {
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState<'idle' | 'pending' | 'denied'>('idle');
+  const [status, setStatus] = useState<'idle' | 'pending'>('idle');
   
   const { user, loginManually, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -32,7 +31,6 @@ const Login: React.FC = () => {
     const ref = params.get('ref');
     if (ref) localStorage.setItem('gotop_temp_ref', ref);
     
-    // Pré-remplir le téléphone si déjà venu
     const savedPhone = localStorage.getItem('gotop_manual_phone');
     if (savedPhone) setPhone(savedPhone.replace('+225', ''));
   }, [location]);
@@ -65,7 +63,7 @@ const Login: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      setError("Erreur technique. Vérifiez votre connexion.");
+      setError("Erreur technique de connexion.");
       setLoading(false);
     }
   };
