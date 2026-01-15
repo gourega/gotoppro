@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, X, Lock, Mail, ShieldCheck, AlertCircle, KeyRound, Phone, ExternalLink } from 'lucide-react';
-import { BRAND_LOGO, RAYMOND_FB_URL } from '../constants';
+import { BRAND_LOGO, RAYMOND_FB_URL, COACH_KITA_PHONE } from '../constants';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
@@ -98,11 +98,11 @@ const Footer: React.FC = () => {
                 </div>
                 <span className="text-sm font-bold">ourega.goble@canticthinkia.ci</span>
               </a>
-              <a href="https://wa.me/2250103438456" target="_blank" rel="noreferrer" className="group flex items-center gap-4 text-slate-300 hover:text-brand-400 transition-colors">
+              <a href={`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}`} target="_blank" rel="noreferrer" className="group flex items-center gap-4 text-slate-300 hover:text-brand-400 transition-colors">
                 <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-brand-500/10 transition-colors">
                   <Phone className="w-5 h-5 text-slate-500 group-hover:text-brand-500" />
                 </div>
-                <span className="text-sm font-bold">WhatsApp: +225 0103438456</span>
+                <span className="text-sm font-bold">WhatsApp: {COACH_KITA_PHONE}</span>
               </a>
             </div>
           </div>
@@ -166,7 +166,6 @@ const Footer: React.FC = () => {
               <div className="space-y-4">
                 <div className="relative group">
                   <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-brand-500 transition-colors" />
-                  {/* Fix: changed email.target.value to e.target.value */}
                   <input 
                     type="email" 
                     placeholder="Email Master Admin" 
@@ -179,7 +178,6 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="relative group">
                   <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-brand-500 transition-colors" />
-                  {/* Fix: changed password.target.value to e.target.value */}
                   <input 
                     type="password" 
                     placeholder="Mot de passe" 

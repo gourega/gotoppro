@@ -15,9 +15,10 @@ import {
   MessageCircle,
   Check,
   Package,
-  Users
+  Users,
+  Lock
 } from 'lucide-react';
-import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR } from '../constants';
+import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, getProfileByPhone, updateUserProfile, generateUUID } from '../services/supabase';
@@ -113,16 +114,9 @@ const Results: React.FC = () => {
 
   const sortedModules = useMemo(() => {
     const purchased = user?.purchasedModuleIds || [];
-    
-    // Groupes :
-    // 1. Non acquis ET non recommandés (curiosité/élargissement)
-    // 2. Non acquis ET recommandés (priorité diagnostic)
-    // 3. Acquis (à la fin)
-    
     const notAcquiredNotRecommended = TRAINING_CATALOG.filter(m => !purchased.includes(m.id) && !recommendedModuleIds.includes(m.id));
     const notAcquiredRecommended = TRAINING_CATALOG.filter(m => !purchased.includes(m.id) && recommendedModuleIds.includes(m.id));
     const acquired = TRAINING_CATALOG.filter(m => purchased.includes(m.id));
-
     return [...notAcquiredNotRecommended, ...notAcquiredRecommended, ...acquired];
   }, [recommendedModuleIds, user?.purchasedModuleIds]);
 
@@ -141,7 +135,19 @@ const Results: React.FC = () => {
       if (existing) {
         await updateUserProfile(existing.uid, { establishmentName: regStoreName, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
       } else {
-        await saveUserProfile({ uid: targetUid, phoneNumber: cleanPhone, establishmentName: regStoreName, firstName: 'Gérant', isActive: false, role: 'CLIENT', pendingModuleIds: pendingIds, createdAt: new Date().toISOString(), badges: [], purchasedModuleIds: [] });
+        await saveUserProfile({ 
+          uid: targetUid, 
+          phoneNumber: cleanPhone, 
+          pinCode: '1234', 
+          establishmentName: regStoreName, 
+          firstName: 'Gérant', 
+          isActive: false, 
+          role: 'CLIENT', 
+          pendingModuleIds: pendingIds, 
+          createdAt: new Date().toISOString(), 
+          badges: [], 
+          purchasedModuleIds: [] 
+        });
       }
       setRegStep('success');
     } catch (err: any) { alert(err.message); } finally { setLoading(false); }
@@ -272,7 +278,7 @@ const Results: React.FC = () => {
               <>
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser l'Accès</h2>
                 <form onSubmit={handleRegisterAndValidate} className="space-y-6">
-                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0708047914" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
+                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
                   <button type="submit" disabled={loading} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
                     {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider mon plan et créer mon compte
@@ -284,9 +290,25 @@ const Results: React.FC = () => {
               <div className="text-center space-y-10">
                 <div className="h-24 w-24 bg-emerald-50 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="w-12 h-12" /></div>
                 <h2 className="text-4xl font-serif font-bold tracking-tight">Compte créé !</h2>
-                <p className="text-slate-500 italic">"Pour activer vos accès, veuillez régler ({pricingData.total} F) via Wave au 01 03 43 84 56."</p>
-                <button onClick={() => { window.open(`https://wa.me/2250103438456?text=${encodeURIComponent(`Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F).`)}`, '_blank'); navigate('/login'); }} className="w-full bg-emerald-500 text-white py-6 rounded-3xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
-                  <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 justify-center">
+                   <Lock className="w-6 h-6 text-brand-600" />
+                   <div className="text-left">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PIN de connexion par défaut</p>
+                      <p className="text-xl font-black text-brand-900">1 2 3 4</p>
+                   </div>
+                </div>
+                <p className="text-slate-500 italic px-4">
+                  "Pour activer vos accès et recevoir votre PIN définitif, veuillez régler (<strong>{pricingData.total.toLocaleString()} F</strong>) via Wave au numéro <strong>{COACH_KITA_WAVE_NUMBER}</strong>."
+                </p>
+                <button 
+                  onClick={() => { 
+                    const waNum = COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '');
+                    window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(`Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Merci d'activer mes accès.`)}`, '_blank'); 
+                    navigate('/login'); 
+                  }} 
+                  className="w-full bg-emerald-500 text-white py-6 rounded-3xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-emerald-600 transition-all"
+                >
+                  <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp Business
                 </button>
               </div>
             )}

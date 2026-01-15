@@ -12,7 +12,8 @@ export const COACH_KITA_TITLE = "L’Architecte de la Rentabilité Beauté";
 export const COACH_KITA_ESTABLISHMENT = "CANTIC THINK IA";
 export const COACH_KITA_ADDRESS = "544, 2 Plateaux Agban - Rue 70 - Carrefour Kratos - Abidjan Cocody";
 export const COACH_KITA_EMAIL = "ourega.goble@canticthinkia.ci";
-export const COACH_KITA_PHONE = "+225 01 03 43 84 56";
+export const COACH_KITA_PHONE = "+225 05 44 86 93 13"; // Service Client WhatsApp Business
+export const COACH_KITA_WAVE_NUMBER = "01 03 43 84 56"; // Numéro de paiement Wave unique
 export const COACH_KITA_OPENING_YEAR = 2014;
 export const COACH_KITA_EMPLOYEES = 10;
 
@@ -26,7 +27,7 @@ export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymo
 export const RAYMOND_PHONE = "+2250707949706";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
 
-export const SUPER_ADMIN_PHONE_NUMBER = "+2250103438456";
+export const SUPER_ADMIN_PHONE_NUMBER = "+2250544869313";
 
 /**
  * Table de migration pour restaurer les anciens comptes
@@ -62,9 +63,9 @@ export const DEFAULT_KITA_SERVICES = [
 export const DAILY_CHALLENGES = [
   "Nettoyer ses ciseaux devant le prochain client",
   "Sourire consciemment lors de chaque appel téléphonique",
-  "Proposer un massage crânien à une cliente stressée",
+  "Proposer un massage crânien à une finale stressée",
   "Prendre une photo 'avant/après' avec la lumière du jour",
-  "Demander à une cliente fidèle si elle a une amie à parrainer",
+  "Demander à une finale fidèle si elle a une amie à parrainer",
   "Vérifier le stock de shampoing technique avant midi",
   "Féliciter un collaborateur pour un detail précis de son travail",
   "Vérifier la propreté du bac à shampoing après chaque passage",
@@ -103,7 +104,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       },
       {
         question: "Pourquoi faut-il sourire en parlant au téléphone ?",
-        options: ["Pour s'exercer les muscles faciaux", "Le sourire s'entend dans la voix et crée un climat chaleureux", "Ce n'est pas nécessaire si la cliente ne nous voit pas"],
+        options: ["Pour s'exercer les muscles faciaux", "Le sourire s'entend dans la voix et crée un climat chaleureux", "Ce n'est pas nécessaire si la finale ne nous voit pas"],
         correctAnswer: 1,
         explanation: "L'attitude physique influence la tonalité de la voix. Un sourire rend l'accueil plus engageant."
       },
@@ -134,7 +135,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     quiz_questions: [
       {
         question: "Où doit se situer le gérant pendant le diagnostic ?",
-        options: ["Derrière le fauteuil, en regardant le miroir", "Assis ou accroupi à hauteur des yeux de la cliente", "Au comptoir en consultant son agenda"],
+        options: ["Derrière le fauteuil, en regardant le miroir", "Assis ou accroupi à hauteur des yeux de la finale", "Au comptoir en consultant son agenda"],
         correctAnswer: 1,
         explanation: "Se mettre à hauteur d'yeux casse la hiérarchie et instaure une relation de confiance et de conseil expert."
       },
@@ -146,7 +147,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       },
       {
         question: "Le but ultime du diagnostic est de :",
-        options: ["Gagner du temps pour finir la journée plus tôt", "Transformer une demande de prestation en une solution globale de beauté", "Vérifier si la cliente a assez d'argent"],
+        options: ["Gagner du temps pour finir la journée plus tôt", "Transformer une demande de prestation en une solution globale de beauté", "Vérifier si la finale a assez d'argent"],
         correctAnswer: 1,
         explanation: "Un expert ne se contente pas d'exécuter, il prescrit les solutions adaptées pour un résultat durable."
       }
@@ -193,7 +194,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Technique",
     title: "L'art du shampoing : le premier moment de vérité",
     description: "Le shampoing n'est pas un nettoyage, c'est un soin technique et sensoriel crucial.",
-    mini_course: "C'est au bac que vous gagnez le cœur de votre cliente.",
+    mini_course: "C'est au bac que vous gagnez le cœur de votre finale.",
     price: 500,
     aiCredits: 2,
     lesson_content: `<h2>1. La technique du massage</h2><p>Le client cherche un moment de déconnexion.</p>`,
@@ -227,7 +228,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Finance",
     title: "Tarification stratégique : valoriser son talent",
     description: "Apprenez à fixer vos prix non pas en fonction de la concurrence, mais de votre valeur réelle et de vos charges.",
-    mini_course: "Un tarif trop bas est un signal de manque de confiance.",
+    mini_course: "Un tarif trop bas est un signal de mal-confiance.",
     price: 500,
     aiCredits: 3,
     lesson_content: `<h2>1. La fin du tarif au hasard</h2><p>Calculez votre coût à la minute.</p>`,
@@ -329,7 +330,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Marketing",
     title: "Marketing Digital : attirer les meilleurs clients",
     description: "Utilisez Instagram et WhatsApp pour remplir votre agenda chaque matin.",
-    mini_course: "Votre vitrine est désormais dans la poche de vos clientes.",
+    mini_course: "Votre vitrine est désormais dans la poche de vos finales.",
     price: 500,
     aiCredits: 3,
     lesson_content: `<h2>1. Le pouvoir de l'image</h2><p>Apprenez à photographier vos réalisations.</p>`,
@@ -338,7 +339,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     quiz_questions: [
       {
         question: "Quel type de photo attire le plus de clients ?",
-        options: ["Une photo floue du salon vide", "Un 'Avant/Après' bien éclairé avec le sourire de la cliente", "Une photo des produits sur l'étagère"],
+        options: ["Une photo floue du salon vide", "Un 'Avant/Après' bien éclairé avec le sourire de la finale", "Une photo des produits sur l'étagère"],
         correctAnswer: 1,
         explanation: "Le résultat concret sur une vraie personne rassure le client sur vos compétences réelles."
       },
@@ -430,7 +431,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_coupe",
     topic: "Technique",
     title: "Coupe & Morphologie : sculpter le visage",
-    description: "Apprenez à adapter chaque coupe à la forme du visage de vos clientes.",
+    description: "Apprenez à adapter chaque coupe à la forme du visage de vos finales.",
     mini_course: "Une coupe réussie est une coupe qui grandit bien.",
     price: 500,
     aiCredits: 3,
@@ -497,26 +498,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_psychologie",
     topic: "Accueil",
-    title: "Psychologie de la Cliente : comprendre l'inexprimé",
+    title: "Psychologie de la finale : comprendre l'inexprimé",
     description: "Apprenez à lire entre les lignes pour satisfaire les désirs cachés.",
     mini_course: "On coiffe une personner, pas seulement des cheveux.",
     price: 500,
     aiCredits: 3,
     lesson_content: `<h2>1. L'écoute active</h2><p>Décoder le langage corporel.</p>`,
-    coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la cliente.",
+    coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la finale.",
     strategic_mantra: "Celui qui comprend gagne.",
     quiz_questions: [
       {
-        question: "Si une cliente croise les bras pendant le diagnostic, cela peut signifier :",
+        question: "Si une finale croise les bras pendant le diagnostic, cela peut signifier :",
         options: ["Qu'elle a froid", "Une barrière ou une hésitation", "Qu'elle est très détendue"],
         correctAnswer: 1,
         explanation: "Le langage corporel trahit souvent une inquiétude. Il faut alors la rassurer avant de commencer."
       },
       {
         question: "L'écoute active consiste à :",
-        options: ["Attendre son tour de parler", "Reformuler les désirs de la cliente pour confirmer sa demande", "Dire 'oui' à tout même si c'est impossible"],
+        options: ["Attendre son tour de parler", "Reformuler les désirs de la finale pour confirmer sa demande", "Dire 'oui' à tout même si c'est impossible"],
         correctAnswer: 1,
-        explanation: "La reformulation évite les malentendus et prouve à la cliente que vous l'avez comprise."
+        explanation: "La reformulation évite les malentendus et prouve à la finale que vous l'avez comprise."
       },
       {
         question: "La psychologie aide à :",
@@ -674,9 +675,9 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 8, text: "Publiez-vous chaque jour une photo de qualité de vos réalisations sur les réseaux sociaux pour attirer du flux ?", category: "Marketing", linkedModuleId: "mod_digital" },
   { id: 9, text: "Maîtrisez-vous parfaitement la roue chromatique pour neutraliser les reflets indésirables sans erreur technique ?", category: "Technique", linkedModuleId: "mod_color" },
   { id: 10, text: "Votre taux de revente de produits à domicile représente-t-il plus de 15 % de votre chiffre d'affaires global ?", category: "Vente", linkedModuleId: "mod_retail" },
-  { id: 11, text: "Adaptez-vous systématiquement la géométrie de vos coupes à la morphologie du visage de vos clientes ?", category: "Technique", linkedModuleId: "mod_coupe" },
+  { id: 11, text: "Adaptez-vous systématiquement la géométrie de vos coupes à la morphologie du visage de vos finales ?", category: "Technique", linkedModuleId: "mod_coupe" },
   { id: 12, text: "Utilisez-vous un système de réservation optimisé pour éviter les temps morts et les chevauchements mal gérés ?", category: "Management", linkedModuleId: "mod_planning" },
-  { id: 13, text: "Savez-vous décoder le langage corporel de vos clientes pour leur proposer des services additionnels sans forcer ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
+  { id: 13, text: "Savez-vous décoder le langage corporel de vos finales pour leur proposer des services additionnels sans forcer ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
   { id: 14, text: "Proposez-vous des rituels de prestige (boisson signature, serviette chaude) pour justifier des prix haut de gamme ?", category: "Prestige", linkedModuleId: "mod_vip" },
   { id: 15, text: "Analysez-vous vos indicateurs clés (ticket moyen, productivité) chaque soir avant de fermer le salon ?", category: "Finance", linkedModuleId: "mod_chiffres" },
   { id: 16, text: "Votre salon dispose-t-il d'une structure juridique et comptable claire pour accéder à des financements ?", category: "Management", linkedModuleId: "mod_formalisation" }
