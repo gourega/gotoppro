@@ -127,8 +127,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commission_rate: t.commission_rate,
-    is_credit: t.is_credit
+    commissionRate: t.commission_rate,
+    isCredit: t.is_credit
   }));
 };
 
@@ -147,7 +147,10 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     is_credit: transaction.isCredit || false
   }).select().single();
   
-  if (error || !data) return null;
+  if (error || !data) {
+    console.error("Transaction Error:", error);
+    return null;
+  }
   return mapTransactionFromDB(data);
 };
 
@@ -277,8 +280,14 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
     default_price: s.defaultPrice,
     is_active: s.isActive
   }));
-  const { error } = await supabase.from('kita_services').insert(payload).select();
-  if (error) throw error;
+  
+  // Correction RLS : On retire le .select() final car l'insertion peut être autorisée 
+  // mais la lecture immédiate du résultat (select) peut être bloquée par une police RLS différente.
+  const { error } = await (supabase as any).from('kita_services').insert(payload);
+  if (error) {
+    console.error("Bulk Insert Error:", error);
+    throw error;
+  }
 };
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
@@ -290,7 +299,12 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
     default_price: service.defaultPrice,
     is_active: service.isActive
   }).select().single();
-  if (error) throw error;
+  
+  if (error) {
+    console.error("Service Add Error:", error);
+    throw error;
+  }
+  
   return {
     id: data.id,
     name: data.name,
