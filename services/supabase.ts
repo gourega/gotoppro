@@ -40,7 +40,6 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
-  // On nettoie les champs undefined pour éviter les erreurs SQL
   const cleanData: any = {};
   Object.keys(profile).forEach(key => {
     if ((profile as any)[key] !== undefined) {
@@ -78,7 +77,6 @@ export const getProfileByPhone = async (phoneNumber: string): Promise<UserProfil
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non initialisé");
   const dbData = mapProfileToDB(profile);
-  // Utilisation de upsert avec onConflict sur uid pour gérer création et mise à jour
   const { error } = await supabase
     .from('profiles')
     .upsert(dbData, { onConflict: 'uid' });
@@ -128,8 +126,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
     paymentMethod: t.payment_method,
     date: t.date,
     staffName: t.staff_name,
-    commissionRate: t.commission_rate,
-    isCredit: t.is_credit
+    commission_rate: t.commission_rate,
+    is_credit: t.is_credit
   }));
 };
 
@@ -257,7 +255,11 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
   const { data, error } = await supabase.from('kita_services').select('*').eq('user_id', userId);
-  return error ? [] : data.map(s => ({
+  if (error) {
+    console.error("Erreur getKitaServices:", error);
+    throw error;
+  }
+  return (data || []).map(s => ({
     id: s.id,
     name: s.name,
     category: s.category,
@@ -276,7 +278,11 @@ export const bulkAddKitaServices = async (userId: string, services: Omit<KitaSer
     default_price: s.defaultPrice,
     is_active: s.isActive
   }));
-  await supabase.from('kita_services').insert(payload);
+  const { error } = await supabase.from('kita_services').insert(payload);
+  if (error) {
+    console.error("Erreur bulkAddKitaServices:", error);
+    throw error;
+  }
 };
 
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'userId'>) => {
@@ -288,7 +294,8 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
     default_price: service.defaultPrice,
     is_active: service.isActive
   }).select().single();
-  return error ? null : {
+  if (error) throw error;
+  return {
     id: data.id,
     name: data.name,
     category: data.category,
@@ -305,11 +312,14 @@ export const updateKitaService = async (id: string, service: Partial<KitaService
   if (service.category !== undefined) updates.category = service.category;
   if (service.defaultPrice !== undefined) updates.default_price = service.defaultPrice;
   if (service.isActive !== undefined) updates.is_active = service.isActive;
-  await supabase.from('kita_services').update(updates).eq('id', id);
+  const { error } = await supabase.from('kita_services').update(updates).eq('id', id);
+  if (error) throw error;
 };
 
 export const deleteKitaService = async (id: string) => {
-  if (supabase) await supabase.from('kita_services').delete().eq('id', id);
+  if (!supabase) return;
+  const { error } = await supabase.from('kita_services').delete().eq('id', id);
+  if (error) throw error;
 };
 
 /**

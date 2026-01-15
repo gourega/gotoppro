@@ -81,7 +81,6 @@ const Caisse: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [lastSavedTransaction, setLastSavedTransaction] = useState<KitaTransaction | null>(null);
 
-  // LOGIQUE ÉLITE : 16 modules possédés
   const isElite = useMemo(() => {
     if (!user) return false;
     return user.isKitaPremium || (user.purchasedModuleIds?.length || 0) >= 16;
@@ -106,7 +105,8 @@ const Caisse: React.FC = () => {
       setDebts(debtData);
       setServices(serviceData);
     } catch (err: any) {
-      setError("Erreur de liaison avec la base de données.");
+      console.error("Caisse loadData Error:", err);
+      setError("Erreur de liaison avec la base de données. " + (err.message || ""));
     } finally {
       setLoading(false);
     }
@@ -134,6 +134,13 @@ const Caisse: React.FC = () => {
 
   const initializeDefaultServices = async () => {
     if (!user?.uid || isInitializing) return;
+    
+    // Sécurité supplémentaire: si des services existent déjà, on ne génère pas
+    if (services.length > 0) {
+      alert("Votre catalogue contient déjà des prestations.");
+      return;
+    }
+
     setIsInitializing(true);
     setError(null);
     try {
@@ -145,11 +152,16 @@ const Caisse: React.FC = () => {
         else if (name.match(/Vente/i)) cat = 'Vente';
         return { name, category: cat, defaultPrice: 0, isActive: true };
       });
+      
       await bulkAddKitaServices(user.uid, servicesToCreate);
-      const refreshedServices = await getKitaServices(user.uid);
-      setServices(refreshedServices);
+      
+      // On force un rechargement complet de la base
+      await loadData();
+      
+      alert("Succès ! Votre catalogue KITA a été généré.");
     } catch (err: any) {
-      alert("Erreur de génération du catalogue.");
+      console.error("Initialization Error:", err);
+      alert("Erreur technique : " + (err.message || "Impossible de générer le catalogue. Vérifiez votre connexion."));
     } finally {
       setIsInitializing(false);
     }
@@ -185,7 +197,6 @@ const Caisse: React.FC = () => {
   const filteredServices = useMemo(() => {
     return services.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
-      // Correction de la sensibilité à la casse pour le filtrage par catégorie
       const matchesCat = activeCategory === 'all' || s.category.toLowerCase() === activeCategory.toLowerCase();
       return s.isActive && matchesSearch && matchesCat;
     });
@@ -347,7 +358,6 @@ const Caisse: React.FC = () => {
                     <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all"><X /></button>
                  </div>
                  
-                 {/* Afficher la recherche et les catégories seulement si le catalogue n'est pas vide */}
                  {services.length > 0 && (
                    <>
                     <div className="relative mb-8">
