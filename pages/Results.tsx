@@ -12,7 +12,10 @@ import {
   Check,
   Package,
   Users,
-  Lock
+  Lock,
+  TrendingUp,
+  Gift,
+  ArrowRight
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -93,18 +96,49 @@ const Results: React.FC = () => {
   };
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 25000, savings: 15000 };
-    if (activePack === 'performance') return { total: 5000, label: 'Pack RH', rawTotal: 5000, savings: 0 };
-    if (activePack === 'stock') return { total: 5000, label: 'Pack Stock', rawTotal: 5000, savings: 0 };
+    if (activePack === 'elite') return { 
+      total: 10000, 
+      label: 'Pack Académie Élite', 
+      rawTotal: 8000, 
+      savings: 0, 
+      discountPercent: 0,
+      nextThreshold: null 
+    };
+    if (activePack === 'performance') return { total: 5000, label: 'Pack RH', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null };
+    if (activePack === 'stock') return { total: 5000, label: 'Pack Stock', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null };
 
     const count = cart.length;
     let unitPrice = 500;
-    if (count >= 13) unitPrice = 250;
-    else if (count >= 9) unitPrice = 350;
-    else if (count >= 5) unitPrice = 400;
+    let discountPercent = 0;
+    let nextThreshold = null;
+
+    if (count >= 13) {
+      unitPrice = 250;
+      discountPercent = 50;
+      if (count < 16) nextThreshold = { needed: 16 - count, label: "Pack Elite (Illimité)", price: "10.000 F" };
+    } else if (count >= 9) {
+      unitPrice = 350;
+      discountPercent = 30;
+      nextThreshold = { needed: 13 - count, label: "Réduction -50%", nextPercent: 50 };
+    } else if (count >= 5) {
+      unitPrice = 400;
+      discountPercent = 20;
+      nextThreshold = { needed: 9 - count, label: "Réduction -30%", nextPercent: 30 };
+    } else if (count > 0) {
+      nextThreshold = { needed: 5 - count, label: "Réduction -20%", nextPercent: 20 };
+    }
 
     const total = count === 16 ? 10000 : count * unitPrice;
-    return { total, label: `${count} module(s) choisi(s)`, rawTotal: count * 500, savings: (count * 500) - total };
+    const rawTotal = count * 500;
+    
+    return { 
+      total, 
+      label: `${count} module(s) choisi(s)`, 
+      rawTotal, 
+      savings: rawTotal - total,
+      discountPercent,
+      nextThreshold
+    };
   }, [cart, activePack]);
 
   const sortedModules = useMemo(() => {
@@ -208,22 +242,31 @@ const Results: React.FC = () => {
                     disabled={isOwned}
                     className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${
                       isOwned ? 'bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed' :
-                      isInCart ? 'bg-brand-50 border-brand-500 shadow-lg' : 
+                      isInCart ? 'bg-brand-50 border-brand-500 shadow-lg scale-[1.02]' : 
                       !isRecommended ? 'bg-white border-brand-100 shadow-sm ring-1 ring-brand-50' : 'bg-white border-slate-100'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-grow">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[8px] font-black text-brand-600 uppercase">{module.topic}</span>
+                          <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">{module.topic}</span>
                           {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase">Priorité Diag</span>}
                           {!isRecommended && !isOwned && <span className="text-[7px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-black uppercase">Expansion</span>}
                           {isOwned && <span className="text-[7px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black uppercase">Acquis</span>}
                         </div>
-                        <h4 className="text-lg font-bold text-slate-900">{module.title}</h4>
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
+                        {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Valeur : 500 F</p>}
                       </div>
-                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${isOwned ? 'text-emerald-500' : isInCart ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-300'}`}>
-                        {isOwned ? <CheckCircle2 /> : isInCart ? <Check /> : <Plus />}
+                      
+                      {/* Icône d'état améliorée : (+) Vert Émeraude incitatif */}
+                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
+                        isOwned 
+                          ? 'text-emerald-500' 
+                          : isInCart 
+                            ? 'bg-brand-500 text-white rotate-90 shadow-brand-200 shadow-lg' 
+                            : 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm'
+                      }`}>
+                        {isOwned ? <CheckCircle2 /> : isInCart ? <Check /> : <Plus className="w-6 h-6 stroke-[3px]" />}
                       </div>
                     </div>
                   </button>
@@ -234,40 +277,84 @@ const Results: React.FC = () => {
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100">
+              <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 relative overflow-hidden">
+                {pricingData.discountPercent > 0 && (
+                   <div className="absolute top-6 right-6 bg-emerald-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
+                     -{pricingData.discountPercent}% OFF
+                   </div>
+                )}
+                
                 <h3 className="text-xl font-serif font-bold text-slate-900 mb-8 flex items-center gap-4"><ShoppingBag className="text-brand-500" /> Mon Engagement</h3>
+                
                 <div className="space-y-6 mb-10">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{pricingData.label}</p>
+                   <div className="flex justify-between items-center">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{pricingData.label}</p>
+                     {pricingData.discountPercent > 0 && (
+                       <span className="text-[9px] font-bold text-slate-300 line-through uppercase">{pricingData.rawTotal.toLocaleString()} F</span>
+                     )}
+                   </div>
+                   
                    <div className="flex justify-between items-baseline">
                       <p className="text-5xl font-black text-brand-900">{pricingData.total.toLocaleString()} <span className="text-sm font-bold opacity-30 uppercase">F</span></p>
-                      {pricingData.savings > 0 && <span className="text-xs bg-emerald-500 text-white px-2 py-1 rounded font-black">- {pricingData.savings.toLocaleString()} F</span>}
+                      {pricingData.savings > 0 && (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] font-black text-emerald-500 uppercase">Economie</span>
+                          <span className="text-sm font-black text-emerald-500">-{pricingData.savings.toLocaleString()} F</span>
+                        </div>
+                      )}
                    </div>
                 </div>
-                <button onClick={handleValidateEngagement} disabled={loading || (cart.length === 0 && activePack === 'none')} className="w-full bg-brand-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-700 transition-all">
+
+                {/* Prochain Palier Incitateur */}
+                {pricingData.nextThreshold && (
+                  <div className="mb-8 p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4 animate-in slide-in-from-bottom-2 duration-500">
+                    <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                      <Gift className="w-5 h-5 text-brand-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-brand-900 uppercase tracking-widest mb-1">Cadeau Stratégique</p>
+                      <p className="text-xs font-medium text-brand-800 leading-relaxed">
+                        Ajoutez <strong>{pricingData.nextThreshold.needed}</strong> module(s) de plus pour débloquer <strong>{pricingData.nextThreshold.label}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={handleValidateEngagement} disabled={loading || (cart.length === 0 && activePack === 'none')} className="w-full bg-brand-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-700 transition-all active:scale-95 disabled:opacity-20">
                   {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider mon plan
                 </button>
               </div>
 
               <div className="grid gap-4">
                 {!isElite && (
-                  <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${activePack === 'elite' ? 'bg-amber-400 border-amber-500 shadow-xl' : 'bg-white border-slate-100'}`}>
+                  <div className={`p-8 rounded-[2.5rem] border-2 transition-all group ${activePack === 'elite' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100 hover:border-amber-200'}`}>
                     <div className="flex items-center gap-6 mb-4">
-                      <button onClick={() => setActivePack('elite')} className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Crown /></button>
-                      <div><h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4><p className="font-black">10 000 F <span className="text-[10px] opacity-40">Accès total</span></p></div>
+                      <button onClick={() => setActivePack('elite')} className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Crown /></button>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4>
+                          <span className="text-[7px] bg-brand-900 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase">Best Value</span>
+                        </div>
+                        <p className="font-black">10 000 F <span className="text-[10px] opacity-40 uppercase ml-1">Accès total</span></p>
+                      </div>
                     </div>
-                    {activePack !== 'elite' && <button onClick={() => setActivePack('elite')} className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[9px] uppercase hover:bg-black transition-all">Sélectionner</button>}
+                    {activePack !== 'elite' && (
+                      <button onClick={() => setActivePack('elite')} className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[9px] uppercase hover:bg-black transition-all flex items-center justify-center gap-2">
+                        Passer à l'Élite <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 )}
                 
                 <div className="grid grid-cols-2 gap-4">
-                   <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg' : 'bg-white border-slate-100'}`}>
+                   <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-emerald-100'}`}>
                       <Users className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase">Pack RH</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest">Pack RH</h4>
                       <p className="text-[9px] font-bold opacity-70">5 000 F / 3 ans</p>
                    </button>
-                   <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 text-white shadow-lg' : 'bg-white border-slate-100'}`}>
+                   <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-sky-100'}`}>
                       <Package className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase">Pack Stock</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest">Pack Stock</h4>
                       <p className="text-[9px] font-bold opacity-70">5 000 F / 3 ans</p>
                    </button>
                 </div>
