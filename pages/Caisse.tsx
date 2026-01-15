@@ -185,7 +185,8 @@ const Caisse: React.FC = () => {
   const filteredServices = useMemo(() => {
     return services.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCat = activeCategory === 'all' || s.category === activeCategory;
+      // Correction de la sensibilité à la casse pour le filtrage par catégorie
+      const matchesCat = activeCategory === 'all' || s.category.toLowerCase() === activeCategory.toLowerCase();
       return s.isActive && matchesSearch && matchesCat;
     });
   }, [services, searchTerm, activeCategory]);
@@ -213,7 +214,6 @@ const Caisse: React.FC = () => {
         </div>
       </header>
 
-      {/* BANDEAU PSYCHOLOGIQUE POUR NON-ÉLITE DANS LA CAISSE */}
       {!isElite && !loading && (
         <div className="max-w-6xl mx-auto px-6 -mt-12 mb-12 relative z-50">
            <div className="bg-white rounded-[3rem] p-8 shadow-2xl border-l-[12px] border-amber-500 flex flex-col md:flex-row items-center justify-between gap-8 animate-in slide-in-from-top-4">
@@ -347,79 +347,96 @@ const Caisse: React.FC = () => {
                     <button onClick={() => setIsServiceListOpen(false)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all"><X /></button>
                  </div>
                  
-                 <div className="relative mb-8">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Chercher une prestation..." 
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                      className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold text-lg"
-                    />
-                 </div>
+                 {/* Afficher la recherche et les catégories seulement si le catalogue n'est pas vide */}
+                 {services.length > 0 && (
+                   <>
+                    <div className="relative mb-8">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Chercher une prestation..." 
+                          value={searchTerm}
+                          onChange={e => setSearchTerm(e.target.value)}
+                          className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-brand-500/20 font-bold text-lg"
+                        />
+                    </div>
 
-                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                    {CATEGORIES.map(cat => (
-                      <button 
-                        key={cat.id} 
-                        onClick={() => setActiveCategory(cat.id)}
-                        className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                      >
-                         {cat.icon} {cat.label}
-                      </button>
-                    ))}
-                 </div>
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                        {CATEGORIES.map(cat => (
+                          <button 
+                            key={cat.id} 
+                            onClick={() => setActiveCategory(cat.id)}
+                            className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap ${activeCategory === cat.id ? 'bg-brand-900 text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                          >
+                            {cat.icon} {cat.label}
+                          </button>
+                        ))}
+                    </div>
+                   </>
+                 )}
               </div>
 
-              <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar">
+              <div className="flex-grow overflow-y-auto p-6 md:p-8 bg-slate-50/50 custom-scrollbar flex flex-col">
                  {isInitializing ? (
-                   <div className="py-24 text-center animate-pulse">
+                   <div className="m-auto text-center animate-pulse">
                       <Loader2 className="w-16 h-16 animate-spin text-brand-600 mx-auto mb-6" />
                       <p className="text-brand-900 font-black uppercase tracking-widest text-xs">Génération du catalogue...</p>
                    </div>
                  ) : services.length === 0 ? (
-                   <div className="py-20 text-center text-slate-400">
-                      <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                         <Database className="w-10 h-10 opacity-20" />
+                   <div className="m-auto text-center space-y-8 max-w-sm">
+                      <div className="h-32 w-32 bg-brand-50 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-inner">
+                         <Database className="w-16 h-16 text-brand-500 opacity-40" />
                       </div>
-                      <h4 className="text-slate-900 font-bold text-xl mb-4">Catalogue non initialisé</h4>
+                      <div>
+                        <h4 className="text-slate-900 font-serif font-bold text-2xl mb-3">Catalogue non configuré</h4>
+                        <p className="text-slate-500 text-sm leading-relaxed mb-8">Votre espace de travail est vierge. Générez le catalogue standard KITA pour commencer à piloter vos chiffres immédiatement.</p>
+                      </div>
                       <button 
                         onClick={initializeDefaultServices}
-                        className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:bg-brand-950 transition-all flex items-center gap-4 mx-auto active:scale-95"
+                        className="w-full bg-brand-900 text-white px-10 py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-[0_15px_30px_rgba(12,74,110,0.2)] hover:bg-brand-950 transition-all flex items-center justify-center gap-4 active:scale-95"
                       >
-                        <RefreshCw className={`w-4 h-4 ${isInitializing ? 'animate-spin' : ''}`} /> 
-                        Générer mes prestations
+                        <RefreshCw className={`w-5 h-5 ${isInitializing ? 'animate-spin' : ''}`} /> 
+                        Générer mon catalogue KITA
                       </button>
                    </div>
                  ) : (
-                   <div className="grid grid-cols-2 gap-4">
-                      {filteredServices.length > 0 ? filteredServices.map(s => (
-                        <button 
-                          key={s.id} 
-                          onClick={() => handleSelectService(s)}
-                          className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
-                        >
-                           <div>
-                              <div className="flex justify-between items-start mb-3">
-                                 <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
-                              </div>
-                              <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
-                           </div>
-                           <div className="mt-4 flex items-center justify-between">
-                              <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-100 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
-                                 {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
-                              </span>
-                              <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
-                                 <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
-                              </div>
-                           </div>
-                        </button>
-                      )) : (
-                        <div className="col-span-2 py-20 text-center text-slate-400">
-                          <p className="italic font-medium">Aucun service ne correspond.</p>
-                        </div>
-                      )}
-                   </div>
+                   <>
+                    <div className="grid grid-cols-2 gap-4">
+                        {filteredServices.length > 0 ? filteredServices.map(s => (
+                          <button 
+                            key={s.id} 
+                            onClick={() => handleSelectService(s)}
+                            className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-2xl hover:shadow-brand-500/10 transition-all group relative flex flex-col justify-between min-h-[160px]"
+                          >
+                            <div>
+                                <div className="flex justify-between items-start mb-3">
+                                  <span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{s.category}</span>
+                                </div>
+                                <p className="font-bold text-slate-900 text-lg leading-tight group-hover:text-brand-900">{s.name}</p>
+                            </div>
+                            <div className="mt-4 flex items-center justify-between">
+                                <span className={`px-4 py-1.5 rounded-xl font-black text-xs ${s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'bg-slate-50 text-slate-500 uppercase tracking-widest text-[9px]'}`}>
+                                  {s.defaultPrice > 0 ? `${s.defaultPrice.toLocaleString()} F` : 'Prix libre'}
+                                </span>
+                                <div className="h-8 w-8 rounded-full border-2 border-slate-100 group-hover:bg-brand-500 group-hover:border-brand-500 transition-all flex items-center justify-center">
+                                  <Plus className="w-4 h-4 text-transparent group-hover:text-white" />
+                                </div>
+                            </div>
+                          </button>
+                        )) : (
+                          <div className="col-span-2 py-20 text-center text-slate-400 m-auto flex flex-col items-center gap-6">
+                            <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center shadow-inner">
+                               <Info className="w-8 h-8 opacity-20" />
+                            </div>
+                            <div className="space-y-2">
+                               <p className="text-slate-900 font-bold text-lg">Aucun résultat</p>
+                               <p className="text-sm max-w-[200px] italic">Aucune prestation de la catégorie "{activeCategory}" n'a été trouvée.</p>
+                            </div>
+                            <button onClick={() => setActiveCategory('all')} className="text-brand-600 font-black text-[10px] uppercase tracking-widest border-b-2 border-brand-100 pb-1">Voir tout le catalogue</button>
+                          </div>
+                        )}
+                    </div>
+                   </>
                  )}
               </div>
            </div>
