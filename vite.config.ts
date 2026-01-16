@@ -1,28 +1,31 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Explicitly casting 'process' to 'any' allows access to the Node.js 'cwd()' method in the Vite configuration environment.
-  const env = loadEnv(mode, (process as any).cwd(), '');
+  // Fix: use '.' instead of process.cwd() to avoid TypeScript errors regarding the process global type definition
+  const env = loadEnv(mode, '.', '');
   
-  // On ne transmet que les variables nécessaires pour éviter d'exposer des secrets système sensibles (comme PATH, etc.)
-  const exposedEnv = {
-    API_KEY: env.API_KEY,
-    VITE_SUPABASE_URL: env.VITE_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY,
-    VITE_ADMIN_EMAIL: env.VITE_ADMIN_EMAIL,
-    NODE_ENV: env.NODE_ENV
-  };
-
   return {
     plugins: [react()],
     define: {
-      'process.env': exposedEnv
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+      'process.env.VITE_ADMIN_EMAIL': JSON.stringify(env.VITE_ADMIN_EMAIL),
+      'process.env.NODE_ENV': JSON.stringify(mode),
     },
     build: {
       outDir: 'dist',
-      sourcemap: false
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['react', 'react-dom', 'react-router-dom'],
+            'genai': ['@google/genai'],
+            'supabase': ['@supabase/supabase-js']
+          }
+        }
+      }
     }
   };
 });

@@ -17,49 +17,61 @@ export const generateUUID = () => {
   });
 };
 
-/** PROFILES **/
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     uid: data.uid,
-    phoneNumber: data.phoneNumber || data.phone_number || '',
-    pinCode: data.pinCode || data.pin_code || '1234',
+    phoneNumber: data.phone_number || data.phoneNumber || '',
+    pinCode: data.pin_code || data.pinCode || '1234',
     email: data.email,
-    firstName: data.firstName || data.first_name || '',
-    lastName: data.lastName || data.last_name || '',
-    establishmentName: data.establishmentName || data.establishment_name || '',
-    photoURL: data.photoURL || data.photo_url || '',
+    firstName: data.first_name || data.firstName || '',
+    lastName: data.last_name || data.lastName || '',
+    establishmentName: data.establishment_name || data.establishmentName || '',
+    photoURL: data.photo_url || data.photoURL || '',
     bio: data.bio || '',
-    employeeCount: data.employeeCount || data.employee_count || 0,
-    openingYear: data.openingYear || data.opening_year || 0,
+    employeeCount: data.employee_count || data.employeeCount || 0,
+    openingYear: data.opening_year || data.openingYear || 0,
     role: data.role || 'CLIENT',
-    isActive: data.isActive ?? data.is_active ?? false,
-    isAdmin: data.isAdmin ?? data.is_admin ?? false,
-    isPublic: data.isPublic ?? data.is_public ?? true,
-    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
-    kitaPremiumUntil: data.kitaPremiumUntil || data.kita_premium_until,
-    hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
-    hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
+    isActive: data.is_active ?? data.isActive ?? false,
+    isAdmin: data.is_admin ?? data.isAdmin ?? false,
+    isPublic: data.is_public ?? data.isPublic ?? true,
+    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
+    kitaPremiumUntil: data.kita_premium_until || data.kitaPremiumUntil,
+    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
+    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
+    crmExpiryDate: data.crm_expiry_date || data.crmExpiryDate,
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
-    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
-    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
-    referralCount: data.referralCount || data.referral_count || 0,
-    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
+    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
+    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
+    referralCount: data.referral_count || data.referralCount || 0,
+    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
 };
 
+export const getProfileByPhone = async (phoneNumber: string) => {
+  if (!supabase) return null;
+  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
+  const localPhone = cleanPhone.replace(/^\+225/, '');
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone},phoneNumber.eq.${cleanPhone},phoneNumber.eq.${localPhone}`)
+      .maybeSingle();
+    if (error) throw error;
+    return mapProfileFromDB(data);
+  } catch (err) {
+    console.error("Supabase Phone Search Error:", err);
+    return null;
+  }
+};
+
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   const { data } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-  return mapProfileFromDB(data);
-};
-
-export const getProfileByPhone = async (phoneNumber: string) => {
-  if (!supabase) return null;
-  const { data } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${phoneNumber},phone_number.eq.${phoneNumber}`).maybeSingle();
   return mapProfileFromDB(data);
 };
 
@@ -70,7 +82,8 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
     lastName: 'last_name', establishmentName: 'establishment_name', photoURL: 'photo_url',
     isKitaPremium: 'is_kita_premium', hasPerformancePack: 'has_performance_pack',
     hasStockPack: 'has_stock_pack', purchasedModuleIds: 'purchased_module_ids',
-    pendingModuleIds: 'pending_module_ids', isPublic: 'is_public', isActive: 'is_active'
+    pendingModuleIds: 'pending_module_ids', isPublic: 'is_public', isActive: 'is_active',
+    crmExpiryDate: 'crm_expiry_date'
   };
   const dbData: any = {};
   Object.keys(profile).forEach(k => { if ((profile as any)[k] !== undefined) dbData[mapping[k] || k] = (profile as any)[k]; });
@@ -82,7 +95,8 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
   const mapping: any = {
     isKitaPremium: 'is_kita_premium', hasPerformancePack: 'has_performance_pack',
     hasStockPack: 'has_stock_pack', purchasedModuleIds: 'purchased_module_ids',
-    pendingModuleIds: 'pending_module_ids', isActive: 'is_active', pinCode: 'pin_code'
+    pendingModuleIds: 'pending_module_ids', isActive: 'is_active', pinCode: 'pin_code',
+    crmExpiryDate: 'crm_expiry_date', kitaPremiumUntil: 'kita_premium_until'
   };
   const dbData: any = {};
   Object.keys(updates).forEach(k => { if ((updates as any)[k] !== undefined) dbData[mapping[k] || k] = (updates as any)[k]; });
@@ -167,6 +181,15 @@ export const addKitaClient = async (userId: string, client: any) => {
     id: newId, user_id: userId, name: client.name, phone: client.phone
   });
   return error ? null : { id: newId, ...client, user_id: userId };
+};
+
+export const updateKitaClient = async (id: string, updates: any) => {
+  if (!supabase) return;
+  const dbUpdates: any = {};
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+  await supabase.from('kita_clients').update(dbUpdates).eq('id', id);
 };
 
 /** SERVICES **/

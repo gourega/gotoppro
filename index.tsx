@@ -2,14 +2,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
+
+console.log("Go'Top Pro: Initialisation de l'application...");
 
 const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error("Could not find root element to mount to");
-
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+if (!rootElement) {
+  console.error("Go'Top Pro: Élément #root introuvable !");
+} else {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+  console.log("Go'Top Pro: Application montée avec succès.");
+}

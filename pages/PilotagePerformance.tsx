@@ -12,7 +12,8 @@ import {
   addKitaService,
   updateKitaService,
   deleteKitaService,
-  getKitaTransactions
+  getKitaTransactions,
+  updateKitaClient
 } from '../services/supabase';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -32,7 +33,13 @@ import {
   EyeOff,
   Banknote,
   TrendingUp,
-  History
+  History,
+  Calendar,
+  AlertCircle,
+  ClipboardList,
+  Lock,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 
@@ -52,14 +59,20 @@ const PilotagePerformance: React.FC = () => {
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
   // Forms States
   const [newStaff, setNewStaff] = useState({ name: '', commissionRate: 30, specialty: 'Coiffure' });
-  const [newClient, setNewClient] = useState({ name: '', phone: '' });
+  const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', category: 'Coiffure', defaultPrice: 0 });
   const [saving, setSaving] = useState(false);
 
   const isUnlocked = user?.hasPerformancePack;
+  const isCRMActive = useMemo(() => {
+    if (user?.isAdmin) return true;
+    if (!user?.crmExpiryDate) return false;
+    return new Date(user.crmExpiryDate) > new Date();
+  }, [user]);
 
   useEffect(() => {
     if (user) loadData();
@@ -123,6 +136,20 @@ const PilotagePerformance: React.FC = () => {
     }
   };
 
+  const handleUpdateClientNotes = async () => {
+    if (!selectedClient) return;
+    setSaving(true);
+    try {
+      await updateKitaClient(selectedClient.id, { notes: selectedClient.notes });
+      await loadData();
+      setSelectedClient(null);
+    } catch (err) {
+      alert("Erreur CRM.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!isUnlocked) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
@@ -134,6 +161,25 @@ const PilotagePerformance: React.FC = () => {
       </div>
     );
   }
+
+  const LockedScreen = () => (
+    <div className="py-24 text-center animate-in zoom-in-95">
+       <div className="h-24 w-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-rose-100">
+          <Lock className="w-10 h-10" />
+       </div>
+       <h3 className="text-3xl font-serif font-bold text-slate-900 mb-4">Pack Fidélité Expiré</h3>
+       <p className="text-slate-500 max-w-md mx-auto mb-10 leading-relaxed">
+          Pour accéder aux commissions détaillées, aux notes VIP et aux relances automatiques, activez votre abonnement CRM.
+       </p>
+       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl inline-block">
+          <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mb-2">Offre de Croissance</p>
+          <p className="text-4xl font-black text-slate-900 mb-6">500 F <span className="text-sm opacity-30 uppercase">/ mois</span></p>
+          <button onClick={() => navigate('/results?pack=crm')} className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-all flex items-center gap-3">
+             <Zap className="w-4 h-4 text-amber-400" /> Activer mon CRM <ArrowRight className="w-4 h-4" />
+          </button>
+       </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-slate-900 pb-20">
@@ -153,7 +199,7 @@ const PilotagePerformance: React.FC = () => {
           <div className="flex bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto">
              <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'staff' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Staff</button>
              <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'commissions' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Commissions</button>
-             <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'clients' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Clients VIP</button>
+             <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'clients' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>CRM VIP</button>
              <button onClick={() => setActiveTab('catalog')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'catalog' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Catalogue</button>
           </div>
         </div>
@@ -180,60 +226,86 @@ const PilotagePerformance: React.FC = () => {
               </div>
           </div>
         ) : activeTab === 'commissions' ? (
-          <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="px-4"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Banknote className="w-5 h-5 text-amber-500" /> Suivi des Commissions</h3></div>
-              <div className="grid md:grid-cols-2 gap-6">
-                {staff.map(member => {
-                  const data = staffCommissions[member.name] || { totalPresta: 0, totalComm: 0, count: 0 };
-                  return (
-                    <div key={member.id} className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-2xl transition-all">
-                       <div className="flex items-center gap-6">
-                          <div className="h-20 w-20 bg-amber-50 text-amber-600 rounded-[1.5rem] flex flex-col items-center justify-center font-black shadow-inner">
-                             <span className="text-2xl">{member.name[0]}</span>
-                             <span className="text-[8px] uppercase">{member.commissionRate}%</span>
-                          </div>
-                          <div>
-                            <p className="font-serif font-bold text-slate-900 text-2xl mb-1">{member.name}</p>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><History className="w-3 h-3" /> {data.count} prestations réalisées</p>
-                          </div>
-                       </div>
-                       <div className="text-right">
-                          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Dû au collaborateur</p>
-                          <p className="text-3xl font-black text-emerald-600">{data.totalComm.toLocaleString()} F</p>
-                          <p className="text-[10px] font-bold text-slate-300 mt-1">Sur {data.totalPresta.toLocaleString()} F de CA</p>
-                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-          </div>
+          !isCRMActive ? <LockedScreen /> : (
+            <div className="space-y-8 animate-in fade-in duration-300">
+                <div className="px-4"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-50"><Banknote className="w-5 h-5 text-amber-500" /> Suivi des Commissions</h3></div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {staff.map(member => {
+                    const data = staffCommissions[member.name] || { totalPresta: 0, totalComm: 0, count: 0 };
+                    return (
+                      <div key={member.id} className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-2xl transition-all">
+                        <div className="flex items-center gap-6">
+                            <div className="h-20 w-20 bg-amber-50 text-amber-600 rounded-[1.5rem] flex flex-col items-center justify-center font-black shadow-inner">
+                              <span className="text-2xl">{member.name[0]}</span>
+                              <span className="text-[8px] uppercase">{member.commissionRate}%</span>
+                            </div>
+                            <div>
+                              <p className="font-serif font-bold text-slate-900 text-2xl mb-1">{member.name}</p>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><History className="w-3 h-3" /> {data.count} prestations réalisées</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Dû au collaborateur</p>
+                            <p className="text-3xl font-black text-emerald-600">{data.totalComm.toLocaleString()} F</p>
+                            <p className="text-[10px] font-bold text-slate-300 mt-1">Sur {data.totalPresta.toLocaleString()} F de CA</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+            </div>
+          )
         ) : activeTab === 'clients' ? (
-          <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="flex justify-between items-center px-4">
-                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Star className="w-5 h-5 text-amber-500" /> Fichier Client VIP</h3>
-                 <button onClick={() => setShowAddClientModal(true)} className="bg-amber-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl hover:bg-amber-600 transition-all"><Plus className="w-4 h-4" /> Nouveau Client</button>
-              </div>
-              <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm">
-                  {clients.map(c => (
-                    <div key={c.id} className="p-8 border-b border-slate-50 flex items-center justify-between hover:bg-slate-50 transition-all group">
-                       <div className="flex items-center gap-6">
-                          <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-xl group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">{c.name[0]}</div>
-                          <div>
-                            <p className="font-bold text-slate-900 text-lg">{c.name}</p>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{c.phone || 'Pas de numéro'}</p>
+          !isCRMActive ? <LockedScreen /> : (
+            <div className="space-y-8 animate-in fade-in duration-300">
+                <div className="flex justify-between items-center px-4">
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Star className="w-5 h-5 text-amber-500" /> Mini-CRM Excellence</h3>
+                  <button onClick={() => setShowAddClientModal(true)} className="bg-amber-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl hover:bg-amber-600 transition-all"><Plus className="w-4 h-4" /> Nouveau Client</button>
+                </div>
+                <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm">
+                    {clients.length > 0 ? clients.map(c => {
+                      const lastVisitDate = c.lastVisit ? new Date(c.lastVisit) : null;
+                      const daysSinceLast = lastVisitDate ? Math.floor((Date.now() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                      const isSilent = daysSinceLast !== null && daysSinceLast > 30;
+
+                      return (
+                        <div key={c.id} className="p-8 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between hover:bg-slate-50 transition-all group gap-6">
+                          <div className="flex items-center gap-6 flex-grow">
+                              <div className="relative">
+                                <div className="h-16 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-2xl group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">{c.name[0]}</div>
+                                {isSilent && <div className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 rounded-full flex items-center justify-center border-2 border-white animate-pulse"><AlertCircle className="w-3 h-3 text-white" /></div>}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <p className="font-bold text-slate-900 text-lg">{c.name}</p>
+                                  {c.totalSpent > 10000 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">VIP GOLD</span>}
+                                </div>
+                                <div className="flex items-center gap-4 mt-1">
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><History className="w-3 h-3" /> {c.totalVisits || 0} visites</p>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Calendar className="w-3 h-3" /> {lastVisitDate ? `Dernière : ${lastVisitDate.toLocaleDateString()}` : 'Jamais venue'}</p>
+                                </div>
+                                {c.notes && <p className="text-xs text-slate-500 italic mt-2 line-clamp-1">"{c.notes}"</p>}
+                              </div>
                           </div>
-                       </div>
-                       <div className="flex items-center gap-8">
-                          <div className="text-right hidden sm:block">
-                             <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Total Dépensé</p>
-                             <p className="font-black text-slate-900">{(c.totalSpent || 0).toLocaleString()} F</p>
+                          
+                          <div className="flex items-center gap-4 shrink-0">
+                              <button onClick={() => setSelectedClient(c)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all"><ClipboardList className="w-5 h-5" /></button>
+                              <a 
+                                href={`https://wa.me/${c.phone?.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${c.name}, Coach Kita ici au salon ${user?.establishmentName}. Nous avons hâte de vous revoir pour votre prochaine mise en beauté !`)}`} 
+                                target="_blank" rel="noreferrer" 
+                                className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${isSilent ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white'}`}
+                              >
+                                <MessageCircle className="w-4 h-4" /> Relancer
+                              </a>
                           </div>
-                          <a href={`https://wa.me/${c.phone?.replace(/\+/g, '').replace(/\s/g, '')}`} target="_blank" rel="noreferrer" className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><MessageCircle className="w-5 h-5" /></a>
-                       </div>
-                    </div>
-                  ))}
-              </div>
-          </div>
+                        </div>
+                      );
+                    }) : (
+                      <div className="py-20 text-center text-slate-400 italic">Aucun client enregistré.</div>
+                    )}
+                </div>
+            </div>
+          )
         ) : (
           <div className="space-y-8 animate-in fade-in duration-300">
               <div className="flex justify-between items-center px-4">
@@ -258,7 +330,36 @@ const PilotagePerformance: React.FC = () => {
         )}
       </div>
 
-      {/* MODALS IDEM PRÉCÉDENT MAIS AVEC STYLE POLI */}
+      {/* MODAL FICHE CLIENT (CRM) */}
+      {selectedClient && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
+              <button onClick={() => setSelectedClient(null)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500"><X /></button>
+              <div className="text-center mb-8">
+                <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><ClipboardList className="w-10 h-10" /></div>
+                <h2 className="text-3xl font-serif font-bold text-slate-900">{selectedClient.name}</h2>
+                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-2">{selectedClient.phone}</p>
+              </div>
+              
+              <div className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">Préférences & Historique Technique</label>
+                    <textarea 
+                      value={selectedClient.notes || ''} 
+                      onChange={e => setSelectedClient({...selectedClient, notes: e.target.value})}
+                      placeholder="N'aime pas le bac à gauche, mélange couleur 6.3+7.0, préfère le café noir..."
+                      className="w-full p-8 rounded-[2rem] bg-slate-50 border-none outline-none font-medium text-slate-700 min-h-[150px] resize-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                 </div>
+                 <button onClick={handleUpdateClientNotes} disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
+                    {saving ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Enregistrer les préférences
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL AJOUT STAFF */}
       {showAddStaffModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
@@ -276,6 +377,7 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL AJOUT CLIENT */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
@@ -285,7 +387,7 @@ const PilotagePerformance: React.FC = () => {
                  e.preventDefault(); setSaving(true);
                  const saved = await addKitaClient(user!.uid, newClient);
                  if (saved) setClients([...clients, saved]);
-                 setShowAddClientModal(false); setSaving(false); setNewClient({name:'', phone:''});
+                 setShowAddClientModal(false); setSaving(false); setNewClient({name:'', phone:'', notes:''});
               }} className="space-y-6">
                  <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de la cliente</label><input type="text" value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900" placeholder="Ex: Mme Konan" required /></div>
                  <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">WhatsApp</label><input type="tel" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900" placeholder="+225 00000000" /></div>
@@ -295,6 +397,7 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL AJOUT SERVICE */}
       {showAddServiceModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">

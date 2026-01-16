@@ -32,21 +32,14 @@ import {
   Search,
   Cloud,
   ShieldHalf,
-  Users
+  Users,
+  FileText
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
+import ExportReportModal from '../components/ExportReportModal';
 
 type PeriodFilter = 'today' | 'week' | 'month';
-
-const CATEGORIES = [
-  { id: 'all', label: 'Tout', icon: <Sparkles className="w-4 h-4" /> },
-  { id: 'Coiffure', label: 'Coiffure', icon: <Scissors className="w-4 h-4" /> },
-  { id: 'Ongles', label: 'Ongles', icon: <Zap className="w-4 h-4" /> },
-  { id: 'Soins', label: 'Soins', icon: <Sparkles className="w-4 h-4" /> },
-  { id: 'Vente', label: 'Vente', icon: <ShoppingBag className="w-4 h-4" /> },
-  { id: 'Autre', label: 'Autre', icon: <MoreHorizontal className="w-4 h-4" /> },
-];
 
 const Caisse: React.FC = () => {
   const { user } = useAuth();
@@ -59,6 +52,7 @@ const Caisse: React.FC = () => {
   const [period, setPeriod] = useState<PeriodFilter>('today');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isServiceListOpen, setIsServiceListOpen] = useState(false);
   const [isStaffListOpen, setIsStaffListOpen] = useState(false);
   
@@ -201,6 +195,9 @@ const Caisse: React.FC = () => {
               </div>
            </div>
            <div className="flex gap-4">
+              <button onClick={() => setIsExportModalOpen(true)} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all" title="Télécharger un bilan">
+                <FileText className="w-6 h-6" />
+              </button>
               <button onClick={loadData} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all">
                 <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
               </button>
@@ -238,9 +235,10 @@ const Caisse: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-16 space-y-12">
         <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden">
-           <div className="grid grid-cols-2 gap-16 md:gap-24 flex-grow">
+           <div className="grid grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 flex-grow">
               <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes</p><p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
               <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
+              <div className="space-y-2 lg:block hidden"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bénéfice Net</p><p className={`text-4xl font-black ${(totals.income - totals.expense) >= 0 ? 'text-amber-500' : 'text-rose-600'}`}>{(totals.income - totals.expense).toLocaleString()} F</p></div>
            </div>
            <div className="bg-brand-900 p-10 rounded-[3rem] text-white min-w-[300px] shadow-2xl">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance du jour</p>
@@ -332,6 +330,16 @@ const Caisse: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* EXPORT MODAL */}
+      {user && (
+        <ExportReportModal 
+          isOpen={isExportModalOpen} 
+          onClose={() => setIsExportModalOpen(false)} 
+          transactions={transactions} 
+          user={user} 
+        />
       )}
 
       {/* MODAL CATALOGUE SERVICES */}

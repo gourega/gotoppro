@@ -27,6 +27,10 @@ const CoachChat: React.FC = () => {
     setIsOpen(!isOpen);
   };
 
+  /**
+   * Handles sending a message to the Gemini 3 Pro model.
+   * Pro model provides better advice for complex salon management queries.
+   */
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -39,6 +43,7 @@ const CoachChat: React.FC = () => {
     try {
       if (!chatRef.current) chatRef.current = createCoachChat();
       
+      // Sending message using the property .text of the response
       const response = await chatRef.current.sendMessage({ message: userMsg });
       setMessages(prev => [...prev, { role: 'model', text: response.text || "Désolé, j'ai eu un petit souci. Peux-tu reformuler ?" }]);
     } catch (err) {

@@ -65,7 +65,7 @@ export interface KitaSupplier {
 export interface UserProfile {
   uid: string;
   phoneNumber: string;
-  pinCode?: string; // Code secret à 4 chiffres (obligatoire pour la prod)
+  pinCode?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -84,6 +84,7 @@ export interface UserProfile {
   kitaPremiumUntil?: string; 
   hasPerformancePack: boolean;
   hasStockPack: boolean;
+  crmExpiryDate?: string; // Date d'expiration de l'abonnement CRM (500 F/mois)
   
   badges: string[];
   purchasedModuleIds: string[];

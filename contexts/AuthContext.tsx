@@ -95,7 +95,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginManually = async (phone: string, pin: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const profile = await getProfileByPhone(phone);
+      // NETTOYAGE PRÉVENTIF : On retire tout ce qui n'est pas chiffre ou "+"
+      const cleanPhone = phone.replace(/[^\d+]/g, '');
+      
+      const profile = await getProfileByPhone(cleanPhone);
       if (!profile) return { success: false, error: "Numéro de téléphone inconnu dans notre base." };
       
       if (!profile.isActive) {
@@ -105,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile.pinCode === pin) {
         lastUidRef.current = profile.uid;
         setUser(profile);
-        localStorage.setItem('gotop_manual_phone', phone);
+        localStorage.setItem('gotop_manual_phone', cleanPhone);
         return { success: true };
       } else {
         return { success: false, error: "Code PIN incorrect. Veuillez réessayer." };

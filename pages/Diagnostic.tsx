@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+/* Fixed react-router-dom named export */
 import { useNavigate } from 'react-router-dom';
 import { DIAGNOSTIC_QUESTIONS } from '../constants';
 import { ChevronLeft, Info } from 'lucide-react';

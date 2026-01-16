@@ -37,8 +37,10 @@ import {
   Crown,
   Gem,
   Award,
-  // Added CheckCircle2 to fix the 'Cannot find name CheckCircle' error
-  CheckCircle2
+  CheckCircle2,
+  TrendingUp,
+  Star,
+  Zap
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -135,7 +137,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL' | 'CLOUD') => {
+  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL' | 'CLOUD' | 'CRM') => {
     if (!selectedUser) return;
     setProcessingId(packType);
     try {
@@ -160,6 +162,12 @@ const AdminDashboard: React.FC = () => {
         const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
         updates.kitaPremiumUntil = newEnd.toISOString();
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_CLOUD');
+      } else if (packType === 'CRM') {
+        const currentEnd = selectedUser.crmExpiryDate ? new Date(selectedUser.crmExpiryDate) : new Date();
+        const baseDate = currentEnd > new Date() ? currentEnd : new Date();
+        const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+        updates.crmExpiryDate = newEnd.toISOString();
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_CRM');
       } else if (packType === 'INDIVIDUAL') {
         const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
@@ -194,11 +202,13 @@ const AdminDashboard: React.FC = () => {
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
     const pending = clients.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
+    const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
     return { 
       total: clients.length, 
       active: clients.filter(u => u.isActive).length,
       pending: pending.length,
-      revenue: clients.reduce((acc, u) => acc + calculateUserValue(u), 0)
+      revenue: rawRevenue,
+      netRevenue: rawRevenue * 0.95
     };
   }, [users]);
 
@@ -228,7 +238,6 @@ const AdminDashboard: React.FC = () => {
         <div className={`fixed top-8 right-8 z-[200] px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 animate-in slide-in-from-right-10 duration-500 ${
           notification.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-rose-500/20 border-rose-500/50 text-rose-400'
         }`}>
-          {/* Replaced CheckCircle with CheckCircle2 to fix the error */}
           {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-bold text-xs uppercase tracking-widest">{notification.message}</span>
         </div>
@@ -266,7 +275,7 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
           <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/stats.total)*100)}% Retention`} />
-          <StatCard title="Attente Paiement" value={stats.pending} icon={<Clock />} color="text-amber-400" sub="Urgent Actions" highlight={stats.pending > 0} />
+          <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-emerald-500" sub="95% Net Revenue" highlight={true} />
           <StatCard title="Recettes Totales" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" sub="Revenue to date" />
         </div>
 
@@ -301,13 +310,14 @@ const AdminDashboard: React.FC = () => {
                   <th className="px-12 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">Gérant & Établissement</th>
                   <th className="px-8 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">Engagement</th>
                   <th className="px-8 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valeur</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">Cloud</th>
+                  <th className="px-8 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">CRM & Cloud</th>
                   <th className="px-12 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Pilotage</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredUsers.length > 0 ? filteredUsers.map(u => {
                   const cloudActive = u.isKitaPremium || (u.kitaPremiumUntil && new Date(u.kitaPremiumUntil) > new Date());
+                  const crmActive = u.crmExpiryDate && new Date(u.crmExpiryDate) > new Date();
                   return (
                     <tr 
                       key={u.uid} 
@@ -332,19 +342,22 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-8 py-8">
                         <div className="flex flex-wrap gap-2">
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
-                          {u.pendingModuleIds?.some(id => id.startsWith('mod_')) && <Badge text="PANIER INDIVIDUEL" color="blue" animate />}
                           {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="ATTENTE ELITE" color="amber" animate />}
-                          {u.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && <Badge text="ATTENTE PERF" color="emerald" animate />}
-                          {u.pendingModuleIds?.includes('REQUEST_STOCK') && <Badge text="ATTENTE STOCK" color="sky" animate />}
-                          {u.pendingModuleIds?.includes('REQUEST_CLOUD') && <Badge text="PASS CLOUD" color="blue" animate />}
+                          {u.pendingModuleIds?.includes('REQUEST_CRM') && <Badge text="WAIT CRM" color="amber" animate />}
+                          {u.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && <Badge text="WAIT PERF" color="emerald" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
                         <span className="font-mono font-bold text-lg text-white">{calculateUserValue(u).toLocaleString()} F</span>
                       </td>
                       <td className="px-8 py-8">
-                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${cloudActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
-                            {cloudActive ? 'Cloud OK' : 'Cloud Expire'}
+                         <div className="flex flex-col gap-1.5">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${cloudActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                {cloudActive ? 'Cloud OK' : 'Cloud Exp'}
+                            </div>
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${crmActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-500/10 text-slate-400 border border-white/5'}`}>
+                                {crmActive ? 'CRM Actif' : 'CRM Inactif'}
+                            </div>
                          </div>
                       </td>
                       <td className="px-12 py-8 text-right">
@@ -429,11 +442,6 @@ const AdminDashboard: React.FC = () => {
                           </div>
                        )}
                     </div>
-                    <div className="bg-white/5 p-6 rounded-2xl border border-white/5 max-w-xs text-right">
-                       <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
-                         "Communiquez ce code au gérant pour qu'il puisse se connecter."
-                       </p>
-                    </div>
                  </div>
               </div>
 
@@ -445,39 +453,20 @@ const AdminDashboard: React.FC = () => {
                       <Clock className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Panier à Valider</h3>
-                      <p className="text-amber-400/70 text-sm font-medium">Le gérant attend l'activation de son paiement Wave.</p>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Paiement à Valider</h3>
+                      <p className="text-amber-400/70 text-sm font-medium">Demande de pack ou module en attente.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4 mb-8 relative z-10">
-                    {selectedUser.pendingModuleIds.map(id => {
-                      const mod = TRAINING_CATALOG.find(m => m.id === id);
-                      const isPackRequest = id.startsWith('REQUEST_');
-                      return (
-                        <div key={id} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                           <span className="text-xs font-bold text-white">{isPackRequest ? id.replace('REQUEST_', 'PACK ') : (mod?.title || id)}</span>
-                           <span className="text-[10px] font-black text-amber-500">{isPackRequest ? 'PROMO' : '500 F'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                     {selectedUser.pendingModuleIds.includes('REQUEST_ELITE') && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="10.000 F" color="amber" />
                     )}
-                    {selectedUser.pendingModuleIds.some(id => id.startsWith('mod_')) && (
-                      <ActionBtn onClick={() => handleActivatePack('INDIVIDUAL')} loading={processingId === 'INDIVIDUAL'} icon={<ShieldCheck />} label="Activer Panier" price="Modules unitaires" color="blue" />
+                    {selectedUser.pendingModuleIds.includes('REQUEST_CRM') && (
+                      <ActionBtn onClick={() => handleActivatePack('CRM')} loading={processingId === 'CRM'} icon={<Star />} label="Activer CRM" price="500 F (30j)" color="amber" />
                     )}
                     {selectedUser.pendingModuleIds.includes('REQUEST_PERFORMANCE') && (
                       <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
-                    )}
-                    {selectedUser.pendingModuleIds.includes('REQUEST_STOCK') && (
-                      <ActionBtn onClick={() => handleActivatePack('STOCK')} loading={processingId === 'STOCK'} icon={<Package />} label="Activer Stock" price="5.000 F" color="sky" />
-                    )}
-                    {selectedUser.pendingModuleIds.includes('REQUEST_CLOUD') && (
-                      <ActionBtn onClick={() => handleActivatePack('CLOUD')} loading={processingId === 'CLOUD'} icon={<Cloud />} label="Prolonger Cloud" price="1.000 F (30j)" color="blue" />
                     )}
                   </div>
                 </div>
@@ -490,30 +479,31 @@ const AdminDashboard: React.FC = () => {
                    </h3>
                    <div className="space-y-6">
                       <div className="flex justify-between items-center">
-                         <span className="text-[10px] font-black text-slate-500 uppercase">Statut Protection</span>
+                         <span className="text-[10px] font-black text-slate-500 uppercase">Protection</span>
                          <span className={`text-[10px] font-black uppercase ${selectedUser.isKitaPremium || (selectedUser.kitaPremiumUntil && new Date(selectedUser.kitaPremiumUntil) > new Date()) ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {selectedUser.isKitaPremium ? 'Elite (Illimité)' : (selectedUser.kitaPremiumUntil ? `Expire le ${new Date(selectedUser.kitaPremiumUntil).toLocaleDateString()}` : 'Non protégé')}
+                            {selectedUser.isKitaPremium ? 'Elite' : (selectedUser.kitaPremiumUntil ? `Expire ${new Date(selectedUser.kitaPremiumUntil).toLocaleDateString()}` : 'Inactif')}
                          </span>
                       </div>
-                      {!selectedUser.isKitaPremium && (
-                        <button 
-                          onClick={() => handleActivatePack('CLOUD')}
-                          disabled={!!processingId}
-                          className="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-3 h-3" /> Ajouter +30 jours
-                        </button>
-                      )}
+                      <button onClick={() => handleActivatePack('CLOUD')} disabled={!!processingId} className="w-full bg-blue-600 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
+                        <Plus className="w-3 h-3" /> Ajouter +30 jours
+                      </button>
                    </div>
                 </div>
 
                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/5">
                    <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                      <Award className="w-5 h-5" /> Influence Network
+                      <Star className="w-5 h-5" /> Abonnement CRM
                    </h3>
-                   <div className="flex items-end gap-4 mb-8">
-                      <p className="text-5xl font-black text-white">{selectedUser.referralCount || 0}</p>
-                      <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Parrainages</p>
+                   <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                         <span className="text-[10px] font-black text-slate-500 uppercase">Statut CRM</span>
+                         <span className={`text-[10px] font-black uppercase ${selectedUser.crmExpiryDate && new Date(selectedUser.crmExpiryDate) > new Date() ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {selectedUser.crmExpiryDate ? `Expire ${new Date(selectedUser.crmExpiryDate).toLocaleDateString()}` : 'Inactif'}
+                         </span>
+                      </div>
+                      <button onClick={() => handleActivatePack('CRM')} disabled={!!processingId} className="w-full bg-amber-500 text-brand-900 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-2">
+                        <Zap className="w-3 h-3" /> Ajouter +30 jours CRM
+                      </button>
                    </div>
                 </div>
               </div>
@@ -521,35 +511,13 @@ const AdminDashboard: React.FC = () => {
 
             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
                <div className="flex items-center gap-4 w-full md:w-auto">
-                 <button 
-                  onClick={() => handleToggleStatus(selectedUser)}
-                  disabled={selectedUser.uid === currentUser?.uid}
-                  className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                    selectedUser.isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-900/20'
-                  } disabled:opacity-30`}
-                 >
-                    {selectedUser.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                 <button onClick={() => handleToggleStatus(selectedUser)} disabled={selectedUser.uid === currentUser?.uid} className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-600 text-white'}`}>
                     {selectedUser.isActive ? 'Suspendre' : 'Activer'}
                  </button>
-                 
-                 {currentUser?.role === 'SUPER_ADMIN' && (
-                   <button 
-                     onClick={() => handleDeleteUser(selectedUser)}
-                     disabled={processingId === 'delete'}
-                     className="p-5 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-600 hover:text-white transition-all active:scale-90"
-                   >
-                      {processingId === 'delete' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                   </button>
-                 )}
                </div>
-
                <div className="flex items-center gap-4 w-full md:w-auto">
-                 <a 
-                   href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Vos accès sont prêts !\n\n📲 Connexion : ${selectedUser.phoneNumber}\n🔑 Code PIN : ${selectedUser.pinCode || '1234'}\n\nBienvenue dans l'Excellence.`)}`} 
-                   target="_blank" rel="noreferrer" 
-                   className="flex-grow md:flex-grow-0 bg-[#25D366] text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#128C7E] transition-all flex items-center justify-center gap-3 shadow-xl"
-                 >
-                    <MessageCircle className="w-4 h-4" /> Envoyer les accès
+                 <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Vos accès sont prêts !`)}`} target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#128C7E] flex items-center justify-center gap-3 shadow-xl">
+                    <MessageCircle className="w-4 h-4" /> Envoyer accès
                  </a>
                </div>
             </div>
@@ -561,72 +529,34 @@ const AdminDashboard: React.FC = () => {
 };
 
 const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
-  <div className={`bg-white/[0.03] p-8 rounded-[2.5rem] border transition-all duration-500 hover:bg-white/[0.06] ${highlight ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-white/10'}`}>
+  <div className={`bg-white/[0.03] p-8 rounded-[2.5rem] border transition-all duration-500 ${highlight ? 'border-emerald-500/40 ring-1 ring-emerald-500/20' : 'border-white/10'}`}>
     <div className="flex justify-between items-start mb-6">
-       <div className={`h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl ${color} border border-white/10 shadow-inner`}>
-          {icon}
-       </div>
-       <ArrowUpRight className="w-4 h-4 text-slate-700" />
+       <div className={`h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl ${color} border border-white/10 shadow-inner`}>{icon}</div>
     </div>
     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{title}</p>
     <p className="text-4xl font-black text-white tracking-tight">{value}</p>
-    <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2">
-      <div className="h-1 w-1 bg-slate-700 rounded-full"></div>
-      {sub}
-    </div>
+    <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2"><div className="h-1 w-1 bg-slate-700 rounded-full"></div>{sub}</div>
   </div>
 );
 
 const NavTab = ({ active, onClick, label, count, isUrgent }: any) => (
-  <button 
-    onClick={onClick} 
-    className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 relative ${
-      active ? 'bg-brand-500 text-white shadow-2xl shadow-brand-900/50' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-    }`}
-  >
+  <button onClick={onClick} className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${active ? 'bg-brand-500 text-white shadow-2xl' : 'text-slate-500 hover:text-slate-300'}`}>
     {label}
-    {count !== undefined && (
-      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20 text-white' : isUrgent ? 'bg-amber-50 text-black' : 'bg-white/10 text-slate-400'}`}>
-        {count}
-      </span>
-    )}
+    {count !== undefined && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20' : isUrgent ? 'bg-amber-50 text-black' : 'bg-white/10'}`}>{count}</span>}
   </button>
 );
 
 const Badge = ({ text, color, animate }: any) => {
-  const colors: any = {
-    amber: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
-    emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
-    blue: 'bg-brand-500/10 text-brand-400 border-brand-500/30',
-    sky: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
-    slate: 'bg-slate-500/10 text-slate-500 border-white/5'
-  };
-  return (
-    <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${colors[color]} ${animate ? 'animate-pulse' : ''}`}>
-      {text}
-    </span>
-  );
+  const colors: any = { amber: 'bg-amber-500/10 text-amber-500 border-amber-500/30', emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30', blue: 'bg-brand-500/10 text-brand-400 border-brand-500/30', slate: 'bg-slate-500/10 text-slate-500' };
+  return <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${colors[color]} ${animate ? 'animate-pulse' : ''}`}>{text}</span>;
 };
 
 const ActionBtn = ({ onClick, loading, icon, label, price, color }: any) => {
-  const colors: any = {
-    amber: 'bg-amber-500 hover:bg-amber-400 text-black',
-    emerald: 'bg-emerald-500 hover:bg-emerald-400 text-white',
-    sky: 'bg-sky-500 hover:bg-sky-400 text-white',
-    blue: 'bg-indigo-600 hover:bg-indigo-500 text-white'
-  };
+  const colors: any = { amber: 'bg-amber-500 hover:bg-amber-400 text-black', emerald: 'bg-emerald-500 hover:bg-emerald-400 text-white' };
   return (
-    <button 
-      onClick={onClick}
-      disabled={loading}
-      className={`w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95 shadow-xl ${colors[color]}`}
-    >
-      {/* Added React.ReactElement<any> to fix the className prop error */}
+    <button onClick={onClick} disabled={loading} className={`w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95 shadow-xl ${colors[color]}`}>
       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : React.cloneElement(icon as React.ReactElement<any>, { className: "w-6 h-6" })}
-      <div className="text-center">
-        <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{label}</p>
-        <p className="text-[9px] font-bold opacity-70">{price}</p>
-      </div>
+      <div className="text-center"><p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{label}</p><p className="text-[9px] font-bold opacity-70">{price}</p></div>
     </button>
   );
 };
