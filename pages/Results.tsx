@@ -19,7 +19,8 @@ import {
   Star,
   ShieldCheck,
   MinusCircle,
-  Tag
+  Tag,
+  X
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -413,9 +414,10 @@ const Results: React.FC = () => {
 
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
-          <div className="bg-white w-full max-w-lg rounded-[4rem] p-10 md:p-14 animate-in zoom-in-95">
+          <div className="bg-white w-full max-w-lg rounded-[4rem] p-10 md:p-14 animate-in zoom-in-95 relative overflow-hidden">
             {regStep === 'form' ? (
               <>
+                <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors"><X /></button>
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser l'Accès</h2>
                 <form onSubmit={handleRegisterAndValidate} className="space-y-6">
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
@@ -426,26 +428,32 @@ const Results: React.FC = () => {
                 </form>
               </>
             ) : (
-              <div className="text-center space-y-10">
-                <div className="h-24 w-24 bg-emerald-50 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="w-12 h-12" /></div>
-                <h2 className="text-4xl font-serif font-bold tracking-tight">Compte créé !</h2>
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 justify-center">
-                   <Lock className="w-6 h-6 text-brand-600" />
-                   <div className="text-left">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PIN de connexion par défaut</p>
-                      <p className="text-xl font-black text-brand-900">1 2 3 4</p>
-                   </div>
+              <div className="text-center py-6 flex flex-col items-center">
+                <div className="h-28 w-28 bg-[#f0fdf4] text-[#10b981] rounded-3xl flex items-center justify-center mb-10 shadow-sm">
+                   <CheckCircle2 className="w-14 h-14" />
                 </div>
-                <p className="text-slate-500 italic px-4">
+                
+                <h2 className="text-4xl font-serif font-bold text-slate-900 mb-12 tracking-tight">Compte créé !</h2>
+                
+                <div className="w-full bg-[#f8fafc] p-10 rounded-[2.5rem] border border-[#f1f5f9] flex flex-col items-center gap-4 mb-14">
+                   <div className="flex items-center gap-4">
+                      <Lock className="w-5 h-5 text-brand-600" />
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">PIN de connexion par défaut</p>
+                   </div>
+                   <p className="text-4xl font-black text-brand-900 m-0 tracking-[0.2em]">1 2 3 4</p>
+                </div>
+                
+                <p className="text-slate-500 italic text-sm mb-12 px-6">
                   "Pour activer vos accès (<strong>{pricingData.total.toLocaleString()} F</strong>), réglez via Wave au numéro <strong>{COACH_KITA_WAVE_NUMBER}</strong>."
                 </p>
+                
                 <button 
                   onClick={() => { 
                     const waNum = COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '');
                     window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(`Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Merci d'activer mes accès.`)}`, '_blank'); 
                     navigate('/login'); 
                   }} 
-                  className="w-full bg-emerald-500 text-white py-6 rounded-3xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-emerald-600 transition-all"
+                  className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-[#10b981]/20 flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"
                 >
                   <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp Business
                 </button>
