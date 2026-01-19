@@ -95,13 +95,14 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
-  const localPhone = cleanPhone.replace(/^\+225/, '');
+  // Nettoyage agressif pour la recherche
+  const cleanSearch = phoneNumber.replace(/[^\d]/g, '');
   try {
+    // On cherche les 8 ou 10 derniers chiffres pour éviter les problèmes de préfixe
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone}`)
+      .or(`phone_number.ilike.%${cleanSearch.slice(-8)}%`)
       .maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
@@ -120,13 +121,15 @@ export const getUserProfile = async (uid: string) => {
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) return;
   const dbData = mapProfileToDB(profile);
-  await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
+  const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
+  if (error) throw error;
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
   const dbData = mapProfileToDB(updates);
-  await supabase.from('profiles').update(dbData).eq('uid', uid);
+  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
+  if (error) throw error;
 };
 
 export const getAllUsers = async () => {

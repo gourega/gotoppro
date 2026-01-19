@@ -103,50 +103,33 @@ const Results: React.FC = () => {
   };
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 8000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 100 };
+    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 10000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 100 };
     if (activePack === 'performance') return { total: 5000, label: 'Pack RH Performance', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
     if (activePack === 'stock') return { total: 5000, label: 'Pack Stock Expert', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
     if (activePack === 'crm') return { total: 500, label: 'Abonnement CRM VIP', rawTotal: 500, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
 
     const count = cart.length;
+    if (count === 0) return { total: 0, label: 'Panier vide', rawTotal: 0, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
+    
     let unitPrice = 500;
     let discountPercent = 0;
     let nextThreshold = null;
 
-    if (count >= 13) {
-      unitPrice = 250;
-      discountPercent = 50;
-      if (count < 16) nextThreshold = { needed: 16 - count, label: "Passage Élite", nextPercent: 100 };
-    } else if (count >= 9) {
-      unitPrice = 350;
-      discountPercent = 30;
-      nextThreshold = { needed: 13 - count, label: "Remise -50%", nextPercent: 50 };
-    } else if (count >= 5) {
-      unitPrice = 400;
-      discountPercent = 20;
-      nextThreshold = { needed: 9 - count, label: "Remise -30%", nextPercent: 30 };
-    } else if (count > 0) {
-      nextThreshold = { needed: 5 - count, label: "Remise -20%", nextPercent: 20 };
-    }
+    if (count >= 13) { unitPrice = 250; discountPercent = 50; if (count < 16) nextThreshold = { needed: 16 - count, label: "Passage Élite", nextPercent: 100 }; } 
+    else if (count >= 9) { unitPrice = 350; discountPercent = 30; nextThreshold = { needed: 13 - count, label: "Remise -50%", nextPercent: 50 }; } 
+    else if (count >= 5) { unitPrice = 400; discountPercent = 20; nextThreshold = { needed: 9 - count, label: "Remise -30%", nextPercent: 30 }; } 
+    else { nextThreshold = { needed: 5 - count, label: "Remise -20%", nextPercent: 20 }; }
 
     const total = count === 16 ? 10000 : count * unitPrice;
     const rawTotal = count * 500;
     const progress = (count / 16) * 100;
     
-    return { 
-      total, 
-      label: `${count} module(s) choisi(s)`, 
-      rawTotal, 
-      savings: rawTotal - total,
-      discountPercent,
-      nextThreshold,
-      progress
-    };
+    return { total, label: `${count} module(s) choisi(s)`, rawTotal, savings: rawTotal - total, discountPercent, nextThreshold, progress };
   }, [cart, activePack]);
 
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regPhone || !regStoreName) return alert("Champs obligatoires.");
+    if (!regPhone || !regStoreName) return alert("Veuillez remplir tous les champs.");
     setLoading(true);
     try {
       let cleanPhone = regPhone.replace(/\s/g, '');
@@ -157,9 +140,10 @@ const Results: React.FC = () => {
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       
       if (existing) {
+        // On met à jour l'existant en s'assurant qu'il repasse en inactif pour être vu par l'admin
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
-          isActive: false, // On force à false pour qu'il apparaisse en attente chez l'admin
+          isActive: false, 
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
@@ -169,8 +153,8 @@ const Results: React.FC = () => {
           pinCode: '1234', 
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
-          lastName: 'Elite',
-          isActive: false, // Impératif pour l'activation manuelle
+          lastName: 'Elite', 
+          isActive: false, 
           role: 'CLIENT', 
           isAdmin: false,
           isPublic: true,
@@ -186,17 +170,19 @@ const Results: React.FC = () => {
         await saveUserProfile(newUser);
       }
       setRegStep('success');
-    } catch (err: any) { alert(err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      alert("Erreur de sauvegarde: " + (err.message || "Problème de connexion")); 
+    } finally { setLoading(false); }
   };
 
   const handleValidateEngagement = async () => {
     if (!user) return setIsRegisterModalOpen(true);
-    if (pricingData.total === 0 && activePack === 'none') return alert("Sélectionnez un module.");
+    if (pricingData.total === 0) return alert("Sélectionnez au moins un module.");
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       await updateUserProfile(user.uid, { 
-        isActive: false, // On repasse à false pour que l'admin re-valide le paiement du nouveau pack
+        isActive: false, 
         pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
       });
       setRegStep('success');
@@ -262,21 +248,14 @@ const Results: React.FC = () => {
                     </button>
                   );
                 })}
-              {TRAINING_CATALOG.filter(module => !cart.some(m => m.id === module.id)).length === 0 && (
-                <div className="p-12 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-                  <p className="text-slate-400 font-medium italic">Tous les modules disponibles sont déjà dans votre panier.</p>
-                </div>
-              )}
             </div>
           </div>
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
-              {/* PANIER DÉTAILLÉ */}
               <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100">
                 <h3 className="text-xl font-serif font-bold text-slate-900 mb-8 flex items-center gap-4"><ShoppingBag className="text-brand-500" /> Mon Engagement</h3>
                 
-                {/* Liste des modules dans le panier */}
                 <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                   {activePack !== 'none' ? (
                     <div className="flex items-center justify-between p-4 bg-brand-50 rounded-2xl border border-brand-100">
@@ -301,43 +280,12 @@ const Results: React.FC = () => {
                   )}
                 </div>
 
-                {/* JAUGE DE RÉDUCTION */}
-                {activePack === 'none' && cart.length > 0 && (
-                  <div className="mb-10 space-y-3">
-                    <div className="flex justify-between items-end">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Paliers de Réduction</p>
-                       {pricingData.nextThreshold ? (
-                         <p className="text-[9px] font-bold text-brand-600 uppercase tracking-widest">
-                           +{pricingData.nextThreshold.needed} modules pour {pricingData.nextThreshold.label}
-                         </p>
-                       ) : (
-                         <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1"><Crown className="w-3 h-3"/> Maximum Remise</p>
-                       )}
-                    </div>
-                    <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
-                       <div className="absolute inset-y-0 left-0 bg-brand-500 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(14,165,233,0.4)]" style={{ width: `${pricingData.progress}%` }}></div>
-                       {/* Markers */}
-                       <div className="absolute top-0 left-[31.25%] h-full w-0.5 bg-white/50 z-10" title="-20%"></div>
-                       <div className="absolute top-0 left-[56.25%] h-full w-0.5 bg-white/50 z-10" title="-30%"></div>
-                       <div className="absolute top-0 left-[81.25%] h-full w-0.5 bg-white/50 z-10" title="-50%"></div>
-                    </div>
-                    <div className="flex justify-between text-[7px] font-black text-slate-300 uppercase tracking-tighter">
-                       <span>Départ</span>
-                       <span>-20%</span>
-                       <span>-30%</span>
-                       <span>-50%</span>
-                       <span>Élite</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* CALCUL FINAL */}
                 <div className="space-y-3 mb-10 pt-6 border-t border-slate-50">
                    {pricingData.savings > 0 && (
                      <>
                       <div className="flex justify-between items-center text-slate-400">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span>
-                        <span className="text-sm font-black strike-through">{pricingData.rawTotal.toLocaleString()} F</span>
+                        <span className="text-sm font-black line-through">{pricingData.rawTotal.toLocaleString()} F</span>
                       </div>
                       <div className="flex justify-between items-center text-emerald-500">
                         <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Réduction (-{pricingData.discountPercent}%)</span>
@@ -369,9 +317,6 @@ const Results: React.FC = () => {
                           <p className="text-lg font-black">500 F <span className="text-[10px] opacity-40 uppercase">/ mois</span></p>
                        </div>
                     </div>
-                    <p className="text-[10px] font-medium text-slate-600 leading-relaxed mb-2">
-                       Activez les relances WhatsApp et les notes VIP. <span className="italic font-bold text-brand-700">(Nécessite le Pack RH actif)</span>.
-                    </p>
                   </button>
                 </div>
 
@@ -383,34 +328,11 @@ const Results: React.FC = () => {
                         <div>
                           <h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4>
                           <p className="font-black">10 000 F</p>
-                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${activePack === 'elite' ? 'text-brand-900' : 'text-amber-600'}`}>Acquis à vie</p>
                         </div>
                       </div>
-                      <p className={`text-[10px] font-medium leading-relaxed ${activePack === 'elite' ? 'text-brand-900' : 'text-slate-500'}`}>
-                        Accès illimité aux 16 modules experts, mises à jour incluses et sauvegarde Cloud permanente.
-                      </p>
                     </button>
                   </div>
                 )}
-                
-                <div className="grid grid-cols-2 gap-4">
-                   <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col items-start ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-emerald-100'}`}>
-                      <Users className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest mb-1">Pack RH</h4>
-                      <p className="text-[9px] font-bold opacity-70 mb-3">5 000 F</p>
-                      <p className={`text-[8px] font-medium leading-relaxed ${activePack === 'performance' ? 'text-emerald-50' : 'text-slate-500'}`}>
-                         Commissions auto, déblocage obligatoire du CRM. <span className="font-black">Valable 3 ans.</span>
-                      </p>
-                   </button>
-                   <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col items-start ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-sky-100'}`}>
-                      <Package className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest mb-1">Pack Stock</h4>
-                      <p className="text-[9px] font-bold opacity-70 mb-3">5 000 F</p>
-                      <p className={`text-[8px] font-medium leading-relaxed ${activePack === 'stock' ? 'text-sky-50' : 'text-slate-500'}`}>
-                         Inventaire, alertes ruptures et répertoire grossistes. <span className="font-black">Valable 3 ans.</span>
-                      </p>
-                   </button>
-                </div>
               </div>
             </div>
           </div>
@@ -438,7 +360,7 @@ const Results: React.FC = () => {
                    <CheckCircle2 className="w-14 h-14" />
                 </div>
                 
-                <h2 className="text-4xl font-serif font-bold text-slate-900 mb-12 tracking-tight">Compte créé !</h2>
+                <h2 className="text-4xl font-serif font-bold text-slate-900 mb-12 tracking-tight">Compte enregistré !</h2>
                 
                 <div className="w-full bg-[#f8fafc] p-10 rounded-[2.5rem] border border-[#f1f5f9] flex flex-col items-center gap-4 mb-14">
                    <div className="flex items-center gap-4">
@@ -455,7 +377,8 @@ const Results: React.FC = () => {
                 <button 
                   onClick={() => { 
                     const waNum = COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '');
-                    window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(`Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Merci d'activer mes accès.`)}`, '_blank'); 
+                    const message = `Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Merci d'activer mes accès pour mon salon ${regStoreName || user?.establishmentName}.`;
+                    window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(message)}`, '_blank'); 
                     navigate('/login'); 
                   }} 
                   className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-[#10b981]/20 flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"

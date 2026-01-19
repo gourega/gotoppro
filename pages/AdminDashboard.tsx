@@ -107,33 +107,13 @@ const AdminDashboard: React.FC = () => {
     setProcessingId(user.uid);
     try {
       await updateUserProfile(user.uid, { isActive: !user.isActive });
-      showNotification(user.isActive ? "Accès suspendu avec succès" : "Accès gérant réactivé");
+      showNotification(user.isActive ? "Accès suspendu" : "Accès activé avec succès");
       await fetchUsers();
       if (selectedUser?.uid === user.uid) {
         setSelectedUser({ ...selectedUser, isActive: !user.isActive });
       }
     } catch (err) {
-      showNotification("Erreur de communication serveur", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleDeleteUser = async (user: UserProfile) => {
-    if (!user) return;
-    if (user.uid === currentUser?.uid) return showNotification("Vous ne pouvez pas vous supprimer vous-même", "error");
-    
-    const confirmDelete = window.confirm(`⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement le profil de ${user.firstName} ${user.lastName} ?`);
-    if (!confirmDelete) return;
-
-    setProcessingId('delete');
-    try {
-      await deleteUserProfile(user.uid);
-      showNotification("Profil gérant supprimé avec succès");
-      setSelectedUser(null);
-      await fetchUsers();
-    } catch (err: any) {
-      showNotification(`Erreur lors de la suppression : ${err.message}`, "error");
+      showNotification("Erreur serveur", "error");
     } finally {
       setProcessingId(null);
     }
@@ -149,41 +129,31 @@ const AdminDashboard: React.FC = () => {
         updates.isKitaPremium = true;
         const allIds = TRAINING_CATALOG.map(m => m.id);
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_ELITE');
-        updates.attempts = { ...(selectedUser.attempts || {}) };
-        allIds.forEach(id => { updates.attempts![id] = 0; });
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('ELITE'));
       } else if (packType === 'PERFORMANCE') {
         updates.hasPerformancePack = true;
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_PERFORMANCE');
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('PERFORMANCE'));
       } else if (packType === 'STOCK') {
         updates.hasStockPack = true;
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_STOCK');
-      } else if (packType === 'CLOUD') {
-        const currentEnd = selectedUser.kitaPremiumUntil ? new Date(selectedUser.kitaPremiumUntil) : new Date();
-        const baseDate = currentEnd > new Date() ? currentEnd : new Date();
-        const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
-        updates.kitaPremiumUntil = newEnd.toISOString();
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_CLOUD');
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('STOCK'));
       } else if (packType === 'CRM') {
         const currentEnd = selectedUser.crmExpiryDate ? new Date(selectedUser.crmExpiryDate) : new Date();
         const baseDate = currentEnd > new Date() ? currentEnd : new Date();
         const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
         updates.crmExpiryDate = newEnd.toISOString();
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => id !== 'REQUEST_CRM');
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('CRM'));
       } else if (packType === 'INDIVIDUAL') {
         const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
         updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
-        updates.attempts = { ...(selectedUser.attempts || {}) };
-        modulesToGrant.forEach(id => { updates.attempts![id] = 0; });
       }
 
       await updateUserProfile(selectedUser.uid, updates);
-      showNotification(`Accès validé avec succès !`);
+      showNotification(`Activation réussie !`);
       await fetchUsers();
       setSelectedUser(prev => prev ? ({ ...prev, ...updates } as UserProfile) : null);
     } catch (err) {
-      showNotification("Erreur lors de l'activation", "error");
+      showNotification("Erreur activation", "error");
     } finally {
       setProcessingId(null);
     }
@@ -203,6 +173,7 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
+    // CRITICAL: Pending stats must include INACTIVE accounts
     const pending = clients.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
     const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
     return { 
@@ -217,7 +188,7 @@ const AdminDashboard: React.FC = () => {
   const filteredUsers = useMemo(() => {
     const isSearching = searchTerm.trim().length > 0;
     
-    // Définition de la boîte de réception (Inbox) : Admins + Gérants inactifs + Demandes en cours
+    // Definition de l'Inbox: Admins + Comptes à activer + Demandes en cours
     const baseInboxUsers = users.filter(u => 
       u.isAdmin || 
       !u.isActive || 
@@ -235,6 +206,7 @@ const AdminDashboard: React.FC = () => {
       
       if (!matchesSearch) return false;
       if (viewMode === 'admins') return u.isAdmin;
+      // CRITICAL FILTER: viewMode 'pending' must catch inactive accounts
       if (viewMode === 'pending') return !u.isAdmin && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
       if (viewMode === 'active') return !u.isAdmin && u.isActive;
       return true;
@@ -284,7 +256,7 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
           <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/Math.max(1, stats.total))*100)}% Retention`} />
-          <StatCard title="A traiter" value={stats.pending} icon={<UserPlus />} color="text-amber-400" sub="Urgent : Activation/Packs" highlight={stats.pending > 0} />
+          <StatCard title="A traiter" value={stats.pending} icon={<UserPlus />} color="text-amber-400" sub="Urgent : Activation" highlight={stats.pending > 0} />
           <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-emerald-500" sub="95% Net Revenue" />
         </div>
 
@@ -327,12 +299,12 @@ const AdminDashboard: React.FC = () => {
                 {filteredUsers.length > 0 ? filteredUsers.map(u => {
                   const cloudActive = u.isKitaPremium || (u.kitaPremiumUntil && new Date(u.kitaPremiumUntil) > new Date());
                   const crmActive = u.crmExpiryDate && new Date(u.crmExpiryDate) > new Date();
-                  const isPending = !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0);
+                  const isCritical = !u.isActive;
                   return (
                     <tr 
                       key={u.uid} 
                       onClick={() => { setSelectedUser(u); setEditingPin(false); setNewPinValue(u.pinCode || ''); }}
-                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${isPending ? 'bg-amber-500/[0.03]' : ''}`}
+                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${isCritical ? 'bg-rose-500/[0.04]' : (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)) ? 'bg-amber-500/[0.03]' : ''}`}
                     >
                       <td className="px-12 py-8">
                         <div className="flex items-center gap-6">
