@@ -358,31 +358,46 @@ const Results: React.FC = () => {
                           <p className="text-lg font-black">500 F <span className="text-[10px] opacity-40 uppercase">/ mois</span></p>
                        </div>
                     </div>
-                    <p className="text-[10px] font-medium text-slate-600 leading-relaxed">
-                       Activez les relances WhatsApp et les notes de préférences VIP pour augmenter votre CA de 30%.
+                    <p className="text-[10px] font-medium text-slate-600 leading-relaxed mb-2">
+                       Activez les relances WhatsApp et les notes VIP. <span className="italic font-bold text-brand-700">(Nécessite le Pack RH actif)</span>.
                     </p>
                   </button>
                 </div>
 
                 {!isElite && (
                   <div className={`p-8 rounded-[2.5rem] border-2 transition-all group ${activePack === 'elite' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100'}`}>
-                    <div className="flex items-center gap-6 mb-4">
-                      <button onClick={() => setActivePack('elite')} className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Crown /></button>
-                      <div><h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4><p className="font-black">10 000 F</p></div>
-                    </div>
+                    <button onClick={() => setActivePack('elite')} className="w-full text-left">
+                      <div className="flex items-center gap-6 mb-4">
+                        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Crown /></div>
+                        <div>
+                          <h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4>
+                          <p className="font-black">10 000 F</p>
+                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${activePack === 'elite' ? 'text-brand-900' : 'text-amber-600'}`}>Acquis à vie</p>
+                        </div>
+                      </div>
+                      <p className={`text-[10px] font-medium leading-relaxed ${activePack === 'elite' ? 'text-brand-900' : 'text-slate-500'}`}>
+                        Accès illimité aux 16 modules experts, mises à jour incluses et sauvegarde Cloud permanente.
+                      </p>
+                    </button>
                   </div>
                 )}
                 
                 <div className="grid grid-cols-2 gap-4">
-                   <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-emerald-100'}`}>
+                   <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col items-start ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-emerald-100'}`}>
                       <Users className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">Pack RH</h4>
-                      <p className="text-[9px] font-bold opacity-70">5 000 F</p>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest mb-1">Pack RH</h4>
+                      <p className="text-[9px] font-bold opacity-70 mb-3">5 000 F</p>
+                      <p className={`text-[8px] font-medium leading-relaxed ${activePack === 'performance' ? 'text-emerald-50' : 'text-slate-500'}`}>
+                         Commissions auto, déblocage obligatoire du CRM. <span className="font-black">Valable 3 ans.</span>
+                      </p>
                    </button>
-                   <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2rem] border-2 transition-all ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-sky-100'}`}>
+                   <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col items-start ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 text-white shadow-lg scale-105' : 'bg-white border-slate-100 hover:border-sky-100'}`}>
                       <Package className="mb-4" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">Pack Stock</h4>
-                      <p className="text-[9px] font-bold opacity-70">5 000 F</p>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest mb-1">Pack Stock</h4>
+                      <p className="text-[9px] font-bold opacity-70 mb-3">5 000 F</p>
+                      <p className={`text-[8px] font-medium leading-relaxed ${activePack === 'stock' ? 'text-sky-50' : 'text-slate-500'}`}>
+                         Inventaire, alertes ruptures et répertoire grossistes. <span className="font-black">Valable 3 ans.</span>
+                      </p>
                    </button>
                 </div>
               </div>
