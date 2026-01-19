@@ -17,7 +17,9 @@ import {
   Gift,
   ArrowRight,
   Star,
-  ShieldCheck
+  ShieldCheck,
+  MinusCircle,
+  Tag
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -99,10 +101,10 @@ const Results: React.FC = () => {
   };
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 8000, savings: 0, discountPercent: 0, nextThreshold: null };
-    if (activePack === 'performance') return { total: 5000, label: 'Pack RH', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null };
-    if (activePack === 'stock') return { total: 5000, label: 'Pack Stock', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null };
-    if (activePack === 'crm') return { total: 500, label: 'Pack Fidélité CRM', rawTotal: 500, savings: 0, discountPercent: 0, nextThreshold: null };
+    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 8000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 100 };
+    if (activePack === 'performance') return { total: 5000, label: 'Pack RH Performance', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
+    if (activePack === 'stock') return { total: 5000, label: 'Pack Stock Expert', rawTotal: 5000, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
+    if (activePack === 'crm') return { total: 500, label: 'Abonnement CRM VIP', rawTotal: 500, savings: 0, discountPercent: 0, nextThreshold: null, progress: 0 };
 
     const count = cart.length;
     let unitPrice = 500;
@@ -112,21 +114,22 @@ const Results: React.FC = () => {
     if (count >= 13) {
       unitPrice = 250;
       discountPercent = 50;
-      if (count < 16) nextThreshold = { needed: 16 - count, label: "Pack Elite (Illimité)", price: "10.000 F" };
+      if (count < 16) nextThreshold = { needed: 16 - count, label: "Passage Élite", nextPercent: 100 };
     } else if (count >= 9) {
       unitPrice = 350;
       discountPercent = 30;
-      nextThreshold = { needed: 13 - count, label: "Réduction -50%", nextPercent: 50 };
+      nextThreshold = { needed: 13 - count, label: "Remise -50%", nextPercent: 50 };
     } else if (count >= 5) {
       unitPrice = 400;
       discountPercent = 20;
-      nextThreshold = { needed: 9 - count, label: "Réduction -30%", nextPercent: 30 };
+      nextThreshold = { needed: 9 - count, label: "Remise -30%", nextPercent: 30 };
     } else if (count > 0) {
-      nextThreshold = { needed: 5 - count, label: "Réduction -20%", nextPercent: 20 };
+      nextThreshold = { needed: 5 - count, label: "Remise -20%", nextPercent: 20 };
     }
 
     const total = count === 16 ? 10000 : count * unitPrice;
     const rawTotal = count * 500;
+    const progress = (count / 16) * 100;
     
     return { 
       total, 
@@ -134,7 +137,8 @@ const Results: React.FC = () => {
       rawTotal, 
       savings: rawTotal - total,
       discountPercent,
-      nextThreshold
+      nextThreshold,
+      progress
     };
   }, [cart, activePack]);
 
@@ -257,12 +261,88 @@ const Results: React.FC = () => {
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
+              {/* PANIER DÉTAILLÉ */}
               <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100">
                 <h3 className="text-xl font-serif font-bold text-slate-900 mb-8 flex items-center gap-4"><ShoppingBag className="text-brand-500" /> Mon Engagement</h3>
-                <div className="space-y-6 mb-10">
-                   <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{pricingData.label}</p></div>
-                   <p className="text-5xl font-black text-brand-900">{pricingData.total.toLocaleString()} <span className="text-sm font-bold opacity-30 uppercase">F</span></p>
+                
+                {/* Liste des modules dans le panier */}
+                <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  {activePack !== 'none' ? (
+                    <div className="flex items-center justify-between p-4 bg-brand-50 rounded-2xl border border-brand-100">
+                       <p className="text-sm font-bold text-brand-900">{pricingData.label}</p>
+                       <p className="text-sm font-black text-brand-600">{pricingData.total.toLocaleString()} F</p>
+                    </div>
+                  ) : cart.length > 0 ? (
+                    cart.map(mod => (
+                      <div key={mod.id} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0 group">
+                        <div className="flex flex-col">
+                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{mod.topic}</span>
+                          <span className="text-xs font-bold text-slate-700 line-clamp-1">{mod.title}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                           <span className="text-xs font-black text-slate-400">500 F</span>
+                           <button onClick={() => toggleModuleInCart(mod)} className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"><MinusCircle className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-400 text-xs italic py-6">Aucun module sélectionné</p>
+                  )}
                 </div>
+
+                {/* JAUGE DE RÉDUCTION */}
+                {activePack === 'none' && cart.length > 0 && (
+                  <div className="mb-10 space-y-3">
+                    <div className="flex justify-between items-end">
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Paliers de Réduction</p>
+                       {pricingData.nextThreshold ? (
+                         <p className="text-[9px] font-bold text-brand-600 uppercase tracking-widest">
+                           +{pricingData.nextThreshold.needed} modules pour {pricingData.nextThreshold.label}
+                         </p>
+                       ) : (
+                         <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1"><Crown className="w-3 h-3"/> Maximum Remise</p>
+                       )}
+                    </div>
+                    <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+                       <div className="absolute inset-y-0 left-0 bg-brand-500 transition-all duration-700 ease-out shadow-[0_0_8px_rgba(14,165,233,0.4)]" style={{ width: `${pricingData.progress}%` }}></div>
+                       {/* Markers */}
+                       <div className="absolute top-0 left-[31.25%] h-full w-0.5 bg-white/50 z-10" title="-20%"></div>
+                       <div className="absolute top-0 left-[56.25%] h-full w-0.5 bg-white/50 z-10" title="-30%"></div>
+                       <div className="absolute top-0 left-[81.25%] h-full w-0.5 bg-white/50 z-10" title="-50%"></div>
+                    </div>
+                    <div className="flex justify-between text-[7px] font-black text-slate-300 uppercase tracking-tighter">
+                       <span>Départ</span>
+                       <span>-20%</span>
+                       <span>-30%</span>
+                       <span>-50%</span>
+                       <span>Élite</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* CALCUL FINAL */}
+                <div className="space-y-3 mb-10 pt-6 border-t border-slate-50">
+                   {pricingData.savings > 0 && (
+                     <>
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span>
+                        <span className="text-sm font-black strike-through">{pricingData.rawTotal.toLocaleString()} F</span>
+                      </div>
+                      <div className="flex justify-between items-center text-emerald-500">
+                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Réduction (-{pricingData.discountPercent}%)</span>
+                        <span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span>
+                      </div>
+                     </>
+                   )}
+                   <div className="flex justify-between items-center pt-2">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix Total Net</p>
+                     <div className="flex items-baseline gap-1">
+                        <p className="text-5xl font-black text-brand-900">{pricingData.total.toLocaleString()}</p>
+                        <span className="text-sm font-bold opacity-30 uppercase">F</span>
+                     </div>
+                   </div>
+                </div>
+
                 <button onClick={handleValidateEngagement} disabled={loading || (cart.length === 0 && activePack === 'none')} className="w-full bg-brand-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-brand-700 transition-all active:scale-95 disabled:opacity-20">
                   {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider mon plan
                 </button>
