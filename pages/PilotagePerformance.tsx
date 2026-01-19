@@ -172,8 +172,8 @@ const PilotagePerformance: React.FC = () => {
        </p>
        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl inline-block">
           <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mb-2">Offre de Croissance</p>
-          <p className="text-4xl font-black text-slate-900 mb-6">500 F <span className="text-sm opacity-30 uppercase">/ mois</span></p>
-          <button onClick={() => navigate('/results?pack=crm')} className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-all flex items-center gap-3">
+          <p className="text-4xl font-black text-slate-900 mb-6 text-center">500 F <span className="text-sm opacity-30 uppercase text-center">/ mois</span></p>
+          <button onClick={() => navigate('/results?pack=crm')} className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl hover:scale-105 transition-all flex items-center gap-3 justify-center">
              <Zap className="w-4 h-4 text-amber-400" /> Activer mon CRM <ArrowRight className="w-4 h-4" />
           </button>
        </div>
@@ -195,7 +195,7 @@ const PilotagePerformance: React.FC = () => {
               <h1 className="text-4xl font-serif font-bold text-white tracking-tight">Ressources <span className="text-emerald-500 italic">Humaines</span></h1>
             </div>
           </div>
-          <div className="flex bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
+          <div className="flex justify-center bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
              <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'staff' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Staff</button>
              <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'commissions' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Commissions</button>
              <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'clients' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>CRM VIP</button>
@@ -209,8 +209,8 @@ const PilotagePerformance: React.FC = () => {
           <div className="py-24 text-center"><Loader2 className="animate-spin text-emerald-500 mx-auto" /></div>
         ) : activeTab === 'staff' ? (
           <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
-                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Équipe</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 text-center">
+                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex justify-center items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Équipe</h3>
                  <button onClick={() => setShowAddStaffModal(true)} className="w-full sm:w-auto bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,9 +244,9 @@ const PilotagePerformance: React.FC = () => {
                             </div>
                         </div>
                         <div className="md:text-right">
-                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Dû au collaborateur</p>
-                            <p className="text-3xl font-black text-emerald-600">{data.totalComm.toLocaleString()} F</p>
-                            <p className="text-[10px] font-bold text-slate-300 mt-1">Sur {data.totalPresta.toLocaleString()} F de CA</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1 text-center md:text-right">Dû au collaborateur</p>
+                            <p className="text-3xl font-black text-emerald-600 text-center md:text-right">{data.totalComm.toLocaleString()} F</p>
+                            <p className="text-[10px] font-bold text-slate-300 mt-1 text-center md:text-right">Sur {data.totalPresta.toLocaleString()} F de CA</p>
                         </div>
                       </div>
                     );
@@ -256,9 +256,9 @@ const PilotagePerformance: React.FC = () => {
           )
         ) : activeTab === 'clients' ? (
           !isCRMActive ? <LockedScreen /> : (
-            <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="space-y-8 animate-in fade-in duration-300 text-center">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
-                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Star className="w-5 h-5 text-amber-500" /> Mini-CRM Excellence</h3>
+                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex justify-center items-center gap-3 text-slate-500"><Star className="w-5 h-5 text-amber-500" /> Mini-CRM Excellence</h3>
                   <button onClick={() => setShowAddClientModal(true)} className="w-full sm:w-auto bg-amber-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-amber-600 transition-all"><Plus className="w-4 h-4" /> Nouveau Client</button>
                 </div>
                 <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm">
@@ -275,7 +275,7 @@ const PilotagePerformance: React.FC = () => {
                                 {isSilent && <div className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 rounded-full flex items-center justify-center border-2 border-white animate-pulse"><AlertCircle className="w-3 h-3 text-white" /></div>}
                               </div>
                               <div>
-                                <div className="flex flex-col md:flex-row items-center gap-3">
+                                <div className="flex flex-col md:flex-row items-center gap-3 justify-center md:justify-start">
                                   <p className="font-bold text-slate-900 text-lg">{c.name}</p>
                                   {c.totalSpent > 10000 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">VIP GOLD</span>}
                                 </div>
@@ -306,9 +306,9 @@ const PilotagePerformance: React.FC = () => {
             </div>
           )
         ) : (
-          <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="space-y-8 animate-in fade-in duration-300 text-center">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
-                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Book className="w-5 h-5 text-indigo-500" /> Catalogue des Prestations</h3>
+                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex justify-center items-center gap-3 text-slate-500"><Book className="w-5 h-5 text-indigo-500" /> Catalogue des Prestations</h3>
                  <button onClick={() => setShowAddServiceModal(true)} className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-indigo-700 transition-all"><Plus className="w-4 h-4" /> Ajouter Service</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -342,7 +342,7 @@ const PilotagePerformance: React.FC = () => {
               
               <div className="space-y-6">
                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">Préférences & Historique Technique</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4 text-center">Préférences & Historique Technique</label>
                     <textarea 
                       value={selectedClient.notes || ''} 
                       onChange={e => setSelectedClient({...selectedClient, notes: e.target.value})}

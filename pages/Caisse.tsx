@@ -21,11 +21,6 @@ import {
   Wallet,
   CheckCircle2,
   X,
-  Scissors,
-  Sparkles,
-  Zap,
-  ShoppingBag,
-  MoreHorizontal,
   RefreshCw,
   Database,
   ChevronDown,
@@ -224,7 +219,7 @@ const Caisse: React.FC = () => {
       )}
 
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
-        <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
+        <div className="bg-white p-1.5 rounded-[2.5rem] flex justify-center gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
           {(['today', 'week', 'month'] as PeriodFilter[]).map((p) => (
             <button key={p} onClick={() => setPeriod(p)} className={`px-6 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : "Mois"}
@@ -240,9 +235,9 @@ const Caisse: React.FC = () => {
               <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-2xl md:text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
               <div className="space-y-2 lg:block hidden"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bénéfice Net</p><p className={`text-4xl font-black ${(totals.income - totals.expense) >= 0 ? 'text-amber-500' : 'text-rose-600'}`}>{(totals.income - totals.expense).toLocaleString()} F</p></div>
            </div>
-           <div className="bg-brand-900 p-8 md:p-10 rounded-[3rem] text-white min-w-full md:min-w-[300px] shadow-2xl">
+           <div className="bg-brand-900 p-8 md:p-10 rounded-[3rem] text-white min-w-full md:min-w-[300px] shadow-2xl text-center">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance du jour</p>
-              <div className="flex items-baseline justify-center md:justify-start gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
+              <div className="flex items-baseline justify-center gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
            </div>
         </div>
 
