@@ -1,5 +1,6 @@
 
-import { useEffect, useState, useMemo } from 'react';
+// Add React import to avoid UMD global reference error
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Loader2, 
@@ -158,6 +159,7 @@ const Results: React.FC = () => {
       if (existing) {
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
+          isActive: false, // On force à false pour qu'il apparaisse en attente chez l'admin
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
@@ -168,7 +170,7 @@ const Results: React.FC = () => {
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
           lastName: 'Elite',
-          isActive: false, 
+          isActive: false, // Impératif pour l'activation manuelle
           role: 'CLIENT', 
           isAdmin: false,
           isPublic: true,
@@ -193,7 +195,10 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
-      await updateUserProfile(user.uid, { pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] });
+      await updateUserProfile(user.uid, { 
+        isActive: false, // On repasse à false pour que l'admin re-valide le paiement du nouveau pack
+        pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
+      });
       setRegStep('success');
       setIsRegisterModalOpen(true);
     } catch (err: any) { alert(err.message); } finally { setLoading(false); }

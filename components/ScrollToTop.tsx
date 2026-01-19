@@ -1,5 +1,6 @@
 
-import { useEffect } from "react";
+// Add React import to avoid UMD global reference error
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 /**

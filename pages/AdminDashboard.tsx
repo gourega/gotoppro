@@ -1,4 +1,5 @@
 
+// Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,7 +41,8 @@ import {
   CheckCircle2,
   TrendingUp,
   Star,
-  Zap
+  Zap,
+  UserPlus
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -201,7 +203,8 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
-    const pending = clients.filter(u => u.pendingModuleIds && u.pendingModuleIds.length > 0);
+    // Un gérant est "en attente" s'il a des modules demandés OU s'il n'est pas encore actif
+    const pending = clients.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
     const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
     return { 
       total: clients.length, 
@@ -214,7 +217,14 @@ const AdminDashboard: React.FC = () => {
 
   const filteredUsers = useMemo(() => {
     const isSearching = searchTerm.trim().length > 0;
-    const baseInboxUsers = users.filter(u => u.isAdmin || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
+    
+    // Définition de la boîte de réception (Inbox) : Admins + Gérants inactifs + Demandes en cours
+    const baseInboxUsers = users.filter(u => 
+      u.isAdmin || 
+      !u.isActive || 
+      (u.pendingModuleIds && u.pendingModuleIds.length > 0)
+    );
+
     const sourceSet = isSearching ? users : baseInboxUsers;
 
     return sourceSet.filter(u => {
@@ -226,7 +236,7 @@ const AdminDashboard: React.FC = () => {
       
       if (!matchesSearch) return false;
       if (viewMode === 'admins') return u.isAdmin;
-      if (viewMode === 'pending') return !u.isAdmin && u.pendingModuleIds && u.pendingModuleIds.length > 0;
+      if (viewMode === 'pending') return !u.isAdmin && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
       if (viewMode === 'active') return !u.isAdmin && u.isActive;
       return true;
     });
@@ -275,8 +285,8 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
           <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/stats.total)*100)}% Retention`} />
-          <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-emerald-500" sub="95% Net Revenue" highlight={true} />
-          <StatCard title="Recettes Totales" value={`${stats.revenue.toLocaleString()} F`} icon={<Banknote />} color="text-brand-500" sub="Revenue to date" />
+          <StatCard title="A traiter" value={stats.pending} icon={<UserPlus />} color="text-amber-400" sub="Urgent : Activation/Packs" highlight={stats.pending > 0} />
+          <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-emerald-500" sub="95% Net Revenue" />
         </div>
 
         <div className="bg-white/[0.03] backdrop-blur-3xl rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl">
@@ -322,7 +332,7 @@ const AdminDashboard: React.FC = () => {
                     <tr 
                       key={u.uid} 
                       onClick={() => { setSelectedUser(u); setEditingPin(false); setNewPinValue(u.pinCode || ''); }}
-                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${u.pendingModuleIds && u.pendingModuleIds.length > 0 ? 'bg-amber-500/[0.02]' : ''}`}
+                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${(!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)) ? 'bg-amber-500/[0.03]' : ''}`}
                     >
                       <td className="px-12 py-8">
                         <div className="flex items-center gap-6">
@@ -341,10 +351,10 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="px-8 py-8">
                         <div className="flex flex-wrap gap-2">
+                          {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
-                          {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="ATTENTE ELITE" color="amber" animate />}
+                          {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="WAIT ELITE" color="amber" animate />}
                           {u.pendingModuleIds?.includes('REQUEST_CRM') && <Badge text="WAIT CRM" color="amber" animate />}
-                          {u.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && <Badge text="WAIT PERF" color="emerald" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -445,27 +455,32 @@ const AdminDashboard: React.FC = () => {
                  </div>
               </div>
 
-              {(selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0) && (
+              {(!selectedUser.isActive || (selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0)) && (
                 <div className="bg-amber-500/10 rounded-[3rem] p-10 border border-amber-500/30 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><ShoppingCart className="w-24 h-24 text-amber-500" /></div>
+                  <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-1000"><ShoppingCart className="w-24 h-24 text-amber-500" /></div>
                   <div className="flex items-center gap-6 mb-8 relative z-10">
                     <div className="h-14 w-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-xl animate-pulse">
                       <Clock className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Paiement à Valider</h3>
-                      <p className="text-amber-400/70 text-sm font-medium">Demande de pack ou module en attente.</p>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                        {!selectedUser.isActive ? "Activation Compte Requis" : "Paiement à Valider"}
+                      </h3>
+                      <p className="text-amber-400/70 text-sm font-medium">Demande de pack ou activation de compte en attente.</p>
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
-                    {selectedUser.pendingModuleIds.includes('REQUEST_ELITE') && (
+                    {!selectedUser.isActive && (
+                      <ActionBtn onClick={() => handleToggleStatus(selectedUser)} loading={processingId === selectedUser.uid} icon={<UserCheck />} label="Activer Compte" price="Validation Wave" color="emerald" />
+                    )}
+                    {selectedUser.pendingModuleIds?.includes('REQUEST_ELITE') && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="10.000 F" color="amber" />
                     )}
-                    {selectedUser.pendingModuleIds.includes('REQUEST_CRM') && (
+                    {selectedUser.pendingModuleIds?.includes('REQUEST_CRM') && (
                       <ActionBtn onClick={() => handleActivatePack('CRM')} loading={processingId === 'CRM'} icon={<Star />} label="Activer CRM" price="500 F (30j)" color="amber" />
                     )}
-                    {selectedUser.pendingModuleIds.includes('REQUEST_PERFORMANCE') && (
+                    {selectedUser.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && (
                       <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
                     )}
                   </div>
@@ -511,8 +526,9 @@ const AdminDashboard: React.FC = () => {
 
             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
                <div className="flex items-center gap-4 w-full md:w-auto">
-                 <button onClick={() => handleToggleStatus(selectedUser)} disabled={selectedUser.uid === currentUser?.uid} className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-600 text-white'}`}>
-                    {selectedUser.isActive ? 'Suspendre' : 'Activer'}
+                 <button onClick={() => handleToggleStatus(selectedUser)} disabled={selectedUser.uid === currentUser?.uid} className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedUser.isActive ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20'}`}>
+                    {selectedUser.isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
+                    {selectedUser.isActive ? 'Suspendre' : 'Activer Compte'}
                  </button>
                </div>
                <div className="flex items-center gap-4 w-full md:w-auto">
@@ -529,30 +545,39 @@ const AdminDashboard: React.FC = () => {
 };
 
 const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
-  <div className={`bg-white/[0.03] p-8 rounded-[2.5rem] border transition-all duration-500 ${highlight ? 'border-emerald-500/40 ring-1 ring-emerald-500/20' : 'border-white/10'}`}>
+  <div className={`bg-white/[0.03] p-8 rounded-[2.5rem] border transition-all duration-500 ${highlight ? 'border-amber-500/40 ring-1 ring-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]' : 'border-white/10'}`}>
     <div className="flex justify-between items-start mb-6">
        <div className={`h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl ${color} border border-white/10 shadow-inner`}>{icon}</div>
     </div>
     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{title}</p>
-    <p className="text-4xl font-black text-white tracking-tight">{value}</p>
-    <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2"><div className="h-1 w-1 bg-slate-700 rounded-full"></div>{sub}</div>
+    <p className={`text-4xl font-black tracking-tight ${highlight ? 'text-amber-400' : 'text-white'}`}>{value}</p>
+    <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2"><div className={`h-1 w-1 rounded-full ${highlight ? 'bg-amber-500 animate-pulse' : 'bg-slate-700'}`}></div>{sub}</div>
   </div>
 );
 
 const NavTab = ({ active, onClick, label, count, isUrgent }: any) => (
   <button onClick={onClick} className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${active ? 'bg-brand-500 text-white shadow-2xl' : 'text-slate-500 hover:text-slate-300'}`}>
     {label}
-    {count !== undefined && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20' : isUrgent ? 'bg-amber-50 text-black' : 'bg-white/10'}`}>{count}</span>}
+    {count !== undefined && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-white/20' : isUrgent ? 'bg-amber-50 text-black animate-pulse' : 'bg-white/10'}`}>{count}</span>}
   </button>
 );
 
 const Badge = ({ text, color, animate }: any) => {
-  const colors: any = { amber: 'bg-amber-500/10 text-amber-500 border-amber-500/30', emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30', blue: 'bg-brand-500/10 text-brand-400 border-brand-500/30', slate: 'bg-slate-500/10 text-slate-500' };
+  const colors: any = { 
+    amber: 'bg-amber-500/10 text-amber-500 border-amber-500/30', 
+    emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30', 
+    blue: 'bg-brand-500/10 text-brand-400 border-brand-500/30', 
+    slate: 'bg-slate-500/10 text-slate-500',
+    rose: 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+  };
   return <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${colors[color]} ${animate ? 'animate-pulse' : ''}`}>{text}</span>;
 };
 
 const ActionBtn = ({ onClick, loading, icon, label, price, color }: any) => {
-  const colors: any = { amber: 'bg-amber-500 hover:bg-amber-400 text-black', emerald: 'bg-emerald-500 hover:bg-emerald-400 text-white' };
+  const colors: any = { 
+    amber: 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20', 
+    emerald: 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/20' 
+  };
   return (
     <button onClick={onClick} disabled={loading} className={`w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95 shadow-xl ${colors[color]}`}>
       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : React.cloneElement(icon as React.ReactElement<any>, { className: "w-6 h-6" })}

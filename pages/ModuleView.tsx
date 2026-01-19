@@ -1,5 +1,6 @@
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+// Add React import to avoid UMD global reference error
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
