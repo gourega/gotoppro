@@ -125,7 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
+          // Cast auth to any to handle environments with outdated or incomplete Supabase type definitions
+          const { data: { session } } = await (supabase.auth as any).getSession();
           if (session?.user) await handleUserSetup(session.user);
         }
       } catch (err) {
@@ -138,7 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
 
     if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+      // Cast auth to any to handle environments with outdated or incomplete Supabase type definitions
+      const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, session: any) => {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           if (session?.user) handleUserSetup(session.user);
         } else if (event === 'SIGNED_OUT') {
@@ -165,7 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setLoading(true);
-    if (supabase) await supabase.auth.signOut();
+    // Cast auth to any to handle environments with outdated or incomplete Supabase type definitions
+    if (supabase) await (supabase.auth as any).signOut();
     lastUidRef.current = null;
     localStorage.removeItem('gotop_manual_phone');
     setUser(null);

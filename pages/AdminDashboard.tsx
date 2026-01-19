@@ -203,7 +203,6 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
-    // Un gérant est "en attente" s'il a des modules demandés OU s'il n'est pas encore actif
     const pending = clients.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
     const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
     return { 
@@ -284,7 +283,7 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-400" sub="Total Network" />
-          <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/stats.total)*100)}% Retention`} />
+          <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-400" sub={`${Math.round((stats.active/Math.max(1, stats.total))*100)}% Retention`} />
           <StatCard title="A traiter" value={stats.pending} icon={<UserPlus />} color="text-amber-400" sub="Urgent : Activation/Packs" highlight={stats.pending > 0} />
           <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-emerald-500" sub="95% Net Revenue" />
         </div>
@@ -328,11 +327,12 @@ const AdminDashboard: React.FC = () => {
                 {filteredUsers.length > 0 ? filteredUsers.map(u => {
                   const cloudActive = u.isKitaPremium || (u.kitaPremiumUntil && new Date(u.kitaPremiumUntil) > new Date());
                   const crmActive = u.crmExpiryDate && new Date(u.crmExpiryDate) > new Date();
+                  const isPending = !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0);
                   return (
                     <tr 
                       key={u.uid} 
                       onClick={() => { setSelectedUser(u); setEditingPin(false); setNewPinValue(u.pinCode || ''); }}
-                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${(!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)) ? 'bg-amber-500/[0.03]' : ''}`}
+                      className={`group hover:bg-white/[0.04] transition-all cursor-pointer ${isPending ? 'bg-amber-500/[0.03]' : ''}`}
                     >
                       <td className="px-12 py-8">
                         <div className="flex items-center gap-6">
@@ -353,8 +353,8 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex flex-wrap gap-2">
                           {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
-                          {u.pendingModuleIds?.includes('REQUEST_ELITE') && <Badge text="WAIT ELITE" color="amber" animate />}
-                          {u.pendingModuleIds?.includes('REQUEST_CRM') && <Badge text="WAIT CRM" color="amber" animate />}
+                          {u.pendingModuleIds?.some(id => id.includes('ELITE')) && <Badge text="WAIT ELITE" color="amber" animate />}
+                          {u.pendingModuleIds?.some(id => id.includes('CRM')) && <Badge text="WAIT CRM" color="amber" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -474,13 +474,13 @@ const AdminDashboard: React.FC = () => {
                     {!selectedUser.isActive && (
                       <ActionBtn onClick={() => handleToggleStatus(selectedUser)} loading={processingId === selectedUser.uid} icon={<UserCheck />} label="Activer Compte" price="Validation Wave" color="emerald" />
                     )}
-                    {selectedUser.pendingModuleIds?.includes('REQUEST_ELITE') && (
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('ELITE')) && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="10.000 F" color="amber" />
                     )}
-                    {selectedUser.pendingModuleIds?.includes('REQUEST_CRM') && (
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('CRM')) && (
                       <ActionBtn onClick={() => handleActivatePack('CRM')} loading={processingId === 'CRM'} icon={<Star />} label="Activer CRM" price="500 F (30j)" color="amber" />
                     )}
-                    {selectedUser.pendingModuleIds?.includes('REQUEST_PERFORMANCE') && (
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && (
                       <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer Perf+" price="5.000 F" color="emerald" />
                     )}
                   </div>

@@ -51,6 +51,48 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
+// Dictionnaire de mappage centralisé pour les écritures
+const PROFILE_MAPPING: Record<string, string> = {
+  uid: 'uid',
+  phoneNumber: 'phone_number',
+  pinCode: 'pin_code',
+  firstName: 'first_name',
+  lastName: 'last_name',
+  establishmentName: 'establishment_name',
+  photoURL: 'photo_url',
+  bio: 'bio',
+  employeeCount: 'employee_count',
+  openingYear: 'opening_year',
+  role: 'role',
+  isActive: 'is_active',
+  isAdmin: 'is_admin',
+  isPublic: 'is_public',
+  isKitaPremium: 'is_kita_premium',
+  kitaPremiumUntil: 'kita_premium_until',
+  hasPerformancePack: 'has_performance_pack',
+  hasStockPack: 'has_stock_pack',
+  crmExpiryDate: 'crm_expiry_date',
+  badges: 'badges',
+  purchasedModuleIds: 'purchased_module_ids',
+  pendingModuleIds: 'pending_module_ids',
+  actionPlan: 'action_plan',
+  referralCount: 'referral_count',
+  createdAt: 'created_at',
+  progress: 'progress',
+  attempts: 'attempts'
+};
+
+const mapProfileToDB = (profile: Partial<UserProfile>) => {
+  const dbData: any = {};
+  Object.keys(profile).forEach(key => {
+    const dbKey = PROFILE_MAPPING[key] || key;
+    if ((profile as any)[key] !== undefined) {
+      dbData[dbKey] = (profile as any)[key];
+    }
+  });
+  return dbData;
+};
+
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
   const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
@@ -59,7 +101,7 @@ export const getProfileByPhone = async (phoneNumber: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone},phoneNumber.eq.${cleanPhone},phoneNumber.eq.${localPhone}`)
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone}`)
       .maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
@@ -77,35 +119,19 @@ export const getUserProfile = async (uid: string) => {
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) return;
-  const mapping: any = {
-    uid: 'uid', phoneNumber: 'phone_number', pinCode: 'pin_code', firstName: 'first_name',
-    lastName: 'last_name', establishmentName: 'establishment_name', photoURL: 'photo_url',
-    isKitaPremium: 'is_kita_premium', hasPerformancePack: 'has_performance_pack',
-    hasStockPack: 'has_stock_pack', purchasedModuleIds: 'purchased_module_ids',
-    pendingModuleIds: 'pending_module_ids', isPublic: 'is_public', isActive: 'is_active',
-    crmExpiryDate: 'crm_expiry_date'
-  };
-  const dbData: any = {};
-  Object.keys(profile).forEach(k => { if ((profile as any)[k] !== undefined) dbData[mapping[k] || k] = (profile as any)[k]; });
+  const dbData = mapProfileToDB(profile);
   await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
-  const mapping: any = {
-    isKitaPremium: 'is_kita_premium', hasPerformancePack: 'has_performance_pack',
-    hasStockPack: 'has_stock_pack', purchasedModuleIds: 'purchased_module_ids',
-    pendingModuleIds: 'pending_module_ids', isActive: 'is_active', pinCode: 'pin_code',
-    crmExpiryDate: 'crm_expiry_date', kitaPremiumUntil: 'kita_premium_until'
-  };
-  const dbData: any = {};
-  Object.keys(updates).forEach(k => { if ((updates as any)[k] !== undefined) dbData[mapping[k] || k] = (updates as any)[k]; });
+  const dbData = mapProfileToDB(updates);
   await supabase.from('profiles').update(dbData).eq('uid', uid);
 };
 
 export const getAllUsers = async () => {
   if (!supabase) return [];
-  const { data } = await supabase.from('profiles').select('*');
+  const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
   return (data || []).map(mapProfileFromDB) as UserProfile[];
 };
 
@@ -120,7 +146,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, product_id: t.product_id
   }));
 };
 
