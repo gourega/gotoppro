@@ -187,14 +187,14 @@ const Caisse: React.FC = () => {
       <header className="bg-amber-500 pt-16 pb-32 px-6 md:px-12 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none text-white text-[15rem] font-serif italic leading-none">CFA</div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
-           <div className="flex items-center gap-6">
+           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
               <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0"><Wallet className="w-full h-full text-amber-500" /></div>
               <div>
-                 <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest group"><ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" /> Dashboard</button>
+                 <button onClick={() => navigate('/dashboard')} className="flex items-center justify-center md:justify-start gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest group"><ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" /> Dashboard</button>
                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-900 tracking-tight">Pilotage <span className="text-white italic">Financier</span></h1>
               </div>
            </div>
-           <div className="flex gap-4">
+           <div className="flex justify-center gap-4">
               <button onClick={() => setIsExportModalOpen(true)} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all" title="Télécharger un bilan">
                 <FileText className="w-6 h-6" />
               </button>
@@ -209,7 +209,7 @@ const Caisse: React.FC = () => {
       {!isElite && !loading && (
         <div className="max-w-6xl mx-auto px-6 -mt-12 mb-12 relative z-40">
            <div className="bg-white rounded-[3rem] p-8 shadow-2xl border-l-[12px] border-amber-500 flex flex-col md:flex-row items-center justify-between gap-8 animate-in slide-in-from-top-4">
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                  <div className="h-14 w-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
                     <ShieldHalf className="w-7 h-7" />
                  </div>
@@ -224,9 +224,9 @@ const Caisse: React.FC = () => {
       )}
 
       <div className="max-w-6xl mx-auto px-6 -mt-8 flex justify-center relative z-30">
-        <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50">
+        <div className="bg-white p-1.5 rounded-[2.5rem] flex gap-1 shadow-2xl border border-slate-50 overflow-x-auto">
           {(['today', 'week', 'month'] as PeriodFilter[]).map((p) => (
-            <button key={p} onClick={() => setPeriod(p)} className={`px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={p} onClick={() => setPeriod(p)} className={`px-6 md:px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${period === p ? 'bg-brand-900 text-white shadow-xl scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {p === 'today' ? "Aujourd'hui" : p === 'week' ? "Semaine" : "Mois"}
             </button>
           ))}
@@ -234,15 +234,15 @@ const Caisse: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-16 space-y-12">
-        <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden">
-           <div className="grid grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 flex-grow">
-              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes</p><p className="text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
-              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
+        <div className="bg-white rounded-[4rem] shadow-xl border border-slate-50 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden text-center md:text-left">
+           <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 md:gap-24 flex-grow">
+              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recettes</p><p className="text-2xl md:text-4xl font-black text-emerald-500">+{totals.income.toLocaleString()} F</p></div>
+              <div className="space-y-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dépenses</p><p className="text-2xl md:text-4xl font-black text-rose-500">-{totals.expense.toLocaleString()} F</p></div>
               <div className="space-y-2 lg:block hidden"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bénéfice Net</p><p className={`text-4xl font-black ${(totals.income - totals.expense) >= 0 ? 'text-amber-500' : 'text-rose-600'}`}>{(totals.income - totals.expense).toLocaleString()} F</p></div>
            </div>
-           <div className="bg-brand-900 p-10 rounded-[3rem] text-white min-w-[300px] shadow-2xl">
+           <div className="bg-brand-900 p-8 md:p-10 rounded-[3rem] text-white min-w-full md:min-w-[300px] shadow-2xl">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Balance du jour</p>
-              <div className="flex items-baseline gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
+              <div className="flex items-baseline justify-center md:justify-start gap-2"><p className="text-4xl font-black">{(totals.income - totals.expense).toLocaleString()}</p><p className="text-lg font-bold text-slate-500">F</p></div>
            </div>
         </div>
 
@@ -251,9 +251,9 @@ const Caisse: React.FC = () => {
         ) : (
           <div className="space-y-4 pb-20">
             {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
-              <div key={t.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-xl transition-all group animate-in slide-in-from-bottom-2">
-                <div className="flex items-center gap-6">
-                  <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
+              <div key={t.id} className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between hover:shadow-xl transition-all group animate-in slide-in-from-bottom-2 gap-4 text-center md:text-left">
+                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                  <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 ${t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
                     {t.type === 'INCOME' ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                   </div>
                   <div>
@@ -263,9 +263,9 @@ const Caisse: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-10">
-                  <p className={`text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F</p>
-                  <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
+                <div className="flex items-center gap-6 md:gap-10">
+                  <p className={`text-xl md:text-2xl font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'} {t.amount.toLocaleString()} F</p>
+                  <button onClick={() => deleteKitaTransaction(t.id).then(loadData)} className="p-3 text-slate-300 hover:text-rose-500 md:opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             )) : (
@@ -368,7 +368,7 @@ const Caisse: React.FC = () => {
                       <button onClick={initializeDefaultServices} className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black uppercase text-[11px]">Générer le catalogue</button>
                    </div>
                  ) : (
-                   <div className="grid grid-cols-2 gap-4">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {filteredServicesList.map(s => (
                         <button key={s.id} onClick={() => handleSelectService(s)} className="p-6 text-left bg-white rounded-[2.5rem] border-2 border-transparent hover:border-brand-500 hover:shadow-xl transition-all flex flex-col justify-between min-h-[140px]">
                           <div><span className="bg-slate-100 text-slate-400 px-3 py-1 rounded-lg text-[8px] font-black uppercase mb-3 block w-fit">{s.category}</span><p className="font-bold text-slate-900 text-lg leading-tight">{s.name}</p></div>

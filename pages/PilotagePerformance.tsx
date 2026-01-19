@@ -8,12 +8,11 @@ import {
   getKitaClients, 
   addKitaClient, 
   deleteKitaStaff,
+  getKitaTransactions,
+  updateKitaClient,
   getKitaServices,
   addKitaService,
-  updateKitaService,
-  deleteKitaService,
-  getKitaTransactions,
-  updateKitaClient
+  deleteKitaService
 } from '../services/supabase';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -163,7 +162,7 @@ const PilotagePerformance: React.FC = () => {
   }
 
   const LockedScreen = () => (
-    <div className="py-24 text-center animate-in zoom-in-95">
+    <div className="py-24 text-center animate-in zoom-in-95 px-6">
        <div className="h-24 w-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-rose-100">
           <Lock className="w-10 h-10" />
        </div>
@@ -186,17 +185,17 @@ const PilotagePerformance: React.FC = () => {
       <KitaTopNav />
       <header className="pt-16 pb-32 px-6 relative overflow-hidden bg-slate-900">
         <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none"><BarChart3 className="w-96 h-96 text-emerald-500" /></div>
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center relative z-10 gap-8">
-          <div className="flex gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
             <div className="bg-emerald-500 p-2 rounded-[2rem] shadow-2xl shrink-0 h-20 w-20 flex items-center justify-center">
                <Users className="h-10 w-10 text-white" />
             </div>
             <div>
-              <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-500 hover:text-white transition mb-3 font-black text-[10px] uppercase tracking-widest"><ChevronLeft className="w-4 h-4" /> Dashboard</button>
+              <button onClick={() => navigate('/dashboard')} className="flex items-center justify-center md:justify-start gap-2 text-slate-500 hover:text-white transition mb-3 font-black text-[10px] uppercase tracking-widest"><ChevronLeft className="w-4 h-4" /> Dashboard</button>
               <h1 className="text-4xl font-serif font-bold text-white tracking-tight">Ressources <span className="text-emerald-500 italic">Humaines</span></h1>
             </div>
           </div>
-          <div className="flex bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto">
+          <div className="flex bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
              <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'staff' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Staff</button>
              <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'commissions' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>Commissions</button>
              <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'clients' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>CRM VIP</button>
@@ -210,17 +209,17 @@ const PilotagePerformance: React.FC = () => {
           <div className="py-24 text-center"><Loader2 className="animate-spin text-emerald-500 mx-auto" /></div>
         ) : activeTab === 'staff' ? (
           <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="flex justify-between items-center px-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Équipe</h3>
-                 <button onClick={() => setShowAddStaffModal(true)} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
+                 <button onClick={() => setShowAddStaffModal(true)} className="w-full sm:w-auto bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {staff.map(member => (
-                    <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 relative group hover:shadow-xl transition-all">
-                        <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center mb-6"><Scissors className="w-6 h-6" /></div>
+                    <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 relative group hover:shadow-xl transition-all text-center md:text-left">
+                        <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center mb-6 mx-auto md:mx-0"><Scissors className="w-6 h-6" /></div>
                         <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commissionRate}% Commission</p>
-                        <button onClick={() => handleDeleteStaff(member.id)} className="absolute top-6 right-6 p-2 text-slate-200 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeleteStaff(member.id)} className="absolute top-6 right-6 p-2 text-slate-200 hover:text-rose-500 md:opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
               </div>
@@ -228,23 +227,23 @@ const PilotagePerformance: React.FC = () => {
         ) : activeTab === 'commissions' ? (
           !isCRMActive ? <LockedScreen /> : (
             <div className="space-y-8 animate-in fade-in duration-300">
-                <div className="px-4"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-50"><Banknote className="w-5 h-5 text-amber-500" /> Suivi des Commissions</h3></div>
+                <div className="px-4 text-center md:text-left"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center justify-center md:justify-start gap-3 text-slate-50"><Banknote className="w-5 h-5 text-amber-500" /> Suivi des Commissions</h3></div>
                 <div className="grid md:grid-cols-2 gap-6">
                   {staff.map(member => {
                     const data = staffCommissions[member.name] || { totalPresta: 0, totalComm: 0, count: 0 };
                     return (
-                      <div key={member.id} className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-2xl transition-all">
-                        <div className="flex items-center gap-6">
-                            <div className="h-20 w-20 bg-amber-50 text-amber-600 rounded-[1.5rem] flex flex-col items-center justify-center font-black shadow-inner">
+                      <div key={member.id} className="bg-white rounded-[3rem] p-8 md:p-10 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between group hover:shadow-2xl transition-all gap-6 text-center md:text-left">
+                        <div className="flex flex-col md:flex-row items-center gap-6">
+                            <div className="h-20 w-20 bg-amber-50 text-amber-600 rounded-[1.5rem] flex flex-col items-center justify-center font-black shadow-inner shrink-0">
                               <span className="text-2xl">{member.name[0]}</span>
                               <span className="text-[8px] uppercase">{member.commissionRate}%</span>
                             </div>
                             <div>
                               <p className="font-serif font-bold text-slate-900 text-2xl mb-1">{member.name}</p>
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><History className="w-3 h-3" /> {data.count} prestations réalisées</p>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center md:justify-start gap-2"><History className="w-3 h-3" /> {data.count} prestations réalisées</p>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="md:text-right">
                             <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Dû au collaborateur</p>
                             <p className="text-3xl font-black text-emerald-600">{data.totalComm.toLocaleString()} F</p>
                             <p className="text-[10px] font-bold text-slate-300 mt-1">Sur {data.totalPresta.toLocaleString()} F de CA</p>
@@ -258,9 +257,9 @@ const PilotagePerformance: React.FC = () => {
         ) : activeTab === 'clients' ? (
           !isCRMActive ? <LockedScreen /> : (
             <div className="space-y-8 animate-in fade-in duration-300">
-                <div className="flex justify-between items-center px-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                   <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Star className="w-5 h-5 text-amber-500" /> Mini-CRM Excellence</h3>
-                  <button onClick={() => setShowAddClientModal(true)} className="bg-amber-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl hover:bg-amber-600 transition-all"><Plus className="w-4 h-4" /> Nouveau Client</button>
+                  <button onClick={() => setShowAddClientModal(true)} className="w-full sm:w-auto bg-amber-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-amber-600 transition-all"><Plus className="w-4 h-4" /> Nouveau Client</button>
                 </div>
                 <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm">
                     {clients.length > 0 ? clients.map(c => {
@@ -269,18 +268,18 @@ const PilotagePerformance: React.FC = () => {
                       const isSilent = daysSinceLast !== null && daysSinceLast > 30;
 
                       return (
-                        <div key={c.id} className="p-8 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between hover:bg-slate-50 transition-all group gap-6">
-                          <div className="flex items-center gap-6 flex-grow">
+                        <div key={c.id} className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between hover:bg-slate-50 transition-all group gap-6 text-center md:text-left">
+                          <div className="flex flex-col md:flex-row items-center gap-6 flex-grow">
                               <div className="relative">
-                                <div className="h-16 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-2xl group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">{c.name[0]}</div>
+                                <div className="h-16 w-16 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-2xl group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors shrink-0">{c.name[0]}</div>
                                 {isSilent && <div className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 rounded-full flex items-center justify-center border-2 border-white animate-pulse"><AlertCircle className="w-3 h-3 text-white" /></div>}
                               </div>
                               <div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-col md:flex-row items-center gap-3">
                                   <p className="font-bold text-slate-900 text-lg">{c.name}</p>
                                   {c.totalSpent > 10000 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">VIP GOLD</span>}
                                 </div>
-                                <div className="flex items-center gap-4 mt-1">
+                                <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-1">
                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><History className="w-3 h-3" /> {c.totalVisits || 0} visites</p>
                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Calendar className="w-3 h-3" /> {lastVisitDate ? `Dernière : ${lastVisitDate.toLocaleDateString()}` : 'Jamais venue'}</p>
                                 </div>
@@ -288,12 +287,12 @@ const PilotagePerformance: React.FC = () => {
                               </div>
                           </div>
                           
-                          <div className="flex items-center gap-4 shrink-0">
+                          <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-center">
                               <button onClick={() => setSelectedClient(c)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all"><ClipboardList className="w-5 h-5" /></button>
                               <a 
                                 href={`https://wa.me/${c.phone?.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${c.name}, Coach Kita ici au salon ${user?.establishmentName}. Nous avons hâte de vous revoir pour votre prochaine mise en beauté !`)}`} 
                                 target="_blank" rel="noreferrer" 
-                                className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${isSilent ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white'}`}
+                                className={`flex-grow md:flex-grow-0 flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${isSilent ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white'}`}
                               >
                                 <MessageCircle className="w-4 h-4" /> Relancer
                               </a>
@@ -308,17 +307,17 @@ const PilotagePerformance: React.FC = () => {
           )
         ) : (
           <div className="space-y-8 animate-in fade-in duration-300">
-              <div className="flex justify-between items-center px-4">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3 text-slate-500"><Book className="w-5 h-5 text-indigo-500" /> Catalogue des Prestations</h3>
-                 <button onClick={() => setShowAddServiceModal(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl hover:bg-indigo-700 transition-all"><Plus className="w-4 h-4" /> Ajouter Service</button>
+                 <button onClick={() => setShowAddServiceModal(true)} className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-indigo-700 transition-all"><Plus className="w-4 h-4" /> Ajouter Service</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                  {services.map(s => (
-                   <div key={s.id} className={`bg-white p-8 rounded-[2.5rem] border transition-all group ${s.isActive ? 'border-slate-100' : 'opacity-40 grayscale'}`}>
+                   <div key={s.id} className={`bg-white p-8 rounded-[2.5rem] border transition-all group text-center md:text-left ${s.isActive ? 'border-slate-100' : 'opacity-40 grayscale'}`}>
                       <div className="flex justify-between items-start mb-6">
-                         <span className="bg-slate-50 text-slate-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest">{s.category}</span>
+                         <span className="bg-slate-50 text-slate-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest mx-auto md:mx-0">{s.category}</span>
                          <div className="flex items-center gap-2">
-                            <button onClick={() => deleteKitaService(s.id).then(loadData)} className="p-2 text-slate-200 hover:text-rose-500 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => deleteKitaService(s.id).then(loadData)} className="p-2 text-slate-200 hover:text-rose-500 md:opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                          </div>
                       </div>
                       <h4 className="text-xl font-bold text-slate-900 mb-2">{s.name}</h4>
@@ -333,7 +332,7 @@ const PilotagePerformance: React.FC = () => {
       {/* MODAL FICHE CLIENT (CRM) */}
       {selectedClient && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md">
-           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative animate-in zoom-in-95">
               <button onClick={() => setSelectedClient(null)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500"><X /></button>
               <div className="text-center mb-8">
                 <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><ClipboardList className="w-10 h-10" /></div>
@@ -362,7 +361,7 @@ const PilotagePerformance: React.FC = () => {
       {/* MODAL AJOUT STAFF */}
       {showAddStaffModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
-           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddStaffModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Nouveau Collaborateur</h2>
               <form onSubmit={handleAddStaff} className="space-y-6">
@@ -380,7 +379,7 @@ const PilotagePerformance: React.FC = () => {
       {/* MODAL AJOUT CLIENT */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
-           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddClientModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Inscrire un VIP</h2>
               <form onSubmit={async (e) => {
@@ -400,7 +399,7 @@ const PilotagePerformance: React.FC = () => {
       {/* MODAL AJOUT SERVICE */}
       {showAddServiceModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
-           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-14 relative animate-in zoom-in-95">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 md:p-14 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddServiceModal(false)} className="absolute top-10 right-10 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Créer une Prestation</h2>
               <form onSubmit={async (e) => {
