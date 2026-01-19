@@ -223,39 +223,44 @@ const Results: React.FC = () => {
           <div className="lg:col-span-7 space-y-8">
             <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Catalogue de Formation</h3>
             <div className="grid gap-4">
-              {TRAINING_CATALOG.map(module => {
-                const isInCart = cart.find(m => m.id === module.id);
-                const isOwned = (user?.purchasedModuleIds || []).includes(module.id);
-                const isRecommended = recommendedModuleIds.includes(module.id);
-                return (
-                  <button 
-                    key={module.id} 
-                    onClick={() => !isOwned && toggleModuleInCart(module)}
-                    disabled={isOwned}
-                    className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${
-                      isOwned ? 'bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed' :
-                      isInCart ? 'bg-brand-50 border-brand-500 shadow-lg scale-[1.02]' : 
-                      isRecommended ? 'bg-white border-brand-100 shadow-sm ring-1 ring-brand-50' : 'bg-white border-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">{module.topic}</span>
-                          {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase">Priorité Diag</span>}
+              {TRAINING_CATALOG
+                .filter(module => !cart.some(m => m.id === module.id))
+                .map(module => {
+                  const isOwned = (user?.purchasedModuleIds || []).includes(module.id);
+                  const isRecommended = recommendedModuleIds.includes(module.id);
+                  return (
+                    <button 
+                      key={module.id} 
+                      onClick={() => !isOwned && toggleModuleInCart(module)}
+                      disabled={isOwned}
+                      className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${
+                        isOwned ? 'bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed' :
+                        isRecommended ? 'bg-white border-brand-100 shadow-sm ring-1 ring-brand-50' : 'bg-white border-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-grow">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">{module.topic}</span>
+                            {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase">Priorité Diag</span>}
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
+                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Valeur : 500 F</p>}
                         </div>
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
-                        {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Valeur : 500 F</p>}
+                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
+                          isOwned ? 'text-emerald-500' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                        }`}>
+                          {isOwned ? <CheckCircle2 /> : <Plus />}
+                        </div>
                       </div>
-                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
-                        isOwned ? 'text-emerald-500' : isInCart ? 'bg-brand-500 text-white rotate-90' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                      }`}>
-                        {isOwned ? <CheckCircle2 /> : isInCart ? <Check /> : <Plus />}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              {TRAINING_CATALOG.filter(module => !cart.some(m => m.id === module.id)).length === 0 && (
+                <div className="p-12 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+                  <p className="text-slate-400 font-medium italic">Tous les modules disponibles sont déjà dans votre panier.</p>
+                </div>
+              )}
             </div>
           </div>
 
