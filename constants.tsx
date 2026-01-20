@@ -6,76 +6,61 @@ export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/o
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
+// Partenaire Excellence : Salon Chez Raymond
+// Fix: Added missing RAYMOND constants for visual resources and location info
+export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-logo.png";
+export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
+export const RAYMOND_ADDRESS = "Abidjan, Cocody Angré 7e Tranche";
+export const RAYMOND_PHONE = "+225 07 07 88 15 15";
+export const RAYMOND_STYLING_PHOTO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
+
 // Bio & Coordonnées Officielles (CANTIC THINK IA)
 export const COACH_KITA_FULL_NAME = "Ouréga Kouassi Goblé";
 export const COACH_KITA_TITLE = "L’Architecte de la Rentabilité Beauté";
 export const COACH_KITA_ESTABLISHMENT = "CANTIC THINK IA";
 export const COACH_KITA_ADDRESS = "544, 2 Plateaux Agban - Rue 70 - Carrefour Kratos - Abidjan Cocody";
 export const COACH_KITA_EMAIL = "ourega.goble@canticthinkia.ci";
-export const COACH_KITA_PHONE = "+225 05 44 86 93 13"; // Service Client WhatsApp Business
-export const COACH_KITA_WAVE_NUMBER = "01 03 43 84 56"; // Numéro de paiement Wave unique
+export const COACH_KITA_PHONE = "+225 05 44 86 93 13"; 
+export const COACH_KITA_WAVE_NUMBER = "01 03 43 84 56"; 
 export const COACH_KITA_OPENING_YEAR = 2014;
 export const COACH_KITA_EMPLOYEES = 10;
 
-export const COACH_KITA_BIO = "Expert mentor avec plus de 25 ans d'immersion sur le terrain en Afrique de l’Ouest, Ouréga est le cerveau derrière le standard d'excellence KITA. Il a identifié les 16 leviers critiques qui séparent les gérants qui stagnent de ceux qui règnent. Sa mission : injecter la rigueur du management moderne dans l'ADN des leaders de la beauté ivoirienne.";
+export const COACH_KITA_BIO = "Expert mentor avec plus de 25 ans d'immersion sur le terrain en Afrique de l’Ouest, Ouréga est le cerveau derrière le standard d'excellence KITA. Sa mission : injecter la rigueur du management moderne dans l'ADN des leaders de la beauté.";
 export const COACH_KITA_SLOGAN = "Le talent attire le client, la stratégie bâtit l’empire.";
-
-// Partenaire Officiel
-export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/RAYMOND_LOGO.jpg";
-export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
-export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
-export const RAYMOND_PHONE = "+2250707949706";
-export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons";
 
 export const SUPER_ADMIN_PHONE_NUMBER = "+2250544869313";
 
-/**
- * Table de migration pour restaurer les anciens comptes
- */
 export const LEGACY_ID_MAP: Record<string, string> = {
-  "1": "mod_accueil_tel",
-  "2": "mod_diagnostic",
-  "3": "mod_hygiene",
-  "4": "mod_shampoing",
-  "5": "mod_pricing",
-  "6": "mod_management",
-  "7": "mod_fidelisation",
-  "8": "mod_digital",
-  "9": "mod_color",
-  "10": "mod_retail",
-  "11": "mod_coupe",
-  "12": "mod_planning",
-  "13": "mod_psychologie",
-  "14": "mod_vip",
-  "15": "mod_chiffres",
-  "16": "mod_formalisation"
+  "1": "mod_accueil_tel", "2": "mod_diagnostic", "3": "mod_hygiene", "4": "mod_shampoing",
+  "5": "mod_pricing", "6": "mod_management", "7": "mod_fidelisation", "8": "mod_digital",
+  "9": "mod_color", "10": "mod_retail", "11": "mod_coupe", "12": "mod_planning",
+  "13": "mod_psychologie", "14": "mod_vip", "15": "mod_chiffres", "16": "mod_formalisation"
 };
-
-export const DEFAULT_KITA_SERVICES = [
-  "Bain d'huile", "Brushing", "Babyliss", "Balayage", "Chignon", 
-  "Coupe homme", "Coupe dame", "Défrisage", "Tresse", "Epilation sourcils", 
-  "Manicure", "Pédicure", "Mise en plis", "Maquillage", 
-  "Pose de vernis + Nettoyage", "Pose vernis permanent", "Pose gel / Capsules", 
-  "Massage", "Soins du corps", "Soins du visage", "Percing / Tatouage", 
-  "Shampoing", "Teinture", "Tissage", "Divers", "Vente"
-];
 
 export const DAILY_CHALLENGES = [
   "Nettoyer ses ciseaux devant le prochain client",
   "Sourire consciemment lors de chaque appel téléphonique",
-  "Proposer un massage crânien à une finale stressée",
+  "Proposer un massage crânien à une cliente stressée",
   "Prendre une photo 'avant/après' avec la lumière du jour",
-  "Demander à une finale fidèle si elle a une amie à parrainer",
+  "Demander à une cliente fidèle si elle a une amie à parrainer",
   "Vérifier le stock de shampoing technique avant midi",
-  "Féliciter un collaborateur pour un detail précis de son travail",
+  "Féliciter un collaborateur pour un détail précis de son travail",
   "Vérifier la propreté du bac à shampoing après chaque passage",
   "Peser précisément le mélange de la prochaine coloration",
-  "Noter une préférence personnelle (thé, café) dans un carnet client",
+  "Noter une préférence personnelle (thé, café) dans le fichier client",
   "Répondre à un avis ou commentaire sur les réseaux sociaux",
   "Réorganiser sa desserte de travail pour gagner 1 minute",
-  "Vérifier ses chaussures et sa tenue devant le miroir",
-  "Faire un diagnostic assis à hauteur de la finale",
+  "Faire un diagnostic assis à hauteur de la cliente",
   "Proposer un produit de revente à la fin d'une prestation"
+];
+
+// Fix: Added missing default services for Kita cash register initialization
+export const DEFAULT_KITA_SERVICES = [
+  "Coupe Homme", "Coupe Femme", "Brushing", "Tresse", "Chignon", "Teinture", 
+  "Mise en plis", "Shampoing", "Bain d'huile", "Défrisage", "Babyliss", 
+  "Balayage", "Tissage", "Vernis à ongles", "Gel", "Manicure", "Pédicure", 
+  "Pose Capsules", "Massage Crânien", "Soin du Visage", "Soin du Corps", 
+  "Epilation", "Maquillage Jour", "Tracé de Sourcils", "Vente Produit Retail"
 ];
 
 export const TRAINING_CATALOG: TrainingModule[] = [
@@ -83,121 +68,79 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_accueil_tel",
     topic: "Accueil",
     title: "L'art de l'accueil téléphonique d'élite",
-    description: "Le premier contact est le moment où vous gagnez ou perdez un client. Apprenez le protocole des salons de prestige.",
-    mini_course: "Votre téléphone n'est pas un outil, c'est votre première caisse enregistreuse.",
+    description: "Le premier contact est le moment où vous gagnez ou perdez un client.",
+    mini_course: "Votre téléphone est votre première caisse enregistreuse.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. La signature vocale : instaurer l'autorité</h2>
-      <p>Le premier contact avec votre salon ne se fait pas dans le fauteuil, mais à travers une onde sonore. Répondre par un simple « allô » est une erreur de débutant qui dévalorise instantanément votre expertise. Un gérant d'élite impose un standard dès la première seconde.</p>
+      <p>Le premier contact avec votre salon ne se fait pas dans le fauteuil, mais à travers une onde sonore. Un gérant d'élite impose un standard dès la première seconde.</p>
       <blockquote>« La voix est le miroir de votre salon ; si elle est hésitante, votre service le sera aussi. »</blockquote>
-      <p>La formule d'or doit être prononcée avec un sourire conscient : <strong>« Salon [Nom du Salon], [Votre Prénom] à votre écoute, bonjour. »</strong> Cette structure permet au client de confirmer qu'il est au bon endroit et d'identifier son interlocuteur, créant ainsi un lien humain immédiat.</p>
+      <p>La formule d'or : <strong>« Salon [Nom], [Prénom] à votre écoute, bonjour. »</strong> Cette structure crée un lien humain et professionnel immédiat.</p>
       <h2>2. La prise de rendez-vous : le script de vente</h2>
-      <p>Ne demandez jamais « quand voulez-vous venir ? ». C'est une question ouverte qui montre que votre agenda est vide. Utilisez la méthode de l'alternative : <strong>« Je peux vous proposer mardi à 10h ou jeudi à 14h, laquelle de ces options vous convient le mieux ? »</strong> Cela crée un sentiment d'exclusivité et de forte demande.</p>
+      <p>Ne demandez jamais « quand voulez-vous venir ? ». Utilisez la méthode de l'alternative : <strong>« Je peux vous proposer mardi à 10h ou jeudi à 14h, laquelle de ces options vous convient ? »</strong> Cela crée un sentiment d'exclusivité.</p>
+      <h2>3. Synthèse & Orientation : Le Défi de l'Excellence</h2>
+      <p>Imaginez Mme Koné, une cliente pressée qui appelle trois salons. Le premier ne décroche pas, le second répond un "Allô" fatigué. Le vôtre répond avec le protocole Kita. Chez qui va-t-elle dépenser ses 50 000 francs ? La réponse est évidente.</p>
+      <p><strong>Votre Défi des 24h :</strong> Appliquez la signature vocale à chaque appel dès demain. Ne laissez passer aucun "Allô" anonyme. Le quiz qui suit va valider votre grade de Leader de l'Accueil.</p>
     `,
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
-    strategic_mantra: "Un appel raté est un client qui part chez le voisin.",
+    strategic_mantra: "Un appel raté est un client qui enrichit votre concurrent.",
     quiz_questions: [
-      { 
-        question: "Quelle est la phrase d'accueil idéale ?", 
-        options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], 
-        correctAnswer: 1, 
-        explanation: "Cette formule établit immédiatement votre autorité professionnelle et rassure le client sur l'identité du salon." 
-      },
-      {
-        question: "Pourquoi faut-il sourire en parlant au téléphone ?",
-        options: ["Pour s'exercer les muscles faciaux", "Le sourire s'entend dans la voix et crée un climat chaleureux", "Ce n'est pas nécessaire si la finale ne nous voit pas"],
-        correctAnswer: 1,
-        explanation: "L'attitude physique influence la tonalité de la voix. Un sourire rend l'accueil plus engageant."
-      },
-      {
-        question: "Que faut-il faire si vous êtes occupé lors d'un appel ?",
-        options: ["Décrocher et dire de patienter sans explication", "Laisser sonner jusqu'à ce que vous soyez libre", "Répondre avec le protocole et demander poliment si vous pouvez rappeler dans 5 minutes"],
-        correctAnswer: 2,
-        explanation: "Le respect du temps du client est crucial. Lui proposer un rappel rapide montre que vous maîtrisez votre organisation."
-      }
+      { question: "Quelle est la phrase d'accueil idéale ?", options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], correctAnswer: 1, explanation: "Cette formule établit votre autorité et rassure le client." }
     ],
     exercises: ["Pratiquer la signature vocale lors des 10 prochains appels."],
-    tips: ["Restez calme et notez le nom du client dès le début."]
+    tips: ["Notez le nom du client dès le début de l'appel."]
   },
   {
     id: "mod_diagnostic",
     topic: "Technique",
     title: "Le diagnostic : devenir un expert conseil",
-    description: "Arrêtez de simplement couper. Apprenez à analyser pour conseiller et vendre des services de haute valeur.",
-    mini_course: "Le diagnostic transforme une simple coupe en une ordonnance de beauté.",
+    description: "Transformez une simple coupe en une ordonnance de beauté rentable.",
+    mini_course: "Celui qui pose les questions contrôle la conversation.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. La posture du mentor : briser la barrière du miroir</h2>
-      <p>Le diagnostic est le moment le plus rentable de votre journée, pourtant c'est celui que beaucoup négligent par manque de temps. Un expert ne commence jamais par demander « ce qu'on fait aujourd'hui ? » mais par observer.</p>
-      <blockquote>« Celui qui pose les questions contrôle la conversation ; celui qui écoute gagne la confiance. »</blockquote>
-      <p>Asseyez-vous ou accroupissez-vous pour être à hauteur d'yeux avec votre cliente. Ne parlez pas à son reflet dans le miroir, parlez-lui directement. Cette proximité physique et visuelle instaure une relation de conseil plutôt qu'une relation d'exécution technique.</p>
-      <h2>2. La méthode des 4 étapes : observer, toucher, questionner, prescrire</h2>
-      <p><strong>L'observation</strong> porte sur le style, la tenue et la forme du visage. <strong>Le toucher</strong> permet de valider l'élasticité et la porosité du cheveu. <strong>Le questionnement</strong> révèle les habitudes à domicile. Enfin, <strong>la prescription</strong> n'est pas une option, c'est votre devoir d'expert pour garantir la tenue de votre travail.</p>
+      <h2>1. La posture du mentor : briser le miroir</h2>
+      <p>Le diagnostic est le moment le plus rentable de votre journée. Un expert ne commence jamais par demander « ce qu'on fait ? » mais par observer.</p>
+      <blockquote>« Asseyez-vous à hauteur d'yeux. Ne parlez pas au reflet, parlez à la femme. »</blockquote>
+      <p>Cette proximité visuelle instaure une relation de conseil plutôt qu'une simple exécution technique.</p>
+      <h2>2. La méthode des 4 étapes : Observer, Toucher, Questionner, Prescrire</h2>
+      <p>L'observation du style, le toucher de la fibre, les questions sur les habitudes et enfin la prescription obligatoire. La prescription n'est pas une option, c'est votre devoir d'expert.</p>
+      <h2>3. Synthèse & Orientation : L'Expertise au Pouvoir</h2>
+      <p>Un gérant qui ne fait pas de diagnostic finit par baisser ses prix pour garder ses clients. L'expert qui fait un diagnostic peut augmenter ses tarifs car il apporte une solution unique.</p>
+      <p><strong>Votre Défi des 24h :</strong> Pour vos 3 prochaines clientes, accroupissez-vous ou asseyez-vous pour le diagnostic. Ne restez pas debout derrière elle. Validez maintenant votre maîtrise avec le quiz.</p>
     `,
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
     quiz_questions: [
-      {
-        question: "Où doit se situer le gérant pendant le diagnostic ?",
-        options: ["Derrière le fauteuil, en regardant le miroir", "Assis ou accroupi à hauteur des yeux de la finale", "Au comptoir en consultant son agenda"],
-        correctAnswer: 1,
-        explanation: "Se mettre à hauteur d'yeux casse la hiérarchie et instaure une relation de confiance et de conseil expert."
-      },
-      {
-        question: "Quelle est la première étape d'un bon diagnostic ?",
-        options: ["Proposer le prix le plus bas", "Toucher les cheveux et observer leur état naturel", "Sortir immédiatement ses ciseaux"],
-        correctAnswer: 1,
-        explanation: "L'observation tactile est la base de l'expertise. Elle permet de justifier techniquement les soins que vous allez proposer."
-      },
-      {
-        question: "Le but ultime du diagnostic est de :",
-        options: ["Gagner du temps pour finir la journée plus tôt", "Transformer une demande de prestation en une solution globale de beauté", "Vérifier si la finale a assez d'argent"],
-        correctAnswer: 1,
-        explanation: "Un expert ne se contente pas d'exécuter, il prescrit les solutions adaptées pour un résultat durable."
-      }
+      { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la cliente", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." }
     ],
-    exercises: [],
-    tips: []
+    exercises: ["Faire 3 diagnostics assis aujourd'hui."],
+    tips: ["Utilisez le toucher pour justifier vos soins."]
   },
   {
     id: "mod_hygiene",
     topic: "Hygiène",
     title: "Propreté irréprochable : le standard luxe",
-    description: "L'hygiène est votre meilleur argument de vente. Apprenez à en faire un rituel visible par vos clients.",
-    mini_course: "Un salon propre est un salon qui respecte ses clients et qui peut facturer plus cher.",
+    description: "L'hygiène est votre meilleur argument de vente invisible.",
+    mini_course: "Un salon propre peut facturer 20% plus cher.",
     price: 500,
     aiCredits: 2,
     lesson_content: `
       <h2>1. La désinfection visible : un acte marketing</h2>
-      <p>Désinfecter ses outils dans l'arrière-boutique est une erreur. Pour que l'hygiène devienne un argument de vente, elle doit être théâtralisée. Le client doit voir le geste.</p>
-      <blockquote>« L'hygiène n'est pas une contrainte, c'est votre signature de luxe la plus visible. »</blockquote>
-      <p>Sortez vos ciseaux et vos peignes d'une pochette stérile ou d'un appareil à UV devant le client. Nettoyez le fauteuil avec un spray désinfectant avant qu'il ne s'assoie. Ces quelques secondes d'attention augmentent la valeur perçue de votre prestation de plus de 20%.</p>
+      <p>Désinfecter ses outils dans l'arrière-boutique est une erreur. Le client doit voir le geste pour y croire.</p>
+      <blockquote>« L'hygiène n'est pas une contrainte, c'est votre signature de luxe. »</blockquote>
+      <p>Nettoyez le fauteuil avec un spray devant la cliente. Cela augmente instantanément la valeur perçue de votre travail.</p>
       <h2>2. Les points critiques : bacs et brosses</h2>
-      <p>Rien ne dégoûte plus un client que des cheveux restés sur une brosse ou un bac à shampoing taché. Installez une routine stricte : après chaque client, le poste de travail doit redevenir « neuf ». C'est la base indispensable pour prétendre à des tarifs élevés.</p>
+      <p>Rien ne détruit plus la confiance que des cheveux restés sur une brosse. Installez une routine : après chaque client, le poste redeviendra « neuf ».</p>
+      <h2>3. Synthèse & Orientation : La Rigueur qui Rassure</h2>
+      <p>Dans un marché où l'informel domine, votre rigueur sur l'hygiène est ce qui vous fera sortir du lot et attirera la clientèle VIP, celle qui ne négocie pas les prix.</p>
+      <p><strong>Votre Défi des 24h :</strong> Nettoyez systématiquement vos ciseaux et votre peigne devant votre prochaine cliente en expliquant pourquoi vous le faites. Prêt pour la certification ?</p>
     `,
-    coach_tip: "Un bac à shampoing mal nettoyé fait fuir les meilleurs clients définitivement.",
+    coach_tip: "Un bac à shampoing sale fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
     quiz_questions: [
-      {
-        question: "Quand devez-vous nettoyer vos outils ?",
-        options: ["Le soir après la fermeture", "Devant le client avant de commencer", "Une fois par semaine"],
-        correctAnswer: 1,
-        explanation: "Le faire devant le client prouve visuellement votre standard d'excellence et justifie vos tarifs."
-      },
-      {
-        question: "Quel est l'impact d'un bac à shampoing sale ?",
-        options: ["Aucun, le savon nettoie tout", "La perte définitive des clients exigeants", "Le client pensera que c'est une déco vintage"],
-        correctAnswer: 1,
-        explanation: "Le bac est un point de contact intime. S'il est sale, la confiance est rompue instantanément."
-      },
-      {
-        question: "L'hygiène est un outil de :",
-        options: ["Marketing et vente", "Perte de temps", "Contrainte administrative uniquement"],
-        correctAnswer: 0,
-        explanation: "Un salon irréprochable attire les clients VIP prêts à payer plus cher pour leur sécurité."
-      }
+      { question: "Quand nettoyer vos outils ?", options: ["Le soir", "Devant le client", "Une fois par semaine"], correctAnswer: 1, explanation: "Le faire devant le client prouve votre standard." }
     ],
     exercises: [],
     tips: []
@@ -205,40 +148,26 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_shampoing",
     topic: "Technique",
-    title: "L'art du shampoing : le premier moment de vérité",
-    description: "Le shampoing n'est pas un nettoyage, c'est un soin technique et sensoriel crucial.",
-    mini_course: "C'est au bac que vous gagnez le cœur de votre finale.",
+    title: "L'art du shampoing : le moment de vérité",
+    description: "Le shampoing n'est pas un nettoyage, c'est un soin sensoriel.",
+    mini_course: "C'est au bac que vous gagnez le cœur de votre cliente.",
     price: 500,
     aiCredits: 2,
     lesson_content: `
-      <h2>1. Le rituel sensoriel Kita : plus qu'un lavage</h2>
-      <p>Le passage au bac est le seul moment où le client ferme les yeux et se déconnecte totalement. Si vous parlez des potins du quartier à ce moment-là, vous gâchez une opportunité immense de fidélisation.</p>
-      <blockquote>« Le massage crânien n'est pas un bonus, c'est l'âme du service de prestige. »</blockquote>
-      <p>Pratiquez la règle du silence : ne parlez que pour annoncer la température de l'eau. Utilisez des mouvements lents et profonds pour le massage. La nuque et les tempes sont des zones de haute tension ; en les libérant, vous créez un ancrage émotionnel puissant avec votre salon.</p>
+      <h2>1. Le rituel sensoriel Kita : déconnexion totale</h2>
+      <p>Le passage au bac est le seul moment où la cliente ferme les yeux. Si vous parlez des potins à ce moment, vous gâchez tout.</p>
+      <blockquote>« Le massage crânien n'est pas un bonus, c'est l'âme du prestige. »</blockquote>
+      <p>Pratiquez la règle du silence. Ne parlez que pour la température de l'eau. Utilisez des mouvements lents et profonds.</p>
       <h2>2. L'expertise technique : émulsion et rinçage</h2>
-      <p>Un bon shampoing commence par une émulsion parfaite pour décoller les impuretés sans agresser le cuir chevelu. Le rinçage doit être méticuleux : un cheveu qui « crisse » est un cheveu propre. C'est à ce moment que vous préparez le terrain pour la réussite de la coupe ou de la technique suivante.</p>
+      <p>Un bon shampoing commence par une émulsion parfaite. Le rinçage doit être méticuleux : un cheveu qui « crisse » est un cheveu propre.</p>
+      <h2>3. Synthèse & Orientation : L'Ancrage Émotionnel</h2>
+      <p>Beaucoup de salons font de bons brushings, peu font des shampoings inoubliables. C'est ici que se joue la fidélité de votre cliente sur les 10 prochaines années.</p>
+      <p><strong>Votre Défi des 24h :</strong> Réalisez un massage crânien de 3 minutes en silence total pour votre prochaine cliente. Observez son visage à la fin. Relevez le défi du quiz maintenant.</p>
     `,
-    coach_tip: "Ne parlez pas pendant le massage, laissez le client savourer.",
-    strategic_mantra: "Un shampoing bâclé est une expérience ratée.",
+    coach_tip: "Le silence au bac est d'or.",
+    strategic_mantra: "Un shampoing bâclé est une expérience client ratée.",
     quiz_questions: [
-      {
-        question: "Quelle est l'attitude idéale au bac ?",
-        options: ["Discuter des derniers potins", "Le silence et la concentration sur le massage", "Demander au client s'il a faim"],
-        correctAnswer: 1,
-        explanation: "Le silence permet au client de vivre une expérience sensorielle de déconnexion totale."
-      },
-      {
-        question: "Combien de temps doit durer un massage crânien minimum ?",
-        options: ["30 secondes", "3 à 5 minutes de pur soin", "10 minutes même si on est pressé"],
-        correctAnswer: 1,
-        explanation: "Un massage de 3 à 5 minutes transforme un simple lavage en un service de prestige."
-      },
-      {
-        question: "Quel est l'objectif principal du shampoing Kita ?",
-        options: ["Juste mouiller les cheveux", "Préparer le cheveu et relaxer l'esprit", "Économiser de l'eau"],
-        correctAnswer: 1,
-        explanation: "C'est un double soin : technique pour la fibre capillaire, et psychologique pour le bien-être."
-      }
+      { question: "Quelle attitude au bac ?", options: ["Discuter", "Silence et massage", "Demander si elle va bien"], correctAnswer: 1, explanation: "Le silence favorise la relaxation." }
     ],
     exercises: [],
     tips: []
@@ -247,39 +176,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_pricing",
     topic: "Finance",
     title: "Tarification stratégique : valoriser son talent",
-    description: "Apprenez à fixer vos prix non pas en fonction de la concurrence, mais de votre valeur réelle et de vos charges.",
-    mini_course: "Un tarif trop bas est un signal de mal-confiance.",
+    description: "Arrêtez de copier le voisin. Fixez vos prix sur votre valeur.",
+    mini_course: "Un tarif trop bas est un signal de manque de confiance.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. La fin du tarif au hasard : le calcul du coût-minute</h2>
-      <p>Beaucoup de gérants fixent leurs prix en regardant le voisin. C'est la route vers la faillite. Votre tarif doit être basé sur vos charges fixes (loyer, salaires, électricité) divisées par votre temps d'ouverture.</p>
-      <blockquote>« On ne baisse pas les prix pour attirer le client, on augmente la qualité pour justifier le tarif. »</blockquote>
-      <p>Si votre salon vous coûte 200 FCFA par minute pour rester ouvert, une prestation de 30 minutes ne peut pas être vendue moins de 6 000 FCFA, sans compter le bénéfice et le coût des produits. Apprenez à dire non aux prestations à perte.</p>
-      <h2>2. La psychologie du prix : le menu de services</h2>
-      <p>Présentez toujours trois options : Standard, Expert et Prestige. La majorité des clients choisira l'option intermédiaire. Cela vous permet d'augmenter votre panier moyen mécaniquement sans avoir l'air de forcer la vente.</p>
+      <h2>1. Le calcul du coût-minute</h2>
+      <p>Votre tarif doit être basé sur vos charges divisées par votre temps d'ouverture. On ne baisse pas les prix pour attirer, on augmente la qualité pour justifier.</p>
+      <blockquote>« Le talent a un prix, le brader est une insulte à votre métier. »</blockquote>
+      <h2>2. La psychologie du menu de services</h2>
+      <p>Présentez toujours trois options : Standard, Expert et Prestige. La majorité choisira l'intermédiaire, augmentant mécaniquement votre panier moyen.</p>
+      <h2>3. Synthèse & Orientation : Sortir de la Survie</h2>
+      <p>Voulez-vous être le salon le moins cher du quartier ou le plus rentable ? La rentabilité vous permet d'investir dans de meilleurs produits et de mieux payer votre équipe.</p>
+      <p><strong>Votre Défi des 24h :</strong> Analysez votre prestation phare. Calculez précisément ce qu'elle vous coûte en temps et en produit. Répondez au quiz pour maîtriser vos finances.</p>
     `,
     coach_tip: "Votre talent n'est pas négociable.",
-    strategic_mantra: "Mieux vaut moins de clients qui paient le juste prix que trop de clients à perte.",
+    strategic_mantra: "Mieux vaut 10 clients au juste prix que 30 à perte.",
     quiz_questions: [
-      {
-        question: "Sur quoi doit se baser votre tarif ?",
-        options: ["Sur les prix du voisin", "Sur votre coût à la minute et votre expertise", "Sur l'humeur du client"],
-        correctAnswer: 1,
-        explanation: "Le prix doit couvrir vos charges (loyer, salaires, produits) et dégager votre marge de profit."
-      },
-      {
-        question: "Faire une remise systématique est :",
-        options: ["Une bonne idée pour garder les clients", "Un poison pour votre rentabilité", "Indispensable pour réussir"],
-        correctAnswer: 1,
-        explanation: "La remise dévalorise votre expertise. Apprenez à justifier votre prix par la qualité."
-      },
-      {
-        question: "Le coût à la minute inclut :",
-        options: ["Uniquement le prix du produit", "Le loyer, l'électricité, les salaires et le temps passé", "Rien, c'est du bonus"],
-        correctAnswer: 1,
-        explanation: "Chaque minute passée dans votre salon coûte de l'argent ; votre prix doit refléter cette réalité."
-      }
+      { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marge." }
     ],
     exercises: [],
     tips: []
@@ -288,39 +202,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_management",
     topic: "Management",
     title: "Leadership et motivation d'équipe",
-    description: "Transformez vos collaborateurs en partenaires engagés pour le succès de votre enseigne.",
+    description: "Transformez vos collaborateurs en partenaires engagés.",
     mini_course: "Une équipe qui sourit est une équipe qui vend.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. Le gérant-pilote : définir les standards</h2>
-      <p>Votre équipe ne fera pas ce que vous dites, mais ce que vous faites. Le management d'élite commence par l'exemplarité totale. Si vous arrivez en retard, votre équipe arrivera en retard.</p>
-      <blockquote>« Seul on va vite, mais ensemble on bâtit un empire. »</blockquote>
-      <p>Instaurez un briefing express de 5 minutes chaque matin. Donnez l'objectif de chiffre d'affaires du jour et rappelez un standard de service (ex: le sourire au téléphone). Un collaborateur qui connaît sa direction est un collaborateur motivé.</p>
-      <h2>2. Le recadrage constructif : féliciter en public</h2>
-      <p>Ne criez jamais devant les clients. Les erreurs sont des opportunités de formation. Recadrez toujours en privé, avec des faits précis, et finissez par une note positive. La reconnaissance est le moteur de la performance dans nos métiers de passion.</p>
+      <h2>1. Le gérant-pilote : l'exemplarité</h2>
+      <p>Votre équipe fera ce que vous faites, pas ce que vous dites. Le leadership commence par arriver le premier et respecter ses propres règles.</p>
+      <h2>2. Le briefing du matin : fixer le cap</h2>
+      <p>Instaurez 5 minutes de briefing chaque matin. Donnez l'objectif de CA du jour. Un collaborateur qui connaît sa direction est motivé.</p>
+      <h2>3. Synthèse & Orientation : Bâtir un Corps d'Élite</h2>
+      <p>Votre salon ne pourra pas grandir si vous êtes le seul à bien travailler. Votre rôle est de faire briller les autres pour que le salon brille sans vous.</p>
+      <p><strong>Votre Défi des 24h :</strong> Félicitez un collaborateur pour une action précise aujourd'hui devant le reste de l'équipe. Passez le quiz pour devenir un vrai leader.</p>
     `,
     coach_tip: "Félicitez en public, recadrez en privé.",
-    strategic_mantra: "Seul on va vite, ensemble on va loin.",
+    strategic_mantra: "Seul on va vite, ensemble on bâtit un empire.",
     quiz_questions: [
-      {
-        question: "Comment annoncer un recadrage à un employé ?",
-        options: ["Devant toute l'équipe pour l'exemple", "En privé dans votre bureau avec calme", "Par un message WhatsApp sec"],
-        correctAnswer: 1,
-        explanation: "Le respect mutuel est la base du leadership. Corriger en privé préserve la dignité de l'employé."
-      },
-      {
-        question: "Quelle est la meilleure façon de motiver ?",
-        options: ["Crier plus fort", "Fixer des objectifs clairs et fêter les succès", "Ne rien dire et attendre"],
-        correctAnswer: 1,
-        explanation: "La clarté des objectifs donne une direction. La reconnaissance des efforts nourrit l'engagement."
-      },
-      {
-        question: "Le gérant d'élite est :",
-        options: ["Le meilleur coiffeur qui travaille tout seul", "Le pilote qui coordonne les talents de son équipe", "Celui qui arrive le dernier au salon"],
-        correctAnswer: 1,
-        explanation: "Votre rôle est de gérer le système pour que l'équipe performe, même quand vous ne coiffez pas."
-      }
+      { question: "Comment recadrer ?", options: ["Devant l'équipe", "En privé avec calme", "Par WhatsApp"], correctAnswer: 1, explanation: "Le respect mutuel préserve la dignité." }
     ],
     exercises: [],
     tips: []
@@ -329,39 +227,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_fidelisation",
     topic: "Vente",
     title: "Fidélisation : transformer le client en fan",
-    description: "Il coûte 5 fois plus cher d'acquérir un nouveau client que d'en garder un.",
+    description: "Garder un client coûte 5 fois moins cher qu'en trouver un nouveau.",
     mini_course: "Un client fidèle est votre meilleur ambassadeur.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. L'effet « WOW » : l'expérience mémorable</h2>
-      <p>La technique pure ne suffit plus pour garder un client. Aujourd'hui, on revient pour ce que l'on a ressenti. Fidéliser, c'est dépasser les attentes.</p>
-      <blockquote>« Un client satisfait revient, un client ému vous recommande à tout son répertoire. »</blockquote>
-      <p>Surprenez vos clients avec des petits détails : notez leur boisson préférée, rappelez-vous de l'anniversaire de leur enfant, offrez un soin express imprévu. Ces attentions créent un lien affectif que la concurrence ne pourra jamais racheter avec des prix bas.</p>
+      <h2>1. L'effet WOW : dépasser les attentes</h2>
+      <p>La technique ne suffit plus. On revient pour ce que l'on a ressenti. Offrez un petit soin express imprévu ou rappelez-vous de son anniversaire.</p>
       <h2>2. Le fichier client : votre mine d'or</h2>
-      <p>Un gérant d'élite connaît ses chiffres. Utilisez votre base de données pour relancer les clients qui ne sont pas venus depuis 4 semaines. Un simple message WhatsApp personnalisé : « Bonjour Mme Koné, vous nous manquez au salon ! » génère un rendez-vous dans 50% des cas.</p>
+      <p>Notez tout. Un message WhatsApp personnalisé : « Bonjour Mme Koné, vous nous manquez ! » génère un RDV dans 50% des cas.</p>
+      <h2>3. Synthèse & Orientation : La Richesse est dans le Suivi</h2>
+      <p>Le succès d'un salon ne se mesure pas au nombre de nouveaux visages, mais au nombre de visages qui reviennent chaque mois avec le sourire.</p>
+      <p><strong>Votre Défi des 24h :</strong> Envoyez un message de courtoisie à 3 clientes qui ne sont pas venues depuis 1 mois. Validez le quiz pour sceller votre stratégie fan.</p>
     `,
-    coach_tip: "Le petit café offert vaut plus que 10% de remise.",
-    strategic_mantra: "Le client revient pour ce qu'il a ressenti.",
+    coach_tip: "Le café offert vaut plus que 10% de remise.",
+    strategic_mantra: "Le client revient pour l'émotion vécue.",
     quiz_questions: [
-      {
-        question: "Quelle donnée est la plus importante dans votre fichier client ?",
-        options: ["Le signe astrologique", "L'historique des prestations et les préférences personnelles", "La couleur des chaussures"],
-        correctAnswer: 1,
-        explanation: "Connaître le passé capillaire et les goûts (café, thé) crée une relation personnalisée irrésistible."
-      },
-      {
-        question: "Quand commence la fidélisation ?",
-        options: ["Au bout du 5ème rendez-vous", "Dès la première seconde de l'accueil", "Quand on offre une réduction"],
-        correctAnswer: 1,
-        explanation: "La première impression est celle qui décide si le client reviendra un jour."
-      },
-      {
-        question: "Un client fidèle :",
-        options: ["Négocie toujours les prix", "Recommande votre salon gratuitement à son entourage", "Est acquis pour toujours sans effort"],
-        correctAnswer: 1,
-        explanation: "La recommandation est le marketing le plus puissant et le moins cher du monde."
-      }
+      { question: "Que noter dans le fichier ?", options: ["Rien", "Historique et préférences", "Couleur des yeux"], correctAnswer: 1, explanation: "La personnalisation crée l'attachement." }
     ],
     exercises: [],
     tips: []
@@ -369,40 +251,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_digital",
     topic: "Marketing",
-    title: "Marketing Digital : attirer les meilleurs clients",
-    description: "Utilisez Instagram et WhatsApp pour remplir votre agenda chaque matin.",
-    mini_course: "Votre vitrine est désormais dans la poche de vos finales.",
+    title: "Marketing Digital : attirer les meilleurs",
+    description: "Utilisez Instagram et WhatsApp pour remplir votre agenda.",
+    mini_course: "Votre vitrine est dans la poche de vos clientes.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. Le pouvoir de l'image : photographier le succès</h2>
-      <p>Instagram est le premier salon de coiffure du monde. Si vos photos sont floues ou mal cadrées, vous détruisez votre expertise instantanément. Apprenez à utiliser la lumière naturelle.</p>
-      <blockquote>« Une belle image attire l'œil, un bon conseil attire le client. »</blockquote>
-      <p>Prenez systématiquement une photo « Avant/Après ». Placez votre cliente face à la lumière du jour (jamais à contre-jour). Une photo de qualité sur votre statut WhatsApp est une publicité gratuite qui travaille pour vous pendant que vous dormez.</p>
+      <h2>1. Le pouvoir de l'image : Avant/Après</h2>
+      <p>Instagram est le premier salon du monde. Si vos photos sont floues, vous détruisez votre expertise. Utilisez la lumière naturelle.</p>
       <h2>2. La règle des trois tiers pour vos réseaux</h2>
-      <p>Ne postez pas que des promos ! Respectez cet équilibre : 1/3 de réalisations techniques (votre savoir-faire), 1/3 de coulisses du salon (votre équipe, l'ambiance), et 1/3 de conseils d'expert (comment entretenir ses cheveux). C'est ce mélange qui crée l'engagement et la confiance.</p>
+      <p>1/3 réalisations techniques, 1/3 coulisses du salon, 1/3 conseils d'expert. C'est ce mélange qui crée la confiance.</p>
+      <h2>3. Synthèse & Orientation : De l'Ombre à la Lumière</h2>
+      <p>Vous avez du talent, mais le monde doit le savoir. Le digital n'est pas une option, c'est votre haut-parleur pour attirer les clientes VIP de toute la ville.</p>
+      <p><strong>Votre Défi des 24h :</strong> Postez une photo 'Avant/Après' parfaite sur votre statut WhatsApp aujourd'hui. Prêt pour le quiz digital ?</p>
     `,
-    coach_tip: "Postez une photo par jour, à l'heure du déjeuner.",
+    coach_tip: "Postez une photo par jour à l'heure du déjeuner.",
     strategic_mantra: "Si on ne vous voit pas, vous n'existez pas.",
     quiz_questions: [
-      {
-        question: "Quel type de photo attire le plus de clients ?",
-        options: ["Une photo floue du salon vide", "Un 'Avant/Après' bien éclairé avec le sourire de la finale", "Une photo des produits sur l'étagère"],
-        correctAnswer: 1,
-        explanation: "Le résultat concret sur une vraie personne rassure le client sur vos compétences réelles."
-      },
-      {
-        question: "Quelle est l'utilité du statut WhatsApp ?",
-        options: ["Raconter sa vie personnelle", "Afficher les créneaux disponibles et les promos flash", "C'est inutile pour un salon"],
-        correctAnswer: 1,
-        explanation: "Le statut est un canal direct et gratuit pour remplir vos heures creuses rapidement."
-      },
-      {
-        question: "Il faut répondre aux commentaires :",
-        options: ["Une fois par mois", "Jamais, ça fait trop occupé", "Rapidement et avec professionnalisme"],
-        correctAnswer: 2,
-        explanation: "La réactivité sur le digital montre que vous êtes un gérant attentif et moderne."
-      }
+      { question: "Quelle photo attire ?", options: ["Floue", "Avant/Après bien éclairé", "Le salon vide"], correctAnswer: 1, explanation: "Le résultat concret rassure." }
     ],
     exercises: [],
     tips: []
@@ -411,39 +277,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_color",
     topic: "Technique",
     title: "Colorimétrie Expert : la science des nuances",
-    description: "Devenez un maître de la couleur et évitez les erreurs techniques coûteuses.",
+    description: "Maîtrisez la chimie pour éviter les erreurs coûteuses.",
     mini_course: "La couleur est l'âme du salon.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. La roue chromatique : l'arme fatale</h2>
-      <p>La colorimétrie n'est pas de la magie, c'est de la chimie. Comprendre l'étoile d'Oswald est la base pour neutraliser un reflet roux ou jaune indésirable. Sans cette maîtrise, vous jouez à la loterie avec les cheveux de vos clientes.</p>
-      <blockquote>« Un bon coloriste voit le résultat avant même d'avoir ouvert le tube de teinture. »</blockquote>
-      <p>Rappelez-vous la loi fondamentale : le bleu annule l'orange, le violet annule le jaune, et le vert annule le rouge. Maîtriser ces opposés vous permet de rattraper n'importe quelle erreur technique et de proposer des blonds parfaits, très demandés et très rentables.</p>
+      <p>La colorimétrie n'est pas de la magie. Comprendre l'étoile d'Oswald est la base pour neutraliser un reflet roux ou jaune indésirable.</p>
       <h2>2. La précision du mélange : pesez tout !</h2>
-      <p>Travailler à l'œil est une erreur de débutant. Utilisez toujours une balance électronique. 1 gramme de trop peut changer une nuance et 5 grammes de trop chaque jour représentent des dizaines de milliers de FCFA jetés à la poubelle chaque mois.</p>
+      <p>Travailler à l'œil est une erreur de débutant. Utilisez une balance électronique. 5 grammes de trop chaque jour, c'est des milliers de francs jetés par mois.</p>
+      <h2>3. Synthèse & Orientation : La Maîtrise Technique</h2>
+      <p>Un coloriste qui ne pèse pas ses mélanges est un amateur qui joue avec l'argent du salon. Soyez le scientifique que vos clientes attendent.</p>
+      <p><strong>Votre Défi des 24h :</strong> Pesez chaque gramme de votre prochain mélange couleur. Pas d'exception. Validez votre expertise avec le quiz.</p>
     `,
-    coach_tip: "Pesez toujours vos mélanges sur une balance électronique.",
+    coach_tip: "Pesez toujours vos mélanges.",
     strategic_mantra: "La précision technique évite les rattrapages gratuits.",
     quiz_questions: [
-      {
-        question: "Pourquoi peser sa couleur sur une balance ?",
-        options: ["Pour faire semblant d'être un scientifique", "Pour la précision du résultat et le contrôle du coût produit", "Parce que c'est joli sur la photo"],
-        correctAnswer: 1,
-        explanation: "La chimie exige de la précision pour être reproductible et rentable."
-      },
-      {
-        question: "Pour neutraliser un reflet roux (orangé), on utilise :",
-        options: ["Du rouge", "Du bleu / cendré", "Du jaune"],
-        correctAnswer: 1,
-        explanation: "Selon la roue chromatique, le bleu est l'opposé de l'orangé ; il l'annule donc."
-      },
-      {
-        question: "Un diagnostic couleur raté mène à :",
-        options: ["Un client très content", "Une perte de temps et d'argent en rattrapages", "Aucun impact"],
-        correctAnswer: 1,
-        explanation: "La technique commence toujours par une analyse précise de la base avant d'appliquer le produit."
-      }
+      { question: "Pourquoi peser ?", options: ["Pour faire joli", "Précision et contrôle coût", "C'est scientifique"], correctAnswer: 1, explanation: "La rentabilité passe par la précision." }
     ],
     exercises: [],
     tips: []
@@ -452,39 +302,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_retail",
     topic: "Vente",
     title: "Vente de produits : conseiller comme un expert",
-    description: "Apprenez à vendre les produits de votre boutique pour augmenter vos revenus.",
+    description: "Apprenez à vendre pour augmenter vos revenus sans effort.",
     mini_course: "Si votre client achète ailleurs, vous perdez de l'argent.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. La prescription d'expert : ne vendez plus, conseillez !</h2>
-      <p>Beaucoup de coiffeurs ont peur de vendre. C'est parce qu'ils voient la vente comme un forçage. Un gérant d'élite voit la vente comme un prolongement du soin.</p>
-      <blockquote>« Ne pas conseiller le bon produit à votre client, c'est le laisser détruire votre travail avec un shampoing de mauvaise qualité. »</blockquote>
-      <p>Utilisez l'ordonnance de beauté. Notez à la fin de la prestation les produits utilisés et expliquez POURQUOI ils sont nécessaires. Le client n'achète pas un produit, il achète le résultat durable que vous avez créé au salon.</p>
-      <h2>2. Le taux de revente : votre indicateur de rentabilité</h2>
-      <p>La revente de produits doit représenter au moins 15% de votre chiffre d'affaires. C'est de la marge pure sans temps de travail additionnel. Installez vos produits à hauteur d'yeux et assurez-vous qu'ils soient propres et sans poussière.</p>
+      <h2>1. La prescription d'expert : ne vendez pas, conseillez</h2>
+      <p>Ne pas conseiller le bon produit à votre cliente, c'est la laisser détruire votre travail avec un shampoing de mauvaise qualité.</p>
+      <h2>2. Le taux de revente : votre indicateur clé</h2>
+      <p>La revente doit représenter 15% de votre CA. C'est de la marge pure sans temps de travail additionnel.</p>
+      <h2>3. Synthèse & Orientation : Le Service Complet</h2>
+      <p>Votre travail ne s'arrête pas quand la cliente quitte le fauteuil. Il s'arrête quand vous êtes sûr qu'elle saura entretenir sa beauté chez elle grâce à vos produits.</p>
+      <p><strong>Votre Défi des 24h :</strong> Proposez systématiquement un produit de soin à domicile à vos 3 prochaines clientes. Le quiz vous attend pour valider ce levier.</p>
     `,
-    coach_tip: "Vos bacs à shampoing sont votre meilleure salle d'exposition.",
+    coach_tip: "Vos bacs sont votre meilleure salle d'exposition.",
     strategic_mantra: "Vendre un produit, c'est prendre soin du client chez lui.",
     quiz_questions: [
-      {
-        question: "Comment aborder la revente de produits ?",
-        options: ["Forcer le client à acheter", "Prescrire le produit adapté à ses besoins identifiés au diagnostic", "Attendre que le client demande"],
-        correctAnswer: 1,
-        explanation: "Le conseil est un prolongement du service. Si vous ne conseillez pas, vous ne finissez pas votre travail."
-      },
-      {
-        question: "La marge sur la revente est :",
-        options: ["Insignifiante", "Un complément de revenu essentiel sans temps de travail additionnel", "Une perte de temps"],
-        correctAnswer: 1,
-        explanation: "La revente augmente votre ticket moyen sans mobiliser le fauteuil plus longtemps."
-      },
-      {
-        question: "Quand faut-il parler du produit ?",
-        options: ["Juste à la caisse pour surprendre", "Tout au long du service (shampoing, coiffage)", "Jamais"],
-        correctAnswer: 1,
-        explanation: "L'éducation du client se fait par la démonstration et l'explication des bénéfices pendant l'utilisation."
-      }
+      { question: "Quand parler du produit ?", options: ["À la caisse", "Pendant le service", "Jamais"], correctAnswer: 1, explanation: "L'éducation se fait par la démonstration." }
     ],
     exercises: [],
     tips: []
@@ -493,39 +327,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_coupe",
     topic: "Technique",
     title: "Coupe & Morphologie : sculpter le visage",
-    description: "Apprenez à adapter chaque coupe à la forme du visage de vos finales.",
+    description: "Adaptez chaque coupe à la forme unique de vos clientes.",
     mini_course: "Une coupe réussie est une coupe qui grandit bien.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. L'analyse morpho-psychologique</h2>
-      <p>Une coupe magnifique sur une personne peut être un désastre sur une autre. Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale.</p>
-      <blockquote>« Le coiffeur coupe les cheveux, l'artiste sculpte une personnalité. »</blockquote>
-      <p>Observez la mâchoire, le front et les pommettes. Un visage rond aura besoin de volume en hauteur pour l'allonger, tandis qu'un visage long nécessitera du volume sur les côtés. Apprenez à expliquer ces choix techniques à vos clientes pour asseoir votre autorité.</p>
+      <p>Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale. Observez la mâchoire et le front.</p>
       <h2>2. La géométrie de la coupe : angles et sections</h2>
-      <p>La réussite d'une coupe réside dans la précision de vos séparations. Travaillez toujours avec des sections propres. Comprendre les angles d'élévation vous permet de créer du dégradé ou de la masse avec une précision mathématique.</p>
+      <p>La réussite réside dans la précision de vos séparations. Comprendre les angles d'élévation vous permet de créer du volume avec précision.</p>
+      <h2>3. Synthèse & Orientation : L'Architecte de la Beauté</h2>
+      <p>Ne soyez pas un simple exécutant de photos trouvées sur internet. Soyez l'architecte qui crée une structure adaptée à la personnalité de sa cliente.</p>
+      <p><strong>Votre Défi des 24h :</strong> Expliquez techniquement à votre prochaine cliente pourquoi vous choisissez tel angle de coupe par rapport à son visage. Prêt pour le quiz ?</p>
     `,
-    coach_tip: "Utilisez le miroir pour valider l'équilibre sous tous les angles.",
+    coach_tip: "Utilisez le miroir pour valider l'équilibre.",
     strategic_mantra: "L'harmonie visuelle est le but ultime.",
     quiz_questions: [
-      {
-        question: "Quelle forme de visage est considérée comme l'équilibre parfait ?",
-        options: ["Rond", "Ovale", "Carré"],
-        correctAnswer: 1,
-        explanation: "Le but de la coiffure est souvent de créer l'illusion d'un visage ovale en corrigeant les autres formes."
-      },
-      {
-        question: "Pour un visage très long, il faut éviter :",
-        options: ["Le volume sur les côtés", "Le volume sur le dessus de tête", "La frange"],
-        correctAnswer: 1,
-        explanation: "Le volume en hauteur accentue la longueur du visage, ce qui déséquilibre l'harmonie."
-      },
-      {
-        question: "Le diagnostic coupe se fait :",
-        options: ["Cheveux mouillés uniquement", "Cheveux secs et naturels d'abord", "Au pifomètre"],
-        correctAnswer: 1,
-        explanation: "Analyser l'implantation et la chute naturelle sur cheveux secs est crucial pour la réussite de la structure."
-      }
+      { question: "Quelle forme de visage idéale ?", options: ["Rond", "Ovale", "Carré"], correctAnswer: 1, explanation: "L'ovale est l'équilibre parfait en coiffure." }
     ],
     exercises: [],
     tips: []
@@ -534,39 +352,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_planning",
     topic: "Management",
     title: "Organisation du Planning : gagner du temps",
-    description: "Optimisez chaque minute de votre journée pour maximiser votre CA.",
+    description: "Optimisez chaque minute pour maximiser votre CA.",
     mini_course: "Le temps est votre seule ressource limitée.",
     price: 500,
     aiCredits: 2,
     lesson_content: `
       <h2>1. Le séquençage intelligent (Overlapping)</h2>
-      <p>Le plus grand ennemi de votre rentabilité est le temps mort. Pendant qu'une couleur pose, vous devriez déjà être en train d'effectuer une coupe sur un autre client.</p>
-      <blockquote>« Un planning bien géré permet de doubler son chiffre d'affaires sans travailler plus d'heures. »</blockquote>
-      <p>Apprenez à découper chaque prestation en trois phases : Préparation, Pose, et Finition. Votre rôle de gérant est de coordonner ces phases pour que les bacs et les fauteuils ne soient jamais vides sans raison.</p>
-      <h2>2. La lutte contre les rendez-vous manqués (No-shows)</h2>
-      <p>Un client qui ne vient pas sans prévenir, c'est une perte sèche de 100%. Envoyez systématiquement un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
+      <p>Pendant qu'une couleur pose, vous devriez déjà effectuer une coupe sur une autre cliente. Optimisez les temps morts.</p>
+      <h2>2. La lutte contre les rendez-vous manqués</h2>
+      <p>Envoyez un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
+      <h2>3. Synthèse & Orientation : Maître de son Temps</h2>
+      <p>Un gérant débordé est un gérant qui ne pilote plus. Reprenez le contrôle de votre agenda pour libérer du temps pour votre vision stratégique.</p>
+      <p><strong>Votre Défi des 24h :</strong> Appelez ou écrivez à toutes vos clientes de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
     `,
-    coach_tip: "Prévoyez toujours 15 minutes de marge pour les imprévus.",
+    coach_tip: "Prévoyez toujours 15 minutes de marge.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
     quiz_questions: [
-      {
-        question: "C'est quoi le 'chevauchement' (overlapping) ?",
-        options: ["Faire attendre le client sans raison", "Lancer une coupe pendant le temps de pose d'une couleur", "Se reposer entre deux clients"],
-        correctAnswer: 1,
-        explanation: "Optimiser les temps morts (pose technique) permet de doubler la rentabilité horaire."
-      },
-      {
-        question: "Comment réduire les rendez-vous manqués (No-shows) ?",
-        options: ["Ne rien faire", "Envoyer un SMS de rappel 24h avant", "Engueuler le client s'il arrive"],
-        correctAnswer: 1,
-        explanation: "Le rappel diminue les oublis de 80%. C'est une marque de professionnalisme."
-      },
-      {
-        question: "Un bon planning doit être :",
-        options: ["Une feuille de papier illisible", "Digital, partagé et rigoureux", "Géré uniquement de tête"],
-        correctAnswer: 1,
-        explanation: "La visibilité partagée évite les erreurs de rendez-vous et permet d'anticiper la charge de travail."
-      }
+      { question: "C'est quoi l'overlapping ?", options: ["Attendre", "Coupe pendant pose couleur", "Se reposer"], correctAnswer: 1, explanation: "Optimiser les poses double la rentabilité." }
     ],
     exercises: [],
     tips: []
@@ -574,40 +376,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_psychologie",
     topic: "Accueil",
-    title: "Psychologie de la finale : comprendre l'inexprimé",
+    title: "Psychologie de la cliente : comprendre l'inexprimé",
     description: "Apprenez à lire entre les lignes pour satisfaire les désirs cachés.",
-    mini_course: "On coiffe une personner, pas seulement des cheveux.",
+    mini_course: "On coiffe une personne, pas seulement des cheveux.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. L'écoute active et le décodage</h2>
-      <p>Beaucoup de clients demandent une chose mais en espèrent une autre. La psychologie de la finale est l'art de comprendre ce qui n'est pas dit par les mots.</p>
-      <blockquote>« Le client ne vient pas seulement pour une coupe, il vient pour être écouté et compris. »</blockquote>
-      <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez garder de la longueur mais avoir plus de volume, c'est bien cela ? ». Cette technique rassure instantanément et évite les litiges en fin de prestation. Observez aussi le langage corporel : des bras croisés signifient souvent une hésitation ou une peur.</p>
-      <h2>2. Gérer les clients difficiles</h2>
-      <p>Un client mécontent est souvent un client qui a eu une mauvaise expérience passée. Restez calme, ne justifiez pas l'erreur, proposez une solution immédiate. Transformer un litige en succès est le test ultime de votre professionnalisme.</p>
+      <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez... ? ». Cela évite les litiges et prouve que vous écoutez.</p>
+      <h2>2. Gérer les clientes difficiles</h2>
+      <p>Restez calme, ne justifiez pas l'erreur, proposez une solution. Transformer un litige en succès est votre test de Leader.</p>
+      <h2>3. Synthèse & Orientation : La Connexion Humaine</h2>
+      <p>Votre salon est un lieu de thérapie autant que de beauté. Maîtriser la psychologie vous rend indispensable aux yeux de vos clientes.</p>
+      <p><strong>Votre Défi des 24h :</strong> Reformulez chaque demande de cliente aujourd'hui pour valider sa compréhension. Passez maintenant à la certification.</p>
     `,
-    coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la finale.",
-    strategic_mantra: "Celui qui comprend gagne.",
+    coach_tip: "Observez le langage corporel.",
+    strategic_mantra: "Celui qui comprend gagne le marché.",
     quiz_questions: [
-      {
-        question: "Si une finale croise les bras pendant le diagnostic, cela peut signifier :",
-        options: ["Qu'elle a froid", "Une barrière ou une hésitation", "Qu'elle est très détendue"],
-        correctAnswer: 1,
-        explanation: "Le langage corporel trahit souvent une inquiétude. Il faut alors la rassurer avant de commencer."
-      },
-      {
-        question: "L'écoute active consiste à :",
-        options: ["Attendre son tour de parler", "Reformuler les désirs de la finale pour confirmer sa demande", "Dire 'oui' à tout même si c'est impossible"],
-        correctAnswer: 1,
-        explanation: "La reformulation évite les malentendus et prouve à la finale que vous l'avez comprise."
-      },
-      {
-        question: "La psychologie aide à :",
-        options: ["Manipuler les gens", "Mieux conseiller et fidéliser par l'empathie", "Devenir psychanalyste"],
-        correctAnswer: 1,
-        explanation: "Un client compris est un client qui se sent en sécurité et qui reviendra."
-      }
+      { question: "Utilité de l'écoute active ?", options: ["Manipuler", "Mieux conseiller et fidéliser", "Devenir psy"], correctAnswer: 1, explanation: "Une cliente comprise est une cliente en sécurité." }
     ],
     exercises: [],
     tips: []
@@ -616,39 +402,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_vip",
     topic: "Prestige",
     title: "Services VIP & Prestige : viser le haut de gamme",
-    description: "Comment transformer votre salon en une adresse incontournable pour les élites.",
+    description: "Transformez votre salon en une adresse incontournable pour l'élite.",
     mini_course: "Le luxe se niche dans les détails invisibles.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. Les codes de l'hospitalité d'élite</h2>
-      <p>Le prestige ne dépend pas de la taille de votre salon, mais de la qualité de votre attention. Tout commence par le confort sensoriel dès l'entrée.</p>
-      <blockquote>« Le luxe n'est pas le contraire de la pauvreté, c'est le contraire de la vulgarité et de la négligence. »</blockquote>
-      <p>Offrez une boisson signature (un thé particulier, un café de qualité) servie dans une vraie tasse, jamais dans un gobelet. Proposez un peignoir en soie ou une serviette chaude parfumée à l'eucalyptus lors du shampoing. Ce sont ces micro-expériences qui permettent de doubler vos tarifs sans aucune résistance.</p>
+      <p>Offrez une boisson signature servie dans une vraie tasse. Proposez une serviette chaude parfumée à l'eucalyptus au bac.</p>
       <h2>2. L'exclusivité et la confidentialité</h2>
-      <p>Le client VIP paie pour ne pas être vu, ou pour être vu dans le bon environnement. Si vous le pouvez, créez un coin discret. Garantissez une discrétion totale sur les conversations. Le prestige, c'est aussi le respect absolu de l'intimité du client.</p>
+      <p>Le client VIP paie pour ne pas être vu. Si vous pouvez, créez un coin discret. Garantissez une discrétion totale sur les échanges.</p>
+      <h2>3. Synthèse & Orientation : Élever les Standards</h2>
+      <p>Le prestige n'est pas une question de marbre au sol, mais de qualité de présence. Soyez le gérant qui offre l'exceptionnel dans chaque geste.</p>
+      <p><strong>Votre Défi des 24h :</strong> Prévoyez une petite attention particulière pour votre meilleure cliente demain (boisson, échantillon luxe). Relevez le défi du quiz VIP.</p>
     `,
     coach_tip: "L'exclusivité crée le désir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
     quiz_questions: [
-      {
-        question: "C'est quoi un service 'Signature' ?",
-        options: ["Une coupe banale", "Un protocole unique que l'on ne trouve que chez vous", "Une signature sur un papier"],
-        correctAnswer: 1,
-        explanation: "La signature crée la différence et empêche la comparaison de prix avec la concurrence."
-      },
-      {
-        question: "Quel détail fait la différence en VIP ?",
-        options: ["Avoir la télé allumée", "Le peignoir impeccable et une boisson de qualité", "Avoir beaucoup d'employés"],
-        correctAnswer: 1,
-        explanation: "Le confort sensoriel immédiat place le client dans un état d'esprit 'Luxe'."
-      },
-      {
-        question: "Vendre du prestige, c'est vendre :",
-        options: ["Du temps", "Un résultat et une émotion d'exception", "Plus de shampoing"],
-        correctAnswer: 1,
-        explanation: "Le client VIP paie pour l'expérience globale, pas seulement pour la technique."
-      }
+      { question: "Détail VIP ?", options: ["Télé allumée", "Peignoir impeccable et boisson", "Beaucoup de staff"], correctAnswer: 1, explanation: "Le confort sensoriel immédiat définit le luxe." }
     ],
     exercises: [],
     tips: []
@@ -657,39 +427,23 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_chiffres",
     topic: "Finance",
     title: "Analyse des Chiffres : piloter par la donnée",
-    description: "Ne gérez plus au doigt mouillé. Apprenez à lire votre bilan comme un expert.",
+    description: "Ne gérez plus au doigt mouillé. Apprenez à lire votre succès.",
     mini_course: "Les chiffres ne mentent jamais.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
-      <h2>1. Les indicateurs clés (KPI) de votre succès</h2>
-      <p>Un gérant qui ne connaît pas son ticket moyen est comme un pilote qui n'a pas de tableau de bord. Vous devez savoir chaque soir combien vous avez gagné par client en moyenne.</p>
-      <blockquote>« Ce qui ne se mesure pas ne peut pas être amélioré. »</blockquote>
-      <p>Suivez deux chiffres prioritaires : votre chiffre d'affaires global et votre taux de revente. Si votre ticket moyen stagne, c'est que votre équipe ne propose pas assez de services additionnels ou de produits. Ajustez votre formation en fonction de ce que les chiffres révèlent.</p>
+      <h2>1. Les indicateurs clés (KPI)</h2>
+      <p>Suivez votre ticket moyen et votre taux de revente chaque soir. Ce qui ne se mesure pas ne s'amplore pas.</p>
       <h2>2. Gérer son stock comme un investisseur</h2>
-      <p>Le produit sur vos étagères est de l'argent qui dort. Ne sur-stockez pas. Apprenez à calculer votre taux de rotation. Un produit qui reste plus de 3 mois sans être vendu est une perte financière nette. Faites-le tourner via une promotion flash !</p>
+      <p>Le produit sur vos étagères est de l'argent qui dort. Apprenez à calculer votre taux de rotation.</p>
+      <h2>3. Synthèse & Orientation : Devenir un Gestionnaire</h2>
+      <p>Un bon coiffeur gagne sa vie, un bon gestionnaire bâtit un patrimoine. Changez votre regard sur votre caisse pour en faire un moteur de croissance.</p>
+      <p><strong>Votre Défi des 24h :</strong> Calculez votre ticket moyen de la journée (Recettes / Nombre de clientes). Répondez au quiz pour devenir un pro des chiffres.</p>
     `,
-    coach_tip: "Vérifiez vos chiffres tous les soirs avant de fermer.",
+    coach_tip: "Vérifiez vos chiffres tous les soirs.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
     quiz_questions: [
-      {
-        question: "C'est quoi le 'Ticket Moyen' ?",
-        options: ["Le prix de la baguette", "Le chiffre d'affaires divisé par le nombre de clients", "Le prix du loyer"],
-        correctAnswer: 1,
-        explanation: "C'est l'indicateur roi. S'il monte, vous gagnez plus d'argent avec le même nombre de clients."
-      },
-      {
-        question: "Votre stock est considéré comme :",
-        options: ["De l'argent dormant sur les étagères", "Un cadeau des fournisseurs", "Inutile"],
-        correctAnswer: 0,
-        explanation: "Chaque produit non utilisé est de la trésorerie bloquée. Il faut le faire tourner."
-      },
-      {
-        question: "Si vos charges augmentent, vous devez :",
-        options: ["Travailler plus d'heures gratuitement", "Analyser vos indicateurs et ajuster vos tarifs ou votre revente", "Fermer le salon"],
-        correctAnswer: 1,
-        explanation: "La gestion, c'est l'ajustement constant entre ce qui sort et ce qui rentre."
-      }
+      { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicateur de votre performance de vente." }
     ],
     exercises: [],
     tips: []
@@ -697,40 +451,24 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_formalisation",
     topic: "Management",
-    title: "Formalisation & Structure : bâtir une entreprise solide",
-    description: "Sortez de l'informel pour accéder aux crédits bancaires.",
+    title: "Formalisation & Structure : bâtir du solide",
+    description: "Sortez de l'informel pour accéder aux crédits et à la croissance.",
     mini_course: "Un salon formel est un salon pérenne.",
     price: 500,
     aiCredits: 2,
     lesson_content: `
       <h2>1. De l'informel au business structuré</h2>
-      <p>En Afrique de l'Ouest, beaucoup de salons restent dans l'informel par peur des impôts. C'est un plafond de verre qui vous empêche de grandir et d'obtenir des prêts.</p>
-      <blockquote>« Un salon structuré attire les investisseurs, un salon informel n'attire que les problèmes. »</blockquote>
-      <p>Commencez par ouvrir un compte bancaire dédié au salon. Ne mélangez jamais votre argent personnel et celui de la caisse. Versez-vous un salaire fixe. C'est la première étape indispensable pour être crédible auprès des banques et de la COOPEC pour vos futurs projets d'agrandissement.</p>
+      <p>Ouvrez un compte bancaire dédié au salon. Ne mélangez jamais argent personnel et caisse. Versez-vous un salaire fixe.</p>
       <h2>2. La protection juridique et comptable</h2>
-      <p>Déclarez votre personnel, même progressivement. Un employé déclaré est un employé plus stable et plus engagé. La formalisation est une protection pour vous en cas de litige et une valorisation de votre patrimoine commercial lors de la revente de votre salon.</p>
+      <p>Déclarez votre personnel progressivement. La formalisation est une protection en cas de litige et une valorisation de votre salon.</p>
+      <h2>3. Synthèse & Orientation : La Vision Long Terme</h2>
+      <p>Le respect des règles administratives n'est pas un fardeau, c'est la porte d'entrée vers les banques et les investisseurs qui financeront votre futur empire.</p>
+      <p><strong>Votre Défi des 24h :</strong> Séparez physiquement l'argent de votre prochain salaire de la caisse du jour. Validez votre maturité de gérant avec le dernier quiz.</p>
     `,
-    coach_tip: "Séparez toujours votre argent personnel de celui du salon.",
-    strategic_mantra: "La rigueur administrative est la base de la croissance.",
+    coach_tip: "Séparez argent personnel et pro.",
+    strategic_mantra: "La rigueur administrative est la base de la liberté.",
     quiz_questions: [
-      {
-        question: "Pourquoi avoir un compte bancaire pro ?",
-        options: ["Pour faire joli", "Pour séparer vos finances personnelles de celles de l'entreprise", "Parce que c'est obligatoire partout"],
-        correctAnswer: 1,
-        explanation: "C'est la seule façon d'avoir une vision claire de la rentabilité réelle du salon."
-      },
-      {
-        question: "La formalisation permet de :",
-        options: ["Payer plus d'impôts uniquement", "Sécuriser son business et accéder à des prêts de développement", "Perdre son temps"],
-        correctAnswer: 1,
-        explanation: "Une entreprise structurée peut grandir, embaucher et investir grâce aux banques."
-      },
-      {
-        question: "Le gérant formel :",
-        options: ["Prend tout le cash dans sa poche le soir", "Se verse un salaire fixe et suit sa comptabilité", "Ne sait pas combien il gagne"],
-        correctAnswer: 1,
-        explanation: "Se verser un salaire permet de stabiliser sa vie privée sans mettre en danger le salon."
-      }
+      { question: "Pourquoi un compte pro ?", options: ["Pour faire joli", "Séparer finances perso et pro", "C'est obligatoire"], correctAnswer: 1, explanation: "C'est la base d'une gestion saine." }
     ],
     exercises: [],
     tips: []
@@ -738,51 +476,27 @@ export const TRAINING_CATALOG: TrainingModule[] = [
 ];
 
 export const BADGES: Badge[] = [
-  {
-    id: "first_module",
-    name: "Décollage",
-    icon: "🚀",
-    description: "Premier module terminé avec succès.",
-    condition: (u, mods) => mods.some(m => m.status === ModuleStatus.COMPLETED)
-  },
-  {
-    id: "ambassador",
-    name: "Ambassadeur",
-    icon: "🤝",
-    description: "A parrainé au moins 1 gérant avec succès.",
-    condition: (u) => (u.referralCount || 0) >= 1
-  },
-  {
-    id: "dedicated",
-    name: "Maître du Salon",
-    icon: "🏆",
-    description: "5 modules terminés.",
-    condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 5
-  },
-  {
-    id: "legend",
-    name: "Légende du Salon",
-    icon: "👑",
-    description: "12 modules ou plus terminés avec succès.",
-    condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 12
-  }
+  { id: "first_module", name: "Décollage", icon: "🚀", description: "Premier module terminé.", condition: (u, mods) => mods.some(m => m.status === ModuleStatus.COMPLETED) },
+  { id: "ambassador", name: "Ambassadeur", icon: "🤝", description: "A parrainé 1 gérant.", condition: (u) => (u.referralCount || 0) >= 1 },
+  { id: "dedicated", name: "Maître du Salon", icon: "🏆", description: "5 modules terminés.", condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 5 },
+  { id: "legend", name: "Légende du Salon", icon: "👑", description: "12 modules terminés.", condition: (u, mods) => mods.filter(m => m.status === ModuleStatus.COMPLETED).length >= 12 }
 ];
 
 export const DIAGNOSTIC_QUESTIONS = [
-  { id: 1, text: "Votre équipe est-elle formée aux techniques d'un accueil téléphonique qui transforme chaque appel en rendez-vous ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
-  { id: 2, text: "Réalisez-vous un diagnostic visuel et tactile assis face au client avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
-  { id: 3, text: "Désinfectez-vous systématiquement vos outils devant le client pour prouver votre standard d'hygiène ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
-  { id: 4, text: "Le passage au bac est-il vécu par vos clients comme un véritable rituel de relaxation avec massage crânien ?", category: "Technique", linkedModuleId: "mod_shampoing" },
-  { id: 5, text: "Calculez-vous vos tarifs en fonction de votre coût à la minute réel plutôt que de copier la concurrence ?", category: "Finance", linkedModuleId: "mod_pricing" },
-  { id: 6, text: "Réunissez-vous votre équipe au moins une fois par semaine pour fixer des objectifs de performance clairs ?", category: "Management", linkedModuleId: "mod_management" },
-  { id: 7, text: "Utilisez-vous un fichier client pour noter les préférences personnelles (café, anniversaires) et relancer les absents ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
-  { id: 8, text: "Publiez-vous chaque jour une photo de qualité de vos réalisations sur les réseaux sociaux pour attirer du flux ?", category: "Marketing", linkedModuleId: "mod_digital" },
-  { id: 9, text: "Maîtrisez-vous parfaitement la roue chromatique pour neutraliser les reflets indésirables sans erreur technique ?", category: "Technique", linkedModuleId: "mod_color" },
-  { id: 10, text: "Votre taux de revente de produits à domicile représente-t-il plus de 15 % de votre chiffre d'affaires global ?", category: "Vente", linkedModuleId: "mod_retail" },
-  { id: 11, text: "Adaptez-vous systématiquement la géométrie de vos coupes à la morphologie du visage de vos finales ?", category: "Technique", linkedModuleId: "mod_coupe" },
-  { id: 12, text: "Utilisez-vous un système de réservation optimisé pour éviter les temps morts et les chevauchements mal gérés ?", category: "Management", linkedModuleId: "mod_planning" },
-  { id: 13, text: "Savez-vous décoder le langage corporel de vos finales pour leur proposer des services additionnels sans forcer ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
-  { id: 14, text: "Proposez-vous des rituels de prestige (boisson signature, serviette chaude) pour justifier des prix haut de gamme ?", category: "Prestige", linkedModuleId: "mod_vip" },
-  { id: 15, text: "Analysez-vous vos indicateurs clés (ticket moyen, productivité) chaque soir avant de fermer le salon ?", category: "Finance", linkedModuleId: "mod_chiffres" },
-  { id: 16, text: "Votre salon dispose-t-il d'une structure juridique et comptable claire pour accéder à des financements ?", category: "Management", linkedModuleId: "mod_formalisation" }
+  { id: 1, text: "Votre équipe est-elle formée à un accueil téléphonique qui transforme chaque appel ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
+  { id: 2, text: "Réalisez-vous un diagnostic visuel et tactile assis avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
+  { id: 3, text: "Désinfectez-vous systématiquement vos outils devant la cliente ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
+  { id: 4, text: "Le passage au bac est-il un rituel de relaxation avec massage crânien ?", category: "Technique", linkedModuleId: "mod_shampoing" },
+  { id: 5, text: "Calculez-vous vos tarifs en fonction de votre coût à la minute réel ?", category: "Finance", linkedModuleId: "mod_pricing" },
+  { id: 6, text: "Réunissez-vous votre équipe chaque semaine pour fixer des objectifs ?", category: "Management", linkedModuleId: "mod_management" },
+  { id: 7, text: "Utilisez-vous un fichier client pour relancer les absentes ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
+  { id: 8, text: "Publiez-vous chaque jour une photo de vos réalisations sur les réseaux ?", category: "Marketing", linkedModuleId: "mod_digital" },
+  { id: 9, text: "Maîtrisez-vous parfaitement la roue chromatique pour éviter les erreurs ?", category: "Technique", linkedModuleId: "mod_color" },
+  { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % du CA ?", category: "Vente", linkedModuleId: "mod_retail" },
+  { id: 11, text: "Adaptez-vous systématiquement vos coupes à la morphologie du visage ?", category: "Technique", linkedModuleId: "mod_coupe" },
+  { id: 12, text: "Utilisez-vous un système de réservation optimisé pour éviter les temps morts ?", category: "Management", linkedModuleId: "mod_planning" },
+  { id: 13, text: "Savez-vous décoder le langage corporel de vos clientes ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
+  { id: 14, text: "Proposez-vous des rituels de prestige pour justifier des prix luxe ?", category: "Prestige", linkedModuleId: "mod_vip" },
+  { id: 15, text: "Analysez-vous vos indicateurs clés (ticket moyen) chaque soir ?", category: "Finance", linkedModuleId: "mod_chiffres" },
+  { id: 16, text: "Votre salon dispose-t-il d'une structure claire pour accéder aux prêts ?", category: "Management", linkedModuleId: "mod_formalisation" }
 ];

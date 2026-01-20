@@ -444,10 +444,10 @@ const ModuleView: React.FC = () => {
                 <div className="h-32 w-32 rounded-full mx-auto p-1.5 bg-emerald-500 shadow-xl shadow-emerald-200">
                   <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover rounded-full" alt="Mentor" />
                 </div>
-                <div>
-                   <h2 className="text-5xl font-serif font-bold text-slate-900 mb-6">Parole d'Expert</h2>
+                <div className="space-y-4">
+                   <h2 className="text-5xl font-serif font-bold text-slate-900">Parole d'Expert</h2>
                    <p className="text-slate-500 text-xl italic leading-relaxed max-w-2xl mx-auto">
-                     "Félicitations pour votre réussite ! Mais un certificat sans action n'est que du papier. Quelle action concrète allez-vous mettre en place dans votre salon dès demain pour honorer ce titre ?"
+                     "Félicitations pour votre réussite théorique ! Pour devenir une légende, vous devez agir. <strong>Quel est votre plan pour relever le Défi des 24h</strong> que je vous ai lancé à la fin du cours ?"
                    </p>
                 </div>
                 <div className="relative group max-w-2xl mx-auto">
@@ -455,19 +455,19 @@ const ModuleView: React.FC = () => {
                   <textarea 
                     value={commitment}
                     onChange={e => setCommitment(e.target.value)}
-                    placeholder="Ex: Je vais peser chaque dose de coloration pour réduire le gaspillage de 20%..."
+                    placeholder="Ex: Demain, je réalise mes 3 diagnostics assis et je prescris systématiquement un soin à domicile..."
                     className="w-full p-10 pl-20 rounded-[3.5rem] bg-slate-50 border-none outline-none font-bold text-lg min-h-[250px] resize-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>
                 <button 
                   onClick={handleSaveEngagement}
                   disabled={!commitment.trim() || isSaving}
-                  className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto disabled:opacity-50"
+                  className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto disabled:opacity-50 hover:bg-black transition-all"
                 >
                   {isSaving ? <Loader2 className="animate-spin" /> : <Sparkles className="w-6 h-6" />}
-                  Enregistrer mon engagement
+                  Lancer mon Défi des 24h
                 </button>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cet engagement sera ajouté à votre plan de transformation</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cet engagement sera ajouté à votre centre de commandement</p>
               </div>
             )}
 
@@ -489,11 +489,11 @@ const ModuleView: React.FC = () => {
                     <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] mb-12">
                        <RotateCcw className="w-10 h-10 text-amber-500 mx-auto mb-6" />
                        <p className="text-amber-900 text-xl font-medium leading-relaxed italic">
-                         "La persévérance est la marque des élites. Vous n'avez pas atteint les 80%. Relisez la leçon, le mentor Coach Kita croit en vous."
+                         "La persévérance est la marque des élites. Vous n'avez pas atteint les 80%. Relisez le Chapitre 3 sur la Synthèse, le mentor Coach Kita croit en vous."
                        </p>
                     </div>
                     {tokensRemaining > 0 ? (
-                      <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); setAnswers([]); setCurrentIdx(0); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition">Retenter ma chance</button>
+                      <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); setAnswers([]); setCurrentIdx(0); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition">Ré-écouter et Retenter</button>
                     ) : (
                       <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs">Racheter le module (3 nouveaux jetons)</button>
                     )}
@@ -557,26 +557,10 @@ const ModuleView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* ACTIONS DU CERTIFICAT */}
                     <div className="flex flex-col md:flex-row items-center justify-center gap-6 print:hidden">
-                       <button 
-                        onClick={handlePrintCertificate}
-                        className="bg-brand-900 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"
-                       >
-                         <Printer className="w-4 h-4" /> Imprimer / PDF
-                       </button>
-                       <button 
-                        onClick={handleShareCertificate}
-                        className="bg-emerald-500 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"
-                       >
-                         <Share2 className="w-4 h-4" /> Partager ma réussite
-                       </button>
-                       <button 
-                        onClick={() => navigate('/dashboard')}
-                        className="text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-brand-900 px-6"
-                       >
-                         Retour au Dashboard
-                       </button>
+                       <button onClick={handlePrintCertificate} className="bg-brand-900 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"><Printer className="w-4 h-4" /> Imprimer / PDF</button>
+                       <button onClick={handleShareCertificate} className="bg-emerald-500 text-white px-10 py-6 rounded-3xl font-black uppercase text-[10px] shadow-xl flex items-center gap-3 hover:scale-105 transition-all"><Share2 className="w-4 h-4" /> Partager ma réussite</button>
+                       <button onClick={() => navigate('/dashboard')} className="text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-brand-900 px-6">Retour à la Console</button>
                     </div>
                   </div>
                 )}
