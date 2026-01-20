@@ -55,17 +55,11 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-/**
- * Prépare l'objet pour l'écriture en DB.
- * On utilise les clés camelCase car l'erreur schema_cache a confirmé 
- * que phone_number et created_at ne sont pas reconnus.
- */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
   Object.keys(profile).forEach(key => {
     const value = (profile as any)[key];
     if (value !== undefined && value !== null) {
-      // On envoie la clé telle quelle (camelCase) pour correspondre au schéma attendu
       dbData[key] = value;
     }
   });
@@ -78,7 +72,6 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   if (!cleanSearch) return null;
 
   try {
-    // On tente la recherche sur phoneNumber (camelCase)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -86,7 +79,6 @@ export const getProfileByPhone = async (phoneNumber: string) => {
       .maybeSingle();
     
     if (error) {
-      // Fallback si la colonne est en snake_case
       const { data: fallbackData } = await supabase
         .from('profiles')
         .select('*')
@@ -109,7 +101,6 @@ export const getUserProfile = async (uid: string) => {
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non connecté.");
   const dbData = mapProfileToDB(profile);
-  // Upsert gère la création ou la mise à jour
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
   if (error) {
     console.error("Supabase Save Error:", error);
@@ -130,8 +121,27 @@ export const getAllUsers = async () => {
   return (data || []).map(mapProfileFromDB) as UserProfile[];
 };
 
+/**
+ * Suppression sécurisée : On nettoie les tables liées avant de supprimer le profil
+ */
 export const deleteUserProfile = async (uid: string) => {
-  if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
+  if (!supabase) return;
+  
+  // 1. Suppression des données liées pour éviter les erreurs de contrainte
+  await supabase.from('kita_transactions').delete().eq('user_id', uid);
+  await supabase.from('kita_staff').delete().eq('user_id', uid);
+  await supabase.from('kita_clients').delete().eq('user_id', uid);
+  await supabase.from('kita_services').delete().eq('user_id', uid);
+  await supabase.from('kita_products').delete().eq('user_id', uid);
+  await supabase.from('kita_suppliers').delete().eq('user_id', uid);
+
+  // 2. Suppression du profil principal
+  const { error } = await supabase.from('profiles').delete().eq('uid', uid);
+  
+  if (error) {
+    console.error("Erreur de suppression Supabase:", error);
+    throw new Error(error.message);
+  }
 };
 
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
@@ -139,8 +149,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id
+    paymentMethod: t.payment_method, date: t.date, staff_name: t.staff_name,
+    commission_rate: t.commission_rate, is_credit: t.is_credit, client_id: t.client_id, product_id: t.product_id
   }));
 };
 

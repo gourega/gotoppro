@@ -77,7 +77,7 @@ const AdminDashboard: React.FC = () => {
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 4000);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   const fetchUsers = async () => {
@@ -171,18 +171,18 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteUser = async (user: UserProfile) => {
     if (user.uid === currentUser?.uid) return showNotification("Action impossible sur soi-même", "error");
     
-    const confirmDelete = window.confirm(`⚠️ ACTION CRITIQUE : Voulez-vous vraiment supprimer définitivement le compte de ${user.firstName} ${user.lastName} ? Toutes ses données (recettes, formations) seront perdues à jamais.`);
+    const confirmDelete = window.confirm(`⚠️ ACTION CRITIQUE : Voulez-vous vraiment supprimer définitivement le compte de ${user.firstName} ${user.lastName} ? Cette action effacera également son staff et ses transactions.`);
     
     if (!confirmDelete) return;
 
     setProcessingId(`delete_${user.uid}`);
     try {
       await deleteUserProfile(user.uid);
-      showNotification("Compte Gérant supprimé avec succès");
+      showNotification("Compte Gérant supprimé définitivement de Supabase");
       setSelectedUser(null);
-      await fetchUsers();
-    } catch (err) {
-      showNotification("Erreur lors de la suppression", "error");
+      await fetchUsers(); // Rafraîchit la liste globale
+    } catch (err: any) {
+      showNotification(`Échec de la suppression : ${err.message}`, "error");
     } finally {
       setProcessingId(null);
     }
@@ -285,7 +285,7 @@ const AdminDashboard: React.FC = () => {
           notification.type === 'success' ? 'bg-emerald-50 border-emerald-500/30 text-emerald-600' : 'bg-rose-50 border-rose-500/30 text-rose-600'
         }`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-bold text-xs uppercase tracking-widest">{notification.message}</span>
+          <span className="font-bold text-xs uppercase tracking-widest leading-relaxed max-w-xs">{notification.message}</span>
         </div>
       )}
 
