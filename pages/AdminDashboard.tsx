@@ -1,3 +1,4 @@
+
 // Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -40,7 +41,6 @@ import {
   UserPlus,
   Wifi,
   ShoppingBag,
-  /* Added missing Star icon import */
   Star
 } from 'lucide-react';
 
@@ -163,6 +163,26 @@ const AdminDashboard: React.FC = () => {
       }
     } catch (err) {
       showNotification("Erreur serveur", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteUser = async (user: UserProfile) => {
+    if (user.uid === currentUser?.uid) return showNotification("Action impossible sur soi-même", "error");
+    
+    const confirmDelete = window.confirm(`⚠️ ACTION CRITIQUE : Voulez-vous vraiment supprimer définitivement le compte de ${user.firstName} ${user.lastName} ? Toutes ses données (recettes, formations) seront perdues à jamais.`);
+    
+    if (!confirmDelete) return;
+
+    setProcessingId(`delete_${user.uid}`);
+    try {
+      await deleteUserProfile(user.uid);
+      showNotification("Compte Gérant supprimé avec succès");
+      setSelectedUser(null);
+      await fetchUsers();
+    } catch (err) {
+      showNotification("Erreur lors de la suppression", "error");
     } finally {
       setProcessingId(null);
     }
@@ -627,6 +647,15 @@ const AdminDashboard: React.FC = () => {
                  <button onClick={() => handleToggleStatus(selectedUser)} disabled={selectedUser.uid === currentUser?.uid} className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedUser.isActive ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' : 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20 hover:bg-emerald-700'}`}>
                     {selectedUser.isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
                     {selectedUser.isActive ? 'Suspendre Accès' : 'Activer Compte'}
+                 </button>
+                 {/* BOUTON SUPPRIMER GÉRANT (SÉCURISÉ) */}
+                 <button 
+                   onClick={() => handleDeleteUser(selectedUser)} 
+                   disabled={selectedUser.uid === currentUser?.uid || processingId === `delete_${selectedUser.uid}`} 
+                   className="p-5 rounded-[1.5rem] bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 transition-all active:scale-95 shadow-sm"
+                   title="Supprimer définitivement"
+                 >
+                    {processingId === `delete_${selectedUser.uid}` ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                  </button>
                </div>
                <div className="flex items-center gap-4 w-full md:w-auto">
