@@ -92,6 +92,8 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <p>Le premier contact avec votre salon ne se fait pas dans le fauteuil, mais à travers une onde sonore. Répondre par un simple « allô » est une erreur de débutant qui dévalorise instantanément votre expertise. Un gérant d'élite impose un standard dès la première seconde.</p>
       <blockquote>« La voix est le miroir de votre salon ; si elle est hésitante, votre service le sera aussi. »</blockquote>
       <p>La formule d'or doit être prononcée avec un sourire conscient : <strong>« Salon [Nom du Salon], [Votre Prénom] à votre écoute, bonjour. »</strong> Cette structure permet au client de confirmer qu'il est au bon endroit et d'identifier son interlocuteur, créant ainsi un lien humain immédiat.</p>
+      <h2>2. La prise de rendez-vous : le script de vente</h2>
+      <p>Ne demandez jamais « quand voulez-vous venir ? ». C'est une question ouverte qui montre que votre agenda est vide. Utilisez la méthode de l'alternative : <strong>« Je peux vous proposer mardi à 10h ou jeudi à 14h, laquelle de ces options vous convient le mieux ? »</strong> Cela crée un sentiment d'exclusivité et de forte demande.</p>
     `,
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
     strategic_mantra: "Un appel raté est un client qui part chez le voisin.",
@@ -128,7 +130,11 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 3,
     lesson_content: `
       <h2>1. La posture du mentor : briser la barrière du miroir</h2>
-      <p>Le diagnostic est le moment le plus rentable de votre journée, pourtant c'est celui que beaucoup négligent par manque de temps.</p>
+      <p>Le diagnostic est le moment le plus rentable de votre journée, pourtant c'est celui que beaucoup négligent par manque de temps. Un expert ne commence jamais par demander « ce qu'on fait aujourd'hui ? » mais par observer.</p>
+      <blockquote>« Celui qui pose les questions contrôle la conversation ; celui qui écoute gagne la confiance. »</blockquote>
+      <p>Asseyez-vous ou accroupissez-vous pour être à hauteur d'yeux avec votre cliente. Ne parlez pas à son reflet dans le miroir, parlez-lui directement. Cette proximité physique et visuelle instaure une relation de conseil plutôt qu'une relation d'exécution technique.</p>
+      <h2>2. La méthode des 4 étapes : observer, toucher, questionner, prescrire</h2>
+      <p><strong>L'observation</strong> porte sur le style, la tenue et la forme du visage. <strong>Le toucher</strong> permet de valider l'élasticité et la porosité du cheveu. <strong>Le questionnement</strong> révèle les habitudes à domicile. Enfin, <strong>la prescription</strong> n'est pas une option, c'est votre devoir d'expert pour garantir la tenue de votre travail.</p>
     `,
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
@@ -163,7 +169,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Un salon propre est un salon qui respecte ses clients et qui peut facturer plus cher.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>1. La désinfection visible</h2><p>Désinfecter ses outils devant le client justifie une hausse de tarifs.</p>`,
+    lesson_content: `
+      <h2>1. La désinfection visible : un acte marketing</h2>
+      <p>Désinfecter ses outils dans l'arrière-boutique est une erreur. Pour que l'hygiène devienne un argument de vente, elle doit être théâtralisée. Le client doit voir le geste.</p>
+      <blockquote>« L'hygiène n'est pas une contrainte, c'est votre signature de luxe la plus visible. »</blockquote>
+      <p>Sortez vos ciseaux et vos peignes d'une pochette stérile ou d'un appareil à UV devant le client. Nettoyez le fauteuil avec un spray désinfectant avant qu'il ne s'assoie. Ces quelques secondes d'attention augmentent la valeur perçue de votre prestation de plus de 20%.</p>
+      <h2>2. Les points critiques : bacs et brosses</h2>
+      <p>Rien ne dégoûte plus un client que des cheveux restés sur une brosse ou un bac à shampoing taché. Installez une routine stricte : après chaque client, le poste de travail doit redevenir « neuf ». C'est la base indispensable pour prétendre à des tarifs élevés.</p>
+    `,
     coach_tip: "Un bac à shampoing mal nettoyé fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
     quiz_questions: [
@@ -197,7 +210,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "C'est au bac que vous gagnez le cœur de votre finale.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>1. La technique du massage</h2><p>Le client cherche un moment de déconnexion.</p>`,
+    lesson_content: `
+      <h2>1. Le rituel sensoriel Kita : plus qu'un lavage</h2>
+      <p>Le passage au bac est le seul moment où le client ferme les yeux et se déconnecte totalement. Si vous parlez des potins du quartier à ce moment-là, vous gâchez une opportunité immense de fidélisation.</p>
+      <blockquote>« Le massage crânien n'est pas un bonus, c'est l'âme du service de prestige. »</blockquote>
+      <p>Pratiquez la règle du silence : ne parlez que pour annoncer la température de l'eau. Utilisez des mouvements lents et profonds pour le massage. La nuque et les tempes sont des zones de haute tension ; en les libérant, vous créez un ancrage émotionnel puissant avec votre salon.</p>
+      <h2>2. L'expertise technique : émulsion et rinçage</h2>
+      <p>Un bon shampoing commence par une émulsion parfaite pour décoller les impuretés sans agresser le cuir chevelu. Le rinçage doit être méticuleux : un cheveu qui « crisse » est un cheveu propre. C'est à ce moment que vous préparez le terrain pour la réussite de la coupe ou de la technique suivante.</p>
+    `,
     coach_tip: "Ne parlez pas pendant le massage, laissez le client savourer.",
     strategic_mantra: "Un shampoing bâclé est une expérience ratée.",
     quiz_questions: [
@@ -231,7 +251,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Un tarif trop bas est un signal de mal-confiance.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. La fin du tarif au hasard</h2><p>Calculez votre coût à la minute.</p>`,
+    lesson_content: `
+      <h2>1. La fin du tarif au hasard : le calcul du coût-minute</h2>
+      <p>Beaucoup de gérants fixent leurs prix en regardant le voisin. C'est la route vers la faillite. Votre tarif doit être basé sur vos charges fixes (loyer, salaires, électricité) divisées par votre temps d'ouverture.</p>
+      <blockquote>« On ne baisse pas les prix pour attirer le client, on augmente la qualité pour justifier le tarif. »</blockquote>
+      <p>Si votre salon vous coûte 200 FCFA par minute pour rester ouvert, une prestation de 30 minutes ne peut pas être vendue moins de 6 000 FCFA, sans compter le bénéfice et le coût des produits. Apprenez à dire non aux prestations à perte.</p>
+      <h2>2. La psychologie du prix : le menu de services</h2>
+      <p>Présentez toujours trois options : Standard, Expert et Prestige. La majorité des clients choisira l'option intermédiaire. Cela vous permet d'augmenter votre panier moyen mécaniquement sans avoir l'air de forcer la vente.</p>
+    `,
     coach_tip: "Votre talent n'est pas négociable.",
     strategic_mantra: "Mieux vaut moins de clients qui paient le juste prix que trop de clients à perte.",
     quiz_questions: [
@@ -265,7 +292,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Une équipe qui sourit est une équipe qui vend.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. Le gérant-pilote</h2><p>Définissez des standards clairs.</p>`,
+    lesson_content: `
+      <h2>1. Le gérant-pilote : définir les standards</h2>
+      <p>Votre équipe ne fera pas ce que vous dites, mais ce que vous faites. Le management d'élite commence par l'exemplarité totale. Si vous arrivez en retard, votre équipe arrivera en retard.</p>
+      <blockquote>« Seul on va vite, mais ensemble on bâtit un empire. »</blockquote>
+      <p>Instaurez un briefing express de 5 minutes chaque matin. Donnez l'objectif de chiffre d'affaires du jour et rappelez un standard de service (ex: le sourire au téléphone). Un collaborateur qui connaît sa direction est un collaborateur motivé.</p>
+      <h2>2. Le recadrage constructif : féliciter en public</h2>
+      <p>Ne criez jamais devant les clients. Les erreurs sont des opportunités de formation. Recadrez toujours en privé, avec des faits précis, et finissez par une note positive. La reconnaissance est le moteur de la performance dans nos métiers de passion.</p>
+    `,
     coach_tip: "Félicitez en public, recadrez en privé.",
     strategic_mantra: "Seul on va vite, ensemble on va loin.",
     quiz_questions: [
@@ -299,7 +333,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Un client fidèle est votre meilleur ambassadeur.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. L'expérience mémorable</h2><p>La fidélité se gagne par l'émotion.</p>`,
+    lesson_content: `
+      <h2>1. L'effet « WOW » : l'expérience mémorable</h2>
+      <p>La technique pure ne suffit plus pour garder un client. Aujourd'hui, on revient pour ce que l'on a ressenti. Fidéliser, c'est dépasser les attentes.</p>
+      <blockquote>« Un client satisfait revient, un client ému vous recommande à tout son répertoire. »</blockquote>
+      <p>Surprenez vos clients avec des petits détails : notez leur boisson préférée, rappelez-vous de l'anniversaire de leur enfant, offrez un soin express imprévu. Ces attentions créent un lien affectif que la concurrence ne pourra jamais racheter avec des prix bas.</p>
+      <h2>2. Le fichier client : votre mine d'or</h2>
+      <p>Un gérant d'élite connaît ses chiffres. Utilisez votre base de données pour relancer les clients qui ne sont pas venus depuis 4 semaines. Un simple message WhatsApp personnalisé : « Bonjour Mme Koné, vous nous manquez au salon ! » génère un rendez-vous dans 50% des cas.</p>
+    `,
     coach_tip: "Le petit café offert vaut plus que 10% de remise.",
     strategic_mantra: "Le client revient pour ce qu'il a ressenti.",
     quiz_questions: [
@@ -333,7 +374,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Votre vitrine est désormais dans la poche de vos finales.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. Le pouvoir de l'image</h2><p>Apprenez à photographier vos réalisations.</p>`,
+    lesson_content: `
+      <h2>1. Le pouvoir de l'image : photographier le succès</h2>
+      <p>Instagram est le premier salon de coiffure du monde. Si vos photos sont floues ou mal cadrées, vous détruisez votre expertise instantanément. Apprenez à utiliser la lumière naturelle.</p>
+      <blockquote>« Une belle image attire l'œil, un bon conseil attire le client. »</blockquote>
+      <p>Prenez systématiquement une photo « Avant/Après ». Placez votre cliente face à la lumière du jour (jamais à contre-jour). Une photo de qualité sur votre statut WhatsApp est une publicité gratuite qui travaille pour vous pendant que vous dormez.</p>
+      <h2>2. La règle des trois tiers pour vos réseaux</h2>
+      <p>Ne postez pas que des promos ! Respectez cet équilibre : 1/3 de réalisations techniques (votre savoir-faire), 1/3 de coulisses du salon (votre équipe, l'ambiance), et 1/3 de conseils d'expert (comment entretenir ses cheveux). C'est ce mélange qui crée l'engagement et la confiance.</p>
+    `,
     coach_tip: "Postez une photo par jour, à l'heure du déjeuner.",
     strategic_mantra: "Si on ne vous voit pas, vous n'existez pas.",
     quiz_questions: [
@@ -367,7 +415,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "La couleur est l'âme du salon.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. La roue chromatique</h2><p>Comprendre les pigments pour neutraliser les reflets.</p>`,
+    lesson_content: `
+      <h2>1. La roue chromatique : l'arme fatale</h2>
+      <p>La colorimétrie n'est pas de la magie, c'est de la chimie. Comprendre l'étoile d'Oswald est la base pour neutraliser un reflet roux ou jaune indésirable. Sans cette maîtrise, vous jouez à la loterie avec les cheveux de vos clientes.</p>
+      <blockquote>« Un bon coloriste voit le résultat avant même d'avoir ouvert le tube de teinture. »</blockquote>
+      <p>Rappelez-vous la loi fondamentale : le bleu annule l'orange, le violet annule le jaune, et le vert annule le rouge. Maîtriser ces opposés vous permet de rattraper n'importe quelle erreur technique et de proposer des blonds parfaits, très demandés et très rentables.</p>
+      <h2>2. La précision du mélange : pesez tout !</h2>
+      <p>Travailler à l'œil est une erreur de débutant. Utilisez toujours une balance électronique. 1 gramme de trop peut changer une nuance et 5 grammes de trop chaque jour représentent des dizaines de milliers de FCFA jetés à la poubelle chaque mois.</p>
+    `,
     coach_tip: "Pesez toujours vos mélanges sur une balance électronique.",
     strategic_mantra: "La précision technique évite les rattrapages gratuits.",
     quiz_questions: [
@@ -401,7 +456,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Si votre client achète ailleurs, vous perdez de l'argent.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. La prescription</h2><p>L'expert ne vend pas, il prescrit une solution.</p>`,
+    lesson_content: `
+      <h2>1. La prescription d'expert : ne vendez plus, conseillez !</h2>
+      <p>Beaucoup de coiffeurs ont peur de vendre. C'est parce qu'ils voient la vente comme un forçage. Un gérant d'élite voit la vente comme un prolongement du soin.</p>
+      <blockquote>« Ne pas conseiller le bon produit à votre client, c'est le laisser détruire votre travail avec un shampoing de mauvaise qualité. »</blockquote>
+      <p>Utilisez l'ordonnance de beauté. Notez à la fin de la prestation les produits utilisés et expliquez POURQUOI ils sont nécessaires. Le client n'achète pas un produit, il achète le résultat durable que vous avez créé au salon.</p>
+      <h2>2. Le taux de revente : votre indicateur de rentabilité</h2>
+      <p>La revente de produits doit représenter au moins 15% de votre chiffre d'affaires. C'est de la marge pure sans temps de travail additionnel. Installez vos produits à hauteur d'yeux et assurez-vous qu'ils soient propres et sans poussière.</p>
+    `,
     coach_tip: "Vos bacs à shampoing sont votre meilleure salle d'exposition.",
     strategic_mantra: "Vendre un produit, c'est prendre soin du client chez lui.",
     quiz_questions: [
@@ -435,7 +497,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Une coupe réussie est une coupe qui grandit bien.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. Analyse morphologique</h2><p>Visage ovale, rond, carré : à chaque forme sa géométrie.</p>`,
+    lesson_content: `
+      <h2>1. L'analyse morpho-psychologique</h2>
+      <p>Une coupe magnifique sur une personne peut être un désastre sur une autre. Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale.</p>
+      <blockquote>« Le coiffeur coupe les cheveux, l'artiste sculpte une personnalité. »</blockquote>
+      <p>Observez la mâchoire, le front et les pommettes. Un visage rond aura besoin de volume en hauteur pour l'allonger, tandis qu'un visage long nécessitera du volume sur les côtés. Apprenez à expliquer ces choix techniques à vos clientes pour asseoir votre autorité.</p>
+      <h2>2. La géométrie de la coupe : angles et sections</h2>
+      <p>La réussite d'une coupe réside dans la précision de vos séparations. Travaillez toujours avec des sections propres. Comprendre les angles d'élévation vous permet de créer du dégradé ou de la masse avec une précision mathématique.</p>
+    `,
     coach_tip: "Utilisez le miroir pour valider l'équilibre sous tous les angles.",
     strategic_mantra: "L'harmonie visuelle est le but ultime.",
     quiz_questions: [
@@ -469,7 +538,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Le temps est votre seule ressource limitée.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>1. Le séquençage</h2><p>Comment chevaucher deux prestations intelligemment.</p>`,
+    lesson_content: `
+      <h2>1. Le séquençage intelligent (Overlapping)</h2>
+      <p>Le plus grand ennemi de votre rentabilité est le temps mort. Pendant qu'une couleur pose, vous devriez déjà être en train d'effectuer une coupe sur un autre client.</p>
+      <blockquote>« Un planning bien géré permet de doubler son chiffre d'affaires sans travailler plus d'heures. »</blockquote>
+      <p>Apprenez à découper chaque prestation en trois phases : Préparation, Pose, et Finition. Votre rôle de gérant est de coordonner ces phases pour que les bacs et les fauteuils ne soient jamais vides sans raison.</p>
+      <h2>2. La lutte contre les rendez-vous manqués (No-shows)</h2>
+      <p>Un client qui ne vient pas sans prévenir, c'est une perte sèche de 100%. Envoyez systématiquement un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
+    `,
     coach_tip: "Prévoyez toujours 15 minutes de marge pour les imprévus.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
     quiz_questions: [
@@ -503,7 +579,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "On coiffe une personner, pas seulement des cheveux.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. L'écoute active</h2><p>Décoder le langage corporel.</p>`,
+    lesson_content: `
+      <h2>1. L'écoute active et le décodage</h2>
+      <p>Beaucoup de clients demandent une chose mais en espèrent une autre. La psychologie de la finale est l'art de comprendre ce qui n'est pas dit par les mots.</p>
+      <blockquote>« Le client ne vient pas seulement pour une coupe, il vient pour être écouté et compris. »</blockquote>
+      <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez garder de la longueur mais avoir plus de volume, c'est bien cela ? ». Cette technique rassure instantanément et évite les litiges en fin de prestation. Observez aussi le langage corporel : des bras croisés signifient souvent une hésitation ou une peur.</p>
+      <h2>2. Gérer les clients difficiles</h2>
+      <p>Un client mécontent est souvent un client qui a eu une mauvaise expérience passée. Restez calme, ne justifiez pas l'erreur, proposez une solution immédiate. Transformer un litige en succès est le test ultime de votre professionnalisme.</p>
+    `,
     coach_tip: "Observez les bijoux et le style vestimentaire, ils parlent pour la finale.",
     strategic_mantra: "Celui qui comprend gagne.",
     quiz_questions: [
@@ -537,7 +620,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Le luxe se niche dans les détails invisibles.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. Les codes de l'hospitalité</h2><p>Du peignoir en soie à la boisson signature.</p>`,
+    lesson_content: `
+      <h2>1. Les codes de l'hospitalité d'élite</h2>
+      <p>Le prestige ne dépend pas de la taille de votre salon, mais de la qualité de votre attention. Tout commence par le confort sensoriel dès l'entrée.</p>
+      <blockquote>« Le luxe n'est pas le contraire de la pauvreté, c'est le contraire de la vulgarité et de la négligence. »</blockquote>
+      <p>Offrez une boisson signature (un thé particulier, un café de qualité) servie dans une vraie tasse, jamais dans un gobelet. Proposez un peignoir en soie ou une serviette chaude parfumée à l'eucalyptus lors du shampoing. Ce sont ces micro-expériences qui permettent de doubler vos tarifs sans aucune résistance.</p>
+      <h2>2. L'exclusivité et la confidentialité</h2>
+      <p>Le client VIP paie pour ne pas être vu, ou pour être vu dans le bon environnement. Si vous le pouvez, créez un coin discret. Garantissez une discrétion totale sur les conversations. Le prestige, c'est aussi le respect absolu de l'intimité du client.</p>
+    `,
     coach_tip: "L'exclusivité crée le désir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
     quiz_questions: [
@@ -571,7 +661,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Les chiffres ne mentent jamais.",
     price: 500,
     aiCredits: 3,
-    lesson_content: `<h2>1. Les indicateurs clés (KPI)</h2><p>Ticket moyen, taux de revente.</p>`,
+    lesson_content: `
+      <h2>1. Les indicateurs clés (KPI) de votre succès</h2>
+      <p>Un gérant qui ne connaît pas son ticket moyen est comme un pilote qui n'a pas de tableau de bord. Vous devez savoir chaque soir combien vous avez gagné par client en moyenne.</p>
+      <blockquote>« Ce qui ne se mesure pas ne peut pas être amélioré. »</blockquote>
+      <p>Suivez deux chiffres prioritaires : votre chiffre d'affaires global et votre taux de revente. Si votre ticket moyen stagne, c'est que votre équipe ne propose pas assez de services additionnels ou de produits. Ajustez votre formation en fonction de ce que les chiffres révèlent.</p>
+      <h2>2. Gérer son stock comme un investisseur</h2>
+      <p>Le produit sur vos étagères est de l'argent qui dort. Ne sur-stockez pas. Apprenez à calculer votre taux de rotation. Un produit qui reste plus de 3 mois sans être vendu est une perte financière nette. Faites-le tourner via une promotion flash !</p>
+    `,
     coach_tip: "Vérifiez vos chiffres tous les soirs avant de fermer.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
     quiz_questions: [
@@ -605,7 +702,14 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     mini_course: "Un salon formel est un salon pérenne.",
     price: 500,
     aiCredits: 2,
-    lesson_content: `<h2>1. Structure juridique</h2><p>Comprendre l'intérêt de la formalisation.</p>`,
+    lesson_content: `
+      <h2>1. De l'informel au business structuré</h2>
+      <p>En Afrique de l'Ouest, beaucoup de salons restent dans l'informel par peur des impôts. C'est un plafond de verre qui vous empêche de grandir et d'obtenir des prêts.</p>
+      <blockquote>« Un salon structuré attire les investisseurs, un salon informel n'attire que les problèmes. »</blockquote>
+      <p>Commencez par ouvrir un compte bancaire dédié au salon. Ne mélangez jamais votre argent personnel et celui de la caisse. Versez-vous un salaire fixe. C'est la première étape indispensable pour être crédible auprès des banques et de la COOPEC pour vos futurs projets d'agrandissement.</p>
+      <h2>2. La protection juridique et comptable</h2>
+      <p>Déclarez votre personnel, même progressivement. Un employé déclaré est un employé plus stable et plus engagé. La formalisation est une protection pour vous en cas de litige et une valorisation de votre patrimoine commercial lors de la revente de votre salon.</p>
+    `,
     coach_tip: "Séparez toujours votre argent personnel de celui du salon.",
     strategic_mantra: "La rigueur administrative est la base de la croissance.",
     quiz_questions: [
