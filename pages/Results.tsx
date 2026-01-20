@@ -233,7 +233,7 @@ const Results: React.FC = () => {
           <div className="prose-kita whitespace-pre-wrap font-medium" dangerouslySetInnerHTML={{ __html: aiAdvice?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900">$1</strong>') || '' }} />}
         </section>
 
-        {/* SECTION 2: LES PACKS EXPERTS (SOLUTIONS GLOBALES - NOUVEL EMPLACEMENT) */}
+        {/* SECTION 2: LES PACKS EXPERTS (SOLUTIONS GLOBALES) */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-1000">
            <div className="text-center">
               <h3 className="text-[10px] font-black text-brand-500 uppercase tracking-[0.5em] mb-3">Recommandations Prioritaires</h3>
@@ -253,7 +253,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">500 F</p>
-                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">/ Mois</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • 30 Jours</p>
                     </div>
                   </div>
               </button>
@@ -270,7 +270,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
                        <p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>10 000 F</p>
-                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Protection à vie</p>
+                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Activ. Immédiate • Accès à vie</p>
                     </div>
                   </div>
               </button>
@@ -286,7 +286,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Activ. Unique</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès à vie</p>
                     </div>
                   </div>
               </button>
@@ -302,14 +302,14 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Activ. Unique</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès à vie</p>
                     </div>
                   </div>
               </button>
            </div>
         </section>
 
-        {/* SECTION 3: CATALOGUE & PANIER (SÉLECTION INDIVIDUELLE) */}
+        {/* SECTION 3: CATALOGUE & PANIER */}
         <div className="grid lg:grid-cols-12 gap-10">
           
           <div className="lg:col-span-7 space-y-8">
@@ -341,7 +341,7 @@ const Results: React.FC = () => {
                             {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1"><Sparkles className="w-2 h-2" /> Priorité Diag</span>}
                           </div>
                           <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
-                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F</p>}
+                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F • Accès à vie</p>}
                         </div>
                         <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
                           isOwned ? 'text-emerald-500' : 'bg-slate-50 text-slate-300 group-hover:bg-brand-500 group-hover:text-white'
@@ -416,6 +416,10 @@ const Results: React.FC = () => {
                 </div>
 
                 <div className="space-y-3 mb-10 pt-8 border-t border-slate-100">
+                   <div className="flex justify-between items-center text-slate-400">
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Sous-total (Brut)</span>
+                      <span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span>
+                   </div>
                    {pricingData.savings > 0 && (
                      <div className="flex justify-between items-center text-emerald-500">
                         <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Remise Évolutive (-{pricingData.discountPercent}%)</span>
@@ -438,7 +442,7 @@ const Results: React.FC = () => {
               
               <div className="p-6 bg-amber-50 rounded-[2.5rem] border border-amber-100 text-center">
                  <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center justify-center gap-2"><Target className="w-3 h-3" /> Conseil de Coach Kita</p>
-                 <p className="text-xs font-medium text-amber-800 italic leading-relaxed">"Le Pack Académie Élite à 10 000 F est l'investissement le plus rentable pour devenir le n°1 de votre quartier."</p>
+                 <p className="text-xs font-medium text-amber-800 italic leading-relaxed">"Le Pack Académie Élite est l'investissement le plus rentable pour devenir le n°1 de votre quartier."</p>
               </div>
             </div>
           </div>
