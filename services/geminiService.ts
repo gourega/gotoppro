@@ -55,7 +55,7 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
 /**
  * Generates a high-converting strategic summary using AIDA copywriting model.
  * Focused on professional transformation and urgency.
- * Uses Flash model for speed and reliability in simple text tasks.
+ * Uses Flash model for speed and reliability.
  */
 export const generateStrategicAdvice = async (negativePoints: string[], isPerfectScore: boolean = false) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -72,8 +72,6 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
       OBJECTIF : Lui faire comprendre que l'excellence actuelle est un plateau dangereux.
       
       STRUCTURE OBLIGATOIRE (Markdown) :
-      Écoute-moi bien. Ton salon tourne, mais il stagne. L'excellence n'est pas une destination, c'est une discipline.
-      
       1. **Attention**: Phrase choc sur le risque de la zone de confort.
       2. **Intérêt**: Pourquoi la maîtrise technique ne suffit plus pour bâtir un empire.
       3. **Désir**: Peins la vision du gérant-investisseur libre.
@@ -87,17 +85,13 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
       
       CONTEXTE MONÉTAIRE : Utilise exclusivement le Franc CFA (FCFA) pour parler d'argent. Ne mentionne JAMAIS l'Euro.
       TON : "Grand frère" expert, sans filtre, autoritaire mais bienveillant.
-      OBJECTIF : Créer un sentiment d'urgence absolue (Hémorragie financière).
+      OBJECTIF : Créer un sentiment d'urgence absolue.
       
       STRUCTURE OBLIGATOIRE (Markdown) :
-      Écoute-moi bien. Pendant que tu travailles tes coupes, ton salon est en train de **se vider de sa substance**. Ce n'est pas une intuition, c'est une certitude mathématique.
-      
-      1. **Attention**: Phrase sur les pertes invisibles (exemple: le seau percé). Parle de milliers de FCFA perdus chaque jour.
-      2. **Intérêt**: Explique comment l'absence de maîtrise sur ${pointsStr} détruit sa marge chaque minute.
-      3. **Désir**: Décris la sérénité d'un gérant qui a une équipe autonome et des stocks pesés.
+      1. **Attention**: Phrase sur les pertes invisibles. Parle de milliers de FCFA perdus chaque jour.
+      2. **Intérêt**: Explique comment l'absence de maîtrise sur ${pointsStr} détruit sa marge.
+      3. **Désir**: Décris la sérénité d'un gérant qui a une équipe autonome.
       4. **Action**: Recommande les modules spécifiques pour stopper l'hémorragie.
-      
-      Environ 250-300 mots.
     `;
   }
 
@@ -113,7 +107,7 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
     return response.text;
   } catch (error) {
     console.error("Strategic Advice Error:", error);
-    return "**L'excellence vous attend.** Votre diagnostic montre un potentiel immense. Chaque module choisi est une pierre posée pour bâtir votre empire.";
+    return "**L'excellence vous attend.** Votre diagnostic montre un potentiel immense. Investir dans vos faiblesses est le seul moyen de bâtir un empire rentable.";
   }
 };
 

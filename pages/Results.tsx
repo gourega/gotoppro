@@ -15,7 +15,13 @@ import {
   Tag,
   MinusCircle,
   AlertCircle,
-  Database
+  Database,
+  Users,
+  Package,
+  Star,
+  Cloud,
+  ShieldCheck,
+  TrendingUp
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -137,26 +143,20 @@ const Results: React.FC = () => {
     setDbError(null);
 
     try {
-      // 1. Normalisation stricte du numéro
       let cleanPhone = regPhone.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
       
-      // 2. Préparation du panier
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
-      
-      // 3. Vérification d'existence
       const existing = await getProfileByPhone(cleanPhone);
       
       if (existing) {
-        // Mise à jour de l'existant
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
           isActive: false, 
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
-        // Création automatique STRICTE
         const newUser: UserProfile = { 
           uid: generateUUID(), 
           phoneNumber: cleanPhone, 
@@ -180,10 +180,8 @@ const Results: React.FC = () => {
         };
         await saveUserProfile(newUser);
       }
-      
       setRegStep('success');
     } catch (err: any) { 
-      console.error("[Flux Automatique Fail]:", err);
       setDbError(err.message || "Impossible de créer le compte automatiquement.");
     } finally { 
       setLoading(false); 
@@ -272,10 +270,43 @@ const Results: React.FC = () => {
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100">
+              <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 overflow-hidden relative">
+                {/* JAUGE DE REMISE RESTAURÉE */}
+                {activePack === 'none' && cart.length > 0 && (
+                  <div className="mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 animate-in fade-in">
+                    <div className="flex justify-between items-end mb-3">
+                      <div>
+                        <p className="text-[9px] font-black text-brand-600 uppercase tracking-widest">Thermomètre d'Excellence</p>
+                        <p className="text-sm font-bold text-slate-900">{pricingData.label}</p>
+                      </div>
+                      {pricingData.nextThreshold && (
+                        <div className="text-right">
+                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Paiement unique</p>
+                          <p className="text-[10px] font-bold text-slate-400">-{pricingData.nextThreshold.needed} modules restants</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden relative shadow-inner">
+                      <div className="h-full bg-brand-500 transition-all duration-1000 ease-out" style={{ width: `${pricingData.progress}%` }}></div>
+                      <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                        <div className="h-full w-px bg-white/30" style={{ left: '31.25%' }}></div>
+                        <div className="h-full w-px bg-white/30" style={{ left: '56.25%' }}></div>
+                        <div className="h-full w-px bg-white/30" style={{ left: '81.25%' }}></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-[7px] font-black text-slate-400 uppercase tracking-widest opacity-60">
+                      <span>Starter</span>
+                      <span>-20% (5)</span>
+                      <span>-30% (9)</span>
+                      <span>-50% (13)</span>
+                      <span>Elite (16)</span>
+                    </div>
+                  </div>
+                )}
+
                 <h3 className="text-xl font-serif font-bold text-slate-900 mb-8 flex items-center gap-4"><ShoppingBag className="text-brand-500" /> Mon Engagement</h3>
                 
-                <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-4 mb-8 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
                   {activePack !== 'none' ? (
                     <div className="flex items-center justify-between p-4 bg-brand-50 rounded-2xl border border-brand-100">
                        <p className="text-sm font-bold text-brand-900">{pricingData.label}</p>
@@ -295,7 +326,10 @@ const Results: React.FC = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-slate-400 text-xs italic py-6">Aucun module sélectionné</p>
+                    <div className="text-center py-10 opacity-40 grayscale group">
+                       <ShoppingBag className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform" />
+                       <p className="text-slate-400 text-xs italic">Sélectionnez des modules ou un Pack expert ci-dessous.</p>
+                    </div>
                   )}
                 </div>
 
@@ -303,17 +337,17 @@ const Results: React.FC = () => {
                    {pricingData.savings > 0 && (
                      <>
                       <div className="flex justify-between items-center text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Valeur initiale</span>
                         <span className="text-sm font-black line-through">{pricingData.rawTotal.toLocaleString()} F</span>
                       </div>
                       <div className="flex justify-between items-center text-emerald-500">
-                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Réduction (-{pricingData.discountPercent}%)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Réduction appliquée (-{pricingData.discountPercent}%)</span>
                         <span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span>
                       </div>
                      </>
                    )}
                    <div className="flex justify-between items-center pt-2">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix Total Net</p>
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Net à régler</p>
                      <div className="flex items-baseline gap-1">
                         <p className="text-5xl font-black text-brand-900">{pricingData.total.toLocaleString()}</p>
                         <span className="text-sm font-bold opacity-30 uppercase">F</span>
@@ -326,32 +360,84 @@ const Results: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid gap-4">
-                <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${activePack === 'crm' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100'}`}>
-                  <button onClick={() => setActivePack('crm')} className="w-full text-left">
-                    <div className="flex items-center gap-4 mb-4">
-                       <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-lg ${activePack === 'crm' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Zap className="w-6 h-6" /></div>
+              {/* GRID DES PACKS EXPERTS AVEC AVANTAGES DÉTAILLÉS */}
+              <div className="grid grid-cols-1 gap-4">
+                
+                {/* Pack CRM VIP */}
+                <button onClick={() => setActivePack('crm')} className={`p-6 rounded-[2.5rem] border-2 transition-all text-left group ${activePack === 'crm' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100 hover:border-amber-200'}`}>
+                    <div className="flex items-center gap-4">
+                       <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'crm' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Star className="w-6 h-6" /></div>
                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-widest">Pack Fidélité (CRM)</h4>
-                          <p className="text-lg font-black">500 F <span className="text-[10px] opacity-40 uppercase">/ mois</span></p>
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">Pack CRM VIP & Fidélité</h4>
+                          <ul className={`text-[9px] font-bold space-y-0.5 mb-2 ${activePack === 'crm' ? 'text-amber-900' : 'text-slate-400'}`}>
+                             <li>• Fiches techniques & Préférences Clients</li>
+                             <li>• Relances WhatsApp automatiques</li>
+                          </ul>
+                          <p className="text-lg font-black leading-tight">500 F <span className="text-[9px] opacity-40 uppercase">/ mois</span></p>
                        </div>
                     </div>
-                  </button>
-                </div>
+                </button>
 
+                {/* Pack Académie Élite (LE CŒUR DE LA STRATÉGIE) */}
                 {!isElite && (
-                  <div className={`p-8 rounded-[2.5rem] border-2 transition-all group ${activePack === 'elite' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100'}`}>
-                    <button onClick={() => setActivePack('elite')} className="w-full text-left">
+                  <button onClick={() => setActivePack('elite')} className={`p-8 rounded-[3rem] border-2 transition-all text-left group overflow-hidden relative ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-[1.05]' : 'bg-white border-brand-500/30 hover:bg-brand-50'}`}>
+                    <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 transition-transform group-hover:scale-125"><ShieldCheck className={`w-32 h-32 ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`} /></div>
+                    <div className="relative z-10">
                       <div className="flex items-center gap-6 mb-4">
-                        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Crown /></div>
+                        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-white'}`}><Crown /></div>
                         <div>
-                          <h4 className="text-lg font-black uppercase leading-tight">Académie Élite</h4>
-                          <p className="font-black">10 000 F</p>
+                          <h4 className={`text-xl font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
+                          <p className={`text-[10px] font-bold uppercase tracking-widest ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`}>Standard d'Excellence KITA</p>
                         </div>
                       </div>
-                    </button>
-                  </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                         <div className={`p-4 rounded-2xl border ${activePack === 'elite' ? 'bg-white/5 border-white/10' : 'bg-brand-50 border-brand-100'}`}>
+                            <Cloud className={`w-4 h-4 mb-2 ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`} />
+                            <p className={`text-[9px] font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Sauvegarde Cloud à vie</p>
+                            <p className={`text-[8px] font-medium opacity-60 ${activePack === 'elite' ? 'text-slate-300' : 'text-slate-600'}`}>Vos chiffres sécurisés</p>
+                         </div>
+                         <div className={`p-4 rounded-2xl border ${activePack === 'elite' ? 'bg-white/5 border-white/10' : 'bg-brand-50 border-brand-100'}`}>
+                            <Zap className={`w-4 h-4 mb-2 ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`} />
+                            <p className={`text-[9px] font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>16 Modules Inclus</p>
+                            <p className={`text-[8px] font-medium opacity-60 ${activePack === 'elite' ? 'text-slate-300' : 'text-slate-600'}`}>Maîtrise totale 360°</p>
+                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <ShieldCheck className={`w-5 h-5 ${activePack === 'elite' ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                           <span className={`text-[10px] font-black uppercase ${activePack === 'elite' ? 'text-white' : 'text-slate-500'}`}>Certification Mentor</span>
+                         </div>
+                         <p className={`text-2xl font-black ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-900'}`}>10 000 F</p>
+                      </div>
+                    </div>
+                  </button>
                 )}
+
+                {/* Pack Performance RH */}
+                <button onClick={() => setActivePack('performance')} className={`p-6 rounded-[2.5rem] border-2 transition-all text-left group ${activePack === 'performance' ? 'bg-emerald-500 border-emerald-600 shadow-xl scale-[1.03] text-white' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
+                    <div className="flex items-center gap-4">
+                       <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'performance' ? 'bg-white text-emerald-600' : 'bg-emerald-50 text-emerald-600'}`}><Users className="w-6 h-6" /></div>
+                       <div>
+                          <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${activePack === 'performance' ? 'text-emerald-100' : 'text-emerald-600'}`}>Pack Performance RH</h4>
+                          <p className={`text-[9px] font-bold mb-2 ${activePack === 'performance' ? 'text-emerald-50' : 'text-slate-400'}`}>Calcul commissions & Productivité staff.</p>
+                          <p className="text-lg font-black leading-tight text-inherit">5 000 F <span className="text-[9px] opacity-40 uppercase text-center">Activ.</span></p>
+                       </div>
+                    </div>
+                </button>
+
+                {/* Pack Stock Expert */}
+                <button onClick={() => setActivePack('stock')} className={`p-6 rounded-[2.5rem] border-2 transition-all text-left group ${activePack === 'stock' ? 'bg-sky-500 border-sky-600 shadow-xl scale-[1.03] text-white' : 'bg-white border-slate-100 hover:border-sky-200'}`}>
+                    <div className="flex items-center gap-4">
+                       <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'stock' ? 'bg-white text-sky-600' : 'bg-sky-50 text-sky-600'}`}><Package className="w-6 h-6" /></div>
+                       <div>
+                          <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${activePack === 'stock' ? 'text-sky-100' : 'text-sky-600'}`}>Pack Stock Expert</h4>
+                          <p className={`text-[9px] font-bold mb-2 ${activePack === 'stock' ? 'text-sky-50' : 'text-slate-400'}`}>Alertes rupture & Inventaire valorisé.</p>
+                          <p className="text-lg font-black leading-tight text-inherit">5 000 F <span className="text-[9px] opacity-40 uppercase text-center">Activ.</span></p>
+                       </div>
+                    </div>
+                </button>
               </div>
             </div>
           </div>
@@ -364,18 +450,14 @@ const Results: React.FC = () => {
             {regStep === 'form' ? (
               <>
                 <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors" disabled={loading}><X /></button>
-                <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser l'Accès</h2>
+                <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser mon Accès</h2>
                 
                 {dbError && (
                   <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2rem] mb-8 flex items-start gap-4 animate-in shake">
                     <AlertCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
                     <div className="space-y-2">
-                       <p className="text-[11px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec SQL Automatique</p>
+                       <p className="text-[11px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec de validation</p>
                        <p className="text-xs font-bold text-rose-500 leading-relaxed">{dbError}</p>
-                       <div className="pt-2 flex items-center gap-2 text-rose-400">
-                          <Database className="w-3 h-3" />
-                          <span className="text-[9px] font-medium uppercase tracking-widest">Diagnostique technique requis</span>
-                       </div>
                     </div>
                   </div>
                 )}
@@ -394,30 +476,30 @@ const Results: React.FC = () => {
                    <CheckCircle2 className="w-14 h-14" />
                 </div>
                 
-                <h2 className="text-4xl font-serif font-bold text-slate-900 mb-12 tracking-tight">Compte enregistré !</h2>
+                <h2 className="text-4xl font-serif font-bold text-slate-900 mb-12 tracking-tight">C'est validé !</h2>
                 
                 <div className="w-full bg-[#f8fafc] p-10 rounded-[2.5rem] border border-[#f1f5f9] flex flex-col items-center gap-4 mb-14">
                    <div className="flex items-center gap-4">
                       <Lock className="w-5 h-5 text-brand-600" />
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">PIN de connexion par défaut</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">Code PIN par défaut</p>
                    </div>
                    <p className="text-4xl font-black text-brand-900 m-0 tracking-[0.2em]">1 2 3 4</p>
                 </div>
                 
-                <p className="text-slate-500 italic text-sm mb-12 px-6">
-                  "Pour activer vos accès (<strong>{pricingData.total.toLocaleString()} F</strong>), réglez via Wave au numéro <strong>{COACH_KITA_WAVE_NUMBER}</strong>."
+                <p className="text-slate-500 italic text-sm mb-12 px-6 leading-relaxed">
+                  "Réglez <strong>{pricingData.total.toLocaleString()} F</strong> via Wave au <strong>{COACH_KITA_WAVE_NUMBER}</strong> pour activer vos accès immédiatement."
                 </p>
                 
                 <button 
                   onClick={() => { 
                     const waNum = COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '');
-                    const message = `Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F). Merci d'activer mes accès pour mon salon ${regStoreName || user?.establishmentName}.`;
+                    const message = `Bonjour Coach Kita, je viens de valider mon plan d'action (${pricingData.total} F) pour mon salon ${regStoreName || user?.establishmentName}. Voici ma preuve de paiement Wave.`;
                     window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(message)}`, '_blank'); 
                     navigate('/login'); 
                   }} 
                   className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-[#10b981]/20 flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"
                 >
-                  <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp Business
+                  <MessageCircle className="w-6 h-6" /> Envoyer la preuve WhatsApp
                 </button>
               </div>
             )}
