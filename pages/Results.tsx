@@ -14,7 +14,8 @@ import {
   Lock,
   Tag,
   MinusCircle,
-  AlertCircle
+  AlertCircle,
+  Database
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -124,31 +125,32 @@ const Results: React.FC = () => {
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regPhone || !regStoreName) return alert("Veuillez remplir tous les champs.");
-    if (!supabase) return setDbError("Le client de base de données n'est pas prêt. Vérifiez votre connexion.");
+    if (!supabase) return setDbError("Le service de base de données n'est pas prêt.");
     
     setLoading(true);
     setDbError(null);
 
     try {
-      console.log("[Flux Création] Étape 1: Préparation des données...");
+      // 1. Nettoyage et formatage du numéro
       let cleanPhone = regPhone.replace(/\s/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
       
+      // 2. Préparation du panier
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       
-      console.log("[Flux Création] Étape 2: Recherche de doublons...");
+      // 3. Recherche forcée d'un doublon
       const existing = await getProfileByPhone(cleanPhone);
       
       if (existing) {
-        console.log("[Flux Création] Étape 3: Mise à jour gérant existant...");
+        // MISE À JOUR SILENCIEUSE
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
           isActive: false, 
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
-        console.log("[Flux Création] Étape 3: Création nouveau gérant...");
+        // CRÉATION STRICTE
         const newUser: UserProfile = { 
           uid: generateUUID(), 
           phoneNumber: cleanPhone, 
@@ -156,7 +158,7 @@ const Results: React.FC = () => {
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
           lastName: 'Elite', 
-          isActive: false, 
+          isActive: false, // CRUCIAL : Reste false pour apparaître dans le TDB Admin
           role: 'CLIENT', 
           isAdmin: false,
           isPublic: true,
@@ -169,14 +171,15 @@ const Results: React.FC = () => {
           purchasedModuleIds: [],
           actionPlan: []
         };
+        // Appel bloquant : si ça rate, on catch l'erreur
         await saveUserProfile(newUser);
       }
       
-      console.log("[Flux Création] Succès final !");
+      // SI ON ARRIVE ICI, SUPABASE A DIT OUI
       setRegStep('success');
     } catch (err: any) { 
-      console.error("[Flux Création] ÉCHEC CRITIQUE:", err);
-      setDbError(err.message || "Problème inconnu lors de l'enregistrement.");
+      console.error("[Flux Automatique] Échec de l'enregistrement:", err);
+      setDbError(err.message || "Erreur de communication avec la base de données.");
     } finally { 
       setLoading(false); 
     }
@@ -195,7 +198,7 @@ const Results: React.FC = () => {
       setRegStep('success');
       setIsRegisterModalOpen(true);
     } catch (err: any) { 
-      alert("Erreur de mise à jour : " + err.message); 
+      alert("Erreur de mise à jour technique."); 
     } finally { 
       setLoading(false); 
     }
@@ -359,12 +362,15 @@ const Results: React.FC = () => {
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser l'Accès</h2>
                 
                 {dbError && (
-                  <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl mb-6 flex items-start gap-3 animate-in shake">
-                    <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-2">
-                       <p className="text-[10px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec de l'enregistrement</p>
-                       <p className="text-[9px] font-bold text-rose-500 leading-tight">{dbError}</p>
-                       <p className="text-[8px] italic text-rose-400 mt-1">Si l'erreur persiste, demandez à Coach Kita d'activer l'accès anonyme sur Supabase.</p>
+                  <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2rem] mb-8 flex items-start gap-4 animate-in shake">
+                    <AlertCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
+                    <div className="space-y-2">
+                       <p className="text-[11px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec de l'enregistrement automatique</p>
+                       <p className="text-xs font-bold text-rose-500 leading-relaxed">{dbError}</p>
+                       <div className="pt-2 flex items-center gap-2 text-rose-400">
+                          <Database className="w-3 h-3" />
+                          <span className="text-[9px] font-medium uppercase tracking-widest">Code Erreur : Supabase_SQL_Reject</span>
+                       </div>
                     </div>
                   </div>
                 )}

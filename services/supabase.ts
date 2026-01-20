@@ -17,6 +17,9 @@ export const generateUUID = () => {
   });
 };
 
+/**
+ * Mappe les données de la base vers l'interface (CamelCase)
+ */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
@@ -51,40 +54,43 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-const PROFILE_MAPPING: Record<string, string> = {
-  uid: 'uid',
-  phoneNumber: 'phone_number',
-  pinCode: 'pin_code',
-  firstName: 'first_name',
-  lastName: 'last_name',
-  establishmentName: 'establishment_name',
-  photoURL: 'photo_url',
-  bio: 'bio',
-  employeeCount: 'employee_count',
-  openingYear: 'opening_year',
-  role: 'role',
-  isActive: 'is_active',
-  isAdmin: 'is_admin',
-  isPublic: 'is_public',
-  isKitaPremium: 'is_kita_premium',
-  kitaPremiumUntil: 'kita_premium_until',
-  hasPerformancePack: 'has_performance_pack',
-  hasStockPack: 'has_stock_pack',
-  crmExpiryDate: 'crm_expiry_date',
-  badges: 'badges',
-  purchasedModuleIds: 'purchased_module_ids',
-  pendingModuleIds: 'pending_module_ids',
-  actionPlan: 'action_plan',
-  referralCount: 'referral_count',
-  createdAt: 'created_at',
-  progress: 'progress',
-  attempts: 'attempts'
-};
-
+/**
+ * Mappe les données de l'interface vers les colonnes PostgreSQL (snake_case)
+ */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
+  const mapping: Record<string, string> = {
+    uid: 'uid',
+    phoneNumber: 'phone_number',
+    pinCode: 'pin_code',
+    firstName: 'first_name',
+    lastName: 'last_name',
+    establishmentName: 'establishment_name',
+    photoURL: 'photo_url',
+    bio: 'bio',
+    employeeCount: 'employee_count',
+    openingYear: 'opening_year',
+    role: 'role',
+    isActive: 'is_active',
+    isAdmin: 'is_admin',
+    isPublic: 'is_public',
+    isKitaPremium: 'is_kita_premium',
+    kitaPremiumUntil: 'kita_premium_until',
+    hasPerformancePack: 'has_performance_pack',
+    hasStockPack: 'has_stock_pack',
+    crmExpiryDate: 'crm_expiry_date',
+    badges: 'badges',
+    purchasedModuleIds: 'purchased_module_ids',
+    pendingModuleIds: 'pending_module_ids',
+    actionPlan: 'action_plan',
+    referralCount: 'referral_count',
+    createdAt: 'created_at',
+    progress: 'progress',
+    attempts: 'attempts'
+  };
+
   Object.keys(profile).forEach(key => {
-    const dbKey = PROFILE_MAPPING[key] || key;
+    const dbKey = mapping[key] || key;
     if ((profile as any)[key] !== undefined) {
       dbData[dbKey] = (profile as any)[key];
     }
@@ -94,6 +100,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
+  // Nettoyage agressif du numéro pour la recherche (on garde les 8 derniers chiffres)
   const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
   if (!cleanSearch) return null;
 
@@ -104,13 +111,10 @@ export const getProfileByPhone = async (phoneNumber: string) => {
       .ilike('phone_number', `%${cleanSearch}`)
       .maybeSingle();
     
-    if (error) {
-      console.error("Supabase Query Error:", error);
-      return null;
-    }
+    if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("Supabase Search Exception:", err);
+    console.error("[Supabase] Recherche par téléphone échouée:", err);
     return null;
   }
 };
@@ -121,47 +125,36 @@ export const getUserProfile = async (uid: string) => {
   return mapProfileFromDB(data);
 };
 
+/**
+ * Sauvegarde avec retour d'erreur complet pour diagnostic
+ */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) throw new Error("Connexion Supabase non initialisée. Vérifiez vos variables d'environnement.");
+  if (!supabase) throw new Error("Connexion Supabase non établie.");
   
   const dbData = mapProfileToDB(profile);
-  console.log("[Supabase] Tentative de sauvegarde profil:", dbData);
+  console.log("[Supabase] Tentative de création/mise à jour:", dbData);
   
-  const { error } = await supabase
+  const { error, status } = await supabase
     .from('profiles')
     .upsert(dbData, { onConflict: 'uid' });
     
   if (error) {
-    console.error("[Supabase] Upsert Error:", error);
+    console.error("[Supabase] Erreur SQL:", error);
+    // Erreur de permission courante (RLS)
     if (error.code === '42501') {
-      throw new Error("ERREUR RLS : L'accès anonyme en 'INSERT/UPDATE' n'est pas autorisé sur votre table 'profiles'. Vérifiez vos politiques de sécurité Supabase.");
+      throw new Error("ERREUR DE SÉCURITÉ : La table 'profiles' refuse l'accès anonyme. Activez 'Enable Insert/Upsert for Anon' dans vos politiques RLS Supabase.");
     }
-    throw new Error(`Erreur Base de données (${error.code}) : ${error.message}`);
+    throw new Error(`Erreur Base de Données (${error.code}) : ${error.message}`);
   }
   
-  console.log("[Supabase] Profil sauvegardé avec succès.");
+  return { success: true, status };
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase || !uid) throw new Error("Identifiant manquant pour la mise à jour.");
-  
+  if (!supabase || !uid) throw new Error("ID manquant.");
   const dbData = mapProfileToDB(updates);
-  console.log("[Supabase] Tentative de mise à jour profil:", dbData);
-  
-  const { error } = await supabase
-    .from('profiles')
-    .update(dbData)
-    .eq('uid', uid);
-    
-  if (error) {
-    console.error("[Supabase] Update Error:", error);
-    if (error.code === '42501') {
-      throw new Error("ERREUR RLS : Mise à jour interdite. Vérifiez les politiques RLS de la table 'profiles'.");
-    }
-    throw new Error(`Erreur Base de données (${error.code}) : ${error.message}`);
-  }
-
-  console.log("[Supabase] Profil mis à jour avec succès.");
+  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
+  if (error) throw error;
 };
 
 export const getAllUsers = async () => {
@@ -174,6 +167,7 @@ export const deleteUserProfile = async (uid: string) => {
   if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
 };
 
+// ... Reste des fonctions exportées sans changement ...
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
