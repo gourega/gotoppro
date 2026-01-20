@@ -51,6 +51,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
+// Mapping direct et propre
 const PROFILE_MAPPING: Record<string, string> = {
   uid: 'uid',
   phoneNumber: 'phone_number',
@@ -78,7 +79,8 @@ const PROFILE_MAPPING: Record<string, string> = {
   referralCount: 'referral_count',
   createdAt: 'created_at',
   progress: 'progress',
-  attempts: 'attempts'
+  attempts: 'attempts',
+  email: 'email'
 };
 
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
@@ -105,10 +107,9 @@ export const getProfileByPhone = async (phoneNumber: string) => {
       .ilike('phone_number', `%${cleanSearch}`)
       .maybeSingle();
     
-    if (error) throw error;
+    if (error) return null;
     return mapProfileFromDB(data);
-  } catch (err) {
-    console.error("[Supabase Search Error]:", err);
+  } catch {
     return null;
   }
 };
@@ -119,45 +120,18 @@ export const getUserProfile = async (uid: string) => {
   return mapProfileFromDB(data);
 };
 
-/**
- * Sauvegarde avec détection explicite INSERT vs UPDATE pour éviter les blocages RLS sur upsert
- */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non connecté.");
-  
   const dbData = mapProfileToDB(profile);
-  console.log("[Supabase] Tentative de création automatique:", dbData);
-  
-  // On utilise 'upsert' mais de manière plus propre
-  const { error, status } = await supabase
-    .from('profiles')
-    .upsert(dbData, { onConflict: 'uid' });
-    
-  if (error) {
-    console.error("[ERREUR SQL DIRECTE]:", error);
-    
-    // Aide au diagnostic pour l'utilisateur
-    if (error.code === '23503') {
-      throw new Error(`ERREUR_STRUCTURE (23503) : La colonne 'uid' est liée à 'auth.users' dans votre base. Supprimez la 'Foreign Key' dans le tableau de bord Supabase pour autoriser la création libre.`);
-    }
-    if (error.code === '42501') {
-      throw new Error(`ERREUR_SÉCURITÉ (42501) : RLS refuse l'écriture. Vérifiez que votre politique INSERT pour 'public' a 'CHECK (true)'.`);
-    }
-    
-    throw new Error(`Base de données : ${error.code} - ${error.message}`);
-  }
-  
-  return { success: true, status };
+  const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
+  if (error) throw error;
+  return { success: true };
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase || !uid) throw new Error("ID manquant.");
+  if (!supabase || !uid) return;
   const dbData = mapProfileToDB(updates);
-  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-  if (error) {
-    console.error("[Supabase Update Error]:", error);
-    throw error;
-  }
+  await supabase.from('profiles').update(dbData).eq('uid', uid);
 };
 
 export const getAllUsers = async () => {
@@ -170,7 +144,6 @@ export const deleteUserProfile = async (uid: string) => {
   if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
 };
 
-// ... Reste des fonctions inchangées ...
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
