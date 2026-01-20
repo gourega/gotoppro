@@ -55,6 +55,7 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
 /**
  * Generates a high-converting strategic summary using AIDA copywriting model.
  * Focused on professional transformation and urgency.
+ * Uses Flash model for speed and reliability in simple text tasks.
  */
 export const generateStrategicAdvice = async (negativePoints: string[], isPerfectScore: boolean = false) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -102,7 +103,7 @@ export const generateStrategicAdvice = async (negativePoints: string[], isPerfec
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         temperature: 0.9,

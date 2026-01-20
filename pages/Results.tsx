@@ -74,12 +74,18 @@ const Results: React.FC = () => {
 
     if (results) {
       const getAdvice = async () => {
-        const negativeTexts = results.filter((r: any) => !r.answer).map((r: any) => 
-          DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text
-        ).filter(Boolean) as string[];
-        const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
-        setAiAdvice(advice ?? null);
-        setLoadingAdvice(false);
+        try {
+          const negativeTexts = results.filter((r: any) => !r.answer).map((r: any) => 
+            DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text
+          ).filter(Boolean) as string[];
+          const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
+          setAiAdvice(advice ?? null);
+        } catch (err) {
+          console.error("Failed to load IA advice", err);
+          setAiAdvice("L'analyse stratégique est temporairement indisponible. Concentrez-vous sur vos modules prioritaires.");
+        } finally {
+          setLoadingAdvice(false);
+        }
       };
       getAdvice();
     } else {
