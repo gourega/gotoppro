@@ -226,14 +226,14 @@ const Results: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
         
-        {/* SECTION 1: AUDIT STRATÉGIQUE (CHOC ÉMOTIONNEL) */}
+        {/* SECTION 1: AUDIT STRATÉGIQUE */}
         <section className="bg-white rounded-[3.5rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
           <div className="flex items-center gap-4 mb-10"><Zap className="text-brand-600" /><h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Audit Stratégique IA</h2></div>
           {loadingAdvice ? <div className="flex flex-col items-center py-12 gap-4"><Loader2 className="animate-spin text-brand-600" /><p className="text-[10px] font-black text-slate-400 uppercase">Consultation IA...</p></div> : 
           <div className="prose-kita whitespace-pre-wrap font-medium" dangerouslySetInnerHTML={{ __html: aiAdvice?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900">$1</strong>') || '' }} />}
         </section>
 
-        {/* SECTION 2: LES PACKS EXPERTS (SOLUTIONS GLOBALES) */}
+        {/* SECTION 2: LES PACKS EXPERTS */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-1000">
            <div className="text-center">
               <h3 className="text-[10px] font-black text-brand-500 uppercase tracking-[0.5em] mb-3">Recommandations Prioritaires</h3>
@@ -258,7 +258,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
 
-              {/* Pack Académie Élite (LE COEUR DE LA VENTE) */}
+              {/* Pack Académie Élite */}
               <button onClick={() => setActivePack('elite')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden md:col-span-1 lg:col-span-1 ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-brand-100 shadow-xl ring-1 ring-brand-50'}`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12"><Crown className="w-24 h-24 text-white" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
@@ -270,7 +270,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
                        <p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>10 000 F</p>
-                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Activ. Immédiate • Accès à vie</p>
+                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Activ. Immédiate • Accès 3 ans</p>
                     </div>
                   </div>
               </button>
@@ -286,7 +286,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès à vie</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès 3 ans</p>
                     </div>
                   </div>
               </button>
@@ -302,7 +302,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès à vie</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès 3 ans</p>
                     </div>
                   </div>
               </button>
@@ -341,7 +341,7 @@ const Results: React.FC = () => {
                             {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1"><Sparkles className="w-2 h-2" /> Priorité Diag</span>}
                           </div>
                           <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
-                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F • Accès à vie</p>}
+                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F • Accès 3 ans</p>}
                         </div>
                         <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
                           isOwned ? 'text-emerald-500' : 'bg-slate-50 text-slate-300 group-hover:bg-brand-500 group-hover:text-white'
@@ -360,7 +360,6 @@ const Results: React.FC = () => {
             <div className="sticky top-32 space-y-8">
               <div className="bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 overflow-hidden relative">
                 
-                {/* JAUGE DE RÉDUCTION VISUELLE */}
                 {activePack === 'none' && cart.length > 0 && (
                   <div className="mb-8 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 animate-in fade-in">
                     <div className="flex justify-between items-end mb-3">
@@ -410,16 +409,18 @@ const Results: React.FC = () => {
                   ) : (
                     <div className="text-center py-16 opacity-40 grayscale">
                        <ShoppingBag className="w-16 h-16 mx-auto mb-4" />
-                       <p className="text-slate-400 text-xs italic px-10">Choisissez des modules ou un Pack expert ci-dessus pour bâtir votre réussite.</p>
+                       <p className="text-slate-400 text-xs italic px-10">Choisissez des modules ou un Pack expert ci-dessus.</p>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-3 mb-10 pt-8 border-t border-slate-100">
+                   {/* SOUS-TOTAL BRUT */}
                    <div className="flex justify-between items-center text-slate-400">
                       <span className="text-[10px] font-bold uppercase tracking-widest">Sous-total (Brut)</span>
                       <span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span>
                    </div>
+
                    {pricingData.savings > 0 && (
                      <div className="flex justify-between items-center text-emerald-500">
                         <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Remise Évolutive (-{pricingData.discountPercent}%)</span>
@@ -442,14 +443,14 @@ const Results: React.FC = () => {
               
               <div className="p-6 bg-amber-50 rounded-[2.5rem] border border-amber-100 text-center">
                  <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center justify-center gap-2"><Target className="w-3 h-3" /> Conseil de Coach Kita</p>
-                 <p className="text-xs font-medium text-amber-800 italic leading-relaxed">"Le Pack Académie Élite est l'investissement le plus rentable pour devenir le n°1 de votre quartier."</p>
+                 <p className="text-xs font-medium text-amber-800 italic leading-relaxed">"Le Pack Académie Élite est l'investissement le plus rentable pour votre salon."</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MODAL DE RÉGISTRATION / VALIDATION */}
+      {/* MODAL RÉGISTRATION */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
           <div className="bg-white w-full max-w-lg rounded-[4rem] p-10 md:p-14 animate-in zoom-in-95 relative overflow-hidden">
@@ -457,14 +458,6 @@ const Results: React.FC = () => {
               <>
                 <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors" disabled={loading}><X /></button>
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Ouvrir mon Accès</h2>
-                
-                {dbError && (
-                  <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2rem] mb-8 flex items-start gap-4">
-                    <AlertCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
-                    <p className="text-xs font-bold text-rose-500 leading-relaxed">{dbError}</p>
-                  </div>
-                )}
-
                 <form onSubmit={handleRegisterAndValidate} className="space-y-6">
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
