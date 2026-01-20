@@ -94,6 +94,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
+  // On nettoie le numéro pour ne garder que les 8 derniers chiffres (standard CI)
   const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
   if (!cleanSearch) return null;
 
@@ -103,7 +104,11 @@ export const getProfileByPhone = async (phoneNumber: string) => {
       .select('*')
       .ilike('phone_number', `%${cleanSearch}`)
       .maybeSingle();
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Supabase query error:", error);
+      return null;
+    }
     return mapProfileFromDB(data);
   } catch (err) {
     console.error("Supabase Search Error:", err);
@@ -118,17 +123,32 @@ export const getUserProfile = async (uid: string) => {
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) throw new Error("Supabase non configuré");
+  if (!supabase) throw new Error("Connexion base de données impossible.");
   const dbData = mapProfileToDB(profile);
-  const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
-  if (error) throw error;
+  
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(dbData, { onConflict: 'uid' });
+    
+  if (error) {
+    console.error("Supabase Upsert Error:", error);
+    throw new Error(error.message);
+  }
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase || !uid) throw new Error("ID Invalide");
+  if (!supabase || !uid) throw new Error("Identifiant utilisateur manquant.");
   const dbData = mapProfileToDB(updates);
-  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-  if (error) throw error;
+  
+  const { error } = await supabase
+    .from('profiles')
+    .update(dbData)
+    .eq('uid', uid);
+    
+  if (error) {
+    console.error("Supabase Update Error:", error);
+    throw new Error(error.message);
+  }
 };
 
 export const getAllUsers = async () => {
@@ -141,7 +161,6 @@ export const deleteUserProfile = async (uid: string) => {
   if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
 };
 
-// ... Reste du fichier inchangé ...
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -215,7 +234,7 @@ export const updateKitaClient = async (id: string, updates: any) => {
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
   if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-  await supabase.from('kita_clients').update(dbUpdates).eq('id', id);
+  await supabase.from('profiles').update(dbUpdates).eq('id', id);
 };
 
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {

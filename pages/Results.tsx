@@ -1,5 +1,5 @@
 
-// ... Imports et début du fichier inchangés ...
+// Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -13,7 +13,8 @@ import {
   X,
   Lock,
   Tag,
-  MinusCircle
+  MinusCircle,
+  AlertCircle
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -29,6 +30,7 @@ const Results: React.FC = () => {
   const [cart, setCart] = useState<TrainingModule[]>([]);
   const [activePack, setActivePack] = useState<'none' | 'elite' | 'performance' | 'stock' | 'crm'>('none');
   const [loading, setLoading] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
   const [recommendedModuleIds, setRecommendedModuleIds] = useState<string[]>([]);
@@ -123,21 +125,29 @@ const Results: React.FC = () => {
     e.preventDefault();
     if (!regPhone || !regStoreName) return alert("Veuillez remplir tous les champs.");
     setLoading(true);
+    setDbError(null);
+
     try {
+      // 1. Nettoyage du numéro
       let cleanPhone = regPhone.replace(/\s/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
       
-      const existing = await getProfileByPhone(cleanPhone);
+      // 2. Détermination des modules demandés
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       
+      // 3. Vérification si le gérant existe déjà (doublon de numéro)
+      const existing = await getProfileByPhone(cleanPhone);
+      
       if (existing) {
+        // MISE À JOUR DU PROFIL EXISTANT
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
-          isActive: false, 
+          isActive: false, // On repasse en inactif pour validation Admin
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
+        // CRÉATION DU NOUVEAU PROFIL
         const newUser: UserProfile = { 
           uid: generateUUID(), 
           phoneNumber: cleanPhone, 
@@ -145,7 +155,7 @@ const Results: React.FC = () => {
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
           lastName: 'Elite', 
-          isActive: false, 
+          isActive: false, // CRITIQUE : Toujours false pour apparaître dans le TDB Admin
           role: 'CLIENT', 
           isAdmin: false,
           isPublic: true,
@@ -160,11 +170,15 @@ const Results: React.FC = () => {
         };
         await saveUserProfile(newUser);
       }
+      
+      // 4. Passage à l'écran de succès SEULEMENT si Supabase a confirmé l'écriture
       setRegStep('success');
     } catch (err: any) { 
-      console.error("Database Save Failure:", err);
-      alert(`ERREUR CRITIQUE BASE DE DONNÉES :\n${err.message || "Problème de connexion ou permission RLS."}\n\nVotre compte n'a pas pu être créé.`); 
-    } finally { setLoading(false); }
+      console.error("Critical Save Failure:", err);
+      setDbError(`Erreur de connexion à Supabase : ${err.message || "Problème de permission."}`);
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleValidateEngagement = async () => {
@@ -179,7 +193,11 @@ const Results: React.FC = () => {
       });
       setRegStep('success');
       setIsRegisterModalOpen(true);
-    } catch (err: any) { alert("Erreur : " + err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      alert("Erreur de mise à jour : " + err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
@@ -336,11 +354,19 @@ const Results: React.FC = () => {
           <div className="bg-white w-full max-w-lg rounded-[4rem] p-10 md:p-14 animate-in zoom-in-95 relative overflow-hidden">
             {regStep === 'form' ? (
               <>
-                <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors"><X /></button>
+                <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors" disabled={loading}><X /></button>
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Finaliser l'Accès</h2>
+                
+                {dbError && (
+                  <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl mb-6 flex items-start gap-3 animate-in shake">
+                    <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] font-bold text-rose-600 leading-tight">{dbError}</p>
+                  </div>
+                )}
+
                 <form onSubmit={handleRegisterAndValidate} className="space-y-6">
-                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
-                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required /></div>
+                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
+                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
                   <button type="submit" disabled={loading} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4">
                     {loading ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Valider et créer mon compte
                   </button>
