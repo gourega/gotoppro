@@ -29,7 +29,9 @@ import {
   FileQuestion,
   Printer,
   Share2,
-  Download
+  Download,
+  Trophy,
+  PartyPopper
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -68,7 +70,7 @@ const ModuleView: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'lesson' | 'quiz'>('lesson');
-  const [quizState, setQuizState] = useState<'intro' | 'active' | 'expert_speech' | 'results'>('intro');
+  const [quizState, setQuizState] = useState<'intro' | 'active' | 'success_splash' | 'expert_speech' | 'results'>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
@@ -167,7 +169,7 @@ const ModuleView: React.FC = () => {
   const startQuizAttempt = () => {
     if (originalQuestions.length === 0) return;
     
-    // Logique de Shuffle des questions ET des options
+    // Logique de Shuffle robuste
     const shuffled = originalQuestions.map(q => {
       const optionsWithInfo = q.options.map((opt, idx) => ({ 
         text: opt, 
@@ -187,7 +189,7 @@ const ModuleView: React.FC = () => {
       };
     });
 
-    // Mélange des questions
+    // Mélange des questions pour la diversité si on retente
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -236,7 +238,8 @@ const ModuleView: React.FC = () => {
 
       if (percentage >= 80) {
         setShouldFire(true);
-        setQuizState('expert_speech');
+        // On passe par un SPLASH au lieu d'aller direct au speech
+        setQuizState('success_splash');
       } else {
         setQuizState('results');
       }
@@ -438,36 +441,62 @@ const ModuleView: React.FC = () => {
               </div>
             )}
 
+            {/* ETAT SUCCESS SPLASH (NOUVEAU) */}
+            {quizState === 'success_splash' && (
+               <div className="text-center space-y-12 animate-in zoom-in-95 duration-700 print:hidden">
+                  <div className="relative inline-block">
+                    <div className="h-40 w-40 bg-emerald-500 text-white rounded-[3.5rem] flex items-center justify-center mx-auto shadow-2xl">
+                      <Trophy className="w-20 h-20" />
+                    </div>
+                    <div className="absolute -top-4 -right-4 bg-amber-400 text-brand-900 h-14 w-14 rounded-full flex items-center justify-center font-black text-xl border-4 border-white shadow-lg animate-bounce">
+                      100%
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h2 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tight">Félicitations !</h2>
+                    <p className="text-slate-500 text-2xl font-medium">Vous avez maîtrisé la théorie avec brio.</p>
+                  </div>
+                  <button 
+                    onClick={() => setQuizState('expert_speech')}
+                    className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto hover:bg-black transition-all group"
+                  >
+                    Sceller mon engagement <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                  </button>
+               </div>
+            )}
+
             {/* ETAT PAROLE D'EXPERT (SUCCÈS >= 80%) */}
             {quizState === 'expert_speech' && (
-              <div className="text-center space-y-12 animate-in zoom-in-95 print:hidden">
+              <div className="text-center space-y-12 animate-in slide-in-from-bottom-10 duration-700 print:hidden">
                 <div className="h-32 w-32 rounded-full mx-auto p-1.5 bg-emerald-500 shadow-xl shadow-emerald-200">
                   <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover rounded-full" alt="Mentor" />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-6">
                    <h2 className="text-5xl font-serif font-bold text-slate-900">Parole d'Expert</h2>
-                   <p className="text-slate-500 text-xl italic leading-relaxed max-w-2xl mx-auto">
-                     "Félicitations pour votre réussite théorique ! Pour devenir une légende, vous devez agir. <strong>Quel est votre plan pour relever le Défi des 24h</strong> que je vous ai lancé à la fin du cours ?"
-                   </p>
+                   <div className="bg-brand-50 p-8 rounded-[3rem] border border-brand-100 max-w-2xl mx-auto">
+                     <p className="text-brand-900 text-xl italic leading-relaxed font-medium">
+                       "Le savoir n'est rien sans l'action. <strong>Décrivez précisément comment vous allez relever le Défi des 24h</strong> que je vous ai lancé lors de votre écoute. C'est ici que commence votre transformation."
+                     </p>
+                   </div>
                 </div>
                 <div className="relative group max-w-2xl mx-auto">
                   <div className="absolute left-8 top-8 opacity-20"><Zap className="w-8 h-8 text-brand-900" /></div>
                   <textarea 
                     value={commitment}
                     onChange={e => setCommitment(e.target.value)}
-                    placeholder="Ex: Demain, je réalise mes 3 diagnostics assis et je prescris systématiquement un soin à domicile..."
-                    className="w-full p-10 pl-20 rounded-[3.5rem] bg-slate-50 border-none outline-none font-bold text-lg min-h-[250px] resize-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    placeholder="Ex: Demain, dès l'ouverture, je pratique la signature vocale à chaque appel et je souris consciemment pour que mes clientes l'entendent..."
+                    className="w-full p-10 pl-20 rounded-[3.5rem] bg-slate-50 border-2 border-transparent focus:border-emerald-500/30 outline-none font-bold text-lg min-h-[250px] resize-none focus:ring-4 focus:ring-emerald-500/5 transition-all shadow-inner"
                   />
                 </div>
                 <button 
                   onClick={handleSaveEngagement}
                   disabled={!commitment.trim() || isSaving}
-                  className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto disabled:opacity-50 hover:bg-black transition-all"
+                  className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto disabled:opacity-50 hover:bg-black transition-all active:scale-95"
                 >
-                  {isSaving ? <Loader2 className="animate-spin" /> : <Sparkles className="w-6 h-6" />}
-                  Lancer mon Défi des 24h
+                  {isSaving ? <Loader2 className="animate-spin" /> : <PartyPopper className="w-6 h-6" />}
+                  Lancer mon Défi & Valider mon Grade
                 </button>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cet engagement sera ajouté à votre centre de commandement</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">En cliquant, vous recevrez officiellement votre certificat d'excellence.</p>
               </div>
             )}
 

@@ -7,7 +7,6 @@ export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/ob
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
 
 // Partenaire Excellence : Salon Chez Raymond
-// Fix: Added missing RAYMOND constants for visual resources and location info
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-logo.png";
 export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
 export const RAYMOND_ADDRESS = "Abidjan, Cocody Angré 7e Tranche";
@@ -44,7 +43,7 @@ export const DAILY_CHALLENGES = [
   "Prendre une photo 'avant/après' avec la lumière du jour",
   "Demander à une cliente fidèle si elle a une amie à parrainer",
   "Vérifier le stock de shampoing technique avant midi",
-  "Féliciter un collaborateur pour un détail précis de son travail",
+  "Féliciter un collaborateur pour un detail précis de son travail",
   "Vérifier la propreté du bac à shampoing après chaque passage",
   "Peser précisément le mélange de la prochaine coloration",
   "Noter une préférence personnelle (thé, café) dans le fichier client",
@@ -54,7 +53,6 @@ export const DAILY_CHALLENGES = [
   "Proposer un produit de revente à la fin d'une prestation"
 ];
 
-// Fix: Added missing default services for Kita cash register initialization
 export const DEFAULT_KITA_SERVICES = [
   "Coupe Homme", "Coupe Femme", "Brushing", "Tresse", "Chignon", "Teinture", 
   "Mise en plis", "Shampoing", "Bain d'huile", "Défrisage", "Babyliss", 
@@ -86,7 +84,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Souriez en parlant, votre client l'entendra à travers le téléphone.",
     strategic_mantra: "Un appel raté est un client qui enrichit votre concurrent.",
     quiz_questions: [
-      { question: "Quelle est la phrase d'accueil idéale ?", options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], correctAnswer: 1, explanation: "Cette formule établit votre autorité et rassure le client." }
+      { question: "Quelle est la phrase d'accueil idéale ?", options: ["Allô ?", "Salon [Nom], [Prénom] à votre écoute, bonjour", "Oui c'est pour quoi ?"], correctAnswer: 1, explanation: "Cette formule établit votre autorité et rassure le client." },
+      { question: "Comment proposer un créneau de rendez-vous ?", options: ["Quand seriez-vous libre ?", "Le mardi à 10h ou le jeudi à 14h ?", "Je n'ai plus de place"], correctAnswer: 1, explanation: "Donner deux alternatives guide le client vers une décision rapide." },
+      { question: "Quelle est l'importance du sourire au téléphone ?", options: ["Inutile, on ne vous voit pas", "Essentiel, car il s'entend dans la voix", "C'est fatiguant"], correctAnswer: 1, explanation: "Le sourire modifie physiquement le timbre de voix et le rend plus accueillant." }
     ],
     exercises: ["Pratiquer la signature vocale lors des 10 prochains appels."],
     tips: ["Notez le nom du client dès le début de l'appel."]
@@ -113,7 +113,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
     quiz_questions: [
-      { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la cliente", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." }
+      { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la cliente", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." },
+      { question: "Quelle est la 4ème étape cruciale du diagnostic ?", options: ["Le rinçage", "La prescription", "Le paiement"], correctAnswer: 1, explanation: "La prescription assure le suivi du soin à domicile et augmente le CA." },
+      { question: "Pourquoi toucher les cheveux pendant le diagnostic ?", options: ["Par habitude", "Pour évaluer la santé de la fibre", "Pour les démêler"], correctAnswer: 1, explanation: "Le toucher expert crédibilise votre recommandation de soin." }
     ],
     exercises: ["Faire 3 diagnostics assis aujourd'hui."],
     tips: ["Utilisez le toucher pour justifier vos soins."]
@@ -140,7 +142,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Un bac à shampoing sale fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
     quiz_questions: [
-      { question: "Quand nettoyer vos outils ?", options: ["Le soir", "Devant le client", "Une fois par semaine"], correctAnswer: 1, explanation: "Le faire devant le client prouve votre standard." }
+      { question: "Quand nettoyer vos outils ?", options: ["Le soir", "Devant le client", "Une fois par semaine"], correctAnswer: 1, explanation: "Le faire devant le client prouve votre standard." },
+      { question: "Que faire du peignoir entre deux clients ?", options: ["Le secouer", "Le plier", "Le changer ou utiliser un protège-cou"], correctAnswer: 2, explanation: "Le contact direct avec un peignoir déjà utilisé est un manque d'hygiène." },
+      { question: "Quel est l'impact de l'hygiène sur les prix ?", options: ["Aucun", "Permet de justifier des tarifs plus hauts", "Ça coûte trop cher"], correctAnswer: 1, explanation: "L'hygiène rassure et place votre salon dans la catégorie Prestige." }
     ],
     exercises: [],
     tips: []
@@ -167,7 +171,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Le silence au bac est d'or.",
     strategic_mantra: "Un shampoing bâclé est une expérience client ratée.",
     quiz_questions: [
-      { question: "Quelle attitude au bac ?", options: ["Discuter", "Silence et massage", "Demander si elle va bien"], correctAnswer: 1, explanation: "Le silence favorise la relaxation." }
+      { question: "Quelle attitude au bac ?", options: ["Discuter", "Silence et massage", "Demander si elle va bien"], correctAnswer: 1, explanation: "Le silence favorise la relaxation." },
+      { question: "Comment savoir si le cheveu est bien rincé ?", options: ["Au toucher gras", "Quand il crisse sous les doigts", "À la couleur de l'eau"], correctAnswer: 1, explanation: "Un cheveu qui crisse est parfaitement débarrassé des résidus." },
+      { question: "Où se place la main lors du massage ?", options: ["Sur les yeux", "Aux points de tension (nuque, tempes)", "Sur le front"], correctAnswer: 1, explanation: "Masser les points de tension libère les endorphines du bien-être." }
     ],
     exercises: [],
     tips: []
@@ -193,7 +199,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Votre talent n'est pas négociable.",
     strategic_mantra: "Mieux vaut 10 clients au juste prix que 30 à perte.",
     quiz_questions: [
-      { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marge." }
+      { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marge." },
+      { question: "Pourquoi proposer 3 niveaux de prix ?", options: ["Pour perdre le client", "Pour orienter vers l'offre intermédiaire", "Pour faire joli"], correctAnswer: 1, explanation: "C'est l'effet d'ancrage psychologique pour augmenter le panier moyen." },
+      { question: "Que faire si un client dit que c'est trop cher ?", options: ["Baisser le prix", "Expliquer la valeur et les produits utilisés", "Se fâcher"], correctAnswer: 1, explanation: "On ne défend pas un prix, on justifie une valeur." }
     ],
     exercises: [],
     tips: []
@@ -218,7 +226,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Félicitez en public, recadrez en privé.",
     strategic_mantra: "Seul on va vite, ensemble on bâtit un empire.",
     quiz_questions: [
-      { question: "Comment recadrer ?", options: ["Devant l'équipe", "En privé avec calme", "Par WhatsApp"], correctAnswer: 1, explanation: "Le respect mutuel préserve la dignité." }
+      { question: "Comment recadrer ?", options: ["Devant l'équipe", "En privé avec calme", "Par WhatsApp"], correctAnswer: 1, explanation: "Le respect mutuel préserve la dignité." },
+      { question: "Quelle est la durée idéale d'un briefing ?", options: ["1 heure", "5 à 10 minutes", "Toute la matinée"], correctAnswer: 1, explanation: "Un briefing court et percutant donne de l'énergie sans perdre de temps." },
+      { question: "C'est quoi l'exemplarité ?", options: ["Donner des ordres", "Faire ce qu'on demande aux autres de faire", "Regarder"], correctAnswer: 1, explanation: "Le leader montre le chemin par ses propres actes." }
     ],
     exercises: [],
     tips: []
@@ -243,7 +253,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Le café offert vaut plus que 10% de remise.",
     strategic_mantra: "Le client revient pour l'émotion vécue.",
     quiz_questions: [
-      { question: "Que noter dans le fichier ?", options: ["Rien", "Historique et préférences", "Couleur des yeux"], correctAnswer: 1, explanation: "La personnalisation crée l'attachement." }
+      { question: "Que noter dans le fichier ?", options: ["Rien", "Historique et préférences", "Couleur des yeux"], correctAnswer: 1, explanation: "La personnalisation crée l'attachement." },
+      { question: "Quel est le but de 'l'effet WOW' ?", options: ["Surprendre positivement", "Faire peur", "Vendre plus cher"], correctAnswer: 0, explanation: "L'inattendu crée un souvenir mémorable." },
+      { question: "Combien coûte un nouveau client ?", options: ["Moins cher qu'un ancien", "5 fois plus qu'en garder un", "Rien"], correctAnswer: 1, explanation: "Investir sur sa base existante est la stratégie la plus rentable." }
     ],
     exercises: [],
     tips: []
@@ -268,7 +280,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Postez une photo par jour à l'heure du déjeuner.",
     strategic_mantra: "Si on ne vous voit pas, vous n'existez pas.",
     quiz_questions: [
-      { question: "Quelle photo attire ?", options: ["Floue", "Avant/Après bien éclairé", "Le salon vide"], correctAnswer: 1, explanation: "Le résultat concret rassure." }
+      { question: "Quelle photo attire ?", options: ["Floue", "Avant/Après bien éclairé", "Le salon vide"], correctAnswer: 1, explanation: "Le résultat concret rassure." },
+      { question: "Quel est le meilleur moment pour poster ?", options: ["Minuit", "Heures de pause (12h-13h ou soir)", "Pendant qu'on travaille"], correctAnswer: 1, explanation: "C'est quand vos clientes sont sur leur téléphone." },
+      { question: "Que signifie le tiers 'Conseil' ?", options: ["Donner ses prix", "Aider la cliente avec un tips", "Se plaindre"], correctAnswer: 1, explanation: "Partager votre savoir vous positionne en expert." }
     ],
     exercises: [],
     tips: []
@@ -293,7 +307,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Pesez toujours vos mélanges.",
     strategic_mantra: "La précision technique évite les rattrapages gratuits.",
     quiz_questions: [
-      { question: "Pourquoi peser ?", options: ["Pour faire joli", "Précision et contrôle coût", "C'est scientifique"], correctAnswer: 1, explanation: "La rentabilité passe par la précision." }
+      { question: "Pourquoi peser ?", options: ["Pour faire joli", "Précision et contrôle coût", "C'est scientifique"], correctAnswer: 1, explanation: "La rentabilité passe par la précision." },
+      { question: "Comment neutraliser un reflet jaune ?", options: ["Avec du bleu", "Avec du violet", "Avec du vert"], correctAnswer: 1, explanation: "Le violet est l'opposé du jaune sur l'étoile d'Oswald." },
+      { question: "Que se passe-t-il si on ne pèse pas ?", options: ["On gagne du temps", "On gaspille du produit et on perd en régularité", "C'est pareil"], correctAnswer: 1, explanation: "Sans pesée, impossible de reproduire exactement la même couleur au prochain RDV." }
     ],
     exercises: [],
     tips: []
@@ -318,7 +334,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Vos bacs sont votre meilleure salle d'exposition.",
     strategic_mantra: "Vendre un produit, c'est prendre soin du client chez lui.",
     quiz_questions: [
-      { question: "Quand parler du produit ?", options: ["À la caisse", "Pendant le service", "Jamais"], correctAnswer: 1, explanation: "L'éducation se fait par la démonstration." }
+      { question: "Quand parler du produit ?", options: ["À la caisse", "Pendant le service", "Jamais"], correctAnswer: 1, explanation: "L'éducation se fait par la démonstration." },
+      { question: "Quel pourcentage du CA doit viser la revente ?", options: ["2%", "15% et plus", "50%"], correctAnswer: 1, explanation: "15% est le seuil de rentabilité d'un salon d'élite." },
+      { question: "Comment débuter le conseil ?", options: ["Voulez-vous acheter ?", "Pour entretenir ce résultat, voici ce qu'il vous faut", "C'est cher"], correctAnswer: 1, explanation: "Liez le produit au résultat technique que vous venez de créer." }
     ],
     exercises: [],
     tips: []
@@ -335,7 +353,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>1. L'analyse morpho-psychologique</h2>
       <p>Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale. Observez la mâchoire et le front.</p>
       <h2>2. La géométrie de la coupe : angles et sections</h2>
-      <p>La réussite réside dans la précision de vos séparations. Comprendre les angles d'élévation vous permet de créer du volume avec précision.</p>
+      <p>La réussite réside dans la précision de vos séparations. Comprendre l'angles d'élévation vous permet de créer du volume avec précision.</p>
       <h2>3. Synthèse & Orientation : L'Architecte de la Beauté</h2>
       <p>Ne soyez pas un simple exécutant de photos trouvées sur internet. Soyez l'architecte qui crée une structure adaptée à la personnalité de sa cliente.</p>
       <p><strong>Votre Défi des 24h :</strong> Expliquez techniquement à votre prochaine cliente pourquoi vous choisissez tel angle de coupe par rapport à son visage. Prêt pour le quiz ?</p>
@@ -343,7 +361,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Utilisez le miroir pour valider l'équilibre.",
     strategic_mantra: "L'harmonie visuelle est le but ultime.",
     quiz_questions: [
-      { question: "Quelle forme de visage idéale ?", options: ["Rond", "Ovale", "Carré"], correctAnswer: 1, explanation: "L'ovale est l'équilibre parfait en coiffure." }
+      { question: "Quelle forme de visage idéale ?", options: ["Rond", "Ovale", "Carré"], correctAnswer: 1, explanation: "L'ovale est l'équilibre parfait en coiffure." },
+      { question: "Que crée un angle de 90 degrés ?", options: ["De la masse", "Du dégradé (volume léger)", "Rien"], correctAnswer: 1, explanation: "L'élévation crée le mouvement." },
+      { question: "Pourquoi expliquer le choix technique à la cliente ?", options: ["Pour frimer", "Pour asseoir votre autorité d'expert", "Pour parler"], correctAnswer: 1, explanation: "L'expertise expliquée ne se négocie pas." }
     ],
     exercises: [],
     tips: []
@@ -368,7 +388,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Prévoyez toujours 15 minutes de marge.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
     quiz_questions: [
-      { question: "C'est quoi l'overlapping ?", options: ["Attendre", "Coupe pendant pose couleur", "Se reposer"], correctAnswer: 1, explanation: "Optimiser les poses double la rentabilité." }
+      { question: "C'est quoi l'overlapping ?", options: ["Attendre", "Coupe pendant pose couleur", "Se reposer"], correctAnswer: 1, explanation: "Optimiser les poses double la rentabilité." },
+      { question: "Comment réduire les rendez-vous manqués ?", options: ["Se fâcher", "Rappel WhatsApp la veille", "Payer d'avance"], correctAnswer: 1, explanation: "Un rappel courtois suffit souvent à libérer un créneau si la cliente ne vient pas." },
+      { question: "Pourquoi laisser 15 min de marge ?", options: ["Pour boire un café", "Pour gérer les imprévus et le nettoyage", "C'est inutile"], correctAnswer: 1, explanation: "La marge évite le stress du retard cumulé." }
     ],
     exercises: [],
     tips: []
@@ -393,7 +415,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Observez le langage corporel.",
     strategic_mantra: "Celui qui comprend gagne le marché.",
     quiz_questions: [
-      { question: "Utilité de l'écoute active ?", options: ["Manipuler", "Mieux conseiller et fidéliser", "Devenir psy"], correctAnswer: 1, explanation: "Une cliente comprise est une cliente en sécurité." }
+      { question: "Utilité de l'écoute active ?", options: ["Manipuler", "Mieux conseiller et fidéliser", "Devenir psy"], correctAnswer: 1, explanation: "Une cliente comprise est une cliente en sécurité." },
+      { question: "Quelle réaction face à une cliente mécontente ?", options: ["Argumenter", "Écouter, s'excuser et proposer une solution", "Ignorer"], correctAnswer: 1, explanation: "L'empathie désamorce 90% des conflits." },
+      { question: "Que trahit un bras croisé ?", options: ["Une fermeture ou un doute", "Un confort", "Rien"], correctAnswer: 0, explanation: "Le corps parle souvent avant la bouche." }
     ],
     exercises: [],
     tips: []
@@ -418,7 +442,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "L'exclusivité crée le désir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
     quiz_questions: [
-      { question: "Détail VIP ?", options: ["Télé allumée", "Peignoir impeccable et boisson", "Beaucoup de staff"], correctAnswer: 1, explanation: "Le confort sensoriel immédiat définit le luxe." }
+      { question: "Détail VIP ?", options: ["Télé allumée", "Peignoir impeccable et boisson", "Beaucoup de staff"], correctAnswer: 1, explanation: "Le confort sensoriel immédiat définit le luxe." },
+      { question: "Comment assurer la confidentialité ?", options: ["Parler fort", "Baisser le ton et être discret", "Tout raconter"], correctAnswer: 1, explanation: "Le VIP recherche un sanctuaire de discrétion." },
+      { question: "L'atout majeur du prestige ?", options: ["Les prix hauts", "L'attention portée aux détails", "La déco"], correctAnswer: 1, explanation: "Le service d'exception justifie le tarif." }
     ],
     exercises: [],
     tips: []
@@ -433,7 +459,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 3,
     lesson_content: `
       <h2>1. Les indicateurs clés (KPI)</h2>
-      <p>Suivez votre ticket moyen et votre taux de revente chaque soir. Ce qui ne se mesure pas ne s'amplore pas.</p>
+      <p>Suivez votre ticket moyen et votre taux de revente chaque soir. Ce qui ne se mesure pas ne s'améliore pas.</p>
       <h2>2. Gérer son stock comme un investisseur</h2>
       <p>Le produit sur vos étagères est de l'argent qui dort. Apprenez à calculer votre taux de rotation.</p>
       <h2>3. Synthèse & Orientation : Devenir un Gestionnaire</h2>
@@ -443,7 +469,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Vérifiez vos chiffres tous les soirs.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
     quiz_questions: [
-      { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicateur de votre performance de vente." }
+      { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicateur de votre performance de vente." },
+      { question: "Que faire du stock dormant ?", options: ["Le laisser", "Le vendre en promotion ou en coffret", "Le jeter"], correctAnswer: 1, explanation: "Chaque produit non vendu est une perte de trésorerie." },
+      { question: "À quelle fréquence analyser ses chiffres ?", options: ["Par an", "Tous les soirs", "Jamais"], correctAnswer: 1, explanation: "L'analyse quotidienne permet des corrections rapides." }
     ],
     exercises: [],
     tips: []
@@ -468,7 +496,9 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Séparez argent personnel et pro.",
     strategic_mantra: "La rigueur administrative est la base de la liberté.",
     quiz_questions: [
-      { question: "Pourquoi un compte pro ?", options: ["Pour faire joli", "Séparer finances perso et pro", "C'est obligatoire"], correctAnswer: 1, explanation: "C'est la base d'une gestion saine." }
+      { question: "Pourquoi un compte pro ?", options: ["Pour faire joli", "Séparer finances perso et pro", "C'est obligatoire"], correctAnswer: 1, explanation: "C'est la base d'une gestion saine." },
+      { question: "Utilité de se verser un salaire fixe ?", options: ["Dépenser plus", "Prendre conscience de la marge réelle du salon", "Payer des impôts"], correctAnswer: 1, explanation: "Le gérant ne doit pas 'piocher' dans la caisse." },
+      { question: "Avantage de la formalisation ?", options: ["Plus de contrôle fiscal", "Accès aux crédits bancaires et partenaires", "Perte de temps"], correctAnswer: 1, explanation: "La banque prête à ceux qui prouvent leur sérieux par les chiffres." }
     ],
     exercises: [],
     tips: []
