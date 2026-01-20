@@ -131,26 +131,26 @@ const Results: React.FC = () => {
     setDbError(null);
 
     try {
-      // 1. Nettoyage et formatage du numéro
-      let cleanPhone = regPhone.replace(/\s/g, '');
+      // 1. Normalisation stricte du numéro
+      let cleanPhone = regPhone.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
       
       // 2. Préparation du panier
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       
-      // 3. Recherche forcée d'un doublon
+      // 3. Vérification d'existence
       const existing = await getProfileByPhone(cleanPhone);
       
       if (existing) {
-        // MISE À JOUR SILENCIEUSE
+        // Mise à jour de l'existant
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
           isActive: false, 
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
-        // CRÉATION STRICTE
+        // Création automatique STRICTE
         const newUser: UserProfile = { 
           uid: generateUUID(), 
           phoneNumber: cleanPhone, 
@@ -158,7 +158,7 @@ const Results: React.FC = () => {
           establishmentName: regStoreName, 
           firstName: 'Gérant', 
           lastName: 'Elite', 
-          isActive: false, // CRUCIAL : Reste false pour apparaître dans le TDB Admin
+          isActive: false, 
           role: 'CLIENT', 
           isAdmin: false,
           isPublic: true,
@@ -169,17 +169,16 @@ const Results: React.FC = () => {
           createdAt: new Date().toISOString(), 
           badges: [], 
           purchasedModuleIds: [],
-          actionPlan: []
+          actionPlan: [],
+          referralCount: 0
         };
-        // Appel bloquant : si ça rate, on catch l'erreur
         await saveUserProfile(newUser);
       }
       
-      // SI ON ARRIVE ICI, SUPABASE A DIT OUI
       setRegStep('success');
     } catch (err: any) { 
-      console.error("[Flux Automatique] Échec de l'enregistrement:", err);
-      setDbError(err.message || "Erreur de communication avec la base de données.");
+      console.error("[Flux Automatique Fail]:", err);
+      setDbError(err.message || "Impossible de créer le compte automatiquement.");
     } finally { 
       setLoading(false); 
     }
@@ -198,7 +197,7 @@ const Results: React.FC = () => {
       setRegStep('success');
       setIsRegisterModalOpen(true);
     } catch (err: any) { 
-      alert("Erreur de mise à jour technique."); 
+      alert("Erreur de mise à jour."); 
     } finally { 
       setLoading(false); 
     }
@@ -365,11 +364,11 @@ const Results: React.FC = () => {
                   <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2rem] mb-8 flex items-start gap-4 animate-in shake">
                     <AlertCircle className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
                     <div className="space-y-2">
-                       <p className="text-[11px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec de l'enregistrement automatique</p>
+                       <p className="text-[11px] font-black text-rose-600 leading-tight uppercase tracking-widest">Échec SQL Automatique</p>
                        <p className="text-xs font-bold text-rose-500 leading-relaxed">{dbError}</p>
                        <div className="pt-2 flex items-center gap-2 text-rose-400">
                           <Database className="w-3 h-3" />
-                          <span className="text-[9px] font-medium uppercase tracking-widest">Code Erreur : Supabase_SQL_Reject</span>
+                          <span className="text-[9px] font-medium uppercase tracking-widest">Diagnostique technique requis</span>
                        </div>
                     </div>
                   </div>

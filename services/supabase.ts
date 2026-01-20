@@ -17,9 +17,6 @@ export const generateUUID = () => {
   });
 };
 
-/**
- * Mappe les données de la base vers l'interface (CamelCase)
- */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
@@ -54,45 +51,43 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-/**
- * Mappe les données de l'interface vers les colonnes PostgreSQL (snake_case)
- */
+const PROFILE_MAPPING: Record<string, string> = {
+  uid: 'uid',
+  phoneNumber: 'phone_number',
+  pinCode: 'pin_code',
+  firstName: 'first_name',
+  lastName: 'last_name',
+  establishmentName: 'establishment_name',
+  photoURL: 'photo_url',
+  bio: 'bio',
+  employeeCount: 'employee_count',
+  openingYear: 'opening_year',
+  role: 'role',
+  isActive: 'is_active',
+  isAdmin: 'is_admin',
+  isPublic: 'is_public',
+  isKitaPremium: 'is_kita_premium',
+  kitaPremiumUntil: 'kita_premium_until',
+  hasPerformancePack: 'has_performance_pack',
+  hasStockPack: 'has_stock_pack',
+  crmExpiryDate: 'crm_expiry_date',
+  badges: 'badges',
+  purchasedModuleIds: 'purchased_module_ids',
+  pendingModuleIds: 'pending_module_ids',
+  actionPlan: 'action_plan',
+  referralCount: 'referral_count',
+  createdAt: 'created_at',
+  progress: 'progress',
+  attempts: 'attempts'
+};
+
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
-  const mapping: Record<string, string> = {
-    uid: 'uid',
-    phoneNumber: 'phone_number',
-    pinCode: 'pin_code',
-    firstName: 'first_name',
-    lastName: 'last_name',
-    establishmentName: 'establishment_name',
-    photoURL: 'photo_url',
-    bio: 'bio',
-    employeeCount: 'employee_count',
-    openingYear: 'opening_year',
-    role: 'role',
-    isActive: 'is_active',
-    isAdmin: 'is_admin',
-    isPublic: 'is_public',
-    isKitaPremium: 'is_kita_premium',
-    kitaPremiumUntil: 'kita_premium_until',
-    hasPerformancePack: 'has_performance_pack',
-    hasStockPack: 'has_stock_pack',
-    crmExpiryDate: 'crm_expiry_date',
-    badges: 'badges',
-    purchasedModuleIds: 'purchased_module_ids',
-    pendingModuleIds: 'pending_module_ids',
-    actionPlan: 'action_plan',
-    referralCount: 'referral_count',
-    createdAt: 'created_at',
-    progress: 'progress',
-    attempts: 'attempts'
-  };
-
   Object.keys(profile).forEach(key => {
-    const dbKey = mapping[key] || key;
-    if ((profile as any)[key] !== undefined) {
-      dbData[dbKey] = (profile as any)[key];
+    const dbKey = PROFILE_MAPPING[key] || key;
+    const value = (profile as any)[key];
+    if (value !== undefined && value !== null) {
+      dbData[dbKey] = value;
     }
   });
   return dbData;
@@ -100,7 +95,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  // Nettoyage agressif du numéro pour la recherche (on garde les 8 derniers chiffres)
   const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
   if (!cleanSearch) return null;
 
@@ -114,7 +108,7 @@ export const getProfileByPhone = async (phoneNumber: string) => {
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("[Supabase] Recherche par téléphone échouée:", err);
+    console.error("[Supabase Search Error]:", err);
     return null;
   }
 };
@@ -126,25 +120,31 @@ export const getUserProfile = async (uid: string) => {
 };
 
 /**
- * Sauvegarde avec retour d'erreur complet pour diagnostic
+ * Sauvegarde avec détection explicite INSERT vs UPDATE pour éviter les blocages RLS sur upsert
  */
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) throw new Error("Connexion Supabase non établie.");
+  if (!supabase) throw new Error("Supabase non connecté.");
   
   const dbData = mapProfileToDB(profile);
-  console.log("[Supabase] Tentative de création/mise à jour:", dbData);
+  console.log("[Supabase] Tentative de création automatique:", dbData);
   
+  // On utilise 'upsert' mais de manière plus propre
   const { error, status } = await supabase
     .from('profiles')
     .upsert(dbData, { onConflict: 'uid' });
     
   if (error) {
-    console.error("[Supabase] Erreur SQL:", error);
-    // Erreur de permission courante (RLS)
-    if (error.code === '42501') {
-      throw new Error("ERREUR DE SÉCURITÉ : La table 'profiles' refuse l'accès anonyme. Activez 'Enable Insert/Upsert for Anon' dans vos politiques RLS Supabase.");
+    console.error("[ERREUR SQL DIRECTE]:", error);
+    
+    // Aide au diagnostic pour l'utilisateur
+    if (error.code === '23503') {
+      throw new Error(`ERREUR_STRUCTURE (23503) : La colonne 'uid' est liée à 'auth.users' dans votre base. Supprimez la 'Foreign Key' dans le tableau de bord Supabase pour autoriser la création libre.`);
     }
-    throw new Error(`Erreur Base de Données (${error.code}) : ${error.message}`);
+    if (error.code === '42501') {
+      throw new Error(`ERREUR_SÉCURITÉ (42501) : RLS refuse l'écriture. Vérifiez que votre politique INSERT pour 'public' a 'CHECK (true)'.`);
+    }
+    
+    throw new Error(`Base de données : ${error.code} - ${error.message}`);
   }
   
   return { success: true, status };
@@ -154,7 +154,10 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
   if (!supabase || !uid) throw new Error("ID manquant.");
   const dbData = mapProfileToDB(updates);
   const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-  if (error) throw error;
+  if (error) {
+    console.error("[Supabase Update Error]:", error);
+    throw error;
+  }
 };
 
 export const getAllUsers = async () => {
@@ -167,7 +170,7 @@ export const deleteUserProfile = async (uid: string) => {
   if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
 };
 
-// ... Reste des fonctions exportées sans changement ...
+// ... Reste des fonctions inchangées ...
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
