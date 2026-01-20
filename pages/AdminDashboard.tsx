@@ -39,7 +39,12 @@ import {
   UserPlus,
   Wifi,
   ShoppingBag,
-  Star
+  Star,
+  Megaphone,
+  History,
+  Medal,
+  CalendarDays,
+  Target
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -49,19 +54,13 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'inbox' | 'pending' | 'active' | 'admins'>('inbox');
+  const [viewMode, setViewMode] = useState<'inbox' | 'pending' | 'active' | 'admins' | 'ambassadors' | 'expiring' | 'audit'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  // States pour la création manuelle
+  // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newUserData, setNewUserData] = useState({
-    phone: '',
-    firstName: '',
-    lastName: '',
-    establishment: ''
-  });
-
+  const [newUserData, setNewUserData] = useState({ phone: '', firstName: '', lastName: '', establishment: '' });
   const [editingPin, setEditingPin] = useState(false);
   const [newPinValue, setNewPinValue] = useState('');
 
@@ -218,42 +217,78 @@ const AdminDashboard: React.FC = () => {
     return total;
   };
 
+  // Nouveaux outils de pilotage
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
-    const pending = clients.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
     const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
+    
+    // Alerte renouvellement (sous 7 jours)
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    
+    const expiringCount = clients.filter(u => {
+      const crmExp = u.crmExpiryDate ? new Date(u.crmExpiryDate) : null;
+      const cloudExp = u.kitaPremiumUntil ? new Date(u.kitaPremiumUntil) : null;
+      return (crmExp && crmExp < sevenDaysFromNow && crmExp > new Date()) || 
+             (cloudExp && cloudExp < sevenDaysFromNow && cloudExp > new Date());
+    }).length;
+
     return { 
       total: clients.length, 
       active: clients.filter(u => u.isActive).length,
-      pending: pending.length,
       revenue: rawRevenue,
-      netRevenue: rawRevenue * 0.95
+      netRevenue: rawRevenue * 0.95,
+      expiringCount
     };
   }, [users]);
 
+  const handleGlobalBroadcast = () => {
+    const activeClients = users.filter(u => !u.isAdmin && u.isActive);
+    if (activeClients.length === 0) return showNotification("Aucun gérant actif à contacter.", "error");
+    
+    const msg = encodeURIComponent("Bonjour ! Coach Kita ici. Un nouveau module de formation vient de sortir sur Go'Top Pro. Connectez-vous vite pour booster votre rentabilité !");
+    const confirm = window.confirm(`Voulez-vous ouvrir WhatsApp pour envoyer une annonce aux ${activeClients.length} gérants actifs ?`);
+    if (confirm) {
+      // Pour une diffusion manuelle groupée via URL (limité par le navigateur mais efficace pour de petits groupes)
+      const phones = activeClients.map(u => u.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')).join(',');
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     const isSearching = searchTerm.trim().length > 0;
-    const baseInboxUsers = users.filter(u => 
-      u.isAdmin || 
-      !u.isActive || 
-      (u.pendingModuleIds && u.pendingModuleIds.length > 0)
-    );
+    let sourceSet = users;
 
-    const sourceSet = isSearching ? users : baseInboxUsers;
+    if (viewMode === 'inbox') {
+      sourceSet = users.filter(u => u.isAdmin || !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
+    } else if (viewMode === 'pending') {
+      sourceSet = users.filter(u => !u.isAdmin && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)));
+    } else if (viewMode === 'active') {
+      sourceSet = users.filter(u => !u.isAdmin && u.isActive);
+    } else if (viewMode === 'admins') {
+      sourceSet = users.filter(u => u.isAdmin);
+    } else if (viewMode === 'ambassadors') {
+      sourceSet = users.filter(u => !u.isAdmin && (u.referralCount || 0) > 0).sort((a,b) => (b.referralCount || 0) - (a.referralCount || 0));
+    } else if (viewMode === 'expiring') {
+      const weekOut = new Date();
+      weekOut.setDate(weekOut.getDate() + 7);
+      sourceSet = users.filter(u => {
+        const crm = u.crmExpiryDate ? new Date(u.crmExpiryDate) : null;
+        return crm && crm < weekOut && crm > new Date();
+      });
+    }
 
-    return sourceSet.filter(u => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch = (u.phoneNumber || '').includes(search) || 
-        (u.firstName || '').toLowerCase().includes(search) || 
-        (u.lastName || '').toLowerCase().includes(search) ||
-        (u.establishmentName || '').toLowerCase().includes(search);
-      
-      if (!matchesSearch) return false;
-      if (viewMode === 'admins') return u.isAdmin;
-      if (viewMode === 'pending') return !u.isAdmin && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
-      if (viewMode === 'active') return !u.isAdmin && u.isActive;
-      return true;
-    });
+    if (isSearching) {
+      sourceSet = sourceSet.filter(u => {
+        const search = searchTerm.toLowerCase();
+        return (u.phoneNumber || '').includes(search) || 
+          (u.firstName || '').toLowerCase().includes(search) || 
+          (u.lastName || '').toLowerCase().includes(search) ||
+          (u.establishmentName || '').toLowerCase().includes(search);
+      });
+    }
+
+    return sourceSet;
   }, [users, searchTerm, viewMode]);
 
   return (
@@ -279,7 +314,13 @@ const AdminDashboard: React.FC = () => {
             </h1>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <button 
+              onClick={handleGlobalBroadcast}
+              className="bg-emerald-100 text-emerald-700 px-8 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-200 transition-all shadow-sm active:scale-95"
+            >
+              <Megaphone className="w-5 h-5" /> Diffusion WhatsApp
+            </button>
             <button 
               onClick={() => setShowAddModal(true)} 
               className="bg-brand-900 text-white px-8 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-black transition-all shadow-xl active:scale-95"
@@ -298,8 +339,22 @@ const AdminDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-500" sub="Total Network" />
-          <StatCard title="Gérants Actifs" value={stats.active} icon={<ShieldCheck />} color="text-emerald-500" sub={`${Math.round((stats.active/Math.max(1, stats.total))*100)}% Retention`} />
-          <StatCard title="À traiter" value={stats.pending} icon={<UserPlus />} color="text-amber-500" sub="Urgent : Activation" highlight={stats.pending > 0} />
+          <StatCard 
+            title="Alerte Renouvellement" 
+            value={stats.expiringCount} 
+            icon={<Clock />} 
+            color="text-amber-500" 
+            sub="CRM / Cloud - 7 jours" 
+            highlight={stats.expiringCount > 0} 
+            onClick={() => setViewMode('expiring')}
+          />
+          <StatCard 
+            title="Activité Récente" 
+            value={`${Math.round((stats.active/Math.max(1, stats.total))*100)}%`} 
+            icon={<ShieldCheck />} 
+            color="text-emerald-500" 
+            sub="Rétention Gérants" 
+          />
           <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-brand-600" sub="95% Net Revenue" />
         </div>
 
@@ -319,10 +374,11 @@ const AdminDashboard: React.FC = () => {
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex bg-slate-100 p-1.5 rounded-[2rem] border border-slate-200 shrink-0">
-              <NavTab active={viewMode === 'inbox'} onClick={() => setViewMode('inbox')} label="Opérations" count={stats.pending + users.filter(u => u.isAdmin).length} />
-              <NavTab active={viewMode === 'pending'} onClick={() => setViewMode('pending')} label="En attente" count={stats.pending} isUrgent={stats.pending > 0} />
+            <div className="flex bg-slate-100 p-1.5 rounded-[2rem] border border-slate-200 shrink-0 overflow-x-auto max-w-full">
+              <NavTab active={viewMode === 'inbox'} onClick={() => setViewMode('inbox')} label="Opérations" count={users.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)).length} />
               <NavTab active={viewMode === 'active'} onClick={() => setViewMode('active')} label="Gérants" />
+              <NavTab active={viewMode === 'ambassadors'} onClick={() => setViewMode('ambassadors')} label="Ambassadeurs" icon={<Medal className="w-3 h-3" />} />
+              <NavTab active={viewMode === 'expiring'} onClick={() => setViewMode('expiring')} label="Alertes" count={stats.expiringCount} isUrgent={stats.expiringCount > 0} />
               <NavTab active={viewMode === 'admins'} onClick={() => setViewMode('admins')} label="Équipe" />
             </div>
           </div>
@@ -332,7 +388,8 @@ const AdminDashboard: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50">
                   <th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
+                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Progression</th>
+                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagements</th>
                   <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur</th>
                   <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">CRM & Cloud</th>
                   <th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Pilotage</th>
@@ -343,6 +400,9 @@ const AdminDashboard: React.FC = () => {
                   const cloudActive = u.isKitaPremium || (u.kitaPremiumUntil && new Date(u.kitaPremiumUntil) > new Date());
                   const crmActive = u.crmExpiryDate && new Date(u.crmExpiryDate) > new Date();
                   const isCritical = !u.isActive;
+                  const progressCount = Object.keys(u.progress || {}).length;
+                  const progressPercent = Math.round((progressCount / 16) * 100);
+
                   return (
                     <tr 
                       key={u.uid} 
@@ -351,7 +411,7 @@ const AdminDashboard: React.FC = () => {
                     >
                       <td className="px-12 py-8">
                         <div className="flex items-center gap-6">
-                          <div className={`h-16 w-16 rounded-[1.5rem] border border-slate-200 flex items-center justify-center font-black text-xl overflow-hidden relative shadow-sm ${u.isAdmin ? 'bg-brand-900 text-brand-500' : 'bg-slate-100 text-slate-400'}`}>
+                          <div className={`h-16 w-16 rounded-[1.5rem] border border-slate-200 flex items-center justify-center font-black text-xl overflow-hidden relative shadow-sm ${u.isAdmin ? 'bg-brand-900 text-brand-50' : 'bg-slate-100 text-slate-400'}`}>
                             {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"/> : (u.firstName?.[0] || 'U')}
                             {u.isActive && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></div>}
                           </div>
@@ -359,9 +419,22 @@ const AdminDashboard: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <p className="font-serif font-bold text-slate-900 text-xl group-hover:text-brand-600 transition-colors">{u.firstName} {u.lastName}</p>
                               {u.isAdmin && <ShieldAlert className="w-4 h-4 text-brand-600" />}
+                              {(u.referralCount || 0) > 0 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[7px] font-black uppercase flex items-center gap-1"><Medal className="w-2 h-2" /> {u.referralCount} Parrains</span>}
                             </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{u.establishmentName || 'SALON INDÉPENDANT'}</p>
+                            <p className="text-[8px] font-bold text-slate-400 mt-0.5">{u.phoneNumber}</p>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-8">
+                        <div className="w-32">
+                           <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase mb-1">
+                             <span>{progressCount}/16</span>
+                             <span>{progressPercent}%</span>
+                           </div>
+                           <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full transition-all duration-1000 ${progressPercent >= 80 ? 'bg-emerald-500' : 'bg-brand-500'}`} style={{ width: `${progressPercent}%` }}></div>
+                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -369,7 +442,6 @@ const AdminDashboard: React.FC = () => {
                           {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
                           {u.pendingModuleIds?.some(id => id.includes('ELITE')) && <Badge text="WAIT ELITE" color="amber" animate />}
-                          {u.pendingModuleIds?.some(id => id.includes('CRM')) && <Badge text="WAIT CRM" color="amber" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -380,7 +452,7 @@ const AdminDashboard: React.FC = () => {
                             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${cloudActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
                                 {cloudActive ? 'Cloud OK' : 'Cloud Exp'}
                             </div>
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${crmActive ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${crmActive ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
                                 {crmActive ? 'CRM Actif' : 'CRM Inactif'}
                             </div>
                          </div>
@@ -396,12 +468,12 @@ const AdminDashboard: React.FC = () => {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={5} className="py-32 text-center">
+                    <td colSpan={6} className="py-32 text-center">
                       <div className="flex flex-col items-center gap-6">
                         <div className="h-24 w-24 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center animate-pulse">
                            <Wifi className="w-10 h-10 text-slate-200" />
                         </div>
-                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-400">Aucun gérant à traiter</p>
+                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-400">Aucune donnée trouvée</p>
                       </div>
                     </td>
                   </tr>
@@ -412,7 +484,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL CREATION MANUELLE (LIGHT) */}
+      {/* MODAL CREATION MANUELLE */}
       {showAddModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in">
           <div className="bg-white w-full max-w-lg rounded-[4rem] border border-slate-200 shadow-2xl p-12 relative overflow-hidden">
@@ -482,7 +554,7 @@ const AdminDashboard: React.FC = () => {
             
             <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div className="flex items-center gap-6">
-                <div className={`h-20 w-20 rounded-[2rem] overflow-hidden flex items-center justify-center font-black text-3xl shadow-lg border-2 ${selectedUser.isAdmin ? 'bg-brand-900 border-brand-500/50 text-brand-500' : 'bg-slate-200 border-white text-slate-400'}`}>
+                <div className={`h-20 w-20 rounded-[2rem] overflow-hidden flex items-center justify-center font-black text-3xl shadow-lg border-2 ${selectedUser.isAdmin ? 'bg-brand-900 border-brand-500/50 text-brand-50' : 'bg-slate-200 border-white text-slate-400'}`}>
                   {selectedUser.photoURL ? <img src={selectedUser.photoURL} alt="" className="w-full h-full object-cover"/> : selectedUser.firstName?.[0]}
                 </div>
                 <div>
@@ -501,6 +573,30 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="p-12 space-y-12 flex-grow bg-white">
+              
+              {/* ANALYSE D'USAGE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Target className="w-4 h-4 text-brand-600" /> Maîtrise Théorique</h3>
+                    <div className="flex items-end justify-between mb-4">
+                       <p className="text-4xl font-black text-slate-900">{Object.keys(selectedUser.progress || {}).length}<span className="text-lg text-slate-400 font-bold">/16</span></p>
+                       <p className="text-[10px] font-black text-brand-600 uppercase">Modules validés</p>
+                    </div>
+                    <div className="h-2 w-full bg-white rounded-full overflow-hidden">
+                       <div className="h-full bg-brand-500" style={{ width: `${(Object.keys(selectedUser.progress || {}).length / 16) * 100}%` }}></div>
+                    </div>
+                 </div>
+
+                 <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History className="w-4 h-4 text-emerald-600" /> Croissance Réseau</h3>
+                    <div className="flex items-end justify-between mb-4">
+                       <p className="text-4xl font-black text-slate-900">{selectedUser.referralCount || 0}</p>
+                       <p className="text-[10px] font-black text-emerald-600 uppercase">Filleuls parrainés</p>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 italic">"Ambassadeur actif Go'Top Pro"</p>
+                 </div>
+              </div>
+
               <div className="bg-indigo-50 rounded-[3rem] p-10 border border-indigo-100">
                  <h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
                     <Lock className="w-5 h-5" /> Sécurité & Accès
@@ -557,27 +653,18 @@ const AdminDashboard: React.FC = () => {
                     {selectedUser.pendingModuleIds?.some(id => id.includes('ELITE')) && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="Pack 16 modules" color="amber" />
                     )}
-                    
-                    {/* BOUTON ACTIVER PANIER INDIVIDUEL (CRITIQUE) */}
                     {selectedUser.pendingModuleIds?.some(id => id.startsWith('mod_')) && (
                       <ActionBtn 
                         onClick={() => handleActivatePack('INDIVIDUAL')} 
                         loading={processingId === 'INDIVIDUAL'} 
                         icon={<ShoppingBag />} 
                         label="Activer Modules" 
-                        price={`${selectedUser.pendingModuleIds.filter(id => id.startsWith('mod_')).length} modules du panier`} 
+                        price={`${selectedUser.pendingModuleIds.filter(id => id.startsWith('mod_')).length} modules`} 
                         color="blue" 
                       />
                     )}
-
                     {selectedUser.pendingModuleIds?.some(id => id.includes('CRM')) && (
                       <ActionBtn onClick={() => handleActivatePack('CRM')} loading={processingId === 'CRM'} icon={<Star />} label="Activer CRM" price="Accès VIP (30j)" color="amber" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && (
-                      <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Gem />} label="Activer RH+" price="Gestion Staff" color="emerald" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('STOCK')) && (
-                      <ActionBtn onClick={() => handleActivatePack('STOCK')} loading={processingId === 'STOCK'} icon={<Zap />} label="Activer Stock" price="Expert Box" color="blue" />
                     )}
                   </div>
                 </div>
@@ -640,8 +727,11 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
-  <div className={`bg-white p-8 rounded-[2.5rem] border transition-all duration-500 shadow-sm ${highlight ? 'border-amber-400 ring-4 ring-amber-50 shadow-xl' : 'border-slate-100'}`}>
+const StatCard = ({ title, value, icon, color, sub, highlight, onClick }: any) => (
+  <div 
+    onClick={onClick}
+    className={`bg-white p-8 rounded-[2.5rem] border transition-all duration-500 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : ''} ${highlight ? 'border-amber-400 ring-4 ring-amber-50 shadow-xl' : 'border-slate-100'}`}
+  >
     <div className="flex justify-between items-start mb-6">
        <div className={`h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl ${color} border border-slate-100 shadow-inner`}>{icon}</div>
     </div>
@@ -651,8 +741,9 @@ const StatCard = ({ title, value, icon, color, sub, highlight }: any) => (
   </div>
 );
 
-const NavTab = ({ active, onClick, label, count, isUrgent }: any) => (
-  <button onClick={onClick} className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${active ? 'bg-brand-900 text-white shadow-xl' : 'text-slate-500 hover:text-brand-600'}`}>
+const NavTab = ({ active, onClick, label, count, isUrgent, icon }: any) => (
+  <button onClick={onClick} className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 whitespace-nowrap ${active ? 'bg-brand-900 text-white shadow-xl' : 'text-slate-500 hover:text-brand-600'}`}>
+    {icon}
     {label}
     {count !== undefined && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-brand-800' : isUrgent ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500'}`}>{count}</span>}
   </button>
