@@ -31,7 +31,8 @@ import {
   Share2,
   Download,
   Trophy,
-  PartyPopper
+  PartyPopper,
+  CloudOff
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -78,6 +79,7 @@ const ModuleView: React.FC = () => {
   const [commitment, setCommitment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
+  const [syncWarning, setSyncWarning] = useState(false);
 
   // États Audio & Cache
   const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -176,7 +178,6 @@ const ModuleView: React.FC = () => {
         isCorrect: idx === q.correctAnswer 
       }));
       
-      // Mélange des options
       for (let i = optionsWithInfo.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [optionsWithInfo[i], optionsWithInfo[j]] = [optionsWithInfo[j], optionsWithInfo[i]];
@@ -189,7 +190,6 @@ const ModuleView: React.FC = () => {
       };
     });
 
-    // Mélange des questions pour la diversité si on retente
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -222,6 +222,7 @@ const ModuleView: React.FC = () => {
     });
     const percentage = Math.round((score / (shuffledQuestions.length || 1)) * 100);
     
+    // Tentative de sauvegarde en arrière-plan
     try {
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
@@ -235,19 +236,19 @@ const ModuleView: React.FC = () => {
 
       await saveUserProfile(updatedUser);
       await refreshProfile();
-
+    } catch (err) {
+      console.error("Quiz Finish Sync Warning:", err);
+      // On prépare un avertissement mais on ne bloque pas le gérant
+      setSyncWarning(true);
+    } finally {
+      setIsFinishingQuiz(false);
+      // REDIRECTION BASÉE SUR LE SCORE (Loin du catch pour éviter le saut d'étape)
       if (percentage >= 80) {
         setShouldFire(true);
-        // On passe par un SPLASH au lieu d'aller direct au speech
         setQuizState('success_splash');
       } else {
         setQuizState('results');
       }
-    } catch (err) {
-      console.error("Quiz Finish Error:", err);
-      setQuizState('results');
-    } finally {
-      setIsFinishingQuiz(false);
     }
   };
 
@@ -272,6 +273,8 @@ const ModuleView: React.FC = () => {
       setQuizState('results');
     } catch (err) {
       console.error("Commit error:", err);
+      // Même si l'engagement échoue techniquement à se sauvegarder (offline), on montre les résultats
+      setQuizState('results');
     } finally {
       setIsSaving(false);
     }
@@ -377,6 +380,15 @@ const ModuleView: React.FC = () => {
           </article>
         ) : (
           <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
+            
+            {/* ALERT DE SYNCHRO (NON BLOQUANTE) */}
+            {syncWarning && quizState !== 'intro' && quizState !== 'active' && (
+              <div className="fixed bottom-10 left-10 z-[200] bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-left duration-500 border-2 border-rose-400">
+                <CloudOff className="w-5 h-5" />
+                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Connexion instable. Votre réussite sera synchronisée plus tard.</p>
+              </div>
+            )}
+
             {/* ETAT INTRO */}
             {quizState === 'intro' && (
               <div className="text-center max-w-2xl mx-auto print:hidden">
@@ -441,26 +453,28 @@ const ModuleView: React.FC = () => {
               </div>
             )}
 
-            {/* ETAT SUCCESS SPLASH (NOUVEAU) */}
+            {/* ETAT SUCCESS SPLASH */}
             {quizState === 'success_splash' && (
-               <div className="text-center space-y-12 animate-in zoom-in-95 duration-700 print:hidden">
+               <div className="text-center space-y-12 animate-in zoom-in-95 duration-700 print:hidden py-10">
                   <div className="relative inline-block">
-                    <div className="h-40 w-40 bg-emerald-500 text-white rounded-[3.5rem] flex items-center justify-center mx-auto shadow-2xl">
-                      <Trophy className="w-20 h-20" />
+                    <div className="h-48 w-48 bg-emerald-500 text-white rounded-[4rem] flex items-center justify-center mx-auto shadow-2xl border-8 border-emerald-100">
+                      <Trophy className="w-24 h-24" />
                     </div>
-                    <div className="absolute -top-4 -right-4 bg-amber-400 text-brand-900 h-14 w-14 rounded-full flex items-center justify-center font-black text-xl border-4 border-white shadow-lg animate-bounce">
-                      100%
+                    <div className="absolute -top-6 -right-6 bg-amber-400 text-brand-900 h-16 w-16 rounded-full flex items-center justify-center font-black text-2xl border-4 border-white shadow-xl animate-bounce">
+                      {latestPercentage}%
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <h2 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tight">Félicitations !</h2>
-                    <p className="text-slate-500 text-2xl font-medium">Vous avez maîtrisé la théorie avec brio.</p>
+                  <div className="space-y-6">
+                    <h2 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tight">Objectif Atteint !</h2>
+                    <p className="text-slate-500 text-2xl font-medium max-w-xl mx-auto leading-relaxed">
+                      "Félicitations Gérant. Vous avez la théorie. Maintenant, montrez-moi votre détermination à agir."
+                    </p>
                   </div>
                   <button 
                     onClick={() => setQuizState('expert_speech')}
-                    className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto hover:bg-black transition-all group"
+                    className="bg-brand-900 text-white px-20 py-10 rounded-[3rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center gap-6 mx-auto hover:bg-black hover:scale-105 transition-all group"
                   >
-                    Sceller mon engagement <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                    Sceller mon engagement <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
                   </button>
                </div>
             )}
@@ -473,9 +487,9 @@ const ModuleView: React.FC = () => {
                 </div>
                 <div className="space-y-6">
                    <h2 className="text-5xl font-serif font-bold text-slate-900">Parole d'Expert</h2>
-                   <div className="bg-brand-50 p-8 rounded-[3rem] border border-brand-100 max-w-2xl mx-auto">
-                     <p className="text-brand-900 text-xl italic leading-relaxed font-medium">
-                       "Le savoir n'est rien sans l'action. <strong>Décrivez précisément comment vous allez relever le Défi des 24h</strong> que je vous ai lancé lors de votre écoute. C'est ici que commence votre transformation."
+                   <div className="bg-brand-50 p-10 rounded-[3.5rem] border border-brand-100 max-w-2xl mx-auto shadow-inner">
+                     <p className="text-brand-900 text-2xl italic leading-relaxed font-medium">
+                       "Le savoir n'est rien sans l'action. <strong>Décrivez précisément comment vous allez relever le Défi des 24h</strong> que je vous ai lancé. C'est ici que commence votre transformation."
                      </p>
                    </div>
                 </div>
@@ -484,27 +498,27 @@ const ModuleView: React.FC = () => {
                   <textarea 
                     value={commitment}
                     onChange={e => setCommitment(e.target.value)}
-                    placeholder="Ex: Demain, dès l'ouverture, je pratique la signature vocale à chaque appel et je souris consciemment pour que mes clientes l'entendent..."
-                    className="w-full p-10 pl-20 rounded-[3.5rem] bg-slate-50 border-2 border-transparent focus:border-emerald-500/30 outline-none font-bold text-lg min-h-[250px] resize-none focus:ring-4 focus:ring-emerald-500/5 transition-all shadow-inner"
+                    placeholder="Ex: Dès demain matin, je m'engage à appliquer la signature vocale Kita lors de chaque appel et à sourire consciemment pour que mes clientes l'entendent immédiatement..."
+                    className="w-full p-12 pl-20 rounded-[4rem] bg-slate-50 border-2 border-transparent focus:border-emerald-500/30 outline-none font-bold text-xl min-h-[300px] resize-none focus:ring-4 focus:ring-emerald-500/5 transition-all shadow-inner"
                   />
                 </div>
                 <button 
                   onClick={handleSaveEngagement}
                   disabled={!commitment.trim() || isSaving}
-                  className="bg-brand-900 text-white px-16 py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs shadow-2xl flex items-center gap-4 mx-auto disabled:opacity-50 hover:bg-black transition-all active:scale-95"
+                  className="bg-brand-900 text-white px-20 py-10 rounded-[3rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl flex items-center gap-6 mx-auto disabled:opacity-50 hover:bg-black transition-all active:scale-95"
                 >
-                  {isSaving ? <Loader2 className="animate-spin" /> : <PartyPopper className="w-6 h-6" />}
-                  Lancer mon Défi & Valider mon Grade
+                  {isSaving ? <Loader2 className="animate-spin w-6 h-6" /> : <PartyPopper className="w-8 h-8" />}
+                  Lancer mon Défi & Obtenir mon Certificat
                 </button>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">En cliquant, vous recevrez officiellement votre certificat d'excellence.</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">En validant cet engagement, vous recevrez officiellement votre certificat d'excellence.</p>
               </div>
             )}
 
-            {/* ETAT RÉSULTATS (DÉBRIEFING) */}
+            {/* ETAT RÉSULTATS (DÉBRIEFING & CERTIFICAT) */}
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
                 <div className="text-center mb-16 print:hidden">
-                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-white'}`}>
+                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-rose-500 border border-rose-100'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
                    <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">
