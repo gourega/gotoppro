@@ -17,79 +17,56 @@ export const generateUUID = () => {
   });
 };
 
+/**
+ * Mappe les données de la DB (qui peuvent être en snake_case ou camelCase selon l'historique)
+ * vers l'interface UserProfile de l'application.
+ */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     uid: data.uid,
-    phoneNumber: data.phone_number || data.phoneNumber || '',
-    pinCode: data.pin_code || data.pinCode || '1234',
+    phoneNumber: data.phoneNumber || data.phone_number || '',
+    pinCode: data.pinCode || data.pin_code || '1234',
     email: data.email,
-    firstName: data.first_name || data.firstName || '',
-    lastName: data.last_name || data.lastName || '',
-    establishmentName: data.establishment_name || data.establishmentName || '',
-    photoURL: data.photo_url || data.photoURL || '',
+    firstName: data.firstName || data.first_name || '',
+    lastName: data.lastName || data.last_name || '',
+    establishmentName: data.establishmentName || data.establishment_name || '',
+    photoURL: data.photoURL || data.photo_url || '',
     bio: data.bio || '',
-    employeeCount: data.employee_count || data.employeeCount || 0,
-    openingYear: data.opening_year || data.openingYear || 0,
+    employeeCount: data.employeeCount || data.employee_count || 0,
+    openingYear: data.openingYear || data.opening_year || 0,
     role: data.role || 'CLIENT',
-    isActive: data.is_active ?? data.isActive ?? false,
-    isAdmin: data.is_admin ?? data.isAdmin ?? false,
-    isPublic: data.is_public ?? data.isPublic ?? true,
-    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
-    kitaPremiumUntil: data.kita_premium_until || data.kitaPremiumUntil,
-    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
-    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
-    crmExpiryDate: data.crm_expiry_date || data.crmExpiryDate,
+    isActive: data.isActive ?? data.is_active ?? false,
+    isAdmin: data.isAdmin ?? data.is_admin ?? false,
+    isPublic: data.isPublic ?? data.is_public ?? true,
+    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
+    kitaPremiumUntil: data.kitaPremiumUntil || data.kita_premium_until,
+    hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
+    hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
+    crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
-    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
-    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
-    referralCount: data.referral_count || data.referralCount || 0,
-    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
+    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
+    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
+    referralCount: data.referralCount || data.referral_count || 0,
+    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
 };
 
-// Mapping direct et propre
-const PROFILE_MAPPING: Record<string, string> = {
-  uid: 'uid',
-  phoneNumber: 'phone_number',
-  pinCode: 'pin_code',
-  firstName: 'first_name',
-  lastName: 'last_name',
-  establishmentName: 'establishment_name',
-  photoURL: 'photo_url',
-  bio: 'bio',
-  employeeCount: 'employee_count',
-  openingYear: 'opening_year',
-  role: 'role',
-  isActive: 'is_active',
-  isAdmin: 'is_admin',
-  isPublic: 'is_public',
-  isKitaPremium: 'is_kita_premium',
-  kitaPremiumUntil: 'kita_premium_until',
-  hasPerformancePack: 'has_performance_pack',
-  hasStockPack: 'has_stock_pack',
-  crmExpiryDate: 'crm_expiry_date',
-  badges: 'badges',
-  purchasedModuleIds: 'purchased_module_ids',
-  pendingModuleIds: 'pending_module_ids',
-  actionPlan: 'action_plan',
-  referralCount: 'referral_count',
-  createdAt: 'created_at',
-  progress: 'progress',
-  attempts: 'attempts',
-  email: 'email'
-};
-
+/**
+ * Prépare l'objet pour l'écriture en DB.
+ * On utilise les clés camelCase car l'erreur schema_cache a confirmé 
+ * que phone_number et created_at ne sont pas reconnus.
+ */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
   Object.keys(profile).forEach(key => {
-    const dbKey = PROFILE_MAPPING[key] || key;
     const value = (profile as any)[key];
     if (value !== undefined && value !== null) {
-      dbData[dbKey] = value;
+      // On envoie la clé telle quelle (camelCase) pour correspondre au schéma attendu
+      dbData[key] = value;
     }
   });
   return dbData;
@@ -97,17 +74,26 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
+  const cleanSearch = phoneNumber.replace(/[^\d+]/g, '').slice(-8);
   if (!cleanSearch) return null;
 
   try {
+    // On tente la recherche sur phoneNumber (camelCase)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .ilike('phone_number', `%${cleanSearch}`)
+      .ilike('phoneNumber', `%${cleanSearch}`)
       .maybeSingle();
     
-    if (error) return null;
+    if (error) {
+      // Fallback si la colonne est en snake_case
+      const { data: fallbackData } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('phone_number', `%${cleanSearch}`)
+        .maybeSingle();
+      return mapProfileFromDB(fallbackData);
+    }
     return mapProfileFromDB(data);
   } catch {
     return null;
@@ -123,8 +109,12 @@ export const getUserProfile = async (uid: string) => {
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) throw new Error("Supabase non connecté.");
   const dbData = mapProfileToDB(profile);
+  // Upsert gère la création ou la mise à jour
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase Save Error:", error);
+    throw error;
+  }
   return { success: true };
 };
 
@@ -136,7 +126,7 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
 
 export const getAllUsers = async () => {
   if (!supabase) return [];
-  const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+  const { data } = await supabase.from('profiles').select('*');
   return (data || []).map(mapProfileFromDB) as UserProfile[];
 };
 
