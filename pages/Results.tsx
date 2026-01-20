@@ -258,7 +258,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
 
-              {/* Pack Académie Élite */}
+              {/* Pack Académie Élite (ACQUIS À VIE) */}
               <button onClick={() => setActivePack('elite')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden md:col-span-1 lg:col-span-1 ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-brand-100 shadow-xl ring-1 ring-brand-50'}`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12"><Crown className="w-24 h-24 text-white" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
@@ -270,12 +270,12 @@ const Results: React.FC = () => {
                     </div>
                     <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
                        <p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>10 000 F</p>
-                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Activ. Immédiate • Accès 3 ans</p>
+                       <p className={`text-[8px] font-black uppercase tracking-[0.3em] ${activePack === 'elite' ? 'text-white/40' : 'text-slate-400'}`}>Activ. Immédiate • Acquis à vie</p>
                     </div>
                   </div>
               </button>
 
-              {/* Pack Performance RH */}
+              {/* Pack Performance RH (3 ANS) */}
               <button onClick={() => setActivePack('performance')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'performance' ? 'bg-white border-emerald-400 shadow-2xl ring-4 ring-emerald-50' : 'bg-white border-slate-100 hover:border-emerald-200 shadow-sm'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'performance' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}><Users className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -286,12 +286,12 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès 3 ans</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • 3 Ans</p>
                     </div>
                   </div>
               </button>
 
-              {/* Pack Stock Expert */}
+              {/* Pack Stock Expert (3 ANS) */}
               <button onClick={() => setActivePack('stock')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'stock' ? 'bg-white border-sky-400 shadow-2xl ring-4 ring-sky-50' : 'bg-white border-slate-100 hover:border-sky-200 shadow-sm'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'stock' ? 'bg-sky-500 text-white' : 'bg-sky-50 text-sky-600'}`}><Package className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -302,7 +302,7 @@ const Results: React.FC = () => {
                     </div>
                     <div className="pt-4 border-t border-slate-50">
                        <p className="text-2xl font-black text-slate-900">5 000 F</p>
-                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • Accès 3 ans</p>
+                       <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Activ. Immédiate • 3 Ans</p>
                     </div>
                   </div>
               </button>
@@ -341,7 +341,7 @@ const Results: React.FC = () => {
                             {isRecommended && !isOwned && <span className="text-[7px] bg-amber-400 text-brand-900 px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1"><Sparkles className="w-2 h-2" /> Priorité Diag</span>}
                           </div>
                           <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
-                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F • Accès 3 ans</p>}
+                          {!isOwned && <p className="text-[10px] font-black text-slate-400 uppercase">Investissement : 500 F • Acquis à vie</p>}
                         </div>
                         <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
                           isOwned ? 'text-emerald-500' : 'bg-slate-50 text-slate-300 group-hover:bg-brand-500 group-hover:text-white'
@@ -360,6 +360,7 @@ const Results: React.FC = () => {
             <div className="sticky top-32 space-y-8">
               <div className="bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 overflow-hidden relative">
                 
+                {/* JAUGE DE RÉDUCTION VISUELLE */}
                 {activePack === 'none' && cart.length > 0 && (
                   <div className="mb-8 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 animate-in fade-in">
                     <div className="flex justify-between items-end mb-3">
