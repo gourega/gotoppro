@@ -21,7 +21,10 @@ import {
   Star,
   Cloud,
   ShieldCheck,
-  TrendingUp
+  TrendingUp,
+  Target,
+  Smartphone,
+  Award
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -157,7 +160,8 @@ const Results: React.FC = () => {
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
-        const newUser: UserProfile = { 
+        // FIX: Omission de createdAt pour laisser Supabase gérer la colonne en DB
+        const newUser: any = { 
           uid: generateUUID(), 
           phoneNumber: cleanPhone, 
           pinCode: '1234', 
@@ -172,7 +176,6 @@ const Results: React.FC = () => {
           hasPerformancePack: false,
           hasStockPack: false,
           pendingModuleIds: pendingIds, 
-          createdAt: new Date().toISOString(), 
           badges: [], 
           purchasedModuleIds: [],
           actionPlan: [],
@@ -182,7 +185,7 @@ const Results: React.FC = () => {
       }
       setRegStep('success');
     } catch (err: any) { 
-      setDbError(err.message || "Impossible de créer le compte automatiquement.");
+      setDbError(err.message || "Échec de l'enregistrement en base de données.");
     } finally { 
       setLoading(false); 
     }
@@ -271,6 +274,7 @@ const Results: React.FC = () => {
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
               <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 overflow-hidden relative">
+                
                 {/* JAUGE DE REMISE RESTAURÉE */}
                 {activePack === 'none' && cart.length > 0 && (
                   <div className="mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 animate-in fade-in">
@@ -281,8 +285,8 @@ const Results: React.FC = () => {
                       </div>
                       {pricingData.nextThreshold && (
                         <div className="text-right">
-                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Paiement unique</p>
-                          <p className="text-[10px] font-bold text-slate-400">-{pricingData.nextThreshold.needed} modules restants</p>
+                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Réduction unique</p>
+                          <p className="text-[10px] font-bold text-slate-400">-{pricingData.nextThreshold.needed} modules</p>
                         </div>
                       )}
                     </div>
@@ -296,10 +300,10 @@ const Results: React.FC = () => {
                     </div>
                     <div className="flex justify-between mt-2 text-[7px] font-black text-slate-400 uppercase tracking-widest opacity-60">
                       <span>Starter</span>
-                      <span>-20% (5)</span>
-                      <span>-30% (9)</span>
-                      <span>-50% (13)</span>
-                      <span>Elite (16)</span>
+                      <span>5 (-20%)</span>
+                      <span>9 (-30%)</span>
+                      <span>13 (-50%)</span>
+                      <span>Elite</span>
                     </div>
                   </div>
                 )}
@@ -360,25 +364,25 @@ const Results: React.FC = () => {
                 </button>
               </div>
 
-              {/* GRID DES PACKS EXPERTS AVEC AVANTAGES DÉTAILLÉS */}
+              {/* GRID DES PACKS EXPERTS AVEC AVANTAGES DÉTAILLÉS RESTAURÉS */}
               <div className="grid grid-cols-1 gap-4">
                 
                 {/* Pack CRM VIP */}
                 <button onClick={() => setActivePack('crm')} className={`p-6 rounded-[2.5rem] border-2 transition-all text-left group ${activePack === 'crm' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100 hover:border-amber-200'}`}>
                     <div className="flex items-center gap-4">
                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'crm' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Star className="w-6 h-6" /></div>
-                       <div>
+                       <div className="flex-grow">
                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">Pack CRM VIP & Fidélité</h4>
-                          <ul className={`text-[9px] font-bold space-y-0.5 mb-2 ${activePack === 'crm' ? 'text-amber-900' : 'text-slate-400'}`}>
-                             <li>• Fiches techniques & Préférences Clients</li>
-                             <li>• Relances WhatsApp automatiques</li>
-                          </ul>
+                          <div className={`text-[9px] font-bold space-y-0.5 mb-2 leading-tight ${activePack === 'crm' ? 'text-amber-900' : 'text-slate-500'}`}>
+                             <p className="flex items-center gap-1"><CheckCircle2 className="w-2 h-2" /> Fiches Techniques & Préférences</p>
+                             <p className="flex items-center gap-1"><CheckCircle2 className="w-2 h-2" /> Relances WhatsApp auto.</p>
+                          </div>
                           <p className="text-lg font-black leading-tight">500 F <span className="text-[9px] opacity-40 uppercase">/ mois</span></p>
                        </div>
                     </div>
                 </button>
 
-                {/* Pack Académie Élite (LE CŒUR DE LA STRATÉGIE) */}
+                {/* Pack Académie Élite (CŒUR DE LA STRATÉGIE) */}
                 {!isElite && (
                   <button onClick={() => setActivePack('elite')} className={`p-8 rounded-[3rem] border-2 transition-all text-left group overflow-hidden relative ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-[1.05]' : 'bg-white border-brand-500/30 hover:bg-brand-50'}`}>
                     <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 transition-transform group-hover:scale-125"><ShieldCheck className={`w-32 h-32 ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`} /></div>
@@ -395,19 +399,17 @@ const Results: React.FC = () => {
                          <div className={`p-4 rounded-2xl border ${activePack === 'elite' ? 'bg-white/5 border-white/10' : 'bg-brand-50 border-brand-100'}`}>
                             <Cloud className={`w-4 h-4 mb-2 ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`} />
                             <p className={`text-[9px] font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Sauvegarde Cloud à vie</p>
-                            <p className={`text-[8px] font-medium opacity-60 ${activePack === 'elite' ? 'text-slate-300' : 'text-slate-600'}`}>Vos chiffres sécurisés</p>
                          </div>
                          <div className={`p-4 rounded-2xl border ${activePack === 'elite' ? 'bg-white/5 border-white/10' : 'bg-brand-50 border-brand-100'}`}>
-                            <Zap className={`w-4 h-4 mb-2 ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`} />
+                            <Award className={`w-4 h-4 mb-2 ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-600'}`} />
                             <p className={`text-[9px] font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>16 Modules Inclus</p>
-                            <p className={`text-[8px] font-medium opacity-60 ${activePack === 'elite' ? 'text-slate-300' : 'text-slate-600'}`}>Maîtrise totale 360°</p>
                          </div>
                       </div>
 
                       <div className="flex items-center justify-between">
                          <div className="flex items-center gap-2">
-                           <ShieldCheck className={`w-5 h-5 ${activePack === 'elite' ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                           <span className={`text-[10px] font-black uppercase ${activePack === 'elite' ? 'text-white' : 'text-slate-500'}`}>Certification Mentor</span>
+                           <Smartphone className={`w-5 h-5 ${activePack === 'elite' ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                           <span className={`text-[10px] font-black uppercase ${activePack === 'elite' ? 'text-white' : 'text-slate-500'}`}>Protection Anti-Perte</span>
                          </div>
                          <p className={`text-2xl font-black ${activePack === 'elite' ? 'text-brand-400' : 'text-brand-900'}`}>10 000 F</p>
                       </div>
@@ -421,7 +423,7 @@ const Results: React.FC = () => {
                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'performance' ? 'bg-white text-emerald-600' : 'bg-emerald-50 text-emerald-600'}`}><Users className="w-6 h-6" /></div>
                        <div>
                           <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${activePack === 'performance' ? 'text-emerald-100' : 'text-emerald-600'}`}>Pack Performance RH</h4>
-                          <p className={`text-[9px] font-bold mb-2 ${activePack === 'performance' ? 'text-emerald-50' : 'text-slate-400'}`}>Calcul commissions & Productivité staff.</p>
+                          <p className={`text-[9px] font-bold mb-1 ${activePack === 'performance' ? 'text-emerald-50' : 'text-slate-500'}`}>Calcul commissions & Productivité staff.</p>
                           <p className="text-lg font-black leading-tight text-inherit">5 000 F <span className="text-[9px] opacity-40 uppercase text-center">Activ.</span></p>
                        </div>
                     </div>
@@ -433,11 +435,12 @@ const Results: React.FC = () => {
                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${activePack === 'stock' ? 'bg-white text-sky-600' : 'bg-sky-50 text-sky-600'}`}><Package className="w-6 h-6" /></div>
                        <div>
                           <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${activePack === 'stock' ? 'text-sky-100' : 'text-sky-600'}`}>Pack Stock Expert</h4>
-                          <p className={`text-[9px] font-bold mb-2 ${activePack === 'stock' ? 'text-sky-50' : 'text-slate-400'}`}>Alertes rupture & Inventaire valorisé.</p>
+                          <p className={`text-[9px] font-bold mb-1 ${activePack === 'stock' ? 'text-sky-50' : 'text-slate-500'}`}>Alertes rupture & Inventaire valorisé.</p>
                           <p className="text-lg font-black leading-tight text-inherit">5 000 F <span className="text-[9px] opacity-40 uppercase text-center">Activ.</span></p>
                        </div>
                     </div>
                 </button>
+
               </div>
             </div>
           </div>
@@ -499,7 +502,7 @@ const Results: React.FC = () => {
                   }} 
                   className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-[#10b981]/20 flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"
                 >
-                  <MessageCircle className="w-6 h-6" /> Envoyer la preuve WhatsApp
+                  <MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp
                 </button>
               </div>
             )}
