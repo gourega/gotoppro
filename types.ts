@@ -86,6 +86,8 @@ export interface UserProfile {
   hasStockPack: boolean;
   crmExpiryDate?: string; // Date d'expiration de l'abonnement CRM (500 F/mois)
   
+  strategicAudit?: string; // Persistance de l'audit IA de Coach Kita
+  
   badges: string[];
   purchasedModuleIds: string[];
   pendingModuleIds: string[];

@@ -90,6 +90,11 @@ const Results: React.FC = () => {
           ).filter(Boolean) as string[];
           const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
           setAiAdvice(advice ?? null);
+          
+          // Sauvegarde automatique si l'utilisateur est connecté
+          if (user && advice) {
+            updateUserProfile(user.uid, { strategicAudit: advice });
+          }
         } catch (err) {
           console.error("Failed to load IA advice", err);
           setAiAdvice("L'analyse stratégique est temporairement indisponible. Concentrez-vous sur vos modules prioritaires.");
@@ -158,6 +163,7 @@ const Results: React.FC = () => {
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
           isActive: false, 
+          strategicAudit: aiAdvice || '',
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
@@ -175,6 +181,7 @@ const Results: React.FC = () => {
           isKitaPremium: false,
           hasPerformancePack: false,
           hasStockPack: false,
+          strategicAudit: aiAdvice || '',
           pendingModuleIds: pendingIds, 
           badges: [], 
           purchasedModuleIds: [],
@@ -199,6 +206,7 @@ const Results: React.FC = () => {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       await updateUserProfile(user.uid, { 
         isActive: false, 
+        strategicAudit: aiAdvice || user.strategicAudit || '',
         pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
       });
       setRegStep('success');
@@ -258,7 +266,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
 
-              {/* Pack Académie Élite (ACQUIS À VIE) */}
+              {/* Pack Académie Élite */}
               <button onClick={() => setActivePack('elite')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden md:col-span-1 lg:col-span-1 ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-brand-100 shadow-xl ring-1 ring-brand-50'}`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12"><Crown className="w-24 h-24 text-white" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
@@ -275,7 +283,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
 
-              {/* Pack Performance RH (3 ANS) */}
+              {/* Pack Performance RH */}
               <button onClick={() => setActivePack('performance')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'performance' ? 'bg-white border-emerald-400 shadow-2xl ring-4 ring-emerald-50' : 'bg-white border-slate-100 hover:border-emerald-200 shadow-sm'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'performance' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}><Users className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -291,7 +299,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
 
-              {/* Pack Stock Expert (3 ANS) */}
+              {/* Pack Stock Expert */}
               <button onClick={() => setActivePack('stock')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'stock' ? 'bg-white border-sky-400 shadow-2xl ring-4 ring-sky-50' : 'bg-white border-slate-100 hover:border-sky-200 shadow-sm'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'stock' ? 'bg-sky-500 text-white' : 'bg-sky-50 text-sky-600'}`}><Package className="w-10 h-10" /></div>
                   <div className="space-y-4">

@@ -18,8 +18,7 @@ export const generateUUID = () => {
 };
 
 /**
- * Mappe les données de la DB (qui peuvent être en snake_case ou camelCase selon l'historique)
- * vers l'interface UserProfile de l'application.
+ * Mappe les données de la DB vers l'interface UserProfile de l'application.
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -44,6 +43,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
     hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
     crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
+    strategicAudit: data.strategicAudit || data.strategic_audit || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
@@ -122,12 +122,11 @@ export const getAllUsers = async () => {
 };
 
 /**
- * Suppression sécurisée : On nettoie les tables liées avant de supprimer le profil
+ * Suppression sécurisée
  */
 export const deleteUserProfile = async (uid: string) => {
   if (!supabase) return;
   
-  // 1. Suppression des données liées pour éviter les erreurs de contrainte
   await supabase.from('kita_transactions').delete().eq('user_id', uid);
   await supabase.from('kita_staff').delete().eq('user_id', uid);
   await supabase.from('kita_clients').delete().eq('user_id', uid);
@@ -135,7 +134,6 @@ export const deleteUserProfile = async (uid: string) => {
   await supabase.from('kita_products').delete().eq('user_id', uid);
   await supabase.from('kita_suppliers').delete().eq('user_id', uid);
 
-  // 2. Suppression du profil principal
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
   
   if (error) {

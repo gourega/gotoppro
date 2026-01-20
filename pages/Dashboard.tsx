@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getReferrals, updateUserProfile } from '../services/supabase';
-import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, LEGACY_ID_MAP } from '../constants';
+import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, LEGACY_ID_MAP, COACH_KITA_AVATAR } from '../constants';
 import { UserProfile } from '../types';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -27,7 +27,8 @@ import {
   ShieldAlert,
   Zap,
   Info,
-  ShieldHalf
+  ShieldHalf,
+  ChevronRight
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -166,6 +167,40 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
+        
+        {/* SECTION NOUVELLE : VISION STRATÉGIQUE (AUDIT PERSISTANT) */}
+        {user.strategicAudit && (
+          <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-l-[12px] border-indigo-500 relative overflow-hidden group w-full animate-in slide-in-from-bottom-5">
+             <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none group-hover:scale-110 transition-transform duration-1000">Vision</div>
+             <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">
+                <div className="shrink-0 mx-auto md:mx-0">
+                    <div className="h-24 w-24 rounded-3xl overflow-hidden border-2 border-indigo-100 shadow-xl rotate-2">
+                        <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover" alt="Mentor" />
+                    </div>
+                </div>
+                <div className="flex-grow">
+                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-1">Vision Stratégique du Mentor</h2>
+                        <p className="text-2xl font-serif font-bold text-slate-900">Directives de Coach Kita</p>
+                      </div>
+                      <button onClick={() => navigate('/quiz')} className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors flex items-center gap-2">
+                         <RefreshCw className="w-3 h-3" /> Mettre à jour mon audit
+                      </button>
+                   </div>
+                   <div className="prose-kita whitespace-pre-wrap font-medium line-clamp-[8] group-hover:line-clamp-none transition-all duration-700" 
+                        dangerouslySetInnerHTML={{ __html: user.strategicAudit.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>') }} />
+                   
+                   <div className="mt-8 pt-8 border-t border-slate-50 flex items-center justify-center md:justify-start gap-4">
+                      <button onClick={() => navigate('/results')} className="bg-indigo-50 text-indigo-700 px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2">
+                         Voir mon plan d'action complet <ChevronRight className="w-3 h-3" />
+                      </button>
+                   </div>
+                </div>
+             </div>
+          </section>
+        )}
+
         {/* BANDEAU PSYCHOLOGIQUE LOCAL SI PAS ÉLITE */}
         {!isElite && !user.isAdmin && (
            <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl animate-in slide-in-from-top-2">
@@ -204,7 +239,7 @@ const Dashboard: React.FC = () => {
         </section>
 
         <div className="grid lg:grid-cols-12 gap-10">
-           {/* SECTION STOCK - BANDEAU MARKETING */}
+           {/* SECTION STOCK */}
            <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all ${isStockExpert ? 'bg-slate-900 border-none' : 'bg-white border-2 border-sky-500/20 shadow-sky-900/5'}`}>
               <div className={`absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110 ${isStockExpert ? 'text-sky-500' : 'text-sky-300'}`}>
                  <Package className="w-32 h-32" />
@@ -229,7 +264,7 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
 
-           {/* SECTION RH - BANDEAU MARKETING */}
+           {/* SECTION RH */}
            <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20 shadow-emerald-900/5'}`}>
               <div className={`absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110 ${isPerformance ? 'text-emerald-500' : 'text-emerald-300'}`}>
                  <Users className="w-32 h-32" />
