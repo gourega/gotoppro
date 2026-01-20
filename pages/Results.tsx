@@ -1,5 +1,5 @@
 
-// Add React import to avoid UMD global reference error
+// ... Imports et début du fichier inchangés ...
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -10,18 +10,10 @@ import {
   Zap, 
   CheckCircle2, 
   MessageCircle,
-  Check,
-  Package,
-  Users,
+  X,
   Lock,
-  TrendingUp,
-  Gift,
-  ArrowRight,
-  Star,
-  ShieldCheck,
-  MinusCircle,
   Tag,
-  X
+  MinusCircle
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -140,7 +132,6 @@ const Results: React.FC = () => {
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       
       if (existing) {
-        // On met à jour l'existant en s'assurant qu'il repasse en inactif pour être vu par l'admin
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
           isActive: false, 
@@ -171,7 +162,8 @@ const Results: React.FC = () => {
       }
       setRegStep('success');
     } catch (err: any) { 
-      alert("Erreur de sauvegarde: " + (err.message || "Problème de connexion")); 
+      console.error("Database Save Failure:", err);
+      alert(`ERREUR CRITIQUE BASE DE DONNÉES :\n${err.message || "Problème de connexion ou permission RLS."}\n\nVotre compte n'a pas pu être créé.`); 
     } finally { setLoading(false); }
   };
 
@@ -187,7 +179,7 @@ const Results: React.FC = () => {
       });
       setRegStep('success');
       setIsRegisterModalOpen(true);
-    } catch (err: any) { alert(err.message); } finally { setLoading(false); }
+    } catch (err: any) { alert("Erreur : " + err.message); } finally { setLoading(false); }
   };
 
   return (
@@ -311,7 +303,7 @@ const Results: React.FC = () => {
                 <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${activePack === 'crm' ? 'bg-amber-400 border-amber-500 shadow-xl scale-[1.03]' : 'bg-white border-slate-100'}`}>
                   <button onClick={() => setActivePack('crm')} className="w-full text-left">
                     <div className="flex items-center gap-4 mb-4">
-                       <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-lg ${activePack === 'crm' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Star /></div>
+                       <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-lg ${activePack === 'crm' ? 'bg-brand-900 text-amber-400' : 'bg-amber-50 text-amber-600'}`}><Zap className="w-6 h-6" /></div>
                        <div>
                           <h4 className="text-[10px] font-black uppercase tracking-widest">Pack Fidélité (CRM)</h4>
                           <p className="text-lg font-black">500 F <span className="text-[10px] opacity-40 uppercase">/ mois</span></p>

@@ -51,7 +51,6 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-// Dictionnaire de mappage centralisé pour les écritures
 const PROFILE_MAPPING: Record<string, string> = {
   uid: 'uid',
   phoneNumber: 'phone_number',
@@ -95,19 +94,19 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  // Nettoyage agressif pour la recherche
-  const cleanSearch = phoneNumber.replace(/[^\d]/g, '');
+  const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
+  if (!cleanSearch) return null;
+
   try {
-    // On cherche les 8 ou 10 derniers chiffres pour éviter les problèmes de préfixe
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .or(`phone_number.ilike.%${cleanSearch.slice(-8)}%`)
+      .ilike('phone_number', `%${cleanSearch}`)
       .maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("Supabase Phone Search Error:", err);
+    console.error("Supabase Search Error:", err);
     return null;
   }
 };
@@ -119,14 +118,14 @@ export const getUserProfile = async (uid: string) => {
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) return;
+  if (!supabase) throw new Error("Supabase non configuré");
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
   if (error) throw error;
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase || !uid) return;
+  if (!supabase || !uid) throw new Error("ID Invalide");
   const dbData = mapProfileToDB(updates);
   const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
   if (error) throw error;
@@ -142,14 +141,14 @@ export const deleteUserProfile = async (uid: string) => {
   if (supabase) await supabase.from('profiles').delete().eq('uid', uid);
 };
 
-/** TRANSACTIONS **/
+// ... Reste du fichier inchangé ...
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, product_id: t.product_id
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id
   }));
 };
 
@@ -169,7 +168,6 @@ export const deleteKitaTransaction = async (id: string) => {
   if (supabase) await supabase.from('kita_transactions').delete().eq('id', id);
 };
 
-/** STAFF **/
 export const getKitaStaff = async (userId: string) => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_staff').select('*').eq('user_id', userId);
@@ -193,7 +191,6 @@ export const deleteKitaStaff = async (id: string) => {
   if (supabase) await supabase.from('kita_staff').delete().eq('id', id);
 };
 
-/** CLIENTS **/
 export const getKitaClients = async (userId: string) => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_clients').select('*').eq('user_id', userId);
@@ -221,7 +218,6 @@ export const updateKitaClient = async (id: string, updates: any) => {
   await supabase.from('kita_clients').update(dbUpdates).eq('id', id);
 };
 
-/** SERVICES **/
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_services').select('*').eq('user_id', userId);
@@ -262,7 +258,6 @@ export const deleteKitaService = async (id: string) => {
   if (supabase) await supabase.from('kita_services').delete().eq('id', id);
 };
 
-/** STOCK / MAGASIN **/
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_products').select('*').eq('user_id', userId);
