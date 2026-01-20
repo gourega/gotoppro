@@ -94,7 +94,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  // On nettoie le numéro pour ne garder que les 8 derniers chiffres (standard CI)
   const cleanSearch = phoneNumber.replace(/[^\d]/g, '').slice(-8);
   if (!cleanSearch) return null;
 
@@ -106,12 +105,12 @@ export const getProfileByPhone = async (phoneNumber: string) => {
       .maybeSingle();
     
     if (error) {
-      console.error("Supabase query error:", error);
+      console.error("Supabase Query Error:", error);
       return null;
     }
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("Supabase Search Error:", err);
+    console.error("Supabase Search Exception:", err);
     return null;
   }
 };
@@ -123,22 +122,31 @@ export const getUserProfile = async (uid: string) => {
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) throw new Error("Connexion base de données impossible.");
+  if (!supabase) throw new Error("Connexion Supabase non initialisée. Vérifiez vos variables d'environnement.");
+  
   const dbData = mapProfileToDB(profile);
+  console.log("[Supabase] Tentative de sauvegarde profil:", dbData);
   
   const { error } = await supabase
     .from('profiles')
     .upsert(dbData, { onConflict: 'uid' });
     
   if (error) {
-    console.error("Supabase Upsert Error:", error);
-    throw new Error(error.message);
+    console.error("[Supabase] Upsert Error:", error);
+    if (error.code === '42501') {
+      throw new Error("ERREUR RLS : L'accès anonyme en 'INSERT/UPDATE' n'est pas autorisé sur votre table 'profiles'. Vérifiez vos politiques de sécurité Supabase.");
+    }
+    throw new Error(`Erreur Base de données (${error.code}) : ${error.message}`);
   }
+  
+  console.log("[Supabase] Profil sauvegardé avec succès.");
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
-  if (!supabase || !uid) throw new Error("Identifiant utilisateur manquant.");
+  if (!supabase || !uid) throw new Error("Identifiant manquant pour la mise à jour.");
+  
   const dbData = mapProfileToDB(updates);
+  console.log("[Supabase] Tentative de mise à jour profil:", dbData);
   
   const { error } = await supabase
     .from('profiles')
@@ -146,9 +154,14 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
     .eq('uid', uid);
     
   if (error) {
-    console.error("Supabase Update Error:", error);
-    throw new Error(error.message);
+    console.error("[Supabase] Update Error:", error);
+    if (error.code === '42501') {
+      throw new Error("ERREUR RLS : Mise à jour interdite. Vérifiez les politiques RLS de la table 'profiles'.");
+    }
+    throw new Error(`Erreur Base de données (${error.code}) : ${error.message}`);
   }
+
+  console.log("[Supabase] Profil mis à jour avec succès.");
 };
 
 export const getAllUsers = async () => {
