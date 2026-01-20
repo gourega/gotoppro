@@ -80,6 +80,7 @@ const ModuleView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFinishingQuiz, setIsFinishingQuiz] = useState(false);
   const [syncWarning, setSyncWarning] = useState(false);
+  const [localScore, setLocalScore] = useState<number | null>(null);
 
   // États Audio & Cache
   const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -198,6 +199,7 @@ const ModuleView: React.FC = () => {
     setShuffledQuestions(shuffled);
     setAnswers([]);
     setCurrentIdx(0);
+    setLocalScore(null);
     setQuizState('active');
   };
 
@@ -221,8 +223,17 @@ const ModuleView: React.FC = () => {
       }
     });
     const percentage = Math.round((score / (shuffledQuestions.length || 1)) * 100);
-    
-    // Tentative de sauvegarde en arrière-plan
+    setLocalScore(percentage);
+
+    // PRIORITÉ : MISE À JOUR DE L'INTERFACE IMMÉDIATE (LOCAL-FIRST)
+    if (percentage >= 80) {
+      setShouldFire(true);
+      setQuizState('success_splash');
+    } else {
+      setQuizState('results');
+    }
+
+    // SYNC CLOUD EN ARRIÈRE-PLAN
     try {
       const updatedUser = JSON.parse(JSON.stringify(user));
       if (!updatedUser.progress) updatedUser.progress = {};
@@ -238,17 +249,9 @@ const ModuleView: React.FC = () => {
       await refreshProfile();
     } catch (err) {
       console.error("Quiz Finish Sync Warning:", err);
-      // On prépare un avertissement mais on ne bloque pas le gérant
       setSyncWarning(true);
     } finally {
       setIsFinishingQuiz(false);
-      // REDIRECTION BASÉE SUR LE SCORE (Loin du catch pour éviter le saut d'étape)
-      if (percentage >= 80) {
-        setShouldFire(true);
-        setQuizState('success_splash');
-      } else {
-        setQuizState('results');
-      }
     }
   };
 
@@ -270,24 +273,26 @@ const ModuleView: React.FC = () => {
       };
       await saveUserProfile(updatedUser);
       await refreshProfile();
-      setQuizState('results');
     } catch (err) {
       console.error("Commit error:", err);
-      // Même si l'engagement échoue techniquement à se sauvegarder (offline), on montre les résultats
-      setQuizState('results');
+      setSyncWarning(true);
     } finally {
       setIsSaving(false);
+      setQuizState('results');
     }
   };
 
   const currentAttemptScore = useMemo(() => {
-    return answers.reduce((acc, ans, i) => {
+    // Si on a un score local, on l'utilise en priorité pour l'affichage final
+    if (localScore !== null) return localScore;
+    
+    return Math.round((answers.reduce((acc, ans, i) => {
       const question = shuffledQuestions[i];
       return (question && ans === question.correctAnswer) ? acc + 1 : acc;
-    }, 0);
-  }, [answers, shuffledQuestions]);
+    }, 0) / (shuffledQuestions.length || 1)) * 100);
+  }, [answers, shuffledQuestions, localScore]);
 
-  const latestPercentage = Math.round((currentAttemptScore / (shuffledQuestions.length || 1)) * 100);
+  const latestPercentage = localScore !== null ? localScore : currentAttemptScore;
 
   const handlePrintCertificate = () => {
     window.print();
@@ -382,10 +387,10 @@ const ModuleView: React.FC = () => {
           <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             
             {/* ALERT DE SYNCHRO (NON BLOQUANTE) */}
-            {syncWarning && quizState !== 'intro' && quizState !== 'active' && (
+            {syncWarning && (
               <div className="fixed bottom-10 left-10 z-[200] bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-left duration-500 border-2 border-rose-400">
                 <CloudOff className="w-5 h-5" />
-                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Connexion instable. Votre réussite sera synchronisée plus tard.</p>
+                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Connexion instable. Votre réussite sera synchronisée dès le retour du réseau.</p>
               </div>
             )}
 
