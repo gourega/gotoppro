@@ -33,6 +33,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     photoURL: data.photoURL || data.photo_url || '',
     bio: data.bio || '',
     employeeCount: data.employeeCount || data.employee_count || 0,
+    yearsOfExistence: data.yearsOfExistence || data.years_of_existence || 0,
     openingYear: data.openingYear || data.opening_year || 0,
     role: data.role || 'CLIENT',
     isActive: data.isActive ?? data.is_active ?? false,
@@ -45,11 +46,11 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
     strategicAudit: data.strategicAudit || data.strategic_audit || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
-    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
-    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
-    referralCount: data.referralCount || data.referral_count || 0,
-    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
+    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
+    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
+    referralCount: data.referral_count || data.referralCount || 0,
+    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
@@ -61,7 +62,6 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
   
-  // Mapping explicite pour assurer la compatibilité Supabase
   if (profile.uid !== undefined) dbData.uid = profile.uid;
   if (profile.phoneNumber !== undefined) dbData.phone_number = profile.phoneNumber;
   if (profile.pinCode !== undefined) dbData.pin_code = profile.pinCode;
@@ -72,6 +72,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.photoURL !== undefined) dbData.photo_url = profile.photoURL;
   if (profile.bio !== undefined) dbData.bio = profile.bio;
   if (profile.employeeCount !== undefined) dbData.employee_count = profile.employeeCount;
+  if (profile.yearsOfExistence !== undefined) dbData.years_of_existence = profile.yearsOfExistence;
   if (profile.openingYear !== undefined) dbData.opening_year = profile.openingYear;
   if (profile.role !== undefined) dbData.role = profile.role;
   if (profile.isActive !== undefined) dbData.is_active = profile.isActive;
@@ -97,25 +98,37 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  const cleanSearch = phoneNumber.replace(/[^\d+]/g, '').slice(-8);
-  if (!cleanSearch) return null;
+  
+  // Nettoyage strict : garder uniquement les chiffres
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+  
+  // Stratégie de recherche : Correspondance exacte OU les 10 derniers chiffres (Standard CI)
+  const last10 = digitsOnly.slice(-10);
+  if (!last10) return null;
 
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .ilike('phone_number', `%${cleanSearch}`)
+      .or(`phone_number.eq.${digitsOnly},phone_number.ilike.%${last10}`)
       .maybeSingle();
     
+    if (error) {
+      console.error("Supabase Search Error:", error);
+      return null;
+    }
+    
     return mapProfileFromDB(data);
-  } catch {
+  } catch (err) {
+    console.error("Critical Profile Fetch Error:", err);
     return null;
   }
 };
 
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
-  const { data } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
+  const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
+  if (error) console.error("GetUserProfile Error:", error);
   return mapProfileFromDB(data);
 };
 
@@ -163,8 +176,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    paymentMethod: t.payment_method, date: t.date, staff_name: t.staff_name,
-    commission_rate: t.commission_rate, is_credit: t.is_credit, client_id: t.client_id, product_id: t.product_id
+    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id
   }));
 };
 
@@ -231,7 +244,7 @@ export const updateKitaClient = async (id: string, updates: any) => {
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
   if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-  await supabase.from('profiles').update(dbUpdates).eq('id', id);
+  await supabase.from('kita_clients').update(dbUpdates).eq('id', id);
 };
 
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
