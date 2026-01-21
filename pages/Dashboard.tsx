@@ -24,7 +24,9 @@ import {
   Target,
   Circle,
   ClipboardCheck,
-  Calendar
+  Calendar,
+  Sparkles,
+  Medal
 } from 'lucide-react';
 import { UserActionCommitment } from '../types';
 
@@ -71,8 +73,7 @@ const Dashboard: React.FC = () => {
   const handleToggleCommitment = async (commitment: UserActionCommitment) => {
     if (!user || isUpdatingCommitment) return;
     
-    // On utilise une combinaison d'ID et de texte pour identifier l'engagement unique
-    const uniqueKey = `${commitment.moduleId}-${commitment.date}`;
+    const uniqueKey = `${commitment.moduleId}-${commitment.date}-${commitment.action}`;
     setIsUpdatingCommitment(uniqueKey);
     
     try {
@@ -94,7 +95,6 @@ const Dashboard: React.FC = () => {
 
   const sortedActionPlan = useMemo(() => {
     if (!user?.actionPlan) return [];
-    // Tri : Incomplets d'abord, puis par date décroissante
     return [...user.actionPlan].sort((a, b) => {
       if (a.isCompleted === b.isCompleted) return 0;
       return a.isCompleted ? 1 : -1;
@@ -246,70 +246,103 @@ const Dashboard: React.FC = () => {
            </div>
         </section>
 
-        {/* SECTION 2 : PLAN DE TRANSFORMATION (ENGAGEMENTS) */}
-        {!user.isAdmin && sortedActionPlan.length > 0 && (
+        {/* SECTION 2 : PLAN DE TRANSFORMATION (ENGAGEMENTS) - PERMANENTE */}
+        {!user.isAdmin && (
           <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
-             <div className="flex items-center gap-4 mb-12">
-                <ClipboardCheck className="w-8 h-8 text-emerald-600" />
-                <div>
-                   <h2 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-1">Mon Plan de Transformation</h2>
-                   <p className="text-2xl font-serif font-bold text-slate-900">Mes Engagements KITA</p>
+             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+                    <ClipboardCheck className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-1">Mon Plan de Transformation</h2>
+                    <p className="text-2xl font-serif font-bold text-slate-900">Mes Engagements KITA</p>
+                  </div>
                 </div>
+                {sortedActionPlan.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-100 px-6 py-2 rounded-full flex items-center gap-3">
+                     <Medal className="w-4 h-4 text-amber-500" />
+                     <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">{sortedActionPlan.filter(a => a.isCompleted).length} / {sortedActionPlan.length} Réalisés</span>
+                  </div>
+                )}
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {sortedActionPlan.map((item, idx) => {
-                  const uniqueKey = `${item.moduleId}-${item.date}`;
-                  const isPending = isUpdatingCommitment === uniqueKey;
+             {sortedActionPlan.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {sortedActionPlan.map((item, idx) => {
+                    const uniqueKey = `${item.moduleId}-${item.date}-${item.action}`;
+                    const isPending = isUpdatingCommitment === uniqueKey;
 
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col justify-between group ${
-                        item.isCompleted 
-                        ? 'bg-slate-50 border-emerald-100 opacity-60' 
-                        : 'bg-white border-slate-100 hover:border-emerald-200 hover:shadow-xl'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-6">
-                           <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-emerald-100">
-                             {item.moduleTitle}
-                           </span>
-                           <span className="text-[9px] font-bold text-slate-300 flex items-center gap-1">
-                             <Calendar className="w-3 h-3" /> {item.date}
-                           </span>
-                        </div>
-                        <p className={`text-lg font-serif italic leading-relaxed mb-8 ${item.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                           "{item.action}"
-                        </p>
-                      </div>
-
-                      <button 
-                        onClick={() => handleToggleCommitment(item)}
-                        disabled={isPending}
-                        className={`w-full py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`relative p-10 rounded-[3rem] border-2 transition-all flex flex-col justify-between group overflow-hidden ${
                           item.isCompleted 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'bg-brand-900 text-white shadow-lg hover:bg-black'
+                          ? 'bg-slate-50 border-emerald-100 opacity-80' 
+                          : 'bg-white border-slate-100 hover:border-emerald-200 hover:shadow-2xl'
                         }`}
                       >
-                         {isPending ? (
-                           <Loader2 className="w-4 h-4 animate-spin" />
-                         ) : item.isCompleted ? (
-                           <>
-                             <CheckCircle2 className="w-4 h-4" /> Objectif Tenu
-                           </>
-                         ) : (
-                           <>
-                             <Circle className="w-4 h-4" /> Marquer comme réalisé
-                           </>
-                         )}
-                      </button>
-                    </div>
-                  );
-                })}
-             </div>
+                        {/* Motif d'arrière-plan discret style papier */}
+                        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] pointer-events-none"></div>
+                        
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-start mb-8">
+                             <div className="flex flex-col gap-1">
+                               <span className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em]">{item.moduleTitle}</span>
+                               <div className="h-1 w-8 bg-emerald-500 rounded-full"></div>
+                             </div>
+                             <span className="text-[9px] font-bold text-slate-300 flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-lg">
+                               <Calendar className="w-3 h-3" /> {item.date}
+                             </span>
+                          </div>
+                          
+                          <div className="relative mb-10">
+                            <Quote className="absolute -top-4 -left-4 w-10 h-10 text-emerald-500 opacity-10" />
+                            <p className={`text-xl font-serif italic leading-relaxed text-center px-4 ${item.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                               "{item.action}"
+                            </p>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => handleToggleCommitment(item)}
+                          disabled={isPending}
+                          className={`relative z-10 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                            item.isCompleted 
+                            ? 'bg-emerald-500 text-white shadow-lg' 
+                            : 'bg-brand-900 text-white shadow-xl hover:bg-black hover:-translate-y-1'
+                          }`}
+                        >
+                           {isPending ? (
+                             <Loader2 className="w-4 h-4 animate-spin" />
+                           ) : item.isCompleted ? (
+                             <>
+                               <CheckCircle2 className="w-4 h-4" /> Engagement Tenu
+                             </>
+                           ) : (
+                             <>
+                               <Circle className="w-4 h-4" /> Marquer comme réalisé
+                             </>
+                           )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+             ) : (
+                <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
+                   <div className="h-20 w-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
+                      <Sparkles className="w-10 h-10 text-slate-200" />
+                   </div>
+                   <h3 className="text-xl font-serif font-bold text-slate-400 mb-4">Votre transformation commence ici</h3>
+                   <p className="text-slate-400 text-sm max-w-sm mx-auto italic mb-10">
+                     "Gérant, terminez votre première masterclass et scellez votre premier engagement pour voir apparaître votre plan ici."
+                   </p>
+                   <button onClick={() => navigate('/mes-formations')} className="bg-white border-2 border-slate-200 text-slate-400 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-brand-500 hover:text-brand-600 transition-all flex items-center gap-3 mx-auto">
+                      Aller à l'Académie <ArrowRight className="w-4 h-4" />
+                   </button>
+                </div>
+             )}
           </section>
         )}
 
@@ -318,7 +351,7 @@ const Dashboard: React.FC = () => {
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
                  <div className="flex items-center justify-center md:justify-start gap-4 mb-2"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">GESTION DES FINANCES</h2></div>
-                 <p className="text-slate-500 font-medium max-w-md m-0 leading-relaxed">Suivez vos recettes, vos dépenses et recouvrez vos ardoises pour garantir la santé financière de votre empire.</p>
+                 <p className="text-slate-500 font-medium max-w-md m-0 leading-relaxed">Suivez vos recettes, vos d&eacute;penses et recouvrez vos ardoises pour garantir la sant&eacute; financi&egrave;re de votre empire.</p>
                  <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-brand-950 transition-all">Ouvrir la Caisse KITA <ArrowRight className="w-4 h-4 text-amber-400" /></button>
               </div>
               <div className="h-40 w-40 bg-amber-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-all duration-500"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
@@ -329,10 +362,10 @@ const Dashboard: React.FC = () => {
            <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all ${isStockExpert ? 'bg-slate-900 border-none' : 'bg-white border-2 border-sky-500/20 shadow-sky-900/5'}`}>
               <div className={`absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110 ${isStockExpert ? 'text-sky-500' : 'text-sky-300'}`}><Package className="w-32 h-32" /></div>
               <div className="relative z-10 h-full flex flex-col">
-                 <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE {isStockExpert && 'ACTIVÉE'}</h2>
+                 <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE {isStockExpert && 'ACTIV&Eacute;E'}</h2>
                  <h3 className={`text-2xl font-serif font-bold mb-6 ${isStockExpert ? 'text-white' : 'text-slate-900'}`}>Gestion du Stock</h3>
-                 <p className={`text-sm leading-relaxed mb-10 flex-grow ${isStockExpert ? 'text-slate-400' : 'text-slate-500'}`}>{isStockExpert ? 'Contrôlez vos produits et colorations. Évitez les vols et les ruptures.' : 'Augmentez votre marge de 20% en contrôlant vos mélanges et stocks.'}</p>
-                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-400 transition-all flex items-center justify-center gap-3">Accéder au Magasin <ArrowRight className="w-4 h-4" /></button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-700 transition-all flex items-center justify-center gap-3"><Zap className="w-4 h-4" /> Activer le Stock (5 000 F)</button>}
+                 <p className={`text-sm leading-relaxed mb-10 flex-grow ${isStockExpert ? 'text-slate-400' : 'text-slate-500'}`}>{isStockExpert ? 'Contr&ocirc;lez vos produits et colorations. &Eacute;vitez les vols et les ruptures.' : 'Augmentez votre marge de 20% en contr&ocirc;lant vos m&eacute;langes et stocks.'}</p>
+                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-400 transition-all flex items-center justify-center gap-3">Acc&eacute;der au Magasin <ArrowRight className="w-4 h-4" /></button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-700 transition-all flex items-center justify-center gap-3"><Zap className="w-4 h-4" /> Activer le Stock (5 000 F)</button>}
               </div>
            </div>
            <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20 shadow-emerald-900/5'}`}>
@@ -340,7 +373,7 @@ const Dashboard: React.FC = () => {
               <div className="relative z-10 h-full flex flex-col">
                  <h2 className="text-emerald-500 font-black text-[11px] uppercase tracking-[0.3em] mb-4">HUMAINS {isPerformance && 'ACTIFS'}</h2>
                  <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6">Ressources Humaines</h3>
-                 <p className="text-slate-500 text-sm leading-relaxed mb-10 flex-grow">{isPerformance ? 'Pilotez votre équipe (commissions) et fidélisez vos meilleures clientes VIP.' : 'Gérez les commissions avec transparence et piloter vos clients VIP.'}</p>
+                 <p className="text-slate-500 text-sm leading-relaxed mb-10 flex-grow">{isPerformance ? 'Pilotez votre &eacute;quipe (commissions) et fid&eacute;lisez vos meilleures clientes VIP.' : 'G&eacute;rez les commissions avec transparence et piloter vos clients VIP.'}</p>
                  {isPerformance ? <button onClick={() => navigate('/pilotage')} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3">Piloter le Staff <ArrowRight className="w-4 h-4" /></button> : <button onClick={() => navigate('/results?pack=performance')} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-3"><Zap className="w-4 h-4" /> Activer les RH (5 000 F)</button>}
               </div>
            </div>
