@@ -18,7 +18,8 @@ export const generateUUID = () => {
 };
 
 /**
- * Mappe les données de la DB vers l'interface UserProfile de l'application (Frontend).
+ * Mappe les données de la DB vers l'interface UserProfile de l'application.
+ * Supporte les deux formats pour la lecture au cas où certaines colonnes diffèrent.
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -46,50 +47,51 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
     strategicAudit: data.strategicAudit || data.strategic_audit || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
-    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
-    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
-    referralCount: data.referral_count || data.referralCount || 0,
-    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
+    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
+    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
+    referralCount: data.referralCount || data.referral_count || 0,
+    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
 };
 
 /**
- * Mappe les champs Frontend (CamelCase) vers les colonnes Database (snake_case).
+ * Mappe les champs Frontend vers les colonnes Database.
+ * CONFIGURATION CRITIQUE : Utilise CamelCase car c'est ce que votre DB attend selon l'erreur 42703.
  */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
   
   if (profile.uid !== undefined) dbData.uid = profile.uid;
-  if (profile.phoneNumber !== undefined) dbData.phone_number = profile.phoneNumber;
-  if (profile.pinCode !== undefined) dbData.pin_code = profile.pinCode;
+  if (profile.phoneNumber !== undefined) dbData.phoneNumber = profile.phoneNumber;
+  if (profile.pinCode !== undefined) dbData.pinCode = profile.pinCode;
   if (profile.email !== undefined) dbData.email = profile.email;
-  if (profile.firstName !== undefined) dbData.first_name = profile.firstName;
-  if (profile.lastName !== undefined) dbData.last_name = profile.lastName;
-  if (profile.establishmentName !== undefined) dbData.establishment_name = profile.establishmentName;
-  if (profile.photoURL !== undefined) dbData.photo_url = profile.photoURL;
+  if (profile.firstName !== undefined) dbData.firstName = profile.firstName;
+  if (profile.lastName !== undefined) dbData.lastName = profile.lastName;
+  if (profile.establishmentName !== undefined) dbData.establishmentName = profile.establishmentName;
+  if (profile.photoURL !== undefined) dbData.photoURL = profile.photoURL;
   if (profile.bio !== undefined) dbData.bio = profile.bio;
-  if (profile.employeeCount !== undefined) dbData.employee_count = profile.employeeCount;
-  if (profile.yearsOfExistence !== undefined) dbData.years_of_existence = profile.yearsOfExistence;
-  if (profile.openingYear !== undefined) dbData.opening_year = profile.openingYear;
+  if (profile.employeeCount !== undefined) dbData.employeeCount = profile.employeeCount;
+  if (profile.yearsOfExistence !== undefined) dbData.yearsOfExistence = profile.yearsOfExistence;
+  if (profile.openingYear !== undefined) dbData.openingYear = profile.openingYear;
   if (profile.role !== undefined) dbData.role = profile.role;
-  if (profile.isActive !== undefined) dbData.is_active = profile.isActive;
-  if (profile.isAdmin !== undefined) dbData.is_admin = profile.isAdmin;
-  if (profile.isPublic !== undefined) dbData.is_public = profile.isPublic;
-  if (profile.isKitaPremium !== undefined) dbData.is_kita_premium = profile.isKitaPremium;
-  if (profile.kitaPremiumUntil !== undefined) dbData.kita_premium_until = profile.kitaPremiumUntil;
-  if (profile.hasPerformancePack !== undefined) dbData.has_performance_pack = profile.hasPerformancePack;
-  if (profile.hasStockPack !== undefined) dbData.has_stock_pack = profile.hasStockPack;
-  if (profile.crmExpiryDate !== undefined) dbData.crm_expiry_date = profile.crmExpiryDate;
-  if (profile.strategicAudit !== undefined) dbData.strategic_audit = profile.strategicAudit;
+  if (profile.isActive !== undefined) dbData.isActive = profile.isActive;
+  if (profile.isAdmin !== undefined) dbData.isAdmin = profile.isAdmin;
+  if (profile.isPublic !== undefined) dbData.isPublic = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) dbData.isKitaPremium = profile.isKitaPremium;
+  if (profile.kitaPremiumUntil !== undefined) dbData.kitaPremiumUntil = profile.kitaPremiumUntil;
+  if (profile.hasPerformancePack !== undefined) dbData.hasPerformancePack = profile.hasPerformancePack;
+  if (profile.hasStockPack !== undefined) dbData.hasStockPack = profile.hasStockPack;
+  if (profile.crmExpiryDate !== undefined) dbData.crmExpiryDate = profile.crmExpiryDate;
+  if (profile.strategicAudit !== undefined) dbData.strategicAudit = profile.strategicAudit;
   if (profile.badges !== undefined) dbData.badges = profile.badges;
-  if (profile.purchasedModuleIds !== undefined) dbData.purchased_module_ids = profile.purchasedModuleIds;
-  if (profile.pendingModuleIds !== undefined) dbData.pending_module_ids = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) dbData.action_plan = profile.actionPlan;
-  if (profile.referralCount !== undefined) dbData.referral_count = profile.referralCount;
-  if (profile.createdAt !== undefined) dbData.created_at = profile.createdAt;
+  if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) dbData.pendingModuleIds = profile.pendingModuleIds;
+  if (profile.actionPlan !== undefined) dbData.actionPlan = profile.actionPlan;
+  if (profile.referralCount !== undefined) dbData.referralCount = profile.referralCount;
+  if (profile.createdAt !== undefined) dbData.createdAt = profile.createdAt;
   if (profile.progress !== undefined) dbData.progress = profile.progress;
   if (profile.attempts !== undefined) dbData.attempts = profile.attempts;
 
@@ -99,19 +101,16 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
   
-  // On ne garde que les chiffres pour la recherche
   const digitsOnly = phoneNumber.replace(/\D/g, '');
-  
-  // Stratégie : Les 10 derniers chiffres couvrent tous les formats (Standard CI 2021)
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
 
   try {
-    // CRITIQUE : Utilisation de * au lieu de % pour la syntaxe PostgREST inside .or()
+    // Utilisation de la colonne 'phoneNumber' identifiée par l'erreur 42703
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .or(`phone_number.eq.${digitsOnly},phone_number.ilike.*${last10}`)
+      .or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`)
       .maybeSingle();
     
     if (error) {
@@ -303,7 +302,7 @@ export const addKitaProduct = async (userId: string, p: any) => {
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: p.name, quantity: p.quantity,
     purchase_price: p.purchasePrice, sell_price: p.sellPrice,
-    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplier_id
+    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplierId
   });
   return error ? null : { id: newId, ...p };
 };
