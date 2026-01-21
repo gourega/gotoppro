@@ -174,19 +174,19 @@ const Caisse: React.FC = () => {
     setIsServiceListOpen(false);
   };
 
+  const handleOriginalAmountChange = (val: number) => {
+    setNewTrans(prev => ({
+      ...prev,
+      originalAmount: val,
+      amount: Math.max(0, val - (prev.discount || 0))
+    }));
+  };
+
   const handleDiscountChange = (val: number) => {
     setNewTrans(prev => ({
       ...prev,
       discount: val,
       amount: Math.max(0, (prev.originalAmount || 0) - val)
-    }));
-  };
-
-  const handleAmountChange = (val: number) => {
-    setNewTrans(prev => ({
-      ...prev,
-      amount: val,
-      originalAmount: prev.type === 'EXPENSE' ? val : prev.originalAmount
     }));
   };
 
@@ -357,11 +357,23 @@ const Caisse: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prix Standard (F)</label>
-                            <div className="px-6 py-4 bg-slate-50 rounded-2xl font-black text-slate-400 text-lg border border-slate-100">{(newTrans.originalAmount || 0).toLocaleString()}</div>
+                            <input 
+                              type="number" 
+                              placeholder="0" 
+                              value={newTrans.originalAmount || ''} 
+                              onChange={e => handleOriginalAmountChange(Number(e.target.value))} 
+                              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-black text-slate-900 text-lg focus:ring-2 focus:ring-brand-500/20" 
+                            />
                           </div>
                           <div>
                             <label className="block text-[9px] font-black text-amber-600 uppercase mb-2 ml-4 flex items-center gap-2"><Tag className="w-3 h-3" /> Remise (F)</label>
-                            <input type="number" placeholder="0" value={newTrans.discount || ''} onChange={e => handleDiscountChange(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-amber-50 border border-amber-100 outline-none font-black text-amber-600 text-lg focus:ring-2 focus:ring-amber-200" />
+                            <input 
+                              type="number" 
+                              placeholder="0" 
+                              value={newTrans.discount || ''} 
+                              onChange={e => handleDiscountChange(Number(e.target.value))} 
+                              className="w-full px-6 py-4 rounded-2xl bg-amber-50 border border-amber-100 outline-none font-black text-amber-600 text-lg focus:ring-2 focus:ring-amber-200" 
+                            />
                           </div>
                         </div>
 
@@ -393,14 +405,12 @@ const Caisse: React.FC = () => {
                         {newTrans.type === 'INCOME' ? "Total à Encaisser (F)" : "Montant payé (F)"}
                         <Receipt className="w-3 h-3" />
                       </label>
-                      <input 
-                        type="number" 
-                        placeholder="0" 
-                        value={newTrans.amount || ''} 
-                        onChange={e => handleAmountChange(Number(e.target.value))} 
-                        className={`w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20 ${newTrans.type === 'INCOME' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`} 
-                        required 
-                      />
+                      <div className={`w-full px-8 py-6 rounded-[2.5rem] outline-none font-black text-4xl text-center border-2 ${newTrans.type === 'INCOME' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                        {newTrans.amount.toLocaleString()}
+                      </div>
+                      <p className="text-center text-[9px] font-bold text-slate-400 uppercase mt-2 tracking-widest">
+                        {newTrans.type === 'INCOME' ? "Calculé automatiquement : Prix - Remise" : "Montant de la dépense"}
+                      </p>
                     </div>
                   </div>
 
