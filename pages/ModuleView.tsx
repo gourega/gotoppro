@@ -32,7 +32,8 @@ import {
   Download,
   Trophy,
   PartyPopper,
-  CloudOff
+  CloudOff,
+  ChevronRight
 } from 'lucide-react';
 
 // Fonctions de décodage conformes aux directives Google GenAI
@@ -73,6 +74,7 @@ const ModuleView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'lesson' | 'quiz'>('lesson');
   const [quizState, setQuizState] = useState<'intro' | 'active' | 'success_splash' | 'expert_speech' | 'results'>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
   const [shouldFire, setShouldFire] = useState(false);
@@ -199,16 +201,22 @@ const ModuleView: React.FC = () => {
     setShuffledQuestions(shuffled);
     setAnswers([]);
     setCurrentIdx(0);
+    setSelectedIdx(null);
     setLocalScore(null);
     setQuizState('active');
+    window.scrollTo(0, 0);
   };
 
-  const handleAnswer = (idx: number) => {
-    if (isFinishingQuiz || quizState !== 'active') return;
-    const newAnswers = [...answers, idx];
+  const handleNextQuestion = () => {
+    if (selectedIdx === null || isFinishingQuiz) return;
+    
+    const newAnswers = [...answers, selectedIdx];
     setAnswers(newAnswers);
+    setSelectedIdx(null);
+
     if (currentIdx < shuffledQuestions.length - 1) {
       setCurrentIdx(currentIdx + 1);
+      window.scrollTo(0, 0);
     } else {
       finishQuiz(newAnswers);
     }
@@ -232,6 +240,7 @@ const ModuleView: React.FC = () => {
     } else {
       setQuizState('results');
     }
+    window.scrollTo(0, 0);
 
     // SYNC CLOUD EN ARRIÈRE-PLAN
     try {
@@ -279,13 +288,12 @@ const ModuleView: React.FC = () => {
     } finally {
       setIsSaving(false);
       setQuizState('results');
+      window.scrollTo(0, 0);
     }
   };
 
   const currentAttemptScore = useMemo(() => {
-    // Si on a un score local, on l'utilise en priorité pour l'affichage final
     if (localScore !== null) return localScore;
-    
     return Math.round((answers.reduce((acc, ans, i) => {
       const question = shuffledQuestions[i];
       return (question && ans === question.correctAnswer) ? acc + 1 : acc;
@@ -386,7 +394,6 @@ const ModuleView: React.FC = () => {
         ) : (
           <div className="animate-in fade-in zoom-in-95 duration-500 min-h-[600px] flex flex-col justify-center">
             
-            {/* ALERT DE SYNCHRO (NON BLOQUANTE) */}
             {syncWarning && (
               <div className="fixed bottom-10 left-10 z-[200] bg-rose-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-left duration-500 border-2 border-rose-400">
                 <CloudOff className="w-5 h-5" />
@@ -435,26 +442,59 @@ const ModuleView: React.FC = () => {
               </div>
             )}
 
-            {/* ETAT ACTIF (QUESTIONS) */}
+            {/* ETAT ACTIF (QUESTIONS AVEC VALIDATION MANUELLE) */}
             {quizState === 'active' && shuffledQuestions[currentIdx] && (
-              <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500 print:hidden">
+              <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-right-10 duration-500 print:hidden flex flex-col items-stretch">
                 <div className="mb-20">
-                  <div className="flex justify-between items-center mb-10">
+                  <div className="flex justify-between items-center mb-6">
                     <span className="text-[11px] font-black text-brand-500 uppercase tracking-[0.4em]">Question {currentIdx + 1} / {shuffledQuestions.length}</span>
                     <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
                        <Coins className="w-3.5 h-3.5 text-brand-600" />
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tentative {attemptCount + 1}</span>
                     </div>
                   </div>
+                  
+                  {/* Progress Bar for the quiz */}
+                  <div className="w-full h-1 bg-slate-100 rounded-full mb-10 overflow-hidden">
+                    <div 
+                      className="h-full bg-brand-500 transition-all duration-500" 
+                      style={{ width: `${((currentIdx + 1) / shuffledQuestions.length) * 100}%` }}
+                    />
+                  </div>
+
                   <h3 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 leading-[1.2] tracking-tight">{shuffledQuestions[currentIdx].question}</h3>
                 </div>
-                <div className="grid gap-6">
+                
+                <div className="grid gap-6 mb-16">
                   {shuffledQuestions[currentIdx].options.map((opt, i) => (
-                    <button key={i} onClick={() => handleAnswer(i)} className="w-full text-left p-10 rounded-[3rem] border-2 border-slate-100 bg-white hover:border-brand-500 hover:shadow-2xl transition-all font-bold text-slate-800 text-xl flex items-center justify-between group">
-                      {opt} <div className="h-8 w-8 rounded-full border-2 border-slate-200 group-hover:border-brand-500 group-hover:bg-brand-500 transition-all"></div>
+                    <button 
+                      key={i} 
+                      onClick={() => setSelectedIdx(i)} 
+                      className={`w-full text-left p-10 rounded-[3rem] border-2 transition-all font-bold text-xl flex items-center justify-between group ${
+                        selectedIdx === i 
+                        ? 'border-brand-500 bg-brand-50 shadow-xl scale-[1.02]' 
+                        : 'border-slate-100 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <span className={selectedIdx === i ? 'text-brand-900' : 'text-slate-800'}>{opt}</span>
+                      <div className={`h-8 w-8 rounded-full border-2 transition-all ${
+                        selectedIdx === i 
+                        ? 'border-brand-500 bg-brand-500 shadow-[0_0_0_4px_rgba(14,165,233,0.1)]' 
+                        : 'border-slate-200 group-hover:border-slate-400'
+                      }`}></div>
                     </button>
                   ))}
                 </div>
+
+                {selectedIdx !== null && (
+                  <button 
+                    onClick={handleNextQuestion}
+                    className="w-full bg-brand-900 text-white py-10 rounded-[3rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center justify-center gap-6 animate-in slide-in-from-bottom-4 duration-300 hover:bg-black"
+                  >
+                    {currentIdx < shuffledQuestions.length - 1 ? 'Question suivante' : 'Terminer la certification'} 
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                )}
               </div>
             )}
 
@@ -476,7 +516,7 @@ const ModuleView: React.FC = () => {
                     </p>
                   </div>
                   <button 
-                    onClick={() => setQuizState('expert_speech')}
+                    onClick={() => { setQuizState('expert_speech'); window.scrollTo(0, 0); }}
                     className="bg-brand-900 text-white px-20 py-10 rounded-[3rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center gap-6 mx-auto hover:bg-black hover:scale-105 transition-all group"
                   >
                     Sceller mon engagement <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
@@ -484,7 +524,7 @@ const ModuleView: React.FC = () => {
                </div>
             )}
 
-            {/* ETAT PAROLE D'EXPERT (SUCCÈS >= 80%) */}
+            {/* ETAT PAROLE D'EXPERT */}
             {quizState === 'expert_speech' && (
               <div className="text-center space-y-12 animate-in slide-in-from-bottom-10 duration-700 print:hidden">
                 <div className="h-32 w-32 rounded-full mx-auto p-1.5 bg-emerald-500 shadow-xl shadow-emerald-200">
@@ -503,7 +543,7 @@ const ModuleView: React.FC = () => {
                   <textarea 
                     value={commitment}
                     onChange={e => setCommitment(e.target.value)}
-                    placeholder="Ex: Dès demain matin, je m'engage à appliquer la signature vocale Kita lors de chaque appel et à sourire consciemment pour que mes clientes l'entendent immédiatement..."
+                    placeholder="Ex: Dès demain matin, je m'engage à appliquer la signature vocale Kita lors de chaque appel..."
                     className="w-full p-12 pl-20 rounded-[4rem] bg-slate-50 border-2 border-transparent focus:border-emerald-500/30 outline-none font-bold text-xl min-h-[300px] resize-none focus:ring-4 focus:ring-emerald-500/5 transition-all shadow-inner"
                   />
                 </div>
@@ -515,11 +555,10 @@ const ModuleView: React.FC = () => {
                   {isSaving ? <Loader2 className="animate-spin w-6 h-6" /> : <PartyPopper className="w-8 h-8" />}
                   Lancer mon Défi & Obtenir mon Certificat
                 </button>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">En validant cet engagement, vous recevrez officiellement votre certificat d'excellence.</p>
               </div>
             )}
 
-            {/* ETAT RÉSULTATS (DÉBRIEFING & CERTIFICAT) */}
+            {/* ETAT RÉSULTATS */}
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
                 <div className="text-center mb-16 print:hidden">
@@ -541,9 +580,21 @@ const ModuleView: React.FC = () => {
                        </p>
                     </div>
                     {tokensRemaining > 0 ? (
-                      <button onClick={() => { setQuizState('intro'); setActiveTab('lesson'); setAnswers([]); setCurrentIdx(0); }} className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition">Ré-écouter et Retenter</button>
+                      <button 
+                        onClick={() => { 
+                          setQuizState('intro'); 
+                          setAnswers([]); 
+                          setCurrentIdx(0); 
+                          setSelectedIdx(null); 
+                          setLocalScore(null); 
+                          window.scrollTo(0, 0);
+                        }} 
+                        className="w-full bg-slate-900 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs hover:bg-brand-900 transition"
+                      >
+                        Retenter immédiatement
+                      </button>
                     ) : (
-                      <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs">Racheter le module (3 nouveaux jetons)</button>
+                      <button onClick={() => navigate(`/results?recharge=${module.id}`)} className="w-full bg-rose-500 text-white py-8 rounded-[2.5rem] font-black uppercase tracking-widest text-xs">Racheter le module</button>
                     )}
                   </div>
                 ) : (
