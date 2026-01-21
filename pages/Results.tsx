@@ -137,9 +137,10 @@ const Results: React.FC = () => {
       const existing = await getProfileByPhone(cleanPhone);
       
       if (existing) {
+        // CORRECTIF : On ne force plus isActive: false si le gérant était déjà actif.
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
-          isActive: false, 
+          isActive: existing.isActive, // On garde l'état actuel
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
@@ -180,8 +181,9 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
+      // CORRECTIF CRITIQUE : Suppression de isActive: false. 
+      // Le gérant reste actif pendant que sa commande est en attente.
       await updateUserProfile(user.uid, { 
-        isActive: false, 
         pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
       });
       setRegStep('success');
@@ -256,7 +258,7 @@ const Results: React.FC = () => {
                   <div className="space-y-4">
                     <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-900">Performance RH</h4>
                     <div className="text-[10px] font-bold text-slate-500 space-y-1"><p>• Calcul Commissions</p><p>• Productivité Staff</p></div>
-                    <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">5 000 F</p></div>
+                    <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">5000 F</p></div>
                   </div>
               </button>
 
@@ -265,7 +267,7 @@ const Results: React.FC = () => {
                   <div className="space-y-4">
                     <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-900">Stock Expert</h4>
                     <div className="text-[10px] font-bold text-slate-500 space-y-1"><p>• Alertes Rupture</p><p>• Inventaire Valorisé</p></div>
-                    <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">5 000 F</p></div>
+                    <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">5000 F</p></div>
                   </div>
               </button>
            </div>
