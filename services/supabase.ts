@@ -19,7 +19,6 @@ export const generateUUID = () => {
 
 /**
  * Mappe les données de la DB vers l'interface UserProfile de l'application.
- * Supporte les deux formats pour la lecture au cas où certaines colonnes diffèrent.
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -49,7 +48,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
-    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
+    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
     referralCount: data.referralCount || data.referral_count || 0,
     createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     progress: data.progress || {},
@@ -59,7 +58,6 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 
 /**
  * Mappe les champs Frontend vers les colonnes Database.
- * CONFIGURATION CRITIQUE : Utilise CamelCase car c'est ce que votre DB attend selon l'erreur 42703.
  */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
@@ -89,7 +87,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.badges !== undefined) dbData.badges = profile.badges;
   if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
   if (profile.pendingModuleIds !== undefined) dbData.pendingModuleIds = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) dbData.actionPlan = profile.actionPlan;
+  if (profile.actionPlan !== undefined) dbData.action_plan = profile.actionPlan;
   if (profile.referralCount !== undefined) dbData.referralCount = profile.referralCount;
   if (profile.createdAt !== undefined) dbData.createdAt = profile.createdAt;
   if (profile.progress !== undefined) dbData.progress = profile.progress;
@@ -100,27 +98,19 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
 
   try {
-    // Utilisation de la colonne 'phoneNumber' identifiée par l'erreur 42703
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`)
       .maybeSingle();
-    
-    if (error) {
-      console.error("Supabase Search Error:", error);
-      return null;
-    }
-    
+    if (error) return null;
     return mapProfileFromDB(data);
   } catch (err) {
-    console.error("Critical Profile Fetch Error:", err);
     return null;
   }
 };
@@ -128,7 +118,6 @@ export const getProfileByPhone = async (phoneNumber: string) => {
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-  if (error) console.error("GetUserProfile Error:", error);
   return mapProfileFromDB(data);
 };
 
@@ -136,10 +125,7 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
   if (!supabase) throw new Error("Supabase non connecté.");
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
-  if (error) {
-    console.error("Supabase Upsert Error:", error);
-    throw error;
-  }
+  if (error) throw error;
   return { success: true };
 };
 
@@ -147,10 +133,7 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
   if (!supabase || !uid) return;
   const dbData = mapProfileToDB(updates);
   const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-  if (error) {
-    console.error("Supabase Update Error:", error);
-    throw error;
-  }
+  if (error) throw error;
 };
 
 export const getAllUsers = async () => {
@@ -159,25 +142,24 @@ export const getAllUsers = async () => {
   return (data || []).map(mapProfileFromDB) as UserProfile[];
 };
 
-export const deleteUserProfile = async (uid: string) => {
-  if (!supabase) return;
-  await supabase.from('kita_transactions').delete().eq('user_id', uid);
-  await supabase.from('kita_staff').delete().eq('user_id', uid);
-  await supabase.from('kita_clients').delete().eq('user_id', uid);
-  await supabase.from('kita_services').delete().eq('user_id', uid);
-  await supabase.from('kita_products').delete().eq('user_id', uid);
-  await supabase.from('kita_suppliers').delete().eq('user_id', uid);
-  const { error } = await supabase.from('profiles').delete().eq('uid', uid);
-  if (error) throw new Error(error.message);
-};
-
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
-    id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id
+    id: t.id, 
+    type: t.type, 
+    amount: t.amount, 
+    label: t.label, 
+    category: t.category,
+    paymentMethod: t.payment_method, 
+    date: t.date, 
+    staffName: t.staff_name,
+    commissionRate: t.commission_rate, 
+    isCredit: t.is_credit, 
+    clientId: t.client_id, 
+    productId: t.product_id,
+    discount: t.discount || 0,
+    originalAmount: t.original_amount || t.amount
   }));
 };
 
@@ -185,10 +167,21 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   if (!supabase || !userId) return null;
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
-    id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
-    label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-    date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
-    is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId
+    id: newId, 
+    user_id: userId, 
+    type: transaction.type, 
+    amount: transaction.amount,
+    label: transaction.label, 
+    category: transaction.category, 
+    payment_method: transaction.paymentMethod,
+    date: transaction.date, 
+    staff_name: transaction.staffName, 
+    commission_rate: transaction.commissionRate,
+    is_credit: transaction.isCredit, 
+    client_id: transaction.clientId, 
+    product_id: transaction.productId,
+    original_amount: transaction.originalAmount || transaction.amount,
+    discount: transaction.discount || 0
   });
   return error ? null : { ...transaction, id: newId } as KitaTransaction;
 };
