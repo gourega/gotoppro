@@ -44,7 +44,8 @@ import {
   History,
   Medal,
   CalendarDays,
-  Target
+  Target,
+  Package
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -442,6 +443,7 @@ const AdminDashboard: React.FC = () => {
                           {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
                           {u.pendingModuleIds?.some(id => id.includes('ELITE')) && <Badge text="WAIT ELITE" color="amber" animate />}
+                          {u.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && <Badge text="WAIT RH" color="emerald" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -652,6 +654,12 @@ const AdminDashboard: React.FC = () => {
                     )}
                     {selectedUser.pendingModuleIds?.some(id => id.includes('ELITE')) && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="Pack 16 modules" color="amber" />
+                    )}
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && (
+                      <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Users />} label="Activer RH" price="Pack Performance" color="emerald" />
+                    )}
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('STOCK')) && (
+                      <ActionBtn onClick={() => handleActivatePack('STOCK')} loading={processingId === 'STOCK'} icon={<Package />} label="Activer Stock" price="Pack Expert" color="blue" />
                     )}
                     {selectedUser.pendingModuleIds?.some(id => id.startsWith('mod_')) && (
                       <ActionBtn 
