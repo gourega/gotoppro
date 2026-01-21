@@ -99,18 +99,19 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
   
-  // Nettoyage strict : garder uniquement les chiffres
+  // On ne garde que les chiffres pour la recherche
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   
-  // Stratégie de recherche : Correspondance exacte OU les 10 derniers chiffres (Standard CI)
+  // Stratégie : Les 10 derniers chiffres couvrent tous les formats (Standard CI 2021)
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
 
   try {
+    // CRITIQUE : Utilisation de * au lieu de % pour la syntaxe PostgREST inside .or()
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .or(`phone_number.eq.${digitsOnly},phone_number.ilike.%${last10}`)
+      .or(`phone_number.eq.${digitsOnly},phone_number.ilike.*${last10}`)
       .maybeSingle();
     
     if (error) {
@@ -302,7 +303,7 @@ export const addKitaProduct = async (userId: string, p: any) => {
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: p.name, quantity: p.quantity,
     purchase_price: p.purchasePrice, sell_price: p.sellPrice,
-    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplierId
+    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplier_id
   });
   return error ? null : { id: newId, ...p };
 };
