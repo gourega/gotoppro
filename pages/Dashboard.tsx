@@ -22,14 +22,18 @@ import {
   FileSearch,
   Quote,
   Target,
-  Circle
+  Circle,
+  ClipboardCheck,
+  Calendar
 } from 'lucide-react';
+import { UserActionCommitment } from '../types';
 
 const Dashboard: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const [isUpdatingCommitment, setIsUpdatingCommitment] = useState<string | null>(null);
   
   const isElite = useMemo(() => {
     if (!user) return false;
@@ -63,6 +67,39 @@ const Dashboard: React.FC = () => {
     setDailyTasks(newTasks);
     localStorage.setItem(`daily_tasks_${user?.uid}`, JSON.stringify(newTasks));
   };
+
+  const handleToggleCommitment = async (commitment: UserActionCommitment) => {
+    if (!user || isUpdatingCommitment) return;
+    
+    // On utilise une combinaison d'ID et de texte pour identifier l'engagement unique
+    const uniqueKey = `${commitment.moduleId}-${commitment.date}`;
+    setIsUpdatingCommitment(uniqueKey);
+    
+    try {
+      const updatedActionPlan = user.actionPlan.map(a => {
+        if (a.moduleId === commitment.moduleId && a.date === commitment.date && a.action === commitment.action) {
+          return { ...a, isCompleted: !a.isCompleted };
+        }
+        return a;
+      });
+
+      await updateUserProfile(user.uid, { actionPlan: updatedActionPlan });
+      await refreshProfile();
+    } catch (err) {
+      console.error("Erreur mise à jour engagement:", err);
+    } finally {
+      setIsUpdatingCommitment(null);
+    }
+  };
+
+  const sortedActionPlan = useMemo(() => {
+    if (!user?.actionPlan) return [];
+    // Tri : Incomplets d'abord, puis par date décroissante
+    return [...user.actionPlan].sort((a, b) => {
+      if (a.isCompleted === b.isCompleted) return 0;
+      return a.isCompleted ? 1 : -1;
+    });
+  }, [user?.actionPlan]);
 
   const handleGenerateAudit = async () => {
     if (!user || loadingAudit) return;
@@ -208,6 +245,73 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
         </section>
+
+        {/* SECTION 2 : PLAN DE TRANSFORMATION (ENGAGEMENTS) */}
+        {!user.isAdmin && sortedActionPlan.length > 0 && (
+          <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
+             <div className="flex items-center gap-4 mb-12">
+                <ClipboardCheck className="w-8 h-8 text-emerald-600" />
+                <div>
+                   <h2 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-1">Mon Plan de Transformation</h2>
+                   <p className="text-2xl font-serif font-bold text-slate-900">Mes Engagements KITA</p>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {sortedActionPlan.map((item, idx) => {
+                  const uniqueKey = `${item.moduleId}-${item.date}`;
+                  const isPending = isUpdatingCommitment === uniqueKey;
+
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col justify-between group ${
+                        item.isCompleted 
+                        ? 'bg-slate-50 border-emerald-100 opacity-60' 
+                        : 'bg-white border-slate-100 hover:border-emerald-200 hover:shadow-xl'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex justify-between items-start mb-6">
+                           <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-emerald-100">
+                             {item.moduleTitle}
+                           </span>
+                           <span className="text-[9px] font-bold text-slate-300 flex items-center gap-1">
+                             <Calendar className="w-3 h-3" /> {item.date}
+                           </span>
+                        </div>
+                        <p className={`text-lg font-serif italic leading-relaxed mb-8 ${item.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                           "{item.action}"
+                        </p>
+                      </div>
+
+                      <button 
+                        onClick={() => handleToggleCommitment(item)}
+                        disabled={isPending}
+                        className={`w-full py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                          item.isCompleted 
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : 'bg-brand-900 text-white shadow-lg hover:bg-black'
+                        }`}
+                      >
+                         {isPending ? (
+                           <Loader2 className="w-4 h-4 animate-spin" />
+                         ) : item.isCompleted ? (
+                           <>
+                             <CheckCircle2 className="w-4 h-4" /> Objectif Tenu
+                           </>
+                         ) : (
+                           <>
+                             <Circle className="w-4 h-4" /> Marquer comme réalisé
+                           </>
+                         )}
+                      </button>
+                    </div>
+                  );
+                })}
+             </div>
+          </section>
+        )}
 
         {/* SECTION FINANCE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
