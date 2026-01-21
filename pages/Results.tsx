@@ -25,7 +25,8 @@ import {
   Target,
   Smartphone,
   Award,
-  Sparkles
+  Sparkles,
+  Gift
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -96,10 +97,28 @@ const Results: React.FC = () => {
       setLoadingAdvice(false);
       setAiAdvice("Préparez votre parcours vers l'Excellence.");
     }
-  }, [location.search]);
+  }, [location.search, user?.purchasedModuleIds]);
 
   const pricingData = useMemo(() => {
-    if (activePack === 'elite') return { total: 10000, label: 'Pack Académie Élite', rawTotal: 10000, savings: 0, discountPercent: 0, progress: 100 };
+    // Calcul pour le PACK ELITE avec déduction fidélité
+    if (activePack === 'elite') {
+      const ownedCount = user?.purchasedModuleIds?.length || 0;
+      const loyaltyCredit = ownedCount * 500;
+      // Prix de base 10 000, moins 500 par module acquis, minimum 2000 F pour frais techniques
+      const finalPrice = Math.max(2000, 10000 - loyaltyCredit);
+      
+      return { 
+        total: finalPrice, 
+        label: 'Pack Académie Élite', 
+        rawTotal: 10000, 
+        savings: 10000 - finalPrice, 
+        discountPercent: Math.round(((10000 - finalPrice) / 10000) * 100), 
+        progress: 100,
+        isLoyaltyUpgrade: ownedCount > 0,
+        loyaltyCredit
+      };
+    }
+
     if (activePack === 'performance') return { total: 5000, label: 'Pack RH Performance', rawTotal: 5000, savings: 0, discountPercent: 0, progress: 0 };
     if (activePack === 'stock') return { total: 5000, label: 'Pack Stock Expert', rawTotal: 5000, savings: 0, discountPercent: 0, progress: 0 };
     if (activePack === 'crm') return { total: 500, label: 'Abonnement CRM VIP', rawTotal: 500, savings: 0, discountPercent: 0, progress: 0 };
@@ -118,7 +137,7 @@ const Results: React.FC = () => {
     const progress = (count / 16) * 100;
     
     return { total, label: `${count} module(s)`, rawTotal, savings: rawTotal - total, discountPercent, progress };
-  }, [cart, activePack]);
+  }, [cart, activePack, user?.purchasedModuleIds]);
 
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,10 +156,9 @@ const Results: React.FC = () => {
       const existing = await getProfileByPhone(cleanPhone);
       
       if (existing) {
-        // CORRECTIF : On ne force plus isActive: false si le gérant était déjà actif.
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
-          isActive: existing.isActive, // On garde l'état actuel
+          isActive: existing.isActive,
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
       } else {
@@ -181,8 +199,6 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
-      // CORRECTIF CRITIQUE : Suppression de isActive: false. 
-      // Le gérant reste actif pendant que sa commande est en attente.
       await updateUserProfile(user.uid, { 
         pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
       });
@@ -220,7 +236,7 @@ const Results: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
         
-        {/* SECTION 1: AUDIT STRATÉGIQUE (Lecture Seule Ici) */}
+        {/* SECTION 1: AUDIT STRATÉGIQUE */}
         <section className="bg-white rounded-[3.5rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
           <div className="flex items-center gap-4 mb-10"><Zap className="text-brand-600" /><h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Audit Stratégique IA</h2></div>
           {loadingAdvice ? <div className="flex flex-col items-center py-12 gap-4"><Loader2 className="animate-spin text-brand-600" /><p className="text-[10px] font-black text-slate-400 uppercase">Consultation IA...</p></div> : 
@@ -249,7 +265,17 @@ const Results: React.FC = () => {
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
                     <div className={`text-[10px] font-bold space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
-                    <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}><p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>10 000 F</p></div>
+                    
+                    {/* Badge Déduction Fidélité si le gérant possède déjà des modules */}
+                    {activePack === 'elite' && pricingData.isLoyaltyUpgrade && (
+                      <div className="bg-amber-400 text-brand-900 px-3 py-1 rounded-full text-[8px] font-black uppercase flex items-center gap-1 mx-auto mt-2 animate-bounce">
+                        <Gift className="w-3 h-3" /> Prix Fidélité (-{pricingData.loyaltyCredit} F)
+                      </div>
+                    )}
+
+                    <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
+                      <p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>{activePack === 'elite' ? pricingData.total.toLocaleString() : '10 000'} F</p>
+                    </div>
                   </div>
               </button>
 
@@ -326,7 +352,17 @@ const Results: React.FC = () => {
 
                 <div className="space-y-3 mb-10 pt-8 border-t border-slate-100">
                    <div className="flex justify-between items-center text-slate-400"><span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span><span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span></div>
-                   {pricingData.savings > 0 && <div className="flex justify-between items-center text-emerald-500"><span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Remise (-{pricingData.discountPercent}%)</span><span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span></div>}
+                   
+                   {/* Affichage de la déduction fidélité ou remise standard */}
+                   {pricingData.savings > 0 && (
+                     <div className="flex justify-between items-center text-emerald-500">
+                       <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                         <Tag className="w-3 h-3" /> {activePack === 'elite' && (pricingData as any).isLoyaltyUpgrade ? "Déduction modules acquis" : `Remise (-${pricingData.discountPercent}%)`}
+                       </span>
+                       <span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span>
+                     </div>
+                   )}
+
                    <div className="flex justify-between items-end"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total à régler</p><div className="flex items-baseline gap-1"><p className="text-5xl font-black text-brand-900 tracking-tighter">{pricingData.total.toLocaleString()}</p><span className="text-sm font-bold opacity-30 uppercase">F</span></div></div>
                 </div>
 
@@ -365,7 +401,7 @@ const Results: React.FC = () => {
                    <p className="text-4xl font-black text-brand-900 m-0 tracking-[0.2em]">1 2 3 4</p>
                 </div>
                 <p className="text-slate-500 italic text-sm mb-12 px-6 leading-relaxed">"Réglez <strong>{pricingData.total.toLocaleString()} F</strong> via Wave au <strong>{COACH_KITA_WAVE_NUMBER}</strong> pour activer vos accès."</p>
-                <button onClick={() => { window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour Coach Kita, j'ai validé mon plan (${pricingData.total} F) pour ${regStoreName || user?.establishmentName}. Voici ma preuve de paiement.`)}`, '_blank'); navigate('/login'); }} className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"><MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp</button>
+                <button onClick={() => { window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour Coach Kita, j'ai validé mon plan (${pricingData.total} F) pour ${regStoreName || user?.establishmentName || 'mon salon'}. Voici ma preuve de paiement.`)}`, '_blank'); navigate('/login'); }} className="w-full bg-[#10b981] text-white py-7 rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-[#059669] transition-all"><MessageCircle className="w-6 h-6" /> Confirmer sur WhatsApp</button>
               </div>
             )}
           </div>
