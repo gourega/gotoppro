@@ -31,6 +31,8 @@ export interface KitaTransaction {
   staffName?: string;
   commissionRate?: number;
   isCredit?: boolean;
+  discount?: number;
+  originalAmount?: number;
 }
 
 export interface KitaDebt {

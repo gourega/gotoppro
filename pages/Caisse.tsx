@@ -28,13 +28,26 @@ import {
   Cloud,
   ShieldHalf,
   Users,
-  FileText
+  FileText,
+  Tag,
+  Receipt
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import { DEFAULT_KITA_SERVICES } from '../constants';
 import ExportReportModal from '../components/ExportReportModal';
 
 type PeriodFilter = 'today' | 'week' | 'month';
+
+const EXPENSE_CATEGORIES = [
+  "Loyer & Charges",
+  "Achats Produits / Stock",
+  "Salaires & Primes",
+  "Transport & Logistique",
+  "Électricité & Eau",
+  "Marketing & Publicité",
+  "Maintenance & Réparation",
+  "Divers / Imprévus"
+];
 
 const Caisse: React.FC = () => {
   const { user } = useAuth();
@@ -63,7 +76,9 @@ const Caisse: React.FC = () => {
     date: new Date().toISOString().split('T')[0],
     isCredit: false,
     staffName: '',
-    commissionRate: 0
+    commissionRate: 0,
+    discount: 0,
+    originalAmount: 0
   });
   
   const [saving, setSaving] = useState(false);
@@ -96,7 +111,7 @@ const Caisse: React.FC = () => {
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || newTrans.amount <= 0 || !newTrans.label) return;
+    if (!user || newTrans.amount < 0 || !newTrans.label) return;
     setSaving(true);
     try {
       const trans = await addKitaTransaction(user.uid, newTrans);
@@ -153,9 +168,26 @@ const Caisse: React.FC = () => {
       ...prev,
       label: s.name,
       category: s.category,
-      amount: s.defaultPrice > 0 ? s.defaultPrice : prev.amount
+      originalAmount: s.defaultPrice,
+      amount: Math.max(0, s.defaultPrice - (prev.discount || 0))
     }));
     setIsServiceListOpen(false);
+  };
+
+  const handleDiscountChange = (val: number) => {
+    setNewTrans(prev => ({
+      ...prev,
+      discount: val,
+      amount: Math.max(0, (prev.originalAmount || 0) - val)
+    }));
+  };
+
+  const handleAmountChange = (val: number) => {
+    setNewTrans(prev => ({
+      ...prev,
+      amount: val,
+      originalAmount: prev.type === 'EXPENSE' ? val : prev.originalAmount
+    }));
   };
 
   const handleSelectStaff = (member: any) => {
@@ -196,7 +228,23 @@ const Caisse: React.FC = () => {
               <button onClick={loadData} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all">
                 <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
               </button>
-              <button onClick={() => { setIsModalOpen(true); setLastSavedTransaction(null); }} className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
+              <button onClick={() => { 
+                setIsModalOpen(true); 
+                setLastSavedTransaction(null); 
+                setNewTrans({
+                  type: 'INCOME',
+                  amount: 0,
+                  label: '',
+                  category: 'Prestation',
+                  paymentMethod: 'Espèces',
+                  date: new Date().toISOString().split('T')[0],
+                  isCredit: false,
+                  staffName: '',
+                  commissionRate: 0,
+                  discount: 0,
+                  originalAmount: 0
+                });
+              }} className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-all group"><Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" /></button>
            </div>
         </div>
       </header>
@@ -252,7 +300,10 @@ const Caisse: React.FC = () => {
                     {t.type === 'INCOME' ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p>
+                    <div className="flex items-center gap-3 justify-center md:justify-start">
+                      <p className="font-bold text-slate-900 text-xl mb-1">{t.label}</p>
+                      {t.discount && t.discount > 0 && <span className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1"><Tag className="w-2 h-2" /> -{t.discount} F</span>}
+                    </div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       {t.category} • {t.staffName ? `Par ${t.staffName}` : 'Gérant'} • {new Date(t.date).toLocaleDateString('fr-FR')}
                     </p>
@@ -288,32 +339,68 @@ const Caisse: React.FC = () => {
                 </div>
                 <form onSubmit={handleSaveTransaction} className="space-y-8">
                   <div className="flex bg-slate-100 p-1.5 rounded-[2rem]">
-                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
-                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
+                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'INCOME', category: 'Prestation'})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'INCOME' ? 'bg-white text-emerald-600 shadow-xl' : 'text-slate-400'}`}>Recette</button>
+                    <button type="button" onClick={() => setNewTrans({...newTrans, type: 'EXPENSE', category: 'Loyer & Charges', staffName: '', discount: 0, originalAmount: 0})} className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${newTrans.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-xl' : 'text-slate-400'}`}>Dépense</button>
                   </div>
                   
                   <div className="space-y-6">
-                    <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prestation / Article</label>
-                      <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
-                        <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Choisir dans le catalogue..."}</span>
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                      </button>
-                    </div>
+                    {newTrans.type === 'INCOME' ? (
+                      <>
+                        <div>
+                          <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prestation / Article</label>
+                          <button type="button" onClick={() => setIsServiceListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
+                            <span className={newTrans.label ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.label || "Choisir dans le catalogue..."}</span>
+                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                          </button>
+                        </div>
 
-                    {newTrans.type === 'INCOME' && (
-                      <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Collaborateur (Staff)</label>
-                        <button type="button" onClick={() => setIsStaffListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
-                          <span className={newTrans.staffName ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.staffName || "Qui a encaissé ?"}</span>
-                          <Users className="w-5 h-5 text-slate-400" />
-                        </button>
-                      </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prix Standard (F)</label>
+                            <div className="px-6 py-4 bg-slate-50 rounded-2xl font-black text-slate-400 text-lg border border-slate-100">{(newTrans.originalAmount || 0).toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black text-amber-600 uppercase mb-2 ml-4 flex items-center gap-2"><Tag className="w-3 h-3" /> Remise (F)</label>
+                            <input type="number" placeholder="0" value={newTrans.discount || ''} onChange={e => handleDiscountChange(Number(e.target.value))} className="w-full px-6 py-4 rounded-2xl bg-amber-50 border border-amber-100 outline-none font-black text-amber-600 text-lg focus:ring-2 focus:ring-amber-200" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Collaborateur (Staff)</label>
+                          <button type="button" onClick={() => setIsStaffListOpen(true)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 text-left flex justify-between items-center border border-transparent hover:border-brand-100 transition-all">
+                            <span className={newTrans.staffName ? 'text-slate-900 font-bold' : 'text-slate-400'}>{newTrans.staffName || "Qui a encaissé ?"}</span>
+                            <Users className="w-5 h-5 text-slate-400" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Motif de la dépense</label>
+                          <input type="text" placeholder="Ex: Achat Savon, Loyer..." value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900" required />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Catégorie de Charge</label>
+                          <select value={newTrans.category} onChange={e => setNewTrans({...newTrans, category: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 appearance-none">
+                            {EXPENSE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          </select>
+                        </div>
+                      </>
                     )}
 
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Montant (F)</label>
-                      <input type="number" placeholder="0" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20" required />
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4 flex justify-between">
+                        {newTrans.type === 'INCOME' ? "Total à Encaisser (F)" : "Montant payé (F)"}
+                        <Receipt className="w-3 h-3" />
+                      </label>
+                      <input 
+                        type="number" 
+                        placeholder="0" 
+                        value={newTrans.amount || ''} 
+                        onChange={e => handleAmountChange(Number(e.target.value))} 
+                        className={`w-full px-8 py-6 rounded-[2.5rem] bg-slate-50 outline-none font-black text-4xl text-center focus:ring-2 focus:ring-brand-500/20 ${newTrans.type === 'INCOME' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`} 
+                        required 
+                      />
                     </div>
                   </div>
 
