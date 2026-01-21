@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { TRAINING_CATALOG, COACH_KITA_AVATAR, BADGES, LEGACY_ID_MAP } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { ModuleStatus, UserActionCommitment, QuizQuestion } from '../types';
-import { saveUserProfile } from '../services/supabase';
+import { updateUserProfile, saveUserProfile } from '../services/supabase';
 import { GoogleGenAI, Modality } from "@google/genai";
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import { 
@@ -233,32 +233,34 @@ const ModuleView: React.FC = () => {
     const percentage = Math.round((score / (shuffledQuestions.length || 1)) * 100);
     setLocalScore(percentage);
 
-    // PRIORITÉ : MISE À JOUR DE L'INTERFACE IMMÉDIATE (LOCAL-FIRST)
-    if (percentage >= 80) {
-      setShouldFire(true);
-      setQuizState('success_splash');
-    } else {
-      setQuizState('results');
-    }
-    window.scrollTo(0, 0);
-
-    // SYNC CLOUD EN ARRIÈRE-PLAN
+    // SYNC CLOUD IMMÉDIATE (Indispensable pour débloquer les compteurs)
     try {
-      const updatedUser = JSON.parse(JSON.stringify(user));
-      if (!updatedUser.progress) updatedUser.progress = {};
-      if (!updatedUser.attempts) updatedUser.attempts = {};
-
-      const newAttempts = (Number(updatedUser.attempts[module.id]) || 0) + 1;
-      updatedUser.attempts[module.id] = newAttempts;
+      if (!user) return;
       
-      const prevBest = Number(updatedUser.progress[module.id]) || 0;
-      if (percentage > prevBest) updatedUser.progress[module.id] = percentage;
+      const newAttempts = (Number(user.attempts?.[module.id]) || 0) + 1;
+      const currentProgress = user.progress || {};
+      const prevBest = Number(currentProgress[module.id]) || 0;
+      const newBest = Math.max(prevBest, percentage);
 
-      await saveUserProfile(updatedUser);
+      await updateUserProfile(user.uid, {
+        attempts: { ...user.attempts, [module.id]: newAttempts },
+        progress: { ...user.progress, [module.id]: newBest }
+      });
+      
       await refreshProfile();
+      
+      if (percentage >= 80) {
+        setShouldFire(true);
+        setQuizState('success_splash');
+      } else {
+        setQuizState('results');
+      }
+      window.scrollTo(0, 0);
     } catch (err) {
-      console.error("Quiz Finish Sync Warning:", err);
+      console.error("Quiz Finish Sync Error:", err);
       setSyncWarning(true);
+      // Fallback local en cas d'erreur réseau ponctuelle
+      if (percentage >= 80) { setQuizState('success_splash'); } else { setQuizState('results'); }
     } finally {
       setIsFinishingQuiz(false);
     }
@@ -275,20 +277,24 @@ const ModuleView: React.FC = () => {
         date: new Date().toLocaleDateString('fr-FR'),
         isCompleted: false
       };
-      const updatedUser = {
-        ...user,
-        actionPlan: [newAction, ...(user.actionPlan || [])],
-        badges: user.badges.includes('first_module') ? user.badges : [...user.badges, 'first_module']
-      };
-      await saveUserProfile(updatedUser);
+      
+      const updatedActionPlan = [newAction, ...(user.actionPlan || [])];
+      const updatedBadges = user.badges.includes('first_module') ? user.badges : [...user.badges, 'first_module'];
+
+      await updateUserProfile(user.uid, {
+        actionPlan: updatedActionPlan,
+        badges: updatedBadges
+      });
+      
       await refreshProfile();
+      setQuizState('results');
+      window.scrollTo(0, 0);
     } catch (err) {
       console.error("Commit error:", err);
       setSyncWarning(true);
+      setQuizState('results');
     } finally {
       setIsSaving(false);
-      setQuizState('results');
-      window.scrollTo(0, 0);
     }
   };
 
@@ -454,7 +460,6 @@ const ModuleView: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Progress Bar for the quiz */}
                   <div className="w-full h-1 bg-slate-100 rounded-full mb-10 overflow-hidden">
                     <div 
                       className="h-full bg-brand-500 transition-all duration-500" 
@@ -489,10 +494,11 @@ const ModuleView: React.FC = () => {
                 {selectedIdx !== null && (
                   <button 
                     onClick={handleNextQuestion}
+                    disabled={isFinishingQuiz}
                     className="w-full bg-brand-900 text-white py-10 rounded-[3rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center justify-center gap-6 animate-in slide-in-from-bottom-4 duration-300 hover:bg-black"
                   >
-                    {currentIdx < shuffledQuestions.length - 1 ? 'Question suivante' : 'Terminer la certification'} 
-                    <ChevronRight className="w-6 h-6" />
+                    {isFinishingQuiz ? <Loader2 className="animate-spin" /> : currentIdx < shuffledQuestions.length - 1 ? 'Question suivante' : 'Terminer la certification'} 
+                    {!isFinishingQuiz && <ChevronRight className="w-6 h-6" />}
                   </button>
                 )}
               </div>

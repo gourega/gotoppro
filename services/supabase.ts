@@ -18,7 +18,7 @@ export const generateUUID = () => {
 };
 
 /**
- * Mappe les données de la DB vers l'interface UserProfile de l'application.
+ * Mappe les données de la DB vers l'interface UserProfile de l'application (Frontend).
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -55,14 +55,43 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
+/**
+ * Mappe les champs Frontend (CamelCase) vers les colonnes Database (snake_case).
+ */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
-  Object.keys(profile).forEach(key => {
-    const value = (profile as any)[key];
-    if (value !== undefined && value !== null) {
-      dbData[key] = value;
-    }
-  });
+  
+  // Mapping explicite pour assurer la compatibilité Supabase
+  if (profile.uid !== undefined) dbData.uid = profile.uid;
+  if (profile.phoneNumber !== undefined) dbData.phone_number = profile.phoneNumber;
+  if (profile.pinCode !== undefined) dbData.pin_code = profile.pinCode;
+  if (profile.email !== undefined) dbData.email = profile.email;
+  if (profile.firstName !== undefined) dbData.first_name = profile.firstName;
+  if (profile.lastName !== undefined) dbData.last_name = profile.lastName;
+  if (profile.establishmentName !== undefined) dbData.establishment_name = profile.establishmentName;
+  if (profile.photoURL !== undefined) dbData.photo_url = profile.photoURL;
+  if (profile.bio !== undefined) dbData.bio = profile.bio;
+  if (profile.employeeCount !== undefined) dbData.employee_count = profile.employeeCount;
+  if (profile.openingYear !== undefined) dbData.opening_year = profile.openingYear;
+  if (profile.role !== undefined) dbData.role = profile.role;
+  if (profile.isActive !== undefined) dbData.is_active = profile.isActive;
+  if (profile.isAdmin !== undefined) dbData.is_admin = profile.isAdmin;
+  if (profile.isPublic !== undefined) dbData.is_public = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) dbData.is_kita_premium = profile.isKitaPremium;
+  if (profile.kitaPremiumUntil !== undefined) dbData.kita_premium_until = profile.kitaPremiumUntil;
+  if (profile.hasPerformancePack !== undefined) dbData.has_performance_pack = profile.hasPerformancePack;
+  if (profile.hasStockPack !== undefined) dbData.has_stock_pack = profile.hasStockPack;
+  if (profile.crmExpiryDate !== undefined) dbData.crm_expiry_date = profile.crmExpiryDate;
+  if (profile.strategicAudit !== undefined) dbData.strategic_audit = profile.strategicAudit;
+  if (profile.badges !== undefined) dbData.badges = profile.badges;
+  if (profile.purchasedModuleIds !== undefined) dbData.purchased_module_ids = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) dbData.pending_module_ids = profile.pendingModuleIds;
+  if (profile.actionPlan !== undefined) dbData.action_plan = profile.actionPlan;
+  if (profile.referralCount !== undefined) dbData.referral_count = profile.referralCount;
+  if (profile.createdAt !== undefined) dbData.created_at = profile.createdAt;
+  if (profile.progress !== undefined) dbData.progress = profile.progress;
+  if (profile.attempts !== undefined) dbData.attempts = profile.attempts;
+
   return dbData;
 };
 
@@ -75,17 +104,9 @@ export const getProfileByPhone = async (phoneNumber: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .ilike('phoneNumber', `%${cleanSearch}`)
+      .ilike('phone_number', `%${cleanSearch}`)
       .maybeSingle();
     
-    if (error) {
-      const { data: fallbackData } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('phone_number', `%${cleanSearch}`)
-        .maybeSingle();
-      return mapProfileFromDB(fallbackData);
-    }
     return mapProfileFromDB(data);
   } catch {
     return null;
@@ -103,7 +124,7 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
   if (error) {
-    console.error("Supabase Save Error:", error);
+    console.error("Supabase Upsert Error:", error);
     throw error;
   }
   return { success: true };
@@ -112,7 +133,11 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
   const dbData = mapProfileToDB(updates);
-  await supabase.from('profiles').update(dbData).eq('uid', uid);
+  const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
+  if (error) {
+    console.error("Supabase Update Error:", error);
+    throw error;
+  }
 };
 
 export const getAllUsers = async () => {
@@ -121,25 +146,16 @@ export const getAllUsers = async () => {
   return (data || []).map(mapProfileFromDB) as UserProfile[];
 };
 
-/**
- * Suppression sécurisée
- */
 export const deleteUserProfile = async (uid: string) => {
   if (!supabase) return;
-  
   await supabase.from('kita_transactions').delete().eq('user_id', uid);
   await supabase.from('kita_staff').delete().eq('user_id', uid);
   await supabase.from('kita_clients').delete().eq('user_id', uid);
   await supabase.from('kita_services').delete().eq('user_id', uid);
   await supabase.from('kita_products').delete().eq('user_id', uid);
   await supabase.from('kita_suppliers').delete().eq('user_id', uid);
-
   const { error } = await supabase.from('profiles').delete().eq('uid', uid);
-  
-  if (error) {
-    console.error("Erreur de suppression Supabase:", error);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 };
 
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
