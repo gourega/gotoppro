@@ -1,4 +1,3 @@
-
 // Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -86,7 +85,7 @@ const AdminDashboard: React.FC = () => {
     } catch (err) {
       showNotification("Erreur de synchronisation Cloud", "error");
     } finally {
-      setLoading(false);
+      fetchUsers();
     }
   };
 
@@ -166,13 +165,27 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleActivatePack = async (packType: 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL' | 'CLOUD' | 'CRM') => {
+  const handleActivatePack = async (packType: 'FULL' | 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL' | 'CLOUD' | 'CRM') => {
     if (!selectedUser) return;
     setProcessingId(packType);
     try {
       const updates: Partial<UserProfile> = { isActive: true };
       
-      if (packType === 'ELITE') {
+      if (packType === 'FULL') {
+        updates.isKitaPremium = true;
+        updates.hasPerformancePack = true;
+        updates.hasStockPack = true;
+        const allIds = TRAINING_CATALOG.map(m => m.id);
+        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
+        
+        // CRM 30j
+        const currentEnd = selectedUser.crmExpiryDate ? new Date(selectedUser.crmExpiryDate) : new Date();
+        const baseDate = currentEnd > new Date() ? currentEnd : new Date();
+        const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+        updates.crmExpiryDate = newEnd.toISOString();
+        
+        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('FULL'));
+      } else if (packType === 'ELITE') {
         updates.isKitaPremium = true;
         const allIds = TRAINING_CATALOG.map(m => m.id);
         updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
@@ -218,12 +231,10 @@ const AdminDashboard: React.FC = () => {
     return total;
   };
 
-  // Nouveaux outils de pilotage
   const stats = useMemo(() => {
     const clients = users.filter(u => !u.isAdmin);
     const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
     
-    // Alerte renouvellement (sous 7 jours)
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
     
@@ -250,8 +261,6 @@ const AdminDashboard: React.FC = () => {
     const msg = encodeURIComponent("Bonjour ! Coach Kita ici. Un nouveau module de formation vient de sortir sur Go'Top Pro. Connectez-vous vite pour booster votre rentabilité !");
     const confirm = window.confirm(`Voulez-vous ouvrir WhatsApp pour envoyer une annonce aux ${activeClients.length} gérants actifs ?`);
     if (confirm) {
-      // Pour une diffusion manuelle groupée via URL (limité par le navigateur mais efficace pour de petits groupes)
-      const phones = activeClients.map(u => u.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')).join(',');
       window.open(`https://wa.me/?text=${msg}`, '_blank');
     }
   };
@@ -442,8 +451,8 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex flex-wrap gap-2">
                           {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
                           {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
+                          {u.pendingModuleIds?.some(id => id.includes('FULL')) && <Badge text="WAIT FULL" color="amber" animate />}
                           {u.pendingModuleIds?.some(id => id.includes('ELITE')) && <Badge text="WAIT ELITE" color="amber" animate />}
-                          {u.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && <Badge text="WAIT RH" color="emerald" animate />}
                         </div>
                       </td>
                       <td className="px-8 py-8">
@@ -651,6 +660,9 @@ const AdminDashboard: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
                     {!selectedUser.isActive && (
                       <ActionBtn onClick={() => handleToggleStatus(selectedUser)} loading={processingId === selectedUser.uid} icon={<UserCheck />} label="Activer Compte" price="Validation Client" color="emerald" />
+                    )}
+                    {selectedUser.pendingModuleIds?.some(id => id.includes('FULL')) && (
+                      <ActionBtn onClick={() => handleActivatePack('FULL')} loading={processingId === 'FULL'} icon={<Gem />} label="Activer FULL" price="Tout-en-un (15 000 F)" color="amber" />
                     )}
                     {selectedUser.pendingModuleIds?.some(id => id.includes('ELITE')) && (
                       <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="Pack 16 modules" color="amber" />

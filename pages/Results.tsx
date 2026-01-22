@@ -1,4 +1,3 @@
-
 // Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -26,7 +25,8 @@ import {
   Smartphone,
   Award,
   Sparkles,
-  Gift
+  Gift,
+  Gem
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
@@ -40,7 +40,7 @@ const Results: React.FC = () => {
   const location = useLocation();
   
   const [cart, setCart] = useState<TrainingModule[]>([]);
-  const [activePack, setActivePack] = useState<'none' | 'elite' | 'performance' | 'stock' | 'crm'>('none');
+  const [activePack, setActivePack] = useState<'none' | 'full' | 'elite' | 'performance' | 'stock' | 'crm'>('none');
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
@@ -57,7 +57,8 @@ const Results: React.FC = () => {
     const rechargeId = params.get('recharge');
     const packParam = params.get('pack');
     
-    if (packParam === 'performance') setActivePack('performance'); 
+    if (packParam === 'full') setActivePack('full');
+    else if (packParam === 'performance') setActivePack('performance'); 
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'stock') setActivePack('stock');
     else if (packParam === 'crm') setActivePack('crm');
@@ -100,6 +101,18 @@ const Results: React.FC = () => {
   }, [location.search, user?.purchasedModuleIds]);
 
   const pricingData = useMemo(() => {
+    // PACK EXCELLENCE TOTALE (FULL)
+    if (activePack === 'full') {
+      return { 
+        total: 15000, 
+        label: 'Pack Excellence Totale', 
+        rawTotal: 20500, 
+        savings: 5500, 
+        discountPercent: 27, 
+        progress: 100 
+      };
+    }
+
     // Calcul pour le PACK ELITE avec déduction fidélité
     if (activePack === 'elite') {
       const ownedCount = user?.purchasedModuleIds?.length || 0;
@@ -250,7 +263,27 @@ const Results: React.FC = () => {
               <p className="text-2xl font-serif font-bold text-slate-900">Solutions Clés en Main</p>
            </div>
            
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              
+              {/* PACK EXCELLENCE TOTALE (FULL OPTION) */}
+              <button onClick={() => setActivePack('full')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden col-span-1 sm:col-span-2 xl:col-span-1 ${activePack === 'full' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-amber-500 shadow-xl'}`}>
+                  <div className="absolute top-0 right-0 p-4"><Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /></div>
+                  <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'full' ? 'bg-amber-400 text-brand-900' : 'bg-brand-900 text-amber-400'}`}><Gem className="w-12 h-12" /></div>
+                  <div className="space-y-4 relative z-10">
+                    <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'full' ? 'text-white' : 'text-brand-900'}`}>Excellence Totale</h4>
+                    <div className={`text-[9px] font-bold space-y-1 ${activePack === 'full' ? 'text-brand-300' : 'text-slate-500'}`}>
+                      <p>• Les 16 Masterclass</p>
+                      <p>• Pilotage RH & Stock</p>
+                      <p>• CRM VIP & Cloud à Vie</p>
+                    </div>
+                    
+                    <div className={`pt-6 border-t ${activePack === 'full' ? 'border-white/10' : 'border-slate-50'}`}>
+                      <p className={`text-4xl font-black ${activePack === 'full' ? 'text-amber-400' : 'text-brand-900'}`}>15 000 F</p>
+                      <p className="text-[10px] font-black text-emerald-500 uppercase mt-1">Économie 5 500 F</p>
+                    </div>
+                  </div>
+              </button>
+
               <button onClick={() => setActivePack('crm')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'crm' ? 'bg-white border-amber-400 shadow-2xl ring-4 ring-amber-50' : 'bg-white border-slate-100 hover:border-amber-200'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'crm' ? 'bg-amber-400 text-white' : 'bg-amber-50 text-amber-500'}`}><Star className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -332,7 +365,7 @@ const Results: React.FC = () => {
                 <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                   {activePack !== 'none' ? (
                     <div className="p-6 bg-brand-900 text-white rounded-[2rem] shadow-xl relative overflow-hidden group">
-                       <Crown className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 rotate-12" />
+                       {activePack === 'full' ? <Gem className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 rotate-12" /> : <Crown className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 rotate-12" />}
                        <div className="flex justify-between items-center relative z-10">
                           <p className="text-sm font-black uppercase tracking-widest">{pricingData.label}</p>
                           <p className="text-xl font-black text-amber-400">{pricingData.total.toLocaleString()} F</p>
