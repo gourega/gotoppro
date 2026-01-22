@@ -26,7 +26,8 @@ import {
   Trash2,
   Tag,
   RefreshCw,
-  Filter
+  Filter,
+  UserPlus
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 
@@ -165,7 +166,7 @@ const Magasin: React.FC = () => {
               <button onClick={loadData} className="h-16 w-16 rounded-full bg-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/30 transition-all"><RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} /></button>
               <button 
                 onClick={() => view === 'inventory' ? setShowAddProductModal(true) : setShowAddSupplierModal(true)} 
-                className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all group"
+                className="h-16 w-16 rounded-full bg-brand-900 text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all group"
               ><Plus className="w-8 h-8 group-hover:rotate-90 transition-all" /></button>
            </div>
         </div>
@@ -266,6 +267,37 @@ const Magasin: React.FC = () => {
                  </div>
                  <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fournisseur</label><select value={newProd.supplierId} onChange={e => setNewProd({...newProd, supplierId: e.target.value})} className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 appearance-none"><option value="">-- Sélectionner --</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                  <button type="submit" disabled={saving} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-sky-600 transition-all">{saving ? <Loader2 className="animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer en Inventaire</button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {showAddSupplierModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-12 relative animate-in zoom-in-95 duration-300">
+              <button onClick={() => setShowAddSupplierModal(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-600"><X /></button>
+              <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-10">Fiche Fournisseur</h2>
+              <form onSubmit={handleAddSupplier} className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nom du fournisseur</label>
+                    <input type="text" value={newSupplier.name} onChange={e => setNewSupplier({...newSupplier, name: e.target.value})} className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900" placeholder="Ex: Grossiste Lumière" required />
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">WhatsApp / Téléphone</label>
+                    <input type="tel" value={newSupplier.phone} onChange={e => setNewSupplier({...newSupplier, phone: e.target.value})} className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900" placeholder="Ex: 0707881515" required />
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Catégorie</label>
+                    <select value={newSupplier.category} onChange={e => setNewSupplier({...newSupplier, category: e.target.value})} className="w-full px-8 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 appearance-none">
+                       <option value="Grossiste">Grossiste</option>
+                       <option value="Fabricant">Fabricant</option>
+                       <option value="Revendeur">Revendeur</option>
+                       <option value="Autre">Autre</option>
+                    </select>
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-5 rounded-2xl font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-black transition-all">
+                    {saving ? <Loader2 className="animate-spin" /> : <UserPlus className="w-5 h-5 text-brand-500" />} Enregistrer le Fournisseur
+                 </button>
               </form>
            </div>
         </div>
