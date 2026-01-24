@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 /* Fixed react-router-dom named export */
 import { useNavigate } from 'react-router-dom';
 import { DIAGNOSTIC_QUESTIONS } from '../constants';
-import { ChevronLeft, Info } from 'lucide-react';
+import { ChevronLeft, Info, AlertCircle } from 'lucide-react';
 
 const Diagnostic: React.FC = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -76,6 +75,14 @@ const Diagnostic: React.FC = () => {
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] text-[10rem] pointer-events-none italic font-serif leading-none select-none">?</div>
           
           <div className="relative z-10">
+            {/* Recommandation de sincérité - Mise en valeur et positionnement prioritaire */}
+            <div className="mb-6 flex items-center justify-center gap-2 animate-in slide-in-from-top-2 duration-1000">
+               <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+               <p className="text-[10px] text-amber-600 font-black uppercase tracking-[0.2em]">
+                 Soyez le plus sincère possible pour un résultat optimal
+               </p>
+            </div>
+
             <span className="inline-block px-4 py-1.5 bg-brand-50 text-brand-600 rounded-full text-[9px] font-black uppercase tracking-[0.3em] mb-8 shadow-sm border border-brand-100">
               {DIAGNOSTIC_QUESTIONS[currentIdx].category}
             </span>
@@ -100,12 +107,6 @@ const Diagnostic: React.FC = () => {
                 <span className="relative z-10">Non, pas encore</span>
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </button>
-            </div>
-            
-            <div className="mt-10 flex items-center justify-center gap-2 opacity-40">
-               <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
-                 Soyez le plus sincère possible pour un résultat optimal
-               </p>
             </div>
           </div>
         </div>
