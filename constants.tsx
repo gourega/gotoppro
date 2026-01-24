@@ -1,4 +1,3 @@
-
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
 // Ressources Visuelles
@@ -9,8 +8,8 @@ export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/stora
 // Partenaire Excellence : Salon Chez Raymond
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-logo.png";
 export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
-export const RAYMOND_ADDRESS = "Abidjan, Cocody Angré 7e Tranche";
-export const RAYMOND_PHONE = "+225 07 07 88 15 15";
+export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
+export const RAYMOND_PHONE = "+225 07 07 94 97 06";
 export const RAYMOND_STYLING_PHOTO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
 
 // Bio & Coordonnées Officielles (CANTIC THINK IA)
@@ -114,7 +113,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
     quiz_questions: [
       { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la cliente", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." },
-      { question: "Quelle est la 4ème étape cruciale du diagnostic ?", options: ["Le rinçage", "La prescription", "Le paiement"], correctAnswer: 1, explanation: "La prescription assure le suivi du soin à domicile et augmente le CA." },
+      { question: "Quelle est la 4ème étape cruciale du diagnostic ?", options: ["Le rinçage", "La prescription", "Le paiement"], correctAnswer: 1, explanation: "Le prescription assure le suivi du soin à domicile et augmente le CA." },
       { question: "Pourquoi toucher les cheveux pendant le diagnostic ?", options: ["Par habitude", "Pour évaluer la santé de la fibre", "Pour les démêler"], correctAnswer: 1, explanation: "Le toucher expert crédibilise votre recommandation de soin." }
     ],
     exercises: ["Faire 3 diagnostics assis aujourd'hui."],

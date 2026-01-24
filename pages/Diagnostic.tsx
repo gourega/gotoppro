@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 /* Fixed react-router-dom named export */
 import { useNavigate } from 'react-router-dom';
-import { DIAGNOSTIC_QUESTIONS } from '../constants';
-import { ChevronLeft, Info, AlertCircle } from 'lucide-react';
+import { DIAGNOSTIC_QUESTIONS, RAYMOND_LOGO, RAYMOND_ADDRESS, RAYMOND_PHONE } from '../constants';
+import { ChevronLeft, Info, AlertCircle, MapPin, Phone, Star } from 'lucide-react';
 
 const Diagnostic: React.FC = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -38,14 +38,38 @@ const Diagnostic: React.FC = () => {
           </button>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-2 tracking-tight">Audit de Performance</h1>
           
-          {/* Instructions text restored and highlighted */}
-          <p className="text-slate-500 font-medium text-sm md:text-base max-w-md mx-auto flex items-center justify-center gap-2">
+          <p className="text-slate-500 font-medium text-sm md:text-base max-w-md mx-auto flex items-center justify-center gap-2 mb-4">
             <Info className="w-4 h-4 text-brand-500 shrink-0" />
             Répondez aux questions pour obtenir votre plan d'action personnalisé.
           </p>
+
+          {/* Preuve Sociale : Salon Chez Raymond */}
+          <div className="inline-flex flex-col sm:flex-row items-center gap-3 px-6 py-3 bg-white rounded-3xl border border-slate-200 shadow-sm animate-in zoom-in-95 duration-1000 delay-300">
+             <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg overflow-hidden border border-brand-100 shadow-inner shrink-0">
+                   <img src={RAYMOND_LOGO} alt="Raymond" className="w-full h-full object-cover" />
+                </div>
+                <div className="text-left border-r border-slate-100 pr-4 mr-1">
+                   <p className="text-[8px] font-black text-brand-600 uppercase tracking-widest leading-none mb-1 flex items-center gap-1">
+                     <Star className="w-2 h-2 fill-current" /> Standard Excellence
+                   </p>
+                   <p className="text-[10px] font-bold text-slate-900 leading-none">Salon Chez Raymond</p>
+                </div>
+             </div>
+             <div className="flex items-center gap-4 text-slate-400">
+                <div className="flex items-center gap-1.5">
+                   <MapPin className="w-3 h-3 text-brand-500" />
+                   <span className="text-[9px] font-bold uppercase tracking-tighter">{RAYMOND_ADDRESS}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                   <Phone className="w-3 h-3 text-brand-500" />
+                   <span className="text-[9px] font-bold uppercase tracking-tighter">{RAYMOND_PHONE}</span>
+                </div>
+             </div>
+          </div>
         </div>
 
-        {/* Unified Progress Indicator - Placed right above the question */}
+        {/* Unified Progress Indicator */}
         <div className="w-full max-w-lg mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 px-4">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -71,11 +95,10 @@ const Diagnostic: React.FC = () => {
 
         {/* Question Card */}
         <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-8 md:p-14 border border-white text-center relative overflow-hidden animate-in zoom-in-95 duration-500 delay-200 w-full">
-          {/* Background decoration */}
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] text-[10rem] pointer-events-none italic font-serif leading-none select-none">?</div>
           
           <div className="relative z-10">
-            {/* Recommandation de sincérité - Mise en valeur et positionnement prioritaire */}
+            {/* Recommandation de sincérité */}
             <div className="mb-6 flex items-center justify-center gap-2 animate-in slide-in-from-top-2 duration-1000">
                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                <p className="text-[10px] text-amber-600 font-black uppercase tracking-[0.2em]">
