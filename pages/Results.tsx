@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Loader2, 
@@ -24,18 +25,17 @@ import {
   Pause,
   Headphones,
   Volume2,
-  // Add missing icons
   Users,
   Package
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
-import { TrainingModule, UserProfile } from '../types';
+import { TrainingModule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, getProfileByPhone, updateUserProfile, generateUUID, supabase } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Fonctions de décodage audio
+// Fonctions de décodage audio conformes aux directives Google GenAI
 function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -66,7 +66,7 @@ async function decodeAudioData(
 }
 
 const Results: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -196,6 +196,7 @@ const Results: React.FC = () => {
       .trim();
 
     try {
+      // Create new GoogleGenAI instance right before the call
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Tu es Coach Kita. Lis ce diagnostic stratégique de manière percutante, autoritaire et bienveillante pour ton gérant : ${cleanText.substring(0, 4000)}`;
       const response = await ai.models.generateContent({
@@ -256,7 +257,7 @@ const Results: React.FC = () => {
       let cleanPhone = regPhone.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-      let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
+      let pendingIds = activePack !== 'none' ? ["REQUEST_" + activePack.toUpperCase()] : cart.map(m => m.id);
       const existing = await getProfileByPhone(cleanPhone);
       if (existing) {
         await updateUserProfile(existing.uid, { establishmentName: regStoreName, firstName: userContext?.firstName || existing.firstName, isActive: existing.isActive, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
@@ -269,11 +270,14 @@ const Results: React.FC = () => {
   };
 
   const handleValidateEngagement = async () => {
-    if (!user) return setIsRegisterModalOpen(true);
+    if (!user) {
+      setIsRegisterModalOpen(true);
+      return;
+    }
     if (pricingData.total === 0) return;
     setLoading(true);
     try {
-      let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
+      let newPending = activePack !== 'none' ? ["REQUEST_" + activePack.toUpperCase()] : cart.map(m => m.id);
       await updateUserProfile(user.uid, { pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] });
       setRegStep('success');
       setIsRegisterModalOpen(true);
@@ -339,7 +343,7 @@ const Results: React.FC = () => {
               <button 
                 onClick={handlePlayAdvice}
                 disabled={isAudioLoading}
-                className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white animate-pulse' : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1'}`}
+                className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white animate-pulse' : 'bg-emerald-50 text-white hover:bg-emerald-600 hover:-translate-y-1'}`}
               >
                 {isAudioLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
                 {isPlaying ? "En lecture..." : "Écouter l'analyse"}
@@ -382,7 +386,7 @@ const Results: React.FC = () => {
            
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               <button onClick={() => setActivePack('full')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden col-span-1 sm:col-span-2 xl:col-span-1 ${activePack === 'full' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-amber-500 shadow-xl'}`}>
-                  <div className="absolute top-0 right-0 p-4"><Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /></div>
+                  <div className="absolute top-4 right-4"><Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'full' ? 'bg-amber-400 text-brand-900' : 'bg-brand-900 text-amber-400'}`}><Gem className="w-12 h-12" /></div>
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'full' ? 'text-white' : 'text-brand-900'}`}>Excellence Totale</h4>
@@ -406,7 +410,7 @@ const Results: React.FC = () => {
                   </div>
               </button>
               <button onClick={() => setActivePack('elite')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-brand-100 shadow-xl'}`}>
-                  <div className={`h-24 w-24 rounded-2.5rem flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
+                  <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
                     <div className={`text-[10px] font-bold space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
