@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DIAGNOSTIC_QUESTIONS, RAYMOND_LOGO, RAYMOND_ADDRESS, RAYMOND_PHONE } from '../constants';
-import { ChevronLeft, Info, AlertCircle, MapPin, Phone, Star, User, Sparkles, Scissors, UserCheck, Heart } from 'lucide-react';
+import { ChevronLeft, Info, AlertCircle, MapPin, Phone, Star, User, Sparkles, Scissors, UserCheck, Heart, ArrowRight } from 'lucide-react';
 
 const Diagnostic: React.FC = () => {
   const [showIntro, setShowIntro] = useState(true);
@@ -73,13 +73,13 @@ const Diagnostic: React.FC = () => {
                     onClick={() => setGender('M')}
                     className={`py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all ${gender === 'M' ? 'bg-brand-900 text-white border-brand-900 shadow-lg scale-105' : 'bg-slate-50 text-slate-400 border-transparent hover:border-brand-100'}`}
                   >
-                    Un Gérant
+                    Un Passionné
                   </button>
                   <button 
                     onClick={() => setGender('F')}
                     className={`py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all ${gender === 'F' ? 'bg-brand-900 text-white border-brand-900 shadow-lg scale-105' : 'bg-slate-50 text-slate-400 border-transparent hover:border-brand-100'}`}
                   >
-                    Une Gérante
+                    Une Passionnée
                   </button>
                 </div>
               </div>
@@ -227,9 +227,5 @@ const Diagnostic: React.FC = () => {
     </div>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-);
 
 export default Diagnostic;

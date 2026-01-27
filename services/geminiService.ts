@@ -61,45 +61,46 @@ export const generateStrategicAdvice = async (
 ) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const name = userContext?.firstName || "Gérant";
+  const name = userContext?.firstName || "Ami";
   const sibling = userContext?.gender === 'F' ? "petite sœur" : "petit frère";
-  const domain = userContext?.domain || "salon de beauté";
+  const passionLabel = userContext?.gender === 'F' ? "passionnée" : "passionné";
+  const domain = userContext?.domain || "beauté";
   
   let prompt = "";
   
   if (isPerfectScore) {
     prompt = `
       Rôle: Coach Kita, mentor d'élite de Go'Top Pro à Abidjan. 
-      Destinataire: ${name}, gérant(e) de ${domain}.
+      Destinataire: ${name}, ${passionLabel} de ${domain}.
       Ton: Direct, provocateur, visionnaire. Tu l'appelles "${sibling}".
       
       CONTEXTE : Le score au diagnostic est de 16/16.
-      MONNAIE : Franc CFA (FCFA) uniquement. JAMAIS d'Euro.
+      MONNAIE : Franc CFA (FCFA) uniquement.
       
       OBJECTIF : Lui faire comprendre que l'excellence actuelle est un plateau dangereux.
       
       STRUCTURE (Markdown) :
       1. **Attention**: Phrase choc sur le risque de la zone de confort.
       2. **Intérêt**: Pourquoi la maîtrise technique en ${domain} ne suffit plus.
-      3. **Désir**: Peins la vision du gérant-investisseur libre.
+      3. **Désir**: Peins la vision du leader libre et prospère.
       4. **Action**: Recommande le Pack Excellence Totale.
     `;
   } else {
     const pointsStr = negativePoints.join(", ");
     prompt = `
       Rôle: Coach Kita, mentor d'affaires expert d'Abidjan.
-      Destinataire: ${name}, ${sibling} gérant(e) de ${domain}.
+      Destinataire: ${name}, ${sibling} ${passionLabel} de ${domain}.
       Ton: "Grand frère" expert, sans filtre, autoritaire mais bienveillant.
       
-      SITUATION : Le gérant perd de l'argent sur : ${pointsStr}.
+      SITUATION : Ce gérant perd de l'argent sur : ${pointsStr}.
       MONNAIE : Franc CFA (FCFA) uniquement.
       
       OBJECTIF : Créer un sentiment d'urgence absolue lié à son métier de ${domain}.
       
       STRUCTURE (Markdown) :
-      1. **Attention**: Salue ${name} et parle des pertes invisibles dans son salon de ${domain}.
+      1. **Attention**: Salue ${name} et parle des pertes invisibles liées à la passion de la ${domain}.
       2. **Intérêt**: Explique comment l'absence de maîtrise sur ${pointsStr} détruit sa marge.
-      3. **Désir**: Décris la sérénité d'un gérant qui a une équipe autonome.
+      3. **Désir**: Décris la sérénité d'un professionnel qui maîtrise ses chiffres autant que son art.
       4. **Action**: Recommande les modules spécifiques pour stopper l'hémorragie.
     `;
   }
