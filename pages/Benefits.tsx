@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown } from 'lucide-react';
+import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles } from 'lucide-react';
 
 const Benefits: React.FC = () => {
   return (
@@ -44,46 +44,70 @@ const Benefits: React.FC = () => {
       {/* Pricing Tiers Section */}
       <section className="py-32 bg-brand-900 text-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-6 relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-4">Investissement Stratégique</h2>
             <h3 className="text-4xl md:text-5xl font-serif font-bold mb-6">Des tarifs adaptés à votre ambition</h3>
-            <p className="text-slate-400 max-w-2xl mx-auto font-medium">Pas d'abonnement. Vous achetez vos modules une fois, vous les gardez pour toujours. Plus vous apprenez, moins vous payez.</p>
+            <p className="text-slate-400 max-w-2xl mx-auto font-medium">Pas d'abonnement. Vous achetez vos outils une fois, vous les gardez pour toujours.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-stretch">
+            {/* PACK SOLO */}
             <PriceCard 
-              tier="Solo" 
+              tier="Pack Solo" 
               price="500" 
               unit="par module" 
-              discount="Tarif standard" 
-              desc="Idéal pour résoudre un problème précis immédiatement." 
+              discount="À la carte" 
+              desc={
+                <div className="space-y-1 font-bold text-[10px] uppercase tracking-tighter opacity-90">
+                  <p className="text-emerald-400">• -20% dès 5 modules</p>
+                  <p className="text-emerald-400">• -30% dès 9 modules</p>
+                  <p className="text-emerald-400">• -50% dès 13 modules</p>
+                </div>
+              }
               icon={<Star className="w-6 h-6" />}
             />
+
+            {/* PACK EXCELLENCE TOTALE - LE TOP */}
             <PriceCard 
-              tier="Ambition" 
-              price="400" 
-              unit="par module" 
-              discount="-20% dès 5 modules" 
-              desc="Pour ceux qui veulent stabiliser les bases du salon." 
-              icon={<TrendingUp className="w-6 h-6" />}
+              tier="Excellence Totale" 
+              price="15 000" 
+              unit="Full Option" 
+              discount="Prestige Ultime" 
+              desc="Accès intégral : Les 16 Masterclass + Packs RH & Stock + CRM VIP + Sauvegarde Cloud à vie." 
+              icon={<Gem className="w-8 h-8" />}
               highlight
+              featured
             />
+
+            {/* ACADÉMIE ÉLITE */}
             <PriceCard 
-              tier="Performance" 
-              price="350" 
-              unit="par module" 
-              discount="-30% dès 9 modules" 
-              desc="Le choix des gérants qui visent la croissance rapide." 
-              icon={<Zap className="w-6 h-6" />}
-            />
-            <PriceCard 
-              tier="Empire" 
-              price="250" 
-              unit="par module" 
-              discount="-50% dès 13 modules" 
-              desc="L'accès total pour dominer votre marché local." 
+              tier="Académie Élite" 
+              price="10 000" 
+              unit="Accès Savoir" 
+              discount="Masterclass" 
+              desc="Les 16 Masterclass incluses, tous les certificats d'Excellence et la sauvegarde Cloud à vie." 
               icon={<Crown className="w-6 h-6" />}
+            />
+
+            {/* PERFORMANCE RH */}
+            <PriceCard 
+              tier="Performance RH" 
+              price="5 000" 
+              unit="Pack Outils" 
+              discount="Staff & CRM" 
+              desc="Calcul automatique des commissions, suivi productivité staff et Fichier Client VIP (CRM)." 
+              icon={<Users className="w-6 h-6" />}
+            />
+
+            {/* STOCK EXPERT */}
+            <PriceCard 
+              tier="Stock Expert" 
+              price="5 000" 
+              unit="Pack Outils" 
+              discount="Zéro Perte" 
+              desc="Inventaire valorisé, alertes ruptures automatiques et gestion simplifiée des fournisseurs." 
+              icon={<Package className="w-6 h-6" />}
             />
           </div>
 
@@ -147,12 +171,19 @@ const BenefitCard = ({ icon, title, desc }: any) => (
   </div>
 );
 
-const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight }: any) => (
-  <div className={`p-10 rounded-[3rem] border transition-all duration-500 flex flex-col h-full ${
+const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight, featured }: any) => (
+  <div className={`p-10 rounded-[3rem] border transition-all duration-500 flex flex-col h-full relative overflow-hidden ${
     highlight 
-    ? 'bg-brand-500 border-brand-400 shadow-2xl shadow-brand-500/20 -translate-y-4 text-white' 
+    ? 'bg-brand-500 border-brand-400 shadow-2xl shadow-brand-500/20 lg:-translate-y-4 text-white' 
     : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-  }`}>
+  } ${featured ? 'ring-4 ring-amber-400/30' : ''}`}>
+    
+    {featured && (
+      <div className="absolute top-4 right-4 animate-pulse">
+        <Sparkles className="w-5 h-5 text-amber-400" />
+      </div>
+    )}
+
     <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-8 ${highlight ? 'bg-white text-brand-500' : 'bg-white/10 text-brand-500'}`}>
       {icon}
     </div>
@@ -165,7 +196,7 @@ const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight }: any) 
     <p className={`text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1.5 rounded-lg inline-block w-fit ${highlight ? 'bg-brand-600' : 'bg-emerald-500/20 text-emerald-400'}`}>
       {discount}
     </p>
-    <p className="text-sm font-medium leading-relaxed mb-8 flex-grow opacity-80">{desc}</p>
+    <div className="text-sm font-medium leading-relaxed mb-8 flex-grow opacity-80">{desc}</div>
     <Link to="/quiz" className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center transition-all ${
       highlight ? 'bg-white text-brand-900 hover:bg-slate-100' : 'bg-white/10 text-white hover:bg-white/20'
     }`}>
