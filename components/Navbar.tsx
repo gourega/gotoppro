@@ -5,7 +5,6 @@ import { BRAND_LOGO, KITA_LOGO } from '../constants';
 import { 
   LogOut, 
   LayoutDashboard, 
-  Wallet, 
   Menu, 
   X, 
   Eye, 
@@ -23,6 +22,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
+    setMenuOpen(false);
     navigate('/');
   };
 
@@ -38,12 +38,12 @@ const Navbar: React.FC = () => {
     <nav className="bg-white border-b border-slate-100 sticky top-0 z-[100] h-20 flex items-center shadow-sm w-full">
       <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
         
-        {/* Logo & Version - Sécurisé */}
+        {/* Logo & Version */}
         <Link to="/" className="flex items-center gap-3 shrink-0">
           <div className="h-10 w-10 shrink-0 overflow-hidden">
             <img src={BRAND_LOGO} alt="Go'Top Pro" className="h-full w-full object-contain" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col hidden xs:flex">
             <span className="text-lg font-black text-brand-900 leading-none flex items-center gap-2">
               Go'Top Pro
               <div className="flex items-center bg-emerald-500 px-2 py-0.5 rounded-full gap-1">
@@ -55,7 +55,7 @@ const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation (links) */}
         <div className="hidden xl:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link 
@@ -71,25 +71,34 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Right Section (Actions) */}
+        <div className="flex items-center gap-2 md:gap-3">
+          
           {user && (
             <Link 
-              to="/caisse" 
-              className="hidden lg:flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-amber-400 text-brand-900 shadow-lg shadow-amber-200 hover:scale-105 transition-all"
+              to="/dashboard" 
+              title="Tableau de bord" 
+              className={`p-3 rounded-xl transition-colors ${location.pathname === '/dashboard' ? 'bg-brand-50 text-brand-600' : 'text-slate-400 hover:bg-slate-50'}`}
             >
-              <img src={KITA_LOGO} className="h-4 w-4 object-contain" alt="" />
-              Ma Caisse KITA
+              <LayoutDashboard className="w-5 h-5" />
             </Link>
           )}
 
           {user ? (
-            <div className="flex items-center gap-2 pl-3 border-l border-slate-100">
-              <Link to="/dashboard" title="Tableau de bord" className={`p-2 rounded-xl transition-colors ${location.pathname === '/dashboard' ? 'bg-brand-50 text-brand-600' : 'text-slate-400 hover:bg-slate-50'}`}>
-                <LayoutDashboard className="w-5 h-5" />
-              </Link>
-              
-              <div className="h-10 w-10 rounded-xl overflow-hidden border-2 border-emerald-500 hover:scale-110 transition-transform mx-1 cursor-pointer" onClick={() => navigate('/profile')}>
+            <>
+              {/* BOUTON QUITTER - TOUJOURS VISIBLE (MÊME SUR MOBILE) */}
+              <button 
+                onClick={handleLogout} 
+                className="flex items-center gap-2 px-3 py-2 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 shadow-sm active:scale-95 transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Quitter</span>
+              </button>
+
+              <div 
+                className="h-10 w-10 rounded-xl overflow-hidden border-2 border-emerald-500 cursor-pointer hidden sm:block" 
+                onClick={() => navigate('/profile')}
+              >
                 <img 
                   src={user.photoURL || `https://ui-avatars.com/api/?name=${user.firstName}&background=10b981&color=fff`} 
                   alt="Profil" 
@@ -98,39 +107,31 @@ const Navbar: React.FC = () => {
               </div>
 
               {user.isAdmin && (
-                <Link to="/admin" title="Administration" className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-all">
+                <Link to="/admin" title="Administration" className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-all hidden md:block">
                   <ShieldAlert className="w-5 h-5" />
                 </Link>
               )}
-
-              {/* Bouton de déconnexion accentué sur Desktop */}
-              <button 
-                onClick={handleLogout} 
-                className="hidden md:flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100 ml-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-[8px] font-black uppercase tracking-widest">Quitter</span>
-              </button>
-            </div>
+            </>
           ) : (
             <Link to="/login" className="bg-brand-900 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-800 transition-all shadow-md">
               Connexion
             </Link>
           )}
 
+          {/* Hamburger pour les liens restants */}
           <button 
             onClick={() => setMenuOpen(!menuOpen)} 
-            className="xl:hidden p-2 text-slate-900 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+            className="xl:hidden p-3 text-slate-900 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
           >
-            {menuOpen ? <X /> : <Menu />}
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu (Overlay) */}
       {menuOpen && (
         <div className="fixed inset-0 top-20 bg-slate-900/95 backdrop-blur-md z-[150] xl:hidden">
-          <div className="bg-white w-full shadow-2xl p-8 flex flex-col gap-6 rounded-b-[3rem] max-h-[85vh] overflow-y-auto">
+          <div className="bg-white w-full shadow-2xl p-8 flex flex-col gap-6 rounded-b-[3rem] max-h-[85vh] overflow-y-auto animate-in slide-in-from-top duration-300">
             {user && (
               <Link to="/caisse" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-4 p-6 bg-amber-400 text-brand-900 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl">
                 <img src={KITA_LOGO} className="h-6 w-6 object-contain" alt="" /> MA CAISSE KITA
@@ -138,29 +139,26 @@ const Navbar: React.FC = () => {
             )}
             
             <div className="grid grid-cols-1 gap-2">
+              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-4 mb-2">Navigation</p>
               {navLinks.map((link) => (
-                <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-4 font-black text-xs uppercase tracking-widest text-slate-600 border-b border-slate-50">
-                  <div className="p-2 bg-slate-100 rounded-lg text-brand-600">{link.icon || <Sparkles className="w-4 h-4"/>}</div>
+                <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className={`flex items-center gap-4 p-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${location.pathname === link.to ? 'bg-brand-50 text-brand-600' : 'text-slate-600 border-b border-slate-50'}`}>
+                  <div className={`p-2 rounded-lg ${location.pathname === link.to ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{link.icon || <Sparkles className="w-4 h-4"/>}</div>
                   {link.label}
                 </Link>
               ))}
               
-              {user?.isAdmin && (
-                <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-4 font-black text-xs uppercase tracking-widest text-brand-600 bg-brand-50 rounded-xl">
-                  <div className="p-2 bg-brand-100 rounded-lg"><ShieldAlert className="w-4 h-4"/></div>
-                  Pilotage Admin
+              {user && (
+                <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-5 font-black text-xs uppercase tracking-widest text-slate-600 border-b border-slate-50">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-400"><LayoutDashboard className="w-4 h-4"/></div>
+                  Mon Profil Gérant
                 </Link>
               )}
 
-              {/* BOUTON DÉCONNEXION MOBILE - TRÈS VISIBLE */}
-              {user && (
-                <button
-                  onClick={() => { handleLogout(); setMenuOpen(false); }}
-                  className="mt-8 flex items-center justify-center gap-4 p-6 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-xs uppercase tracking-widest border-2 border-rose-100 hover:bg-rose-100 transition-all shadow-sm"
-                >
-                  <LogOut className="w-6 h-6" />
-                  DÉCONNEXION (SORTIE)
-                </button>
+              {user?.isAdmin && (
+                <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-5 font-black text-xs uppercase tracking-widest text-brand-600 bg-brand-50 rounded-2xl mt-4">
+                  <div className="p-2 bg-brand-100 rounded-lg"><ShieldAlert className="w-4 h-4"/></div>
+                  Pilotage Admin
+                </Link>
               )}
             </div>
           </div>
