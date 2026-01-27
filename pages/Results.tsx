@@ -51,6 +51,11 @@ const Results: React.FC = () => {
   const [regPhone, setRegPhone] = useState('');
   const [regStoreName, setRegStoreName] = useState('');
 
+  const userContext = useMemo(() => {
+    const raw = localStorage.getItem('temp_user_context');
+    return raw ? JSON.parse(raw) : null;
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const rechargeId = params.get('recharge');
@@ -63,8 +68,8 @@ const Results: React.FC = () => {
     else if (packParam === 'crm') setActivePack('crm');
 
     let initialCart: TrainingModule[] = [];
-    const raw = localStorage.getItem('temp_quiz_results');
-    const results = raw ? JSON.parse(raw) : null;
+    const rawResults = localStorage.getItem('temp_quiz_results');
+    const results = rawResults ? JSON.parse(rawResults) : null;
     
     if (rechargeId) {
       const moduleToRecharge = TRAINING_CATALOG.find(m => m.id === rechargeId);
@@ -84,7 +89,12 @@ const Results: React.FC = () => {
           const negativeTexts = results.filter((r: any) => !r.answer).map((r: any) => 
             DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text
           ).filter(Boolean) as string[];
-          const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
+          
+          const advice = await generateStrategicAdvice(
+            negativeTexts, 
+            negativeTexts.length === 0,
+            userContext
+          );
           setAiAdvice(advice ?? null);
         } catch (err) {
           setAiAdvice("L'analyse du Mentor est temporairement indisponible.");
@@ -97,7 +107,7 @@ const Results: React.FC = () => {
       setLoadingAdvice(false);
       setAiAdvice("Préparez votre parcours vers l'Excellence.");
     }
-  }, [location.search, user?.purchasedModuleIds]);
+  }, [location.search, user?.purchasedModuleIds, userContext]);
 
   const pricingData = useMemo(() => {
     // PACK EXCELLENCE TOTALE (FULL)
@@ -116,7 +126,6 @@ const Results: React.FC = () => {
     if (activePack === 'elite') {
       const ownedCount = user?.purchasedModuleIds?.length || 0;
       const loyaltyCredit = ownedCount * 500;
-      // Prix de base 10 000, moins 500 par module acquis, minimum 2000 F pour frais techniques
       const finalPrice = Math.max(2000, 10000 - loyaltyCredit);
       
       return { 
@@ -170,6 +179,7 @@ const Results: React.FC = () => {
       if (existing) {
         await updateUserProfile(existing.uid, { 
           establishmentName: regStoreName, 
+          firstName: userContext?.firstName || existing.firstName,
           isActive: existing.isActive,
           pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
         });
@@ -179,7 +189,7 @@ const Results: React.FC = () => {
           phoneNumber: cleanPhone, 
           pinCode: '1234', 
           establishmentName: regStoreName, 
-          firstName: 'Gérant', 
+          firstName: userContext?.firstName || 'Gérant', 
           lastName: 'Elite', 
           isActive: false, 
           role: 'CLIENT', 
@@ -241,7 +251,7 @@ const Results: React.FC = () => {
           </div>
           <div className="text-center md:text-left text-white">
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">Plan de <span className="text-brand-500 italic">Succès</span></h1>
-            <p className="text-slate-300 text-lg opacity-90 max-w-2xl">J'ai analysé vos besoins. Voici le catalogue pour bâtir votre empire rentable.</p>
+            <p className="text-slate-300 text-lg opacity-90 max-w-2xl">J'ai analysé tes besoins, {userContext?.firstName || 'Gérant'}. Voici le catalogue pour ton salon de {userContext?.domain || 'beauté'}.</p>
           </div>
         </div>
       </div>
@@ -298,7 +308,6 @@ const Results: React.FC = () => {
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
                     <div className={`text-[10px] font-bold space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
                     
-                    {/* Badge Déduction Fidélité si le gérant possède déjà des modules */}
                     {activePack === 'elite' && pricingData.isLoyaltyUpgrade && (
                       <div className="bg-amber-400 text-brand-900 px-3 py-1 rounded-full text-[8px] font-black uppercase flex items-center gap-1 mx-auto mt-2 animate-bounce">
                         <Gift className="w-3 h-3" /> Prix Fidélité (-{pricingData.loyaltyCredit} F)
@@ -385,7 +394,6 @@ const Results: React.FC = () => {
                 <div className="space-y-3 mb-10 pt-8 border-t border-slate-100">
                    <div className="flex justify-between items-center text-slate-400"><span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span><span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span></div>
                    
-                   {/* Affichage de la déduction fidélité ou remise standard */}
                    {pricingData.savings > 0 && (
                      <div className="flex justify-between items-center text-emerald-500">
                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
