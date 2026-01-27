@@ -10,7 +10,7 @@ export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1
 export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
 export const RAYMOND_PHONE = "+225 07 07 94 97 06";
-export const RAYMOND_STYLING_PHOTO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
+export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/RAYMOND_LOGO.jpg";
 
 // Bio & Coordonnées Officielles (CANTIC THINK IA)
 export const COACH_KITA_FULL_NAME = "Ouréga Kouassi Goblé";
@@ -171,7 +171,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     strategic_mantra: "Un shampoing bâclé est une expérience client ratée.",
     quiz_questions: [
       { question: "Quelle attitude au bac ?", options: ["Discuter", "Silence et massage", "Demander si elle va bien"], correctAnswer: 1, explanation: "Le silence favorise la relaxation." },
-      { question: "Comment savoir si le cheveu est bien rincé ?", options: ["Au toucher gras", "Quand il crisse sous les doigts", "À la couleur de l'eau"], correctAnswer: 1, explanation: "Un cheveu qui crisse est parfaitement débarrassé des résidus." },
+      { question: "Comme savoir si le cheveu est bien rincé ?", options: ["Au toucher gras", "Quand il crisse sous les doigts", "À la couleur de l'eau"], correctAnswer: 1, explanation: "Un cheveu qui crisse est parfaitement débarrassé des résidus." },
       { question: "Où se place la main lors du massage ?", options: ["Sur les yeux", "Aux points de tension (nuque, tempes)", "Sur le front"], correctAnswer: 1, explanation: "Masser les points de tension libère les endorphines du bien-être." }
     ],
     exercises: [],
