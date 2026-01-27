@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Loader2, 
@@ -13,25 +13,57 @@ import {
   Tag,
   MinusCircle,
   AlertCircle,
-  Database,
-  Users,
-  Package,
   Star,
-  Cloud,
   ShieldCheck,
   TrendingUp,
-  Target,
-  Smartphone,
   Award,
   Sparkles,
   Gift,
-  Gem
+  Gem,
+  Play,
+  Pause,
+  Headphones,
+  Volume2,
+  // Add missing icons
+  Users,
+  Package
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule, UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, getProfileByPhone, updateUserProfile, generateUUID, supabase } from '../services/supabase';
 import { generateStrategicAdvice } from '../services/geminiService';
+import { GoogleGenAI, Modality } from "@google/genai";
+
+// Fonctions de décodage audio
+function decodeBase64(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function decodeAudioData(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
+): Promise<AudioBuffer> {
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
+  }
+  return buffer;
+}
 
 const Results: React.FC = () => {
   const { user } = useAuth();
@@ -50,6 +82,13 @@ const Results: React.FC = () => {
   const [regStep, setRegStep] = useState<'form' | 'success'>('form');
   const [regPhone, setRegPhone] = useState('');
   const [regStoreName, setRegStoreName] = useState('');
+
+  // États Audio
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const cachedAudioBufferRef = useRef<AudioBuffer | null>(null);
 
   const userContext = useMemo(() => {
     const raw = localStorage.getItem('temp_user_context');
@@ -107,112 +146,126 @@ const Results: React.FC = () => {
       setLoadingAdvice(false);
       setAiAdvice("Préparez votre parcours vers l'Excellence.");
     }
+
+    return () => stopAudio();
   }, [location.search, user?.purchasedModuleIds, userContext]);
 
-  const pricingData = useMemo(() => {
-    // PACK EXCELLENCE TOTALE (FULL)
-    if (activePack === 'full') {
-      return { 
-        total: 15000, 
-        label: 'Pack Excellence Totale', 
-        rawTotal: 20500, 
-        savings: 5500, 
-        discountPercent: 27, 
-        progress: 100 
-      };
+  const stopAudio = () => {
+    if (sourceNodeRef.current) {
+      try { sourceNodeRef.current.stop(); } catch (e) {}
+      sourceNodeRef.current = null;
+    }
+    setIsPlaying(false);
+  };
+
+  const playBuffer = (buffer: AudioBuffer) => {
+    if (!audioContextRef.current) return;
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContextRef.current.destination);
+    source.onended = () => setIsPlaying(false);
+    sourceNodeRef.current = source;
+    source.start(0);
+    setIsPlaying(true);
+  };
+
+  const handlePlayAdvice = async () => {
+    if (isPlaying) {
+      stopAudio();
+      return;
+    }
+    if (!aiAdvice) return;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    }
+    if (audioContextRef.current.state === 'suspended') await audioContextRef.current.resume();
+    
+    if (cachedAudioBufferRef.current) {
+      playBuffer(cachedAudioBufferRef.current);
+      return;
     }
 
-    // Calcul pour le PACK ELITE avec déduction fidélité
+    setIsAudioLoading(true);
+    // Nettoyage du texte pour la lecture
+    const cleanText = aiAdvice
+      .replace(/### \d+\. /g, '')
+      .replace(/\*\*/g, '')
+      .replace(/---|#|\*|\[|\]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `Tu es Coach Kita. Lis ce diagnostic stratégique de manière percutante, autoritaire et bienveillante pour ton gérant : ${cleanText.substring(0, 4000)}`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+        },
+      });
+      const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      const base64Audio = audioPart?.inlineData?.data;
+      if (base64Audio && audioContextRef.current) {
+        const audioBuffer = await decodeAudioData(decodeBase64(base64Audio), audioContextRef.current, 24000, 1);
+        cachedAudioBufferRef.current = audioBuffer;
+        playBuffer(audioBuffer);
+      }
+    } catch (err) {
+      console.error("Audio error:", err);
+    } finally {
+      setIsAudioLoading(false);
+    }
+  };
+
+  const pricingData = useMemo(() => {
+    if (activePack === 'full') {
+      return { total: 15000, label: 'Pack Excellence Totale', rawTotal: 20500, savings: 5500, discountPercent: 27, progress: 100 };
+    }
     if (activePack === 'elite') {
       const ownedCount = user?.purchasedModuleIds?.length || 0;
       const loyaltyCredit = ownedCount * 500;
       const finalPrice = Math.max(2000, 10000 - loyaltyCredit);
-      
-      return { 
-        total: finalPrice, 
-        label: 'Pack Académie Élite', 
-        rawTotal: 10000, 
-        savings: 10000 - finalPrice, 
-        discountPercent: Math.round(((10000 - finalPrice) / 10000) * 100), 
-        progress: 100,
-        isLoyaltyUpgrade: ownedCount > 0,
-        loyaltyCredit
-      };
+      return { total: finalPrice, label: 'Pack Académie Élite', rawTotal: 10000, savings: 10000 - finalPrice, discountPercent: Math.round(((10000 - finalPrice) / 10000) * 100), progress: 100, isLoyaltyUpgrade: ownedCount > 0, loyaltyCredit };
     }
-
     if (activePack === 'performance') return { total: 5000, label: 'Pack RH Performance', rawTotal: 5000, savings: 0, discountPercent: 0, progress: 0 };
     if (activePack === 'stock') return { total: 5000, label: 'Pack Stock Expert', rawTotal: 5000, savings: 0, discountPercent: 0, progress: 0 };
     if (activePack === 'crm') return { total: 500, label: 'Abonnement CRM VIP', rawTotal: 500, savings: 0, discountPercent: 0, progress: 0 };
 
     const count = cart.length;
     if (count === 0) return { total: 0, label: 'Panier vide', rawTotal: 0, savings: 0, discountPercent: 0, progress: 0 };
-    
     let unitPrice = 500;
     let discountPercent = 0;
     if (count >= 13) { unitPrice = 250; discountPercent = 50; } 
     else if (count >= 9) { unitPrice = 350; discountPercent = 30; } 
     else if (count >= 5) { unitPrice = 400; discountPercent = 20; } 
-
     const total = count === 16 ? 10000 : count * unitPrice;
     const rawTotal = count * 500;
-    const progress = (count / 16) * 100;
-    
-    return { total, label: `${count} module(s)`, rawTotal, savings: rawTotal - total, discountPercent, progress };
+    return { total, label: `${count} module(s)`, rawTotal, savings: rawTotal - total, discountPercent, progress: (count / 16) * 100 };
   }, [cart, activePack, user?.purchasedModuleIds]);
 
   const handleRegisterAndValidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regPhone || !regStoreName) return;
     if (!supabase) return setDbError("Service indisponible.");
-    
     setLoading(true);
     setDbError(null);
-
     try {
       let cleanPhone = regPhone.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-      
       let pendingIds = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
       const existing = await getProfileByPhone(cleanPhone);
-      
       if (existing) {
-        await updateUserProfile(existing.uid, { 
-          establishmentName: regStoreName, 
-          firstName: userContext?.firstName || existing.firstName,
-          isActive: existing.isActive,
-          pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] 
-        });
+        await updateUserProfile(existing.uid, { establishmentName: regStoreName, firstName: userContext?.firstName || existing.firstName, isActive: existing.isActive, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
       } else {
-        const newUser: any = { 
-          uid: generateUUID(), 
-          phoneNumber: cleanPhone, 
-          pinCode: '1234', 
-          establishmentName: regStoreName, 
-          firstName: userContext?.firstName || 'Gérant', 
-          lastName: 'Elite', 
-          isActive: false, 
-          role: 'CLIENT', 
-          isAdmin: false,
-          isPublic: true,
-          isKitaPremium: false,
-          hasPerformancePack: false,
-          hasStockPack: false,
-          pendingModuleIds: pendingIds, 
-          badges: [], 
-          purchasedModuleIds: [],
-          actionPlan: [],
-          referralCount: 0,
-          createdAt: new Date().toISOString()
-        };
+        const newUser: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: '1234', establishmentName: regStoreName, firstName: userContext?.firstName || 'Gérant', lastName: 'Elite', isActive: false, role: 'CLIENT', isAdmin: false, isPublic: true, isKitaPremium: false, hasPerformancePack: false, hasStockPack: false, pendingModuleIds: pendingIds, badges: [], purchasedModuleIds: [], actionPlan: [], referralCount: 0, createdAt: new Date().toISOString() };
         await saveUserProfile(newUser);
       }
       setRegStep('success');
-    } catch (err: any) { 
-      setDbError("Échec de la validation. Vérifiez votre connexion.");
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (err: any) { setDbError("Échec de la validation."); } finally { setLoading(false); }
   };
 
   const handleValidateEngagement = async () => {
@@ -221,16 +274,10 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? [`REQUEST_${activePack.toUpperCase()}`] : cart.map(m => m.id);
-      await updateUserProfile(user.uid, { 
-        pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] 
-      });
+      await updateUserProfile(user.uid, { pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] });
       setRegStep('success');
       setIsRegisterModalOpen(true);
-    } catch (err: any) { 
-      setDbError("Erreur lors de la mise à jour.");
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (err: any) { setDbError("Erreur lors de la mise à jour."); } finally { setLoading(false); }
   };
 
   const toggleModuleInCart = (mod: TrainingModule) => {
@@ -239,6 +286,26 @@ const Results: React.FC = () => {
       const exists = prev.find(m => m.id === mod.id);
       if (exists) return prev.filter(m => m.id !== mod.id);
       return [...prev, mod];
+    });
+  };
+
+  // Parser simple pour un rendu Markdown propre sans symboles
+  const renderCleanAdvice = (text: string) => {
+    return text.split('\n').map((line, i) => {
+      if (line.startsWith('###')) {
+        const title = line.replace(/### \d+\. /g, '').replace(/### /g, '');
+        return <h3 key={i} className="text-2xl font-serif font-bold text-brand-900 mt-10 mb-6 flex items-center gap-3"><div className="h-6 w-1.5 bg-brand-500 rounded-full"></div>{title}</h3>;
+      }
+      if (line.trim() === '---') return <hr key={i} className="my-10 border-slate-100" />;
+      if (line.trim() === '') return <br key={i} />;
+      
+      let processedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900 font-black">$1</strong>');
+      if (line.trim().startsWith('* ')) {
+        processedLine = processedLine.replace(/^\* /, '');
+        return <div key={i} className="flex items-start gap-4 mb-4 p-5 bg-slate-50 rounded-2xl border border-slate-100"><Star className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" /><p className="m-0 text-slate-700 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: processedLine }} /></div>;
+      }
+
+      return <p key={i} className="text-lg text-slate-600 leading-relaxed mb-6 font-medium" dangerouslySetInnerHTML={{ __html: processedLine }} />;
     });
   };
 
@@ -259,10 +326,51 @@ const Results: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
         
         {/* SECTION 1: AUDIT DE PERFORMANCE COACH KITA */}
-        <section className="bg-white rounded-[3.5rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
-          <div className="flex items-center gap-4 mb-10"><Zap className="text-brand-600" /><h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Analyse de Coach Kita</h2></div>
-          {loadingAdvice ? <div className="flex flex-col items-center py-12 gap-4"><Loader2 className="animate-spin text-brand-600" /><p className="text-[10px] font-black text-slate-400 uppercase">Consultation du Mentor...</p></div> : 
-          <div className="prose-kita whitespace-pre-wrap font-medium animate-in fade-in duration-700" dangerouslySetInnerHTML={{ __html: aiAdvice?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900">$1</strong>') || '' }} />}
+        <section className="bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Analyse de Coach Kita</h2>
+            </div>
+            
+            {aiAdvice && !loadingAdvice && (
+              <button 
+                onClick={handlePlayAdvice}
+                disabled={isAudioLoading}
+                className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white animate-pulse' : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1'}`}
+              >
+                {isAudioLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                {isPlaying ? "En lecture..." : "Écouter l'analyse"}
+              </button>
+            )}
+          </div>
+
+          {loadingAdvice ? (
+            <div className="flex flex-col items-center py-20 gap-6">
+              <div className="relative">
+                <Loader2 className="w-12 h-12 animate-spin text-brand-600" />
+                <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full"></div>
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Consultation du Mentor...</p>
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-700 max-w-4xl mx-auto">
+              {aiAdvice ? renderCleanAdvice(aiAdvice) : <p className="text-slate-400 italic">Analyse non disponible.</p>}
+              
+              {/* Barre WhatsApp Simulation pendant la lecture */}
+              {isPlaying && (
+                <div className="mt-12 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-6 animate-in slide-in-from-bottom-4">
+                   <Volume2 className="text-emerald-500 w-6 h-6 animate-bounce" />
+                   <div className="flex-grow h-1.5 bg-emerald-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 w-full origin-left animate-[loading_60s_linear]"></div>
+                   </div>
+                   <span className="text-[10px] font-black text-emerald-600 uppercase">Kita Voice</span>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* SECTION 2: LES PACKS EXPERTS */}
@@ -273,8 +381,6 @@ const Results: React.FC = () => {
            </div>
            
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              
-              {/* PACK EXCELLENCE TOTALE (FULL OPTION) */}
               <button onClick={() => setActivePack('full')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden col-span-1 sm:col-span-2 xl:col-span-1 ${activePack === 'full' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-amber-500 shadow-xl'}`}>
                   <div className="absolute top-0 right-0 p-4"><Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'full' ? 'bg-amber-400 text-brand-900' : 'bg-brand-900 text-amber-400'}`}><Gem className="w-12 h-12" /></div>
@@ -285,14 +391,12 @@ const Results: React.FC = () => {
                       <p>• Pilotage RH & Stock</p>
                       <p>• CRM VIP & Cloud à Vie</p>
                     </div>
-                    
                     <div className={`pt-6 border-t ${activePack === 'full' ? 'border-white/10' : 'border-slate-50'}`}>
                       <p className={`text-4xl font-black ${activePack === 'full' ? 'text-amber-400' : 'text-brand-900'}`}>15 000 F</p>
                       <p className="text-[10px] font-black text-emerald-500 uppercase mt-1">Économie 5 500 F</p>
                     </div>
                   </div>
               </button>
-
               <button onClick={() => setActivePack('crm')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'crm' ? 'bg-white border-amber-400 shadow-2xl ring-4 ring-amber-50' : 'bg-white border-slate-100 hover:border-amber-200'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'crm' ? 'bg-amber-400 text-white' : 'bg-amber-50 text-amber-500'}`}><Star className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -301,25 +405,16 @@ const Results: React.FC = () => {
                     <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">500 F</p></div>
                   </div>
               </button>
-
               <button onClick={() => setActivePack('elite')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden ${activePack === 'elite' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-brand-100 shadow-xl'}`}>
                   <div className={`h-24 w-24 rounded-2.5rem flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
                     <div className={`text-[10px] font-bold space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
-                    
-                    {activePack === 'elite' && pricingData.isLoyaltyUpgrade && (
-                      <div className="bg-amber-400 text-brand-900 px-3 py-1 rounded-full text-[8px] font-black uppercase flex items-center gap-1 mx-auto mt-2 animate-bounce">
-                        <Gift className="w-3 h-3" /> Prix Fidélité (-{pricingData.loyaltyCredit} F)
-                      </div>
-                    )}
-
                     <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
-                      <p className={`text-4xl font-black ${activePack === 'elite' ? 'text-amber-400' : 'text-brand-900'}`}>{activePack === 'elite' ? pricingData.total.toLocaleString() : '10 000'} F</p>
+                      <p className={`text-4xl font-black ${activePack === 'elite' ? pricingData.total.toLocaleString() : '10 000'} F</p>
                     </div>
                   </div>
               </button>
-
               <button onClick={() => setActivePack('performance')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'performance' ? 'bg-white border-emerald-400 shadow-2xl ring-4 ring-emerald-50' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'performance' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}><Users className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -328,7 +423,6 @@ const Results: React.FC = () => {
                     <div className="pt-4 border-t border-slate-50"><p className="text-2xl font-black text-slate-900">5000 F</p></div>
                   </div>
               </button>
-
               <button onClick={() => setActivePack('stock')} className={`p-8 rounded-[3rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full ${activePack === 'stock' ? 'bg-white border-sky-400 shadow-2xl ring-4 ring-sky-50' : 'bg-white border-slate-100 hover:border-sky-200'}`}>
                   <div className={`h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-lg mb-6 transition-transform group-hover:scale-110 ${activePack === 'stock' ? 'bg-sky-500 text-white' : 'bg-sky-50 text-sky-600'}`}><Package className="w-10 h-10" /></div>
                   <div className="space-y-4">
@@ -393,16 +487,12 @@ const Results: React.FC = () => {
 
                 <div className="space-y-3 mb-10 pt-8 border-t border-slate-100">
                    <div className="flex justify-between items-center text-slate-400"><span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span><span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span></div>
-                   
                    {pricingData.savings > 0 && (
                      <div className="flex justify-between items-center text-emerald-500">
-                       <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                         <Tag className="w-3 h-3" /> {activePack === 'elite' && (pricingData as any).isLoyaltyUpgrade ? "Déduction modules acquis" : `Remise (-${pricingData.discountPercent}%)`}
-                       </span>
+                       <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> {activePack === 'elite' && (pricingData as any).isLoyaltyUpgrade ? "Déduction modules" : `Remise (-${pricingData.discountPercent}%)`}</span>
                        <span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span>
                      </div>
                    )}
-
                    <div className="flex justify-between items-end"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total à régler</p><div className="flex items-baseline gap-1"><p className="text-5xl font-black text-brand-900 tracking-tighter">{pricingData.total.toLocaleString()}</p><span className="text-sm font-bold opacity-30 uppercase">F</span></div></div>
                 </div>
 
