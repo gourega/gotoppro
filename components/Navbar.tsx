@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,18 +35,20 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-white border-b border-slate-100 sticky top-0 z-[100] h-20 flex items-center shadow-sm">
+    <nav className="bg-white border-b border-slate-100 sticky top-0 z-[100] h-20 flex items-center shadow-sm w-full">
       <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
         
-        {/* Logo & Version */}
+        {/* Logo & Version - Sécurisé */}
         <Link to="/" className="flex items-center gap-3 shrink-0">
-          <img src={BRAND_LOGO} alt="Go'Top Pro" className="h-10 w-10 object-contain" />
+          <div className="h-10 w-10 shrink-0 overflow-hidden">
+            <img src={BRAND_LOGO} alt="Go'Top Pro" className="h-full w-full object-contain" />
+          </div>
           <div className="flex flex-col">
             <span className="text-lg font-black text-brand-900 leading-none flex items-center gap-2">
               Go'Top Pro
-              <div className="flex items-center bg-emerald-500 px-2 py-0.5 rounded-full gap-1 animate-pulse">
+              <div className="flex items-center bg-emerald-500 px-2 py-0.5 rounded-full gap-1">
                 <img src={KITA_LOGO} className="h-2.5 w-2.5 object-contain brightness-0 invert" alt="K" />
-                <span className="text-white text-[7px] font-black">KITA V2.5</span>
+                <span className="text-white text-[7px] font-black uppercase">V2.5</span>
               </div>
             </span>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Excellence & Beauté</span>
@@ -88,13 +89,13 @@ const Navbar: React.FC = () => {
                 <LayoutDashboard className="w-5 h-5" />
               </Link>
               
-              <Link to="/profile" title="Mon Profil" className="h-10 w-10 rounded-xl overflow-hidden border-2 border-emerald-500 hover:scale-110 transition-transform mx-1">
+              <div className="h-10 w-10 rounded-xl overflow-hidden border-2 border-emerald-500 hover:scale-110 transition-transform mx-1 cursor-pointer" onClick={() => navigate('/profile')}>
                 <img 
                   src={user.photoURL || `https://ui-avatars.com/api/?name=${user.firstName}&background=10b981&color=fff`} 
                   alt="Profil" 
                   className="w-full h-full object-cover" 
                 />
-              </Link>
+              </div>
 
               {user.isAdmin && (
                 <Link to="/admin" title="Administration" className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition-all">
