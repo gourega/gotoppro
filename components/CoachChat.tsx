@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { createCoachChat } from '../services/geminiService';
@@ -68,8 +67,8 @@ const CoachChat: React.FC = () => {
                 <img src={COACH_KITA_AVATAR} alt="Coach" className="w-full h-full object-cover" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-brand-400">Assistant IA</p>
-                <p className="font-serif font-bold">Coach Kita</p>
+                <p className="text-xs font-black uppercase tracking-widest text-brand-400">Assistant Coach Kita</p>
+                <p className="font-serif font-bold">Le Mentor Privé</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition">

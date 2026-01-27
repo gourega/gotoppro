@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -116,7 +115,7 @@ const Dashboard: React.FC = () => {
         await refreshProfile();
       }
     } catch (err) {
-      alert("L'IA est occupée. Réessayez dans un instant.");
+      alert("Le Mentor est occupé. Réessayez dans un instant.");
     } finally {
       setLoadingAudit(false);
     }
@@ -221,7 +220,7 @@ const Dashboard: React.FC = () => {
            </div>
         </section>
 
-        {/* SECTION 1 : VISION STRATÉGIQUE IA */}
+        {/* SECTION 1 : VISION STRATÉGIQUE DU MENTOR */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-l-[12px] border-indigo-500 relative overflow-hidden group w-full">
            <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none transition-transform duration-1000">Vision</div>
            <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">

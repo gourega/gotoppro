@@ -1,4 +1,3 @@
-// Add React import to avoid UMD global reference error
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -88,7 +87,7 @@ const Results: React.FC = () => {
           const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
           setAiAdvice(advice ?? null);
         } catch (err) {
-          setAiAdvice("L'analyse stratégique est temporairement indisponible.");
+          setAiAdvice("L'analyse du Mentor est temporairement indisponible.");
         } finally {
           setLoadingAdvice(false);
         }
@@ -249,10 +248,10 @@ const Results: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
         
-        {/* SECTION 1: AUDIT STRATÉGIQUE */}
+        {/* SECTION 1: AUDIT DE PERFORMANCE COACH KITA */}
         <section className="bg-white rounded-[3.5rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
-          <div className="flex items-center gap-4 mb-10"><Zap className="text-brand-600" /><h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Audit Stratégique IA</h2></div>
-          {loadingAdvice ? <div className="flex flex-col items-center py-12 gap-4"><Loader2 className="animate-spin text-brand-600" /><p className="text-[10px] font-black text-slate-400 uppercase">Consultation IA...</p></div> : 
+          <div className="flex items-center gap-4 mb-10"><Zap className="text-brand-600" /><h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Analyse de Coach Kita</h2></div>
+          {loadingAdvice ? <div className="flex flex-col items-center py-12 gap-4"><Loader2 className="animate-spin text-brand-600" /><p className="text-[10px] font-black text-slate-400 uppercase">Consultation du Mentor...</p></div> : 
           <div className="prose-kita whitespace-pre-wrap font-medium animate-in fade-in duration-700" dangerouslySetInnerHTML={{ __html: aiAdvice?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900">$1</strong>') || '' }} />}
         </section>
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown } from 'lucide-react';
@@ -21,7 +20,7 @@ const Benefits: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8">
           <BenefitCard 
             icon={<Zap className="w-8 h-8 text-amber-500" />}
-            title="Audit IA de Performance"
+            title="Audit de Performance Coach Kita"
             desc="Notre diagnostic unique analyse 16 points clés de votre business. En 10 minutes, vous savez exactement où vous perdez de l'argent et comment le récupérer."
           />
           <BenefitCard 
@@ -36,8 +35,8 @@ const Benefits: React.FC = () => {
           />
           <BenefitCard 
             icon={<Users className="w-8 h-8 text-indigo-500" />}
-            title="Accompagnement 24h/7j"
-            desc="L'IA Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace."
+            title="Accompagnement Mentoré"
+            desc="Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace de chat privé."
           />
         </div>
       </section>

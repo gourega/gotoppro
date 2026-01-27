@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -120,7 +119,7 @@ const AuditMiroir: React.FC = () => {
           CONTEXTE MONÉTAIRE CRITIQUE : Utilise exclusivement le Franc CFA (FCFA). Ne mentionne JAMAIS l'Euro. Parle en termes de rentabilité locale.
           
           1. Analyse son problème avec empathie et autorité stratégique.
-          2. Structure ton diagnostic en 3 parties claires : [L'URGENCE] (ce qui bloque son CA), [L'OPPORTUNITÉ] (le gain potentiel en FCFA), [LE PLAN D'ACTION].
+          2. Structure ton diagnostic en 3 parties claires : [L'URGENCE] (ce qui bloque son CA), [L'OPPORTUNITÉ] (le gain potentiel en FCFA), [LE PLAN d'ACTION].
           3. Recommande UN SEUL module du catalogue Go'Top Pro à la fin (mentionne son titre exact).
           
           TON : Prestigieux, inspirant, direct. Utilise Markdown. 
@@ -197,7 +196,7 @@ const AuditMiroir: React.FC = () => {
                </div>
                <div className="flex flex-col items-center gap-3">
                   <Target className="w-6 h-6 text-white" />
-                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Précision IA</span>
+                  <span className="text-[8px] font-black uppercase text-white tracking-widest">Précision du Mentor</span>
                </div>
                <div className="flex flex-col items-center gap-3">
                   <Trophy className="w-6 h-6 text-white" />

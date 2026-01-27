@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE, RAYMOND_STYLING_PHOTO } from '../constants';
 import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart, ExternalLink, MapPin, Phone } from 'lucide-react';
@@ -159,7 +158,7 @@ const Vision: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-16">
             {[
               { title: "Rigueur", desc: "L'hygiène et l'organisation comme socle de confiance absolue.", icon: "💎" },
-              { title: "Innovation", desc: "L'IA au service d'un diagnostic infaillible et rapide.", icon: "⚡" },
+              { title: "Innovation", desc: "La technologie au service d'un diagnostic infaillible et rapide.", icon: "⚡" },
               { title: "Rentabilité", desc: "Transformer chaque minute travaillée en profit réel et mesurable.", icon: "📈" }
             ].map((item, i) => (
               <div key={i} className="text-center space-y-6">
