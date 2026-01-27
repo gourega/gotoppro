@@ -15,15 +15,10 @@ import {
   MinusCircle,
   AlertCircle,
   Star,
-  ShieldCheck,
-  TrendingUp,
-  Award,
   Sparkles,
-  Gift,
   Gem,
   Play,
   Pause,
-  Headphones,
   Volume2,
   Users,
   Package
@@ -187,7 +182,6 @@ const Results: React.FC = () => {
     }
 
     setIsAudioLoading(true);
-    // Nettoyage du texte pour la lecture
     const cleanText = aiAdvice
       .replace(/### \d+\. /g, '')
       .replace(/\*\*/g, '')
@@ -196,17 +190,18 @@ const Results: React.FC = () => {
       .trim();
 
     try {
-      // Create new GoogleGenAI instance right before the call
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Tu es Coach Kita. Lis ce diagnostic stratégique de manière percutante, autoritaire et bienveillante pour ton gérant : ${cleanText.substring(0, 4000)}`;
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: prompt }] }],
+        // Fix: Use correct object format for contents
+        contents: { parts: [{ text: prompt }] },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
         },
       });
+      // Fix: Access candidates properly to extract audio part
       const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
       const base64Audio = audioPart?.inlineData?.data;
       if (base64Audio && audioContextRef.current) {
@@ -293,12 +288,16 @@ const Results: React.FC = () => {
     });
   };
 
-  // Parser simple pour un rendu Markdown propre sans symboles
   const renderCleanAdvice = (text: string) => {
     return text.split('\n').map((line, i) => {
       if (line.startsWith('###')) {
         const title = line.replace(/### \d+\. /g, '').replace(/### /g, '');
-        return <h3 key={i} className="text-2xl font-serif font-bold text-brand-900 mt-10 mb-6 flex items-center gap-3"><div className="h-6 w-1.5 bg-brand-500 rounded-full"></div>{title}</h3>;
+        return (
+          <h3 key={i} className="text-2xl font-serif font-bold text-brand-900 mt-10 mb-6 flex items-center gap-3">
+            <div className="h-6 w-1.5 bg-brand-500 rounded-full"></div>
+            {title}
+          </h3>
+        );
       }
       if (line.trim() === '---') return <hr key={i} className="my-10 border-slate-100" />;
       if (line.trim() === '') return <br key={i} />;
@@ -306,9 +305,13 @@ const Results: React.FC = () => {
       let processedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-brand-900 font-black">$1</strong>');
       if (line.trim().startsWith('* ')) {
         processedLine = processedLine.replace(/^\* /, '');
-        return <div key={i} className="flex items-start gap-4 mb-4 p-5 bg-slate-50 rounded-2xl border border-slate-100"><Star className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" /><p className="m-0 text-slate-700 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: processedLine }} /></div>;
+        return (
+          <div key={i} className="flex items-start gap-4 mb-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+            <Star className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
+            <p className="m-0 text-slate-700 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: processedLine }} />
+          </div>
+        );
       }
-
       return <p key={i} className="text-lg text-slate-600 leading-relaxed mb-6 font-medium" dangerouslySetInnerHTML={{ __html: processedLine }} />;
     });
   };
@@ -328,8 +331,6 @@ const Results: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
-        
-        {/* SECTION 1: AUDIT DE PERFORMANCE COACH KITA */}
         <section className="bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 relative overflow-hidden border border-slate-100">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-4">
@@ -338,37 +339,30 @@ const Results: React.FC = () => {
               </div>
               <h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Analyse de Coach Kita</h2>
             </div>
-            
             {aiAdvice && !loadingAdvice && (
               <button 
                 onClick={handlePlayAdvice}
                 disabled={isAudioLoading}
-                className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white animate-pulse' : 'bg-emerald-50 text-white hover:bg-emerald-600 hover:-translate-y-1'}`}
+                className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white animate-pulse' : 'bg-emerald-50 text-white hover:bg-emerald-600'}`}
               >
-                {isAudioLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                {isAudioLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 {isPlaying ? "En lecture..." : "Écouter l'analyse"}
               </button>
             )}
           </div>
-
           {loadingAdvice ? (
             <div className="flex flex-col items-center py-20 gap-6">
-              <div className="relative">
-                <Loader2 className="w-12 h-12 animate-spin text-brand-600" />
-                <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full"></div>
-              </div>
+              <Loader2 className="w-12 h-12 animate-spin text-brand-600" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Consultation du Mentor...</p>
             </div>
           ) : (
             <div className="animate-in fade-in duration-700 max-w-4xl mx-auto">
               {aiAdvice ? renderCleanAdvice(aiAdvice) : <p className="text-slate-400 italic">Analyse non disponible.</p>}
-              
-              {/* Barre WhatsApp Simulation pendant la lecture */}
               {isPlaying && (
                 <div className="mt-12 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-6 animate-in slide-in-from-bottom-4">
                    <Volume2 className="text-emerald-500 w-6 h-6 animate-bounce" />
                    <div className="flex-grow h-1.5 bg-emerald-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 w-full origin-left animate-[loading_60s_linear]"></div>
+                      <div className="h-full bg-emerald-500 w-full origin-left animate-pulse"></div>
                    </div>
                    <span className="text-[10px] font-black text-emerald-600 uppercase">Kita Voice</span>
                 </div>
@@ -377,27 +371,22 @@ const Results: React.FC = () => {
           )}
         </section>
 
-        {/* SECTION 2: LES PACKS EXPERTS */}
         <section className="space-y-8">
            <div className="text-center">
               <h3 className="text-[10px] font-black text-brand-500 uppercase tracking-[0.5em] mb-3">Recommandations Prioritaires</h3>
               <p className="text-2xl font-serif font-bold text-slate-900">Solutions Clés en Main</p>
            </div>
-           
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              <button onClick={() => setActivePack('full')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden col-span-1 sm:col-span-2 xl:col-span-1 ${activePack === 'full' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-amber-500 shadow-xl'}`}>
+              <button onClick={() => setActivePack('full')} className={`p-10 rounded-[3.5rem] border-2 transition-all text-center flex flex-col items-center justify-between group h-full relative overflow-hidden ${activePack === 'full' ? 'bg-brand-900 border-brand-900 shadow-2xl scale-105' : 'bg-white border-amber-500 shadow-xl'}`}>
                   <div className="absolute top-4 right-4"><Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /></div>
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'full' ? 'bg-amber-400 text-brand-900' : 'bg-brand-900 text-amber-400'}`}><Gem className="w-12 h-12" /></div>
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'full' ? 'text-white' : 'text-brand-900'}`}>Excellence Totale</h4>
                     <div className={`text-[9px] font-bold space-y-1 ${activePack === 'full' ? 'text-brand-300' : 'text-slate-500'}`}>
-                      <p>• Les 16 Masterclass</p>
-                      <p>• Pilotage RH & Stock</p>
-                      <p>• CRM VIP & Cloud à Vie</p>
+                      <p>• Les 16 Masterclass</p><p>• Pilotage RH & Stock</p><p>• CRM VIP & Cloud à Vie</p>
                     </div>
                     <div className={`pt-6 border-t ${activePack === 'full' ? 'border-white/10' : 'border-slate-50'}`}>
                       <p className={`text-4xl font-black ${activePack === 'full' ? 'text-amber-400' : 'text-brand-900'}`}>15 000 F</p>
-                      <p className="text-[10px] font-black text-emerald-500 uppercase mt-1">Économie 5 500 F</p>
                     </div>
                   </div>
               </button>
@@ -413,7 +402,7 @@ const Results: React.FC = () => {
                   <div className={`h-24 w-24 rounded-[2.5rem] flex items-center justify-center shadow-xl mb-8 transition-transform group-hover:scale-110 ${activePack === 'elite' ? 'bg-brand-500 text-white' : 'bg-brand-900 text-brand-500'}`}><Crown className="w-12 h-12" /></div>
                   <div className="space-y-4 relative z-10">
                     <h4 className={`text-lg font-black uppercase leading-tight ${activePack === 'elite' ? 'text-white' : 'text-brand-900'}`}>Académie Élite</h4>
-                    <div className={`text-[10px] font-bold space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
+                    <div className={`text-[10px] font-bold text-slate-500 space-y-1 ${activePack === 'elite' ? 'text-brand-300' : 'text-slate-500'}`}><p>• 16 Modules Complets</p><p>• Sauvegarde Cloud</p></div>
                     <div className={`pt-6 border-t ${activePack === 'elite' ? 'border-white/10' : 'border-slate-50'}`}>
                       <p className={`text-4xl font-black ${activePack === 'elite' ? pricingData.total.toLocaleString() : '10 000'} F</p>
                     </div>
@@ -438,7 +427,6 @@ const Results: React.FC = () => {
            </div>
         </section>
 
-        {/* SECTION 3: CATALOGUE & PANIER */}
         <div className="grid lg:grid-cols-12 gap-10">
           <div className="lg:col-span-7 space-y-8">
             <div className="flex items-center gap-4 px-4"><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Catalogue de Formation</h3><div className="h-px bg-slate-200 flex-grow"></div></div>
@@ -456,7 +444,7 @@ const Results: React.FC = () => {
                           </div>
                           <h4 className="text-lg font-bold text-slate-900 mb-1">{module.title}</h4>
                         </div>
-                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${isOwned ? 'text-emerald-500' : 'bg-slate-50 text-slate-300 group-hover:bg-brand-500 group-hover:text-white'}`}>{isOwned ? <CheckCircle2 /> : <Plus />}</div>
+                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${isOwned ? 'text-emerald-500' : 'bg-slate-50 text-slate-300'}`}>{isOwned ? <CheckCircle2 /> : <Plus />}</div>
                       </div>
                     </button>
                   );
@@ -471,7 +459,6 @@ const Results: React.FC = () => {
                 <div className="space-y-4 mb-8 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                   {activePack !== 'none' ? (
                     <div className="p-6 bg-brand-900 text-white rounded-[2rem] shadow-xl relative overflow-hidden group">
-                       {activePack === 'full' ? <Gem className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 rotate-12" /> : <Crown className="absolute -right-4 -bottom-4 w-16 h-16 opacity-10 rotate-12" />}
                        <div className="flex justify-between items-center relative z-10">
                           <p className="text-sm font-black uppercase tracking-widest">{pricingData.label}</p>
                           <p className="text-xl font-black text-amber-400">{pricingData.total.toLocaleString()} F</p>
@@ -493,7 +480,7 @@ const Results: React.FC = () => {
                    <div className="flex justify-between items-center text-slate-400"><span className="text-[10px] font-bold uppercase tracking-widest">Sous-total</span><span className="text-sm font-black">{pricingData.rawTotal.toLocaleString()} F</span></div>
                    {pricingData.savings > 0 && (
                      <div className="flex justify-between items-center text-emerald-500">
-                       <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> {activePack === 'elite' && (pricingData as any).isLoyaltyUpgrade ? "Déduction modules" : `Remise (-${pricingData.discountPercent}%)`}</span>
+                       <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Tag className="w-3 h-3" /> Remise</span>
                        <span className="text-sm font-black">-{pricingData.savings.toLocaleString()} F</span>
                      </div>
                    )}
@@ -509,7 +496,6 @@ const Results: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL RÉGISTRATION */}
       {isRegisterModalOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
           <div className="bg-white w-full max-w-lg rounded-[4rem] p-10 md:p-14 animate-in zoom-in-95 relative overflow-hidden">
@@ -517,7 +503,7 @@ const Results: React.FC = () => {
               <>
                 <button onClick={() => setIsRegisterModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors" disabled={loading}><X /></button>
                 <h2 className="text-3xl font-serif font-bold text-center mb-10">Ouvrir mon Accès</h2>
-                {dbError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-bold mb-6 flex items-center gap-2 animate-in shake"><AlertCircle className="w-4 h-4" />{dbError}</div>}
+                {dbError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-bold mb-6 flex items-center gap-2"><AlertCircle className="w-4 h-4" />{dbError}</div>}
                 <form onSubmit={handleRegisterAndValidate} className="space-y-6">
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" placeholder="0544869313" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
                   <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de l'Etablissement</label><input type="text" placeholder="Salon Elite" value={regStoreName} onChange={e => setRegStoreName(e.target.value)} className="w-full px-8 py-5 rounded-2xl bg-slate-50 border-none outline-none font-bold focus:ring-2 focus:ring-brand-500/20" required disabled={loading} /></div>
