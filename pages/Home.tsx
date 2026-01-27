@@ -9,7 +9,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full bg-white">
-      {/* Hero Section - Épurée */}
+      {/* Hero Section - Épurée & Personnalisée Coach Kita */}
       <section className="relative min-h-[600px] lg:min-h-[calc(100vh-80px)] flex items-center py-20 overflow-hidden bg-[#0c4a6e]">
         <div 
           className="absolute inset-0 z-0 bg-[#0c4a6e]"
@@ -33,7 +33,7 @@ const Home: React.FC = () => {
               Propulsez votre salon <br className="hidden md:block" /> vers <span className="text-brand-500 italic font-normal">l'excellence</span>
             </h1>
             
-            {/* Processus de diagnostic clair */}
+            {/* Processus de diagnostic clair - Mentions Coach Kita */}
             <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 md:p-10 rounded-[3rem] mb-12 max-w-4xl w-full animate-in fade-in slide-in-from-bottom duration-1000">
                <p className="text-slate-200 text-sm md:text-base font-black mb-8 uppercase tracking-[0.2em] opacity-80">Votre parcours vers la rentabilité :</p>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
@@ -47,8 +47,8 @@ const Home: React.FC = () => {
                   <div className="flex items-start gap-4">
                      <div className="h-8 w-8 rounded-full bg-brand-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-lg shadow-brand-500/20">2</div>
                      <div>
-                        <p className="text-white text-xs font-black uppercase tracking-wider mb-1">Avis du Mentor IA</p>
-                        <p className="text-slate-300 text-[11px] leading-relaxed font-medium">Recevez une analyse immédiate de vos fuites de cash.</p>
+                        <p className="text-white text-xs font-black uppercase tracking-wider mb-1">Avis de Coach Kita</p>
+                        <p className="text-slate-300 text-[11px] leading-relaxed font-medium">Recevez l'analyse immédiate du Mentor sur vos fuites de cash.</p>
                      </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -146,13 +146,13 @@ const Home: React.FC = () => {
               },
               { 
                 icon: <TrendingUp className="w-10 h-10" />, 
-                title: "Formations IA", 
-                desc: "Des modules de micro-learning audio et texte générés par IA, focalisés sur les réalités du marché ivoirien." 
+                title: "Méthode Coach Kita", 
+                desc: "Des modules de micro-learning audio et texte conçus avec le Mentor, focalisés sur les réalités du marché ivoirien." 
               },
               { 
                 icon: <Users className="w-10 h-10" />, 
-                title: "Vision Coach", 
-                desc: "L'expertise de Coach Kita condensée pour piloter vos équipes et transformer votre management au quotidien." 
+                title: "Vision Mentor", 
+                desc: "L'expertise d'une vie condensée pour piloter vos équipes et transformer votre management au quotidien." 
               }
             ].map((feature, i) => (
               <div key={i} className="p-10 md:p-16 rounded-[4rem] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-3xl hover:-translate-y-2 transition-all duration-500 group flex flex-col items-center md:items-start text-center md:text-left">
