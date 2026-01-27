@@ -103,8 +103,13 @@ const Navbar: React.FC = () => {
                 </Link>
               )}
 
-              <button onClick={handleLogout} title="Déconnexion" className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                <LogOut className="w-5 h-5" />
+              {/* Bouton de déconnexion accentué sur Desktop */}
+              <button 
+                onClick={handleLogout} 
+                className="hidden md:flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100 ml-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-[8px] font-black uppercase tracking-widest">Quitter</span>
               </button>
             </div>
           ) : (
@@ -125,12 +130,13 @@ const Navbar: React.FC = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="fixed inset-0 top-20 bg-slate-900/95 backdrop-blur-md z-[150] xl:hidden">
-          <div className="bg-white w-full shadow-2xl p-8 flex flex-col gap-6 rounded-b-[3rem]">
+          <div className="bg-white w-full shadow-2xl p-8 flex flex-col gap-6 rounded-b-[3rem] max-h-[85vh] overflow-y-auto">
             {user && (
               <Link to="/caisse" onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-4 p-6 bg-amber-400 text-brand-900 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl">
                 <img src={KITA_LOGO} className="h-6 w-6 object-contain" alt="" /> MA CAISSE KITA
               </Link>
             )}
+            
             <div className="grid grid-cols-1 gap-2">
               {navLinks.map((link) => (
                 <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-4 font-black text-xs uppercase tracking-widest text-slate-600 border-b border-slate-50">
@@ -138,11 +144,23 @@ const Navbar: React.FC = () => {
                   {link.label}
                 </Link>
               ))}
+              
               {user?.isAdmin && (
                 <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 p-4 font-black text-xs uppercase tracking-widest text-brand-600 bg-brand-50 rounded-xl">
                   <div className="p-2 bg-brand-100 rounded-lg"><ShieldAlert className="w-4 h-4"/></div>
                   Pilotage Admin
                 </Link>
+              )}
+
+              {/* BOUTON DÉCONNEXION MOBILE - TRÈS VISIBLE */}
+              {user && (
+                <button
+                  onClick={() => { handleLogout(); setMenuOpen(false); }}
+                  className="mt-8 flex items-center justify-center gap-4 p-6 bg-rose-50 text-rose-600 rounded-[2rem] font-black text-xs uppercase tracking-widest border-2 border-rose-100 hover:bg-rose-100 transition-all shadow-sm"
+                >
+                  <LogOut className="w-6 h-6" />
+                  DÉCONNEXION (SORTIE)
+                </button>
               )}
             </div>
           </div>
