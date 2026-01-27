@@ -7,6 +7,7 @@ export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/stora
 
 // Partenaire Excellence : Salon Chez Raymond
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-logo.png";
+export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
 export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
 export const RAYMOND_PHONE = "+225 07 07 94 97 06";
@@ -158,7 +159,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 2,
     lesson_content: `
       <h2>1. Le rituel sensoriel Kita : déconnexion totale</h2>
-      <p>Le passage au bac est le seul moment où la cliente ferme les yeux. Si vous parlez des potins à ce moment, vous gâchez tout.</p>
+      <p>Le passage au bac est le seul moment où la clinique ferme les yeux. Si vous parlez des potins à ce moment, vous gâchez tout.</p>
       <blockquote>« Le massage crânien n'est pas un bonus, c'est l'âme du prestige. »</blockquote>
       <p>Pratiquez la règle du silence. Ne parlez que pour la température de l'eau. Utilisez des mouvements lents et profonds.</p>
       <h2>2. L'expertise technique : émulsion et rinçage</h2>

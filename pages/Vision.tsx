@@ -1,5 +1,5 @@
 import React from 'react';
-import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE, RAYMOND_STYLING_PHOTO } from '../constants';
+import { COACH_KITA_AVATAR, RAYMOND_LOGO, RAYMOND_PORTRAIT, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_PHONE, COACH_KITA_BIO, COACH_KITA_SLOGAN, COACH_KITA_TITLE, RAYMOND_STYLING_PHOTO } from '../constants';
 import { Target, Sparkles, Award, Quote, History, ShieldCheck, Heart, ExternalLink, MapPin, Phone } from 'lucide-react';
 
 const Vision: React.FC = () => {
@@ -121,7 +121,7 @@ const Vision: React.FC = () => {
                 <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-8xl font-serif italic group-hover:scale-110 transition-transform">Ambassadeur</div>
                 <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
                   <div className="h-40 w-40 rounded-[2rem] overflow-hidden border-4 border-brand-500 shadow-xl flex-shrink-0">
-                    <img src={RAYMOND_LOGO} alt="M. Raymond Koffi" className="w-full h-full object-cover" />
+                    <img src={RAYMOND_PORTRAIT} alt="M. Raymond Kouami Koffi" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-6 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-3">
