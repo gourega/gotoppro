@@ -8,8 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "pnpm run build && wrangler pages deploy dist --project-name gotoppro",
-    "login": "wrangler login --no-browser"
+    "deploy": "pnpm run build && npx wrangler pages deploy ./dist --project-name=gotoppro",
+    "login": "npx wrangler login --no-browser"
   },
   "dependencies": {
     "@google/genai": "1.34.0",
