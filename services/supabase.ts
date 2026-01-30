@@ -2,12 +2,26 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+// Accès direct pour permettre à Vite de faire le remplacement de texte (Define)
+// On tente d'abord process.env (injecté par Vite), puis import.meta.env (standard Vite)
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL || "").trim();
+const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || "").trim();
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
-  : null;
+const getSafeSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
+    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides.");
+    return null;
+  }
+  try {
+    const cleanUrl = supabaseUrl.replace(/\/$/, "");
+    return createClient(cleanUrl, supabaseAnonKey);
+  } catch (e) {
+    console.error("Go'Top Pro [Supabase]: Échec d'initialisation du client.");
+    return null;
+  }
+};
+
+export const supabase = getSafeSupabaseClient();
 
 export const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -17,9 +31,6 @@ export const generateUUID = () => {
   });
 };
 
-/**
- * Mappe les données de la DB vers l'interface UserProfile de l'application.
- */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
@@ -32,6 +43,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     establishmentName: data.establishmentName || data.establishment_name || '',
     photoURL: data.photoURL || data.photo_url || '',
     bio: data.bio || '',
+    adminNotes: data.admin_notes || data.adminNotes || '',
     employeeCount: data.employeeCount || data.employee_count || 0,
     yearsOfExistence: data.yearsOfExistence || data.years_of_existence || 0,
     openingYear: data.openingYear || data.opening_year || 0,
@@ -45,6 +57,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
     crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
     strategicAudit: data.strategicAudit || data.strategic_audit || '',
+    marketingCredits: data.marketingCredits ?? data.marketing_credits ?? 3,
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
@@ -56,12 +69,8 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-/**
- * Mappe les champs Frontend vers les colonnes Database.
- */
 const mapProfileToDB = (profile: Partial<UserProfile>) => {
   const dbData: any = {};
-  
   if (profile.uid !== undefined) dbData.uid = profile.uid;
   if (profile.phoneNumber !== undefined) dbData.phoneNumber = profile.phoneNumber;
   if (profile.pinCode !== undefined) dbData.pinCode = profile.pinCode;
@@ -71,6 +80,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.establishmentName !== undefined) dbData.establishmentName = profile.establishmentName;
   if (profile.photoURL !== undefined) dbData.photoURL = profile.photoURL;
   if (profile.bio !== undefined) dbData.bio = profile.bio;
+  if (profile.adminNotes !== undefined) dbData.admin_notes = profile.adminNotes;
   if (profile.employeeCount !== undefined) dbData.employeeCount = profile.employeeCount;
   if (profile.yearsOfExistence !== undefined) dbData.yearsOfExistence = profile.yearsOfExistence;
   if (profile.openingYear !== undefined) dbData.openingYear = profile.openingYear;
@@ -84,6 +94,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.hasStockPack !== undefined) dbData.hasStockPack = profile.hasStockPack;
   if (profile.crmExpiryDate !== undefined) dbData.crmExpiryDate = profile.crmExpiryDate;
   if (profile.strategicAudit !== undefined) dbData.strategicAudit = profile.strategicAudit;
+  if (profile.marketingCredits !== undefined) dbData.marketing_credits = profile.marketingCredits;
   if (profile.badges !== undefined) dbData.badges = profile.badges;
   if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
   if (profile.pendingModuleIds !== undefined) dbData.pendingModuleIds = profile.pendingModuleIds;
@@ -92,7 +103,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.createdAt !== undefined) dbData.createdAt = profile.createdAt;
   if (profile.progress !== undefined) dbData.progress = profile.progress;
   if (profile.attempts !== undefined) dbData.attempts = profile.attempts;
-
   return dbData;
 };
 
@@ -101,28 +111,21 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
-
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`)
-      .maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
     if (error) return null;
     return mapProfileFromDB(data);
-  } catch (err) {
-    return null;
-  }
+  } catch (err) { return null; }
 };
 
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
-  const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
+  const { data } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
   return mapProfileFromDB(data);
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) throw new Error("Supabase non connecté.");
+  if (!supabase) return { success: true, warning: "Local only" };
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
   if (error) throw error;
@@ -146,20 +149,10 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
-    id: t.id, 
-    type: t.type, 
-    amount: t.amount, 
-    label: t.label, 
-    category: t.category,
-    paymentMethod: t.payment_method, 
-    date: t.date, 
-    staffName: t.staff_name,
-    commissionRate: t.commission_rate, 
-    isCredit: t.is_credit, 
-    clientId: t.client_id, 
-    productId: t.product_id,
-    discount: t.discount || 0,
-    originalAmount: t.original_amount || t.amount
+    id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
+    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
+    productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
   }));
 };
 
@@ -167,21 +160,11 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   if (!supabase || !userId) return null;
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
-    id: newId, 
-    user_id: userId, 
-    type: transaction.type, 
-    amount: transaction.amount,
-    label: transaction.label, 
-    category: transaction.category, 
-    payment_method: transaction.paymentMethod,
-    date: transaction.date, 
-    staff_name: transaction.staffName, 
-    commission_rate: transaction.commissionRate,
-    is_credit: transaction.isCredit, 
-    client_id: transaction.clientId, 
-    product_id: transaction.productId,
-    original_amount: transaction.originalAmount || transaction.amount,
-    discount: transaction.discount || 0
+    id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
+    label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+    date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
+    is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
+    original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
   });
   return error ? null : { ...transaction, id: newId } as KitaTransaction;
 };
@@ -295,7 +278,7 @@ export const addKitaProduct = async (userId: string, p: any) => {
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: p.name, quantity: p.quantity,
     purchase_price: p.purchasePrice, sell_price: p.sellPrice,
-    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplierId
+    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplier_id
   });
   return error ? null : { id: newId, ...p };
 };

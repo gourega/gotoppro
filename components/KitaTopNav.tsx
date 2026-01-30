@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Wallet, Users, Package, BookOpen } from 'lucide-react';
+import { Wallet, Users, Package, BookOpen, Sparkles } from 'lucide-react';
 import { KITA_LOGO } from '../constants';
 
 const KitaTopNav: React.FC = () => {
@@ -12,6 +12,7 @@ const KitaTopNav: React.FC = () => {
     { id: 'finances', label: 'FINANCES', path: '/caisse', icon: <Wallet className="w-4 h-4" />, color: 'bg-amber-400 text-brand-900 shadow-amber-200' },
     { id: 'rh', label: 'RESSOURCES HUMAINES', path: '/pilotage', icon: <Users className="w-4 h-4" />, color: 'bg-emerald-500 text-white shadow-emerald-200' },
     { id: 'stock', label: 'STOCK', path: '/magasin', icon: <Package className="w-4 h-4" />, color: 'bg-sky-500 text-white shadow-sky-200' },
+    { id: 'marketing', label: 'MARKETING IA', path: '/marketing', icon: <Sparkles className="w-4 h-4" />, color: 'bg-rose-500 text-white shadow-rose-200' },
     { id: 'formation', label: 'FORMATION', path: '/mes-formations', icon: <BookOpen className="w-4 h-4" />, color: 'bg-indigo-600 text-white shadow-indigo-200' },
   ];
 

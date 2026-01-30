@@ -18,11 +18,18 @@ export interface KitaService {
   userId: string;
 }
 
+export interface KitaBasketItem {
+  label: string;
+  amount: number;
+  category: string;
+  isProduct?: boolean;
+}
+
 export interface KitaTransaction {
   id: string;
   type: 'INCOME' | 'EXPENSE';
   amount: number;
-  label: string;
+  label: string; // Pour les ventes groupées, contiendra un résumé
   category: string;
   paymentMethod: string;
   date: string;
@@ -30,13 +37,14 @@ export interface KitaTransaction {
   productId?: string;
   staffName?: string;
   commissionRate?: number;
-  isCredit?: boolean;
+  isCredit?: boolean; // True si c'est une ardoise (non payé)
   discount?: number;
   originalAmount?: number;
 }
 
 export interface KitaDebt {
   id: string;
+  clientId?: string;
   personName: string;
   amount: number;
   phone?: string;
@@ -74,6 +82,7 @@ export interface UserProfile {
   establishmentName?: string;
   photoURL?: string;
   bio?: string;
+  adminNotes?: string;
   employeeCount?: number;
   yearsOfExistence?: number;
   openingYear?: number;
@@ -86,9 +95,10 @@ export interface UserProfile {
   kitaPremiumUntil?: string; 
   hasPerformancePack: boolean;
   hasStockPack: boolean;
-  crmExpiryDate?: string; // Date d'expiration de l'abonnement CRM (500 F/mois)
+  crmExpiryDate?: string; 
   
-  strategicAudit?: string; // Persistance de l'audit IA de Coach Kita
+  strategicAudit?: string;
+  marketingCredits: number;
   
   badges: string[];
   purchasedModuleIds: string[];

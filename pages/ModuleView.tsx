@@ -151,12 +151,14 @@ const ModuleView: React.FC = () => {
       const prompt = `Agis comme Coach Kita, mentor d'élite. Lis ce cours de manière inspirante et professionnelle : ${fullText.substring(0, 4000)}`;
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: prompt }] }],
+        // Fix: Use correct object format for contents
+        contents: { parts: [{ text: prompt }] },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
         },
       });
+      // Fix: Access candidates properly to extract audio part
       const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
       const base64Audio = audioPart?.inlineData?.data;
       if (base64Audio && audioContextRef.current) {
@@ -568,7 +570,7 @@ const ModuleView: React.FC = () => {
             {quizState === 'results' && (
               <div className="w-full animate-in zoom-in-95 duration-700">
                 <div className="text-center mb-16 print:hidden">
-                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-rose-50 text-rose-500 border border-rose-100'}`}>
+                   <div className={`h-32 w-32 rounded-[3.5rem] flex items-center justify-center mx-auto mb-8 shadow-2xl ${latestPercentage >= 80 ? 'bg-emerald-50 text-white' : 'bg-rose-50 text-rose-500 border border-rose-100'}`}>
                       <span className="text-3xl font-black">{latestPercentage}%</span>
                    </div>
                    <h2 className="text-5xl font-bold text-slate-900 font-serif mb-4 tracking-tight">

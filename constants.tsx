@@ -1,17 +1,19 @@
+
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
-// Ressources Visuelles
+// Ressources Visuelles Standard
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
-export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
-export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
+export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/KITA/logo-kita.png";
+export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/COACH_KITA_AVATAR.png";
 
-// Partenaire Excellence : Salon Chez Raymond
-export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-logo.png";
-export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
-export const RAYMOND_FB_URL = "https://www.facebook.com/salonchezraymond";
+// Partenaire Excellence : Salon Chez Raymond (Aligné sur tes buckets Supabase)
+export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/raymond-logo.png";
+export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_PORTRAIT.jpg";
+export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
+
+export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
 export const RAYMOND_PHONE = "+225 07 07 94 97 06";
-export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/RAYMOND_LOGO.jpg";
 
 // Bio & Coordonnées Officielles (CANTIC THINK IA)
 export const COACH_KITA_FULL_NAME = "Ouréga Kouassi Goblé";
@@ -201,7 +203,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     quiz_questions: [
       { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marge." },
       { question: "Pourquoi proposer 3 niveaux de prix ?", options: ["Pour perdre le client", "Pour orienter vers l'offre intermédiaire", "Pour faire joli"], correctAnswer: 1, explanation: "C'est l'effet d'ancrage psychologique pour augmenter le panier moyen." },
-      { question: "Que faire si un client dit que c'est trop cher ?", options: ["Baisser le prix", "Expliquer la valeur et les produits utilisés", "Se fâcher"], correctAnswer: 1, explanation: "On ne défend pas un prix, on justifie une valeur." }
+      { question: "Que faire si un client dit que c'est trop cher ?", options: ["Baisser le prix", "Expliquer la valeur et les produits utilisés", "Se fâcher"], correctAnswer: 1, explanation: "On ne défend un prix, on justifie une valeur." }
     ],
     exercises: [],
     tips: []
@@ -326,7 +328,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>1. La prescription d'expert : ne vendez pas, conseillez</h2>
       <p>Ne pas conseiller le bon produit à votre cliente, c'est la laisser détruire votre travail avec un shampoing de mauvaise qualité.</p>
       <h2>2. Le taux de revente : votre indicateur clé</h2>
-      <p>La revente doit représenter 15% de votre CA. C'est de la marge pure sans temps de travail additionnel.</p>
+      <p>La revente doit représenter 15% de votre CA. C'est de la marque pure sans temps de travail additionnel.</p>
       <h2>3. Synthèse & Orientation : Le Service Complet</h2>
       <p>Votre travail ne s'arrête pas quand la cliente quitte le fauteuil. Il s'arrête quand vous êtes sûr qu'elle saura entretenir sa beauté chez elle grâce à vos produits.</p>
       <p><strong>Votre Défi des 24h :</strong> Proposez systématiquement un produit de soin à domicile à vos 3 prochaines clientes. Le quiz vous attend pour valider ce levier.</p>
@@ -351,7 +353,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 3,
     lesson_content: `
       <h2>1. L'analyse morpho-psychologique</h2>
-      <p>Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale. Observez la mâchoire et le front.</p>
+      <p>Votre rôle est de rééquilibrer les volumes pour approcher la forme idéale : l'ovale. Observez la mâchoire et le font.</p>
       <h2>2. La géométrie de la coupe : angles et sections</h2>
       <p>La réussite réside dans la précision de vos séparations. Comprendre l'angles d'élévation vous permet de créer du volume avec précision.</p>
       <h2>3. Synthèse & Orientation : L'Architecte de la Beauté</h2>
@@ -459,7 +461,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 3,
     lesson_content: `
       <h2>1. Les indicateurs clés (KPI)</h2>
-      <p>Suivez votre ticket moyen et votre taux de revente chaque soir. Ce qui ne se mesure pas ne s'améliore pas.</p>
+      <p>Suivez votre ticket moyen et votre taux de revente chaque soir. Ce qui ne se mesure pas ne s'amplifie pas.</p>
       <h2>2. Gérer son stock comme un investisseur</h2>
       <p>Le produit sur vos étagères est de l'argent qui dort. Apprenez à calculer votre taux de rotation.</p>
       <h2>3. Synthèse & Orientation : Devenir un Gestionnaire</h2>
@@ -467,7 +469,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <p><strong>Votre Défi des 24h :</strong> Calculez votre ticket moyen de la journée (Recettes / Nombre de clientes). Répondez au quiz pour devenir un pro des chiffres.</p>
     `,
     coach_tip: "Vérifiez vos chiffres tous les soirs.",
-    strategic_mantra: "Ce qui ne se mesure pas ne s'améliore pas.",
+    strategic_mantra: "Ce qui ne se mesure pas ne s'amplifie pas.",
     quiz_questions: [
       { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicateur de votre performance de vente." },
       { question: "Que faire du stock dormant ?", options: ["Le laisser", "Le vendre en promotion ou en coffret", "Le jeter"], correctAnswer: 1, explanation: "Chaque produit non vendu est une perte de trésorerie." },

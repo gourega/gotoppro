@@ -1,14 +1,14 @@
-// Add React import to avoid UMD global reference error
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  getAllUsers, 
   updateUserProfile,
-  saveUserProfile,
-  generateUUID
+  supabase,
+  getAllUsers,
+  getKitaTransactions
 } from '../services/supabase';
-import { TRAINING_CATALOG, BADGES, COACH_KITA_PHONE } from '../constants';
+import { TRAINING_CATALOG } from '../constants';
 import { UserProfile } from '../types';
 import { 
   Loader2, 
@@ -16,782 +16,400 @@ import {
   Users, 
   Clock, 
   Search, 
-  MessageCircle, 
   ChevronRight,
   X,
   ShieldAlert,
-  ShieldCheck,
-  Plus,
+  AlertCircle,
+  UserPlus,
   UserX,
   UserCheck,
   Activity,
-  AlertCircle,
-  ShoppingCart,
-  Cloud,
-  Lock,
-  Edit2,
   Crown,
-  Gem,
   CheckCircle2,
   TrendingUp,
-  Zap,
-  UserPlus,
-  Wifi,
-  ShoppingBag,
-  Star,
-  Megaphone,
   History,
-  Medal,
+  Smartphone,
+  Cpu,
+  Terminal,
+  Megaphone,
+  ShieldCheck,
+  Radio,
+  Zap,
+  Banknote,
   CalendarDays,
-  Target,
-  Package
+  FileText,
+  Save,
+  MessageCircle,
+  Package,
+  Copy
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'inbox' | 'pending' | 'active' | 'admins' | 'ambassadors' | 'expiring' | 'audit'>('inbox');
+  const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'admins'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  // Modal states
+  const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
+  const [tempAdminNotes, setTempAdminNotes] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // Simulation
+  const [simPhone, setSimPhone] = useState('');
+  const [simAmount, setSimAmount] = useState('15000');
+  const [isSimulating, setIsSimulating] = useState(false);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUserData, setNewUserData] = useState({ phone: '', firstName: '', lastName: '', establishment: '' });
-  const [editingPin, setEditingPin] = useState(false);
-  const [newPinValue, setNewPinValue] = useState('');
 
-  useEffect(() => {
-    if (currentUser && currentUser.isAdmin) {
-      fetchUsers();
-    } else if (currentUser && !currentUser.isAdmin) {
-      navigate('/dashboard');
-    }
-  }, [currentUser, navigate]);
-
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
+  const fetchLogs = async () => {
+    if (!supabase) return;
+    try {
+      const { data } = await supabase.from('automation_logs').select('*').order('created_at', { ascending: false }).limit(6);
+      if (data) setLogs(data);
+    } catch (e) { console.error("Log fetch error", e); }
   };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await getAllUsers();
-      setUsers(data);
-    } catch (err) {
-      showNotification("Erreur de synchronisation Cloud", "error");
-    } finally {
-      fetchUsers();
-    }
+      const allUsers = await getAllUsers();
+      setUsers(allUsers || []);
+      await fetchLogs();
+    } catch (err) { console.error("Erreur chargement gérants:", err); }
+    finally { setLoading(false); }
   };
 
-  const handleManualCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProcessingId('create');
+  useEffect(() => {
+    if (currentUser?.isAdmin) {
+      fetchUsers();
+    } else {
+      navigate('/dashboard');
+    }
+    const interval = setInterval(fetchLogs, 10000); 
+    return () => clearInterval(interval);
+  }, [currentUser, navigate]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setTempAdminNotes(selectedUser.adminNotes || '');
+      fetchUserFinancials(selectedUser.uid);
+    }
+  }, [selectedUser]);
+
+  const fetchUserFinancials = async (userId: string) => {
     try {
-      let cleanPhone = newUserData.phone.replace(/\s/g, '');
+      const transactions = await getKitaTransactions(userId);
+      const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
+      setSelectedUserTurnover(totalIncome);
+    } catch (e) { console.warn("Erreur finances"); }
+  };
+
+  const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleSaveAdminNotes = async () => {
+    if (!selectedUser || !supabase) return;
+    setIsSavingNotes(true);
+    try {
+      await updateUserProfile(selectedUser.uid, { adminNotes: tempAdminNotes });
+      showNotify("Notes Mentor enregistrées");
+      fetchUsers();
+    } catch (err) { showNotify("Erreur sauvegarde notes", "error"); }
+    finally { setIsSavingNotes(false); }
+  };
+
+  const handleActivateAll = async () => {
+    if (!supabase || isActivatingAll) return;
+    const pendingUsers = users.filter(u => !u.isActive && !u.isAdmin);
+    if (pendingUsers.length === 0) return showNotify("Aucun gérant en attente.", "error");
+    if (!window.confirm(`Activer les ${pendingUsers.length} gérants ?`)) return;
+
+    setIsActivatingAll(true);
+    try {
+      const { error } = await supabase.from('profiles').update({ isActive: true }).eq('isActive', false).neq('role', 'SUPER_ADMIN');
+      if (error) throw error;
+      showNotify(`${pendingUsers.length} gérants activés !`);
+      fetchUsers();
+    } catch (err) { showNotify("Erreur activation groupée.", "error"); }
+    finally { setIsActivatingAll(false); }
+  };
+
+  const handleSimulate = async () => {
+    if (!simPhone || isSimulating) return;
+    setIsSimulating(true);
+    try {
+      let cleanPhone = simPhone.replace(/\s/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-
-      const newUser: UserProfile = {
-        uid: generateUUID(),
-        phoneNumber: cleanPhone,
-        pinCode: '1234',
-        firstName: newUserData.firstName,
-        lastName: newUserData.lastName,
-        establishmentName: newUserData.establishment,
-        role: 'CLIENT',
-        isActive: false, 
-        isAdmin: false,
-        isPublic: true,
-        isKitaPremium: false,
-        hasPerformancePack: false,
-        hasStockPack: false,
-        badges: [],
-        purchasedModuleIds: [],
-        pendingModuleIds: [],
-        actionPlan: [],
-        createdAt: new Date().toISOString()
-      };
-
-      await saveUserProfile(newUser);
-      showNotification("Gérant créé avec succès !");
-      setShowAddModal(false);
-      setNewUserData({ phone: '', firstName: '', lastName: '', establishment: '' });
-      await fetchUsers();
-    } catch (err: any) {
-      showNotification("Erreur : Ce numéro existe peut-être déjà.", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleUpdatePin = async () => {
-    if (!selectedUser || newPinValue.length !== 4) return;
-    setProcessingId('pin');
-    try {
-      await updateUserProfile(selectedUser.uid, { pinCode: newPinValue });
-      showNotification(`Code PIN mis à jour : ${newPinValue}`);
-      await fetchUsers();
-      setSelectedUser({ ...selectedUser, pinCode: newPinValue });
-      setEditingPin(false);
-    } catch (err) {
-      showNotification("Erreur mise à jour PIN", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleToggleStatus = async (user: UserProfile, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (user.uid === currentUser?.uid) return showNotification("Action impossible sur soi-même", "error");
-    
-    setProcessingId(user.uid);
-    try {
-      await updateUserProfile(user.uid, { isActive: !user.isActive });
-      showNotification(user.isActive ? "Accès suspendu" : "Accès activé avec succès");
-      await fetchUsers();
-      if (selectedUser?.uid === user.uid) {
-        setSelectedUser({ ...selectedUser, isActive: !user.isActive });
-      }
-    } catch (err) {
-      showNotification("Erreur serveur", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleActivatePack = async (packType: 'FULL' | 'ELITE' | 'PERFORMANCE' | 'STOCK' | 'INDIVIDUAL' | 'CLOUD' | 'CRM') => {
-    if (!selectedUser) return;
-    setProcessingId(packType);
-    try {
-      const updates: Partial<UserProfile> = { isActive: true };
-      
-      if (packType === 'FULL') {
-        updates.isKitaPremium = true;
-        updates.hasPerformancePack = true;
-        updates.hasStockPack = true;
-        const allIds = TRAINING_CATALOG.map(m => m.id);
-        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
-        
-        // CRM 30j
-        const currentEnd = selectedUser.crmExpiryDate ? new Date(selectedUser.crmExpiryDate) : new Date();
-        const baseDate = currentEnd > new Date() ? currentEnd : new Date();
-        const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
-        updates.crmExpiryDate = newEnd.toISOString();
-        
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('FULL'));
-      } else if (packType === 'ELITE') {
-        updates.isKitaPremium = true;
-        const allIds = TRAINING_CATALOG.map(m => m.id);
-        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...allIds])];
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('ELITE'));
-      } else if (packType === 'PERFORMANCE') {
-        updates.hasPerformancePack = true;
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('PERFORMANCE'));
-      } else if (packType === 'STOCK') {
-        updates.hasStockPack = true;
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('STOCK'));
-      } else if (packType === 'CRM') {
-        const currentEnd = selectedUser.crmExpiryDate ? new Date(selectedUser.crmExpiryDate) : new Date();
-        const baseDate = currentEnd > new Date() ? currentEnd : new Date();
-        const newEnd = new Date(baseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
-        updates.crmExpiryDate = newEnd.toISOString();
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.includes('CRM'));
-      } else if (packType === 'INDIVIDUAL') {
-        const modulesToGrant = (selectedUser.pendingModuleIds || []).filter(id => id.startsWith('mod_'));
-        updates.purchasedModuleIds = [...new Set([...(selectedUser.purchasedModuleIds || []), ...modulesToGrant])];
-        updates.pendingModuleIds = (selectedUser.pendingModuleIds || []).filter(id => !id.startsWith('mod_'));
-      }
-
-      await updateUserProfile(selectedUser.uid, updates);
-      showNotification(`Activation réussie !`);
-      await fetchUsers();
-      setSelectedUser(prev => prev ? ({ ...prev, ...updates } as UserProfile) : null);
-    } catch (err) {
-      showNotification("Erreur activation", "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const calculateUserValue = (user: UserProfile) => {
-    let total = 0;
-    if (user.isKitaPremium) total += 10000;
-    if (user.hasPerformancePack) total += 5000;
-    if (user.hasStockPack) total += 5000;
-    if (!user.isKitaPremium) {
-      const count = (user.purchasedModuleIds || []).length;
-      total += count * 500;
-    }
-    return total;
-  };
-
-  const stats = useMemo(() => {
-    const clients = users.filter(u => !u.isAdmin);
-    const rawRevenue = clients.reduce((acc, u) => acc + calculateUserValue(u), 0);
-    
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-    
-    const expiringCount = clients.filter(u => {
-      const crmExp = u.crmExpiryDate ? new Date(u.crmExpiryDate) : null;
-      const cloudExp = u.kitaPremiumUntil ? new Date(u.kitaPremiumUntil) : null;
-      return (crmExp && crmExp < sevenDaysFromNow && crmExp > new Date()) || 
-             (cloudExp && cloudExp < sevenDaysFromNow && cloudExp > new Date());
-    }).length;
-
-    return { 
-      total: clients.length, 
-      active: clients.filter(u => u.isActive).length,
-      revenue: rawRevenue,
-      netRevenue: rawRevenue * 0.95,
-      expiringCount
-    };
-  }, [users]);
-
-  const handleGlobalBroadcast = () => {
-    const activeClients = users.filter(u => !u.isAdmin && u.isActive);
-    if (activeClients.length === 0) return showNotification("Aucun gérant actif à contacter.", "error");
-    
-    const msg = encodeURIComponent("Bonjour ! Coach Kita ici. Un nouveau module de formation vient de sortir sur Go'Top Pro. Connectez-vous vite pour booster votre rentabilité !");
-    const confirm = window.confirm(`Voulez-vous ouvrir WhatsApp pour envoyer une annonce aux ${activeClients.length} gérants actifs ?`);
-    if (confirm) {
-      window.open(`https://wa.me/?text=${msg}`, '_blank');
-    }
+      const response = await fetch("https://uyqjorpvmqremxbfeepl.supabase.co/functions/v1/wave-webhook", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Kita-Auth': 'KITA_WEBHOOK_SECURE_2024' },
+        body: JSON.stringify({ message: `Vous avez reçu ${simAmount}F de ${cleanPhone}`, from: "TEST_CONSOLE" })
+      });
+      if (response.ok) {
+        showNotify("Signal capté par le Robot !");
+        setTimeout(fetchUsers, 2000);
+      } else { showNotify("Erreur Robot", "error"); }
+    } catch (err) { showNotify("Échec de connexion", "error"); }
+    finally { setIsSimulating(false); }
   };
 
   const filteredUsers = useMemo(() => {
-    const isSearching = searchTerm.trim().length > 0;
-    let sourceSet = users;
-
-    if (viewMode === 'inbox') {
-      sourceSet = users.filter(u => u.isAdmin || !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0));
-    } else if (viewMode === 'pending') {
-      sourceSet = users.filter(u => !u.isAdmin && (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)));
-    } else if (viewMode === 'active') {
-      sourceSet = users.filter(u => !u.isAdmin && u.isActive);
-    } else if (viewMode === 'admins') {
-      sourceSet = users.filter(u => u.isAdmin);
-    } else if (viewMode === 'ambassadors') {
-      sourceSet = users.filter(u => !u.isAdmin && (u.referralCount || 0) > 0).sort((a,b) => (b.referralCount || 0) - (a.referralCount || 0));
-    } else if (viewMode === 'expiring') {
-      const weekOut = new Date();
-      weekOut.setDate(weekOut.getDate() + 7);
-      sourceSet = users.filter(u => {
-        const crm = u.crmExpiryDate ? new Date(u.crmExpiryDate) : null;
-        return crm && crm < weekOut && crm > new Date();
-      });
-    }
-
-    if (isSearching) {
-      sourceSet = sourceSet.filter(u => {
-        const search = searchTerm.toLowerCase();
-        return (u.phoneNumber || '').includes(search) || 
-          (u.firstName || '').toLowerCase().includes(search) || 
-          (u.lastName || '').toLowerCase().includes(search) ||
-          (u.establishmentName || '').toLowerCase().includes(search);
-      });
-    }
-
-    return sourceSet;
+    const s = searchTerm.toLowerCase().trim();
+    if (s) return users.filter(u => !u.isAdmin && (`${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || (u.establishmentName || '').toLowerCase().includes(s) || u.phoneNumber.includes(s)));
+    if (viewMode === 'inbox') return users.filter(u => !u.isActive && !u.isAdmin);
+    if (viewMode === 'active') return users.filter(u => u.isActive && !u.isAdmin);
+    if (viewMode === 'admins') return users.filter(u => u.isAdmin);
+    return users.filter(u => !u.isAdmin);
   }, [users, searchTerm, viewMode]);
 
+  const stats = useMemo(() => {
+    const clients = users.filter(u => !u.isAdmin);
+    const activeClients = clients.filter(u => u.isActive);
+    return { total: clients.length, active: activeClients.length, pending: clients.length - activeClients.length, revenue: activeClients.length * 10000 };
+  }, [users]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showNotify("Copié !");
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-brand-500/20">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       {notification && (
-        <div className={`fixed top-8 right-8 z-[200] px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 animate-in slide-in-from-right-10 duration-500 ${
-          notification.type === 'success' ? 'bg-emerald-50 border-emerald-500/30 text-emerald-600' : 'bg-rose-50 border-rose-500/30 text-rose-600'
-        }`}>
+        <div className={`fixed top-8 right-8 z-[200] px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-bold text-xs uppercase tracking-widest leading-relaxed max-w-xs">{notification.message}</span>
+          <span className="font-black text-[10px] uppercase tracking-widest">{notification.message}</span>
         </div>
       )}
 
-      <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-16">
+      <div className="max-w-[1600px] mx-auto space-y-12">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
           <div>
-            <div className="flex items-center gap-4 text-brand-600 font-black text-[10px] uppercase tracking-[0.6em] mb-4">
-               <Activity className="w-4 h-4 animate-pulse" />
-               Live Operations — Global HQ
+            <div className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-3">
+               <Activity className="w-4 h-4 animate-pulse" /> Live Operations — Global HQ
             </div>
-            <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-tight">
-              Console de <span className="text-brand-600 italic">Direction</span>
-            </h1>
+            <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <button 
-              onClick={handleGlobalBroadcast}
-              className="bg-emerald-100 text-emerald-700 px-8 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-200 transition-all shadow-sm active:scale-95"
-            >
-              <Megaphone className="w-5 h-5" /> Diffusion WhatsApp
-            </button>
-            <button 
-              onClick={() => setShowAddModal(true)} 
-              className="bg-brand-900 text-white px-8 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-black transition-all shadow-xl active:scale-95"
-            >
-              <UserPlus className="w-5 h-5 text-brand-500" /> Nouveau Gérant
-            </button>
-            <button 
-              onClick={fetchUsers} 
-              disabled={loading} 
-              className="bg-white border border-slate-200 p-5 rounded-[2rem] hover:bg-slate-50 transition-all group active:scale-95 shadow-sm"
-            >
-              <RefreshCcw className={`w-6 h-6 text-slate-400 group-hover:text-brand-600 transition-all ${loading ? 'animate-spin' : ''}`} />
-            </button>
+          <div className="flex flex-wrap gap-4 items-center">
+            {stats.pending > 0 && (
+              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
+                {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                Activer les {stats.pending} gérants
+              </button>
+            )}
+            <button className="bg-emerald-100 text-emerald-700 px-8 py-4 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-200 transition-all flex items-center gap-3"><Megaphone className="w-4 h-4" /> Diffusion SMS</button>
+            <button onClick={() => setShowAddModal(true)} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"><UserPlus className="w-4 h-4 text-brand-500" /> Nouveau Gérant</button>
+            <button onClick={fetchUsers} className="bg-white border border-slate-200 p-4 rounded-2xl hover:bg-slate-50 shadow-sm transition-all"><RefreshCcw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <StatCard title="Gérants Inscrits" value={stats.total} icon={<Users />} color="text-blue-500" sub="Total Network" />
-          <StatCard 
-            title="Alerte Renouvellement" 
-            value={stats.expiringCount} 
-            icon={<Clock />} 
-            color="text-amber-500" 
-            sub="CRM / Cloud - 7 jours" 
-            highlight={stats.expiringCount > 0} 
-            onClick={() => setViewMode('expiring')}
-          />
-          <StatCard 
-            title="Activité Récente" 
-            value={`${Math.round((stats.active/Math.max(1, stats.total))*100)}%`} 
-            icon={<ShieldCheck />} 
-            color="text-emerald-500" 
-            sub="Rétention Gérants" 
-          />
-          <StatCard title="Recettes Nettes" value={`${Math.round(stats.netRevenue).toLocaleString()} F`} icon={<TrendingUp />} color="text-brand-600" sub="95% Net Revenue" />
-        </div>
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <AdminStatCard icon={<Users />} label="Inscrits" val={stats.total} />
+           <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
+           <AdminStatCard icon={<ShieldCheck />} label="Statut Robot" val={stats.total >= 11 ? 'SCALE' : 'MANUEL'} sub={stats.total >= 11 ? 'Bouton Maître Actif' : 'Vérification Manuelle'} />
+           <AdminStatCard icon={<TrendingUp />} label="Recettes" val={`${stats.revenue.toLocaleString()} F`} />
+        </section>
 
-        <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-2xl">
-          <div className="p-10 border-b border-slate-100 flex flex-col xl:flex-row justify-between items-center gap-10">
-            <div className="relative w-full xl:max-w-2xl">
-              <Search className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${searchTerm ? 'text-brand-600' : 'text-slate-300'}`} />
-              <input 
-                type="text" 
-                placeholder="Rechercher partout (Radar Global)..."
-                className={`w-full pl-16 pr-8 py-6 rounded-[2rem] border outline-none focus:ring-2 transition-all font-medium ${
-                  searchTerm 
-                  ? 'bg-brand-50 border-brand-200 text-slate-900 focus:ring-brand-500/20' 
-                  : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-brand-500/20 placeholder-slate-400'
-                }`}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+        <section className="bg-slate-900 rounded-[4rem] p-10 md:p-14 border border-white/5 shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 transition-transform group-hover:scale-110"><Smartphone className="w-48 h-48 text-emerald-500" /></div>
+           <div className="relative z-10 flex flex-col lg:flex-row gap-16">
+              <div className="flex-grow space-y-8">
+                 <div className="flex items-center gap-5">
+                    <div className="h-16 w-16 bg-emerald-500 text-slate-900 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-emerald-500/20"><Cpu className="w-10 h-10" /></div>
+                    <div><h3 className="text-2xl font-serif font-bold text-white tracking-tight">Radar Wave Automatisé</h3><p className="text-emerald-400 font-black text-[9px] uppercase tracking-[0.3em] flex items-center gap-2"><Radio className="w-3 h-3 animate-pulse" /> Live Monitoring</p></div>
+                 </div>
+                 <div className="grid sm:grid-cols-2 gap-8 max-w-3xl">
+                    <div className="space-y-6">
+                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Test Signal Robot</p>
+                       <div className="space-y-4">
+                          <input type="tel" placeholder="0544869313" value={simPhone} onChange={e => setSimPhone(e.target.value)} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl px-6 py-4 text-white text-lg font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none" />
+                          <select value={simAmount} onChange={e => setSimAmount(e.target.value)} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-black appearance-none cursor-pointer"><option value="15000">PACK FULL (15.000 F)</option><option value="10000">PACK ELITE (10.000 F)</option><option value="5000">PACK OUTILS (5.000 F)</option></select>
+                          <button onClick={handleSimulate} disabled={isSimulating || !simPhone} className="w-full bg-emerald-500 text-slate-900 py-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 hover:bg-emerald-400 transition-all">
+                             {isSimulating ? <Loader2 className="animate-spin w-5 h-5" /> : <Terminal className="w-5 h-5" />} Simuler Réception Wave
+                          </button>
+                       </div>
+                    </div>
+                    <div className="bg-black/40 backdrop-blur-md p-8 rounded-[3rem] border border-white/5 flex flex-col h-full min-h-[300px]">
+                       <div className="flex justify-between items-center mb-6"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flux d'activité</p><button onClick={fetchLogs} className="p-2 text-slate-500 hover:text-white transition-colors"><RefreshCcw className="w-3.5 h-3.5" /></button></div>
+                       <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-3">
+                          {logs.map((log, i) => (
+                            <div key={i} className={`border-l-4 pl-5 py-3 rounded-r-2xl bg-white/[0.02] ${log.status === 'SUCCÈS' ? 'border-emerald-500' : 'border-amber-500'}`}>
+                               <div className="flex justify-between items-center mb-1"><p className="text-[11px] text-white font-black uppercase">{log.sender}</p><span className="text-[8px] text-slate-600">{new Date(log.created_at).toLocaleTimeString()}</span></div>
+                               <p className={`text-[10px] font-bold ${log.status === 'SUCCÈS' ? 'text-emerald-400' : 'text-slate-300'}`}>{log.details || log.message}</p>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </section>
+
+        <div className="bg-white rounded-[3.5rem] border border-slate-200 overflow-hidden shadow-2xl">
+          <div className="p-10 border-b border-slate-100 flex flex-col xl:flex-row justify-between items-center gap-8">
+            <div className="relative w-full xl:max-w-xl">
+              <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+              <input type="text" placeholder="Awa, Salon GoTop, 05..." className="w-full pl-20 pr-8 py-6 rounded-3xl border-none bg-slate-50 outline-none focus:ring-2 focus:ring-brand-500/20 font-medium text-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <div className="flex bg-slate-100 p-1.5 rounded-[2rem] border border-slate-200 shrink-0 overflow-x-auto max-w-full">
-              <NavTab active={viewMode === 'inbox'} onClick={() => setViewMode('inbox')} label="Opérations" count={users.filter(u => !u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)).length} />
-              <NavTab active={viewMode === 'active'} onClick={() => setViewMode('active')} label="Gérants" />
-              <NavTab active={viewMode === 'ambassadors'} onClick={() => setViewMode('ambassadors')} label="Ambassadeurs" icon={<Medal className="w-3 h-3" />} />
-              <NavTab active={viewMode === 'expiring'} onClick={() => setViewMode('expiring')} label="Alertes" count={stats.expiringCount} isUrgent={stats.expiringCount > 0} />
-              <NavTab active={viewMode === 'admins'} onClick={() => setViewMode('admins')} label="Équipe" />
+            <div className="flex bg-slate-100 p-2 rounded-3xl border">
+              <button onClick={() => setViewMode('inbox')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'inbox' && !searchTerm ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Demandes</button>
+              <button onClick={() => setViewMode('active')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'active' && !searchTerm ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Actifs</button>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Progression</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagements</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur</th>
-                  <th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">CRM & Cloud</th>
-                  <th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Pilotage</th>
-                </tr>
-              </thead>
+            <table className="w-full text-left">
+              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Équipement (Outils)</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredUsers.length > 0 ? filteredUsers.map(u => {
-                  const cloudActive = u.isKitaPremium || (u.kitaPremiumUntil && new Date(u.kitaPremiumUntil) > new Date());
-                  const crmActive = u.crmExpiryDate && new Date(u.crmExpiryDate) > new Date();
-                  const isCritical = !u.isActive;
-                  const progressCount = Object.keys(u.progress || {}).length;
-                  const progressPercent = Math.round((progressCount / 16) * 100);
-
+                {filteredUsers.map(u => {
+                  const certs = Object.values(u.progress || {}).filter(s => Number(s) >= 80).length;
                   return (
-                    <tr 
-                      key={u.uid} 
-                      onClick={() => { setSelectedUser(u); setEditingPin(false); setNewPinValue(u.pinCode || ''); }}
-                      className={`group hover:bg-brand-50/30 transition-all cursor-pointer ${isCritical ? 'bg-rose-50/40' : (!u.isActive || (u.pendingModuleIds && u.pendingModuleIds.length > 0)) ? 'bg-amber-50/30' : ''}`}
-                    >
+                    <tr key={u.uid} className="hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => setSelectedUser(u)}>
                       <td className="px-12 py-8">
-                        <div className="flex items-center gap-6">
-                          <div className={`h-16 w-16 rounded-[1.5rem] border border-slate-200 flex items-center justify-center font-black text-xl overflow-hidden relative shadow-sm ${u.isAdmin ? 'bg-brand-900 text-brand-50' : 'bg-slate-100 text-slate-400'}`}>
-                            {u.photoURL ? <img src={u.photoURL} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"/> : (u.firstName?.[0] || 'U')}
-                            {u.isActive && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></div>}
+                        <div className="flex items-center gap-5">
+                          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>
+                            {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" /> : u.firstName?.[0]}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <p className="font-serif font-bold text-slate-900 text-xl group-hover:text-brand-600 transition-colors">{u.firstName} {u.lastName}</p>
-                              {u.isAdmin && <ShieldAlert className="w-4 h-4 text-brand-600" />}
-                              {(u.referralCount || 0) > 0 && <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[7px] font-black uppercase flex items-center gap-1"><Medal className="w-2 h-2" /> {u.referralCount} Parrains</span>}
-                            </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{u.establishmentName || 'SALON INDÉPENDANT'}</p>
-                            <p className="text-[8px] font-bold text-slate-400 mt-0.5">{u.phoneNumber}</p>
-                          </div>
+                          <div><p className="font-bold text-slate-900 text-xl leading-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || 'Salon GoTop'} • {u.phoneNumber}</p></div>
                         </div>
                       </td>
                       <td className="px-8 py-8">
-                        <div className="w-32">
-                           <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase mb-1">
-                             <span>{progressCount}/16</span>
-                             <span>{progressPercent}%</span>
-                           </div>
-                           <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-full transition-all duration-1000 ${progressPercent >= 80 ? 'bg-emerald-500' : 'bg-brand-500'}`} style={{ width: `${progressPercent}%` }}></div>
-                           </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-8">
-                        <div className="flex flex-wrap gap-2">
-                          {!u.isActive && <Badge text="À ACTIVER" color="rose" animate />}
-                          {u.isKitaPremium ? <Badge text="ELITE" color="amber" /> : u.purchasedModuleIds?.length > 0 ? <Badge text={`${u.purchasedModuleIds.length} MODULES`} color="blue" /> : <Badge text="NOUVEAU" color="slate" />}
-                          {u.pendingModuleIds?.some(id => id.includes('FULL')) && <Badge text="WAIT FULL" color="amber" animate />}
-                          {u.pendingModuleIds?.some(id => id.includes('ELITE')) && <Badge text="WAIT ELITE" color="amber" animate />}
-                        </div>
-                      </td>
-                      <td className="px-8 py-8">
-                        <span className="font-mono font-bold text-lg text-slate-900">{calculateUserValue(u).toLocaleString()} F</span>
-                      </td>
-                      <td className="px-8 py-8">
-                         <div className="flex flex-col gap-1.5">
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${cloudActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                                {cloudActive ? 'Cloud OK' : 'Cloud Exp'}
-                            </div>
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit ${crmActive ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
-                                {crmActive ? 'CRM Actif' : 'CRM Inactif'}
-                            </div>
+                         <div className="flex justify-center gap-3">
+                            <div title="Packs RH" className={`p-2 rounded-lg ${u.hasPerformancePack ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-200'}`}><Users className="w-4 h-4" /></div>
+                            <div title="Pack Stock" className={`p-2 rounded-lg ${u.hasStockPack ? 'bg-sky-50 text-sky-500' : 'bg-slate-50 text-slate-200'}`}><Package className="w-4 h-4" /></div>
+                            <div title="Académie" className={`p-2 rounded-lg ${u.isKitaPremium ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-200'}`}><Crown className="w-4 h-4" /></div>
                          </div>
                       </td>
-                      <td className="px-12 py-8 text-right">
-                         <div className="flex justify-end items-center gap-3">
-                           <button className="p-4 bg-slate-100 rounded-2xl text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-all opacity-0 group-hover:opacity-100">
-                             <ChevronRight className="w-5 h-5" />
-                           </button>
+                      <td className="px-8 py-8">
+                         <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                               <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+                               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{u.isActive ? 'Actif' : 'En attente'}</span>
+                            </div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifications</span>
                          </div>
                       </td>
+                      <td className="px-12 py-8 text-right"><button className="p-4 bg-slate-100 rounded-2xl text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all shadow-sm"><ChevronRight className="w-5 h-5" /></button></td>
                     </tr>
                   );
-                }) : (
-                  <tr>
-                    <td colSpan={6} className="py-32 text-center">
-                      <div className="flex flex-col items-center gap-6">
-                        <div className="h-24 w-24 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center animate-pulse">
-                           <Wifi className="w-10 h-10 text-slate-200" />
-                        </div>
-                        <p className="font-black text-xs uppercase tracking-[0.3em] text-slate-400">Aucune donnée trouvée</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                })}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* MODAL CREATION MANUELLE */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/40 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-2xl bg-white h-full shadow-2xl p-10 md:p-14 overflow-y-auto animate-in slide-in-from-right flex flex-col custom-scrollbar">
+            <div className="flex justify-between items-center mb-12">
+               <div><h2 className="text-3xl font-serif font-bold text-slate-900">Cockpit Mentor</h2><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Dossier : {selectedUser.uid.substring(0,8)}</p></div>
+               <button onClick={() => setSelectedUser(null)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:text-rose-500 transition-colors shadow-sm"><X /></button>
+            </div>
+            <div className="space-y-12 pb-20">
+               <div className="p-12 bg-slate-50 rounded-[4rem] border border-slate-100 text-center relative overflow-hidden shadow-inner">
+                  <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" /> : selectedUser.firstName?.[0]}</div>
+                  <h3 className="text-3xl font-bold text-slate-900">{selectedUser.firstName} {selectedUser.lastName}</h3>
+                  <div className="flex items-center justify-center gap-3 mt-4">
+                     <button onClick={() => copyToClipboard(selectedUser.phoneNumber)} className="bg-white border px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-slate-50 transition-all"><Copy className="w-3 h-3" /> {selectedUser.phoneNumber}</button>
+                     <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-500 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
+                  </div>
+               </div>
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                     <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
+                     <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
+                     <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
+                  </div>
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                     <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Jetons IA Marketing</p>
+                     <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
+                  </div>
+               </div>
+               <section className="space-y-6">
+                  <div className="flex items-center justify-between px-4">
+                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3"><FileText className="w-4 h-4 text-brand-500" /> Carnet de Santé (Confidentiel)</h4>
+                     {tempAdminNotes !== selectedUser.adminNotes && (
+                       <button onClick={handleSaveAdminNotes} disabled={isSavingNotes} className="flex items-center gap-2 text-[10px] font-black text-brand-600 uppercase tracking-widest">
+                          {isSavingNotes ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Sauvegarder
+                       </button>
+                     )}
+                  </div>
+                  <textarea value={tempAdminNotes} onChange={e => setTempAdminNotes(e.target.value)} placeholder="Blocages, ambitions ou besoins de ce gérant..." className="w-full p-10 rounded-[3rem] bg-amber-50/50 border-2 border-amber-100/50 outline-none font-medium text-slate-700 min-h-[180px] resize-none focus:border-brand-500 focus:bg-white transition-all shadow-inner" />
+               </section>
+               <div className="space-y-4 pt-10 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-6">Contrôles d'Accès</p>
+                  <button onClick={async () => {
+                    await supabase?.from('profiles').update({ isActive: !selectedUser.isActive }).eq('uid', selectedUser.uid);
+                    showNotify(selectedUser.isActive ? "Accès suspendu" : "Compte activé !");
+                    fetchUsers();
+                    setSelectedUser(null);
+                  }} className={`w-full py-6 rounded-3xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-4 shadow-xl ${selectedUser.isActive ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-brand-900 text-white shadow-brand-900/10'}`}>
+                    {selectedUser.isActive ? <UserX className="w-6 h-6" /> : <UserCheck className="w-6 h-6" />}
+                    {selectedUser.isActive ? 'Suspendre l\'Accès' : 'Activer l\'Accès Pilote'}
+                  </button>
+                  <button onClick={async () => {
+                    const allIds = TRAINING_CATALOG.map(m => m.id);
+                    await supabase?.from('profiles').update({ isKitaPremium: true, purchased_module_ids: allIds }).eq('uid', selectedUser.uid);
+                    showNotify("Académie Elite Débloquée"); fetchUsers(); setSelectedUser(null);
+                  }} className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-[11px] uppercase tracking-widest shadow-2xl flex items-center justify-center gap-4"><Crown className="w-6 h-6 text-amber-500" /> Octroyer Académie Élite</button>
+                  <button onClick={async () => {
+                    await supabase?.from('profiles').update({ marketing_credits: (selectedUser.marketingCredits || 0) + 5 }).eq('uid', selectedUser.uid);
+                    showNotify("+5 Crédits IA offerts"); fetchUsers(); setSelectedUser(null);
+                  }} className="w-full bg-indigo-50 text-indigo-600 py-6 rounded-3xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-4"><Zap className="w-6 h-6 text-brand-500" /> Recharger Crédits Marketing</button>
+               </div>
+               <div className="pt-10 flex flex-col items-center gap-2 opacity-30">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><CalendarDays className="w-3 h-3" /> Gérant enregistré le {new Date(selectedUser.createdAt).toLocaleDateString('fr-FR')}</p>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in">
           <div className="bg-white w-full max-w-lg rounded-[4rem] border border-slate-200 shadow-2xl p-12 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 -mr-16 -mt-16 rounded-full opacity-50"></div>
              <button onClick={() => setShowAddModal(false)} className="absolute top-10 right-10 text-slate-400 hover:text-slate-900"><X /></button>
-             <h2 className="text-3xl font-serif font-bold text-slate-900 text-center mb-12 relative z-10">Nouveau Gérant</h2>
-             <form onSubmit={handleManualCreate} className="space-y-6 relative z-10">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label>
-                  <input 
-                    type="tel" 
-                    placeholder="0544869313" 
-                    value={newUserData.phone} 
-                    onChange={e => setNewUserData({...newUserData, phone: e.target.value})} 
-                    className="w-full px-8 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 font-bold outline-none focus:ring-2 focus:ring-brand-500/20" 
-                    required 
-                  />
-                </div>
+             <h2 className="text-4xl font-serif font-bold text-slate-900 text-center mb-12 tracking-tight">Inscrire un Gérant</h2>
+             <form onSubmit={async (e) => {
+               e.preventDefault();
+               let cleanPhone = newUserData.phone.replace(/\s/g, '');
+               if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
+               if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
+               const { error } = await supabase!.from('profiles').insert([{ uid: crypto.randomUUID(), phoneNumber: cleanPhone, firstName: newUserData.firstName, lastName: newUserData.lastName, establishmentName: newUserData.establishment, role: 'CLIENT', isActive: true, createdAt: new Date().toISOString() }]);
+               if (!error) { showNotify("Gérant ajouté !"); setShowAddModal(false); fetchUsers(); }
+             }} className="space-y-6">
+                <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">WhatsApp</label><input type="tel" placeholder="0544869313" value={newUserData.phone} onChange={e => setNewUserData({...newUserData, phone: e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 font-bold text-xl shadow-inner outline-none" required /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Prénom</label>
-                    <input 
-                      type="text" 
-                      value={newUserData.firstName} 
-                      onChange={e => setNewUserData({...newUserData, firstName: e.target.value})} 
-                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 font-bold outline-none" 
-                      required 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom</label>
-                    <input 
-                      type="text" 
-                      value={newUserData.lastName} 
-                      onChange={e => setNewUserData({...newUserData, lastName: e.target.value})} 
-                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 font-bold outline-none" 
-                      required 
-                    />
-                  </div>
+                  <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">Prénom</label><input type="text" value={newUserData.firstName} onChange={e => setNewUserData({...newUserData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold" required /></div>
+                  <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">Nom</label><input type="text" value={newUserData.lastName} onChange={e => setNewUserData({...newUserData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold" required /></div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Établissement</label>
-                  <input 
-                    type="text" 
-                    value={newUserData.establishment} 
-                    onChange={e => setNewUserData({...newUserData, establishment: e.target.value})} 
-                    className="w-full px-8 py-5 rounded-2xl bg-slate-50 border border-slate-100 text-slate-900 font-bold outline-none" 
-                    required 
-                  />
-                </div>
-                <button 
-                  type="submit" 
-                  disabled={processingId === 'create'} 
-                  className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center justify-center gap-4 hover:bg-black active:scale-95 transition-all"
-                >
-                  {processingId === 'create' ? <Loader2 className="animate-spin" /> : <UserPlus className="w-5 h-5 text-brand-500" />} Créer l'accès Gérant
-                </button>
-                <p className="text-center text-[10px] text-slate-400 uppercase font-black">PIN par défaut : 1234</p>
+                <div><label className="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-4">Établissement</label><input type="text" value={newUserData.establishment} onChange={e => setNewUserData({...newUserData, establishment: e.target.value})} className="w-full px-8 py-5 rounded-3xl bg-slate-50 font-bold shadow-inner" required /></div>
+                <button type="submit" className="w-full bg-brand-900 text-white py-7 rounded-[2.5rem] font-black uppercase text-xs shadow-2xl transition-all mt-6 hover:bg-black">Inscrire et Activer</button>
              </form>
           </div>
         </div>
       )}
-
-      {selectedUser && (
-        <div className="fixed inset-0 z-[150] flex justify-end bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-4xl bg-white h-full shadow-[-20px_0_60px_rgba(0,0,0,0.05)] border-l border-slate-200 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
-            
-            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <div className="flex items-center gap-6">
-                <div className={`h-20 w-20 rounded-[2rem] overflow-hidden flex items-center justify-center font-black text-3xl shadow-lg border-2 ${selectedUser.isAdmin ? 'bg-brand-900 border-brand-500/50 text-brand-50' : 'bg-slate-200 border-white text-slate-400'}`}>
-                  {selectedUser.photoURL ? <img src={selectedUser.photoURL} alt="" className="w-full h-full object-cover"/> : selectedUser.firstName?.[0]}
-                </div>
-                <div>
-                  <h2 className="text-3xl font-serif font-bold text-slate-900 flex items-center gap-4">
-                    {selectedUser.firstName} {selectedUser.lastName}
-                    {selectedUser.isAdmin && <Badge text="EQUIPE DIRECTION" color="blue" />}
-                  </h2>
-                  <div className="flex items-center gap-4 mt-2">
-                    <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">{selectedUser.phoneNumber}</p>
-                    <span className="h-1.5 w-1.5 bg-slate-300 rounded-full"></span>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SALON: {selectedUser.establishmentName || 'INCONNU'}</p>
-                  </div>
-                </div>
-              </div>
-              <button onClick={() => setSelectedUser(null)} className="p-5 bg-white border border-slate-100 rounded-[1.5rem] hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all active:scale-90 shadow-sm"><X className="w-6 h-6" /></button>
-            </div>
-
-            <div className="p-12 space-y-12 flex-grow bg-white">
-              
-              {/* ANALYSE D'USAGE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Target className="w-4 h-4 text-brand-600" /> Maîtrise Théorique</h3>
-                    <div className="flex items-end justify-between mb-4">
-                       <p className="text-4xl font-black text-slate-900">{Object.keys(selectedUser.progress || {}).length}<span className="text-lg text-slate-400 font-bold">/16</span></p>
-                       <p className="text-[10px] font-black text-brand-600 uppercase">Modules validés</p>
-                    </div>
-                    <div className="h-2 w-full bg-white rounded-full overflow-hidden">
-                       <div className="h-full bg-brand-500" style={{ width: `${(Object.keys(selectedUser.progress || {}).length / 16) * 100}%` }}></div>
-                    </div>
-                 </div>
-
-                 <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History className="w-4 h-4 text-emerald-600" /> Croissance Réseau</h3>
-                    <div className="flex items-end justify-between mb-4">
-                       <p className="text-4xl font-black text-slate-900">{selectedUser.referralCount || 0}</p>
-                       <p className="text-[10px] font-black text-emerald-600 uppercase">Filleuls parrainés</p>
-                    </div>
-                    <p className="text-[9px] font-bold text-slate-400 italic">"Ambassadeur actif Go'Top Pro"</p>
-                 </div>
-              </div>
-
-              <div className="bg-indigo-50 rounded-[3rem] p-10 border border-indigo-100">
-                 <h3 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                    <Lock className="w-5 h-5" /> Sécurité & Accès
-                 </h3>
-                 <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div>
-                       <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Code PIN Actuel</p>
-                       {editingPin ? (
-                          <div className="flex items-center gap-4">
-                             <input 
-                              type="text" 
-                              maxLength={4} 
-                              value={newPinValue} 
-                              onChange={e => setNewPinValue(e.target.value.replace(/\D/g, ''))}
-                              className="bg-white border border-indigo-200 rounded-xl px-4 py-2 text-2xl font-black text-slate-900 w-24 tracking-[0.2em] shadow-sm outline-none"
-                             />
-                             <button onClick={handleUpdatePin} disabled={processingId === 'pin' || newPinValue.length !== 4} className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-500 transition-all shadow-md">
-                                {processingId === 'pin' ? <Loader2 className="animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
-                             </button>
-                             <button onClick={() => setEditingPin(false)} className="text-slate-400 hover:text-slate-900 p-3"><X /></button>
-                          </div>
-                       ) : (
-                          <div className="flex items-center gap-6">
-                             <p className="text-4xl font-black text-slate-900 tracking-widest">{selectedUser.pinCode || '1234'}</p>
-                             <button onClick={() => setEditingPin(true)} className="p-3 bg-white border border-slate-100 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm">
-                                <Edit2 className="w-4 h-4" />
-                             </button>
-                          </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
-
-              {/* SECTION ACTIVATION ET PENDING */}
-              {(!selectedUser.isActive || (selectedUser.pendingModuleIds && selectedUser.pendingModuleIds.length > 0)) && (
-                <div className="bg-amber-50 rounded-[3rem] p-10 border border-amber-200 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 group-hover:scale-110 transition-transform duration-1000"><ShoppingCart className="w-24 h-24 text-amber-500" /></div>
-                  <div className="flex items-center gap-6 mb-8 relative z-10">
-                    <div className="h-14 w-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-xl animate-pulse">
-                      <Clock className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-amber-900 uppercase tracking-tight">
-                        {!selectedUser.isActive ? "Activation Compte Requis" : "Validation Commande"}
-                      </h3>
-                      <p className="text-amber-700/70 text-sm font-medium">Demande en attente de paiement Wave.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
-                    {!selectedUser.isActive && (
-                      <ActionBtn onClick={() => handleToggleStatus(selectedUser)} loading={processingId === selectedUser.uid} icon={<UserCheck />} label="Activer Compte" price="Validation Client" color="emerald" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('FULL')) && (
-                      <ActionBtn onClick={() => handleActivatePack('FULL')} loading={processingId === 'FULL'} icon={<Gem />} label="Activer FULL" price="Tout-en-un (15 000 F)" color="amber" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('ELITE')) && (
-                      <ActionBtn onClick={() => handleActivatePack('ELITE')} loading={processingId === 'ELITE'} icon={<Crown />} label="Activer Elite" price="Pack 16 modules" color="amber" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('PERFORMANCE')) && (
-                      <ActionBtn onClick={() => handleActivatePack('PERFORMANCE')} loading={processingId === 'PERFORMANCE'} icon={<Users />} label="Activer RH" price="Pack Performance" color="emerald" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('STOCK')) && (
-                      <ActionBtn onClick={() => handleActivatePack('STOCK')} loading={processingId === 'STOCK'} icon={<Package />} label="Activer Stock" price="Pack Expert" color="blue" />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.startsWith('mod_')) && (
-                      <ActionBtn 
-                        onClick={() => handleActivatePack('INDIVIDUAL')} 
-                        loading={processingId === 'INDIVIDUAL'} 
-                        icon={<ShoppingBag />} 
-                        label="Activer Modules" 
-                        price={`${selectedUser.pendingModuleIds.filter(id => id.startsWith('mod_')).length} modules`} 
-                        color="blue" 
-                      />
-                    )}
-                    {selectedUser.pendingModuleIds?.some(id => id.includes('CRM')) && (
-                      <ActionBtn onClick={() => handleActivatePack('CRM')} loading={processingId === 'CRM'} icon={<Star />} label="Activer CRM" price="Accès VIP (30j)" color="amber" />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid lg:grid-cols-2 gap-10">
-                <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-100">
-                   <h3 className="text-[11px] font-black text-brand-600 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                      <Cloud className="w-5 h-5 text-brand-500" /> Maintenance Cloud
-                   </h3>
-                   <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                         <span className="text-[10px] font-black text-slate-400 uppercase">Statut Protection</span>
-                         <span className={`text-[10px] font-black uppercase ${selectedUser.isKitaPremium || (selectedUser.kitaPremiumUntil && new Date(selectedUser.kitaPremiumUntil) > new Date()) ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {selectedUser.isKitaPremium ? 'Elite à vie' : (selectedUser.kitaPremiumUntil ? `Expire ${new Date(selectedUser.kitaPremiumUntil).toLocaleDateString()}` : 'Stockage Local')}
-                         </span>
-                      </div>
-                      <button onClick={() => handleActivatePack('CLOUD')} disabled={!!processingId} className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg">
-                        <Plus className="w-3 h-3 text-brand-500" /> Ajouter +30 jours
-                      </button>
-                   </div>
-                </div>
-
-                <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-100">
-                   <h3 className="text-[11px] font-black text-amber-600 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
-                      <Star className="w-5 h-5 text-amber-500" /> Abonnement CRM
-                   </h3>
-                   <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                         <span className="text-[10px] font-black text-slate-400 uppercase">Statut CRM</span>
-                         <span className={`text-[10px] font-black uppercase ${selectedUser.crmExpiryDate && new Date(selectedUser.crmExpiryDate) > new Date() ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {selectedUser.crmExpiryDate ? `Expire ${new Date(selectedUser.crmExpiryDate).toLocaleDateString()}` : 'Inactif'}
-                         </span>
-                      </div>
-                      <button onClick={() => handleActivatePack('CRM')} disabled={!!processingId} className="w-full bg-amber-500 text-brand-900 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-amber-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200">
-                        <Zap className="w-3 h-3" /> Renouveler Abonnement
-                      </button>
-                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-10 border-t border-slate-100 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-8 mt-auto">
-               <div className="flex items-center gap-4 w-full md:w-auto">
-                 <button onClick={() => handleToggleStatus(selectedUser)} disabled={selectedUser.uid === currentUser?.uid} className={`flex-grow md:flex-grow-0 px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${selectedUser.isActive ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' : 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20 hover:bg-emerald-700'}`}>
-                    {selectedUser.isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
-                    {selectedUser.isActive ? 'Suspendre Accès' : 'Activer Compte'}
-                 </button>
-               </div>
-               <div className="flex items-center gap-4 w-full md:w-auto">
-                 <a href={`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(`Bonjour ${selectedUser.firstName}, Coach Kita ici. Vos accès sont activés ! Bon succès.`)}`} target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-10 py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#128C7E] flex items-center justify-center gap-3 shadow-xl shadow-emerald-200">
-                    <MessageCircle className="w-4 h-4" /> Envoyer WhatsApp
-                 </a>
-               </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-const StatCard = ({ title, value, icon, color, sub, highlight, onClick }: any) => (
-  <div 
-    onClick={onClick}
-    className={`bg-white p-8 rounded-[2.5rem] border transition-all duration-500 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : ''} ${highlight ? 'border-amber-400 ring-4 ring-amber-50 shadow-xl' : 'border-slate-100'}`}
-  >
-    <div className="flex justify-between items-start mb-6">
-       <div className={`h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl ${color} border border-slate-100 shadow-inner`}>{icon}</div>
-    </div>
-    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">{title}</p>
-    <p className={`text-4xl font-black tracking-tight ${highlight ? 'text-amber-600' : 'text-slate-900'}`}>{value}</p>
-    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 flex items-center gap-2"><div className={`h-1.5 w-1.5 rounded-full ${highlight ? 'bg-amber-500 animate-pulse' : 'bg-slate-200'}`}></div>{sub}</div>
+const AdminStatCard = ({ icon, label, val, color = "text-slate-900", sub }: any) => (
+  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-4 hover:shadow-2xl transition-all">
+    <div className="h-12 w-12 bg-slate-50 text-brand-600 rounded-2xl flex items-center justify-center shadow-inner">{icon}</div>
+    <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p><p className={`text-4xl font-black ${color}`}>{val}</p>{sub && <p className="text-[9px] font-bold text-slate-300 uppercase mt-2">• {sub}</p>}</div>
   </div>
 );
-
-const NavTab = ({ active, onClick, label, count, isUrgent, icon }: any) => (
-  <button onClick={onClick} className={`px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 whitespace-nowrap ${active ? 'bg-brand-900 text-white shadow-xl' : 'text-slate-500 hover:text-brand-600'}`}>
-    {icon}
-    {label}
-    {count !== undefined && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${active ? 'bg-brand-800' : isUrgent ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500'}`}>{count}</span>}
-  </button>
-);
-
-const Badge = ({ text, color, animate }: any) => {
-  const colors: any = { 
-    amber: 'bg-amber-50 text-amber-600 border-amber-200', 
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200', 
-    blue: 'bg-brand-50 text-brand-600 border-brand-200', 
-    slate: 'bg-slate-50 text-slate-500 border-slate-200',
-    rose: 'bg-rose-50 text-rose-600 border-rose-200'
-  };
-  return <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${colors[color]} ${animate ? 'animate-pulse' : ''}`}>{text}</span>;
-};
-
-const ActionBtn = ({ onClick, loading, icon, label, price, color }: any) => {
-  const colors: any = { 
-    amber: 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200', 
-    emerald: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200',
-    blue: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-  };
-  return (
-    <button onClick={onClick} disabled={loading} className={`w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all active:scale-95 shadow-lg ${colors[color]}`}>
-      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : React.cloneElement(icon as React.ReactElement<any>, { className: "w-6 h-6" })}
-      <div className="text-center"><p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{label}</p><p className="text-[9px] font-bold opacity-80">{price}</p></div>
-    </button>
-  );
-};
 
 export default AdminDashboard;

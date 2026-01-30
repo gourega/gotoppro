@@ -17,6 +17,7 @@ import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
 import Magasin from './pages/Magasin';
 import MesFormations from './pages/MesFormations';
+import MarketingVisuel from './pages/MarketingVisuel';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -86,6 +87,12 @@ const AppContent: React.FC = () => {
           <Route path="/mes-formations" element={
             <ProtectedRoute>
               <MesFormations />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/marketing" element={
+            <ProtectedRoute>
+              <MarketingVisuel />
             </ProtectedRoute>
           } />
           

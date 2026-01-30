@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { updateUserProfile } from '../services/supabase';
+import { updateUserProfile, getKitaTransactions } from '../services/supabase';
 import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, LEGACY_ID_MAP, COACH_KITA_AVATAR, DIAGNOSTIC_QUESTIONS, COACH_KITA_SLOGAN } from '../constants';
-import { generateStrategicAdvice } from '../services/geminiService';
+import { generateStrategicAdvice, analyzeBusinessTrends } from '../services/geminiService';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
   ArrowRight,
@@ -25,7 +26,12 @@ import {
   ClipboardCheck,
   Calendar,
   Sparkles,
-  Medal
+  Medal,
+  Instagram,
+  PlusCircle,
+  MinusCircle,
+  TrendingDown,
+  Camera
 } from 'lucide-react';
 import { UserActionCommitment } from '../types';
 
@@ -35,12 +41,10 @@ const Dashboard: React.FC = () => {
   const [dailyTasks, setDailyTasks] = useState<{task: string, completed: boolean}[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [isUpdatingCommitment, setIsUpdatingCommitment] = useState<string | null>(null);
+  const [businessInsight, setBusinessInsight] = useState<string | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
   
-  const isElite = useMemo(() => {
-    if (!user) return false;
-    return user.isKitaPremium || (user.purchasedModuleIds?.length || 0) >= 16;
-  }, [user]);
-
+  const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
   const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
 
@@ -59,22 +63,30 @@ const Dashboard: React.FC = () => {
         localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(selected));
         localStorage.setItem(`daily_date_${user.uid}`, today);
       }
+      loadBusinessInsight();
     }
-  }, [user]);
+  }, [user?.uid]);
 
-  const toggleTask = (index: number) => {
-    const newTasks = [...dailyTasks];
-    newTasks[index].completed = !newTasks[index].completed;
-    setDailyTasks(newTasks);
-    localStorage.setItem(`daily_tasks_${user?.uid}`, JSON.stringify(newTasks));
+  const loadBusinessInsight = async () => {
+    if (!user || loadingInsight) return;
+    setLoadingInsight(true);
+    try {
+      const trans = await getKitaTransactions(user.uid);
+      if (trans.length > 5) {
+        const insight = await analyzeBusinessTrends(trans, user.firstName || 'Gérant');
+        setBusinessInsight(insight);
+      }
+    } catch (e) {
+      console.warn("Insight non disponible");
+    } finally {
+      setLoadingInsight(false);
+    }
   };
 
   const handleToggleCommitment = async (commitment: UserActionCommitment) => {
     if (!user || isUpdatingCommitment) return;
-    
     const uniqueKey = `${commitment.moduleId}-${commitment.date}-${commitment.action}`;
     setIsUpdatingCommitment(uniqueKey);
-    
     try {
       const updatedActionPlan = user.actionPlan.map(a => {
         if (a.moduleId === commitment.moduleId && a.date === commitment.date && a.action === commitment.action) {
@@ -82,42 +94,10 @@ const Dashboard: React.FC = () => {
         }
         return a;
       });
-
       await updateUserProfile(user.uid, { actionPlan: updatedActionPlan });
       await refreshProfile();
-    } catch (err) {
-      console.error("Erreur mise à jour engagement:", err);
     } finally {
       setIsUpdatingCommitment(null);
-    }
-  };
-
-  const sortedActionPlan = useMemo(() => {
-    if (!user?.actionPlan) return [];
-    return [...user.actionPlan].sort((a, b) => {
-      if (a.isCompleted === b.isCompleted) return 0;
-      return a.isCompleted ? 1 : -1;
-    });
-  }, [user?.actionPlan]);
-
-  const handleGenerateAudit = async () => {
-    if (!user || loadingAudit) return;
-    setLoadingAudit(true);
-    try {
-      const rawResults = localStorage.getItem('temp_quiz_results');
-      const results = rawResults ? JSON.parse(rawResults) : null;
-      const negativeTexts = results 
-        ? results.filter((r: any) => !r.answer).map((r: any) => DIAGNOSTIC_QUESTIONS.find(dq => dq.id === r.questionId)?.text).filter(Boolean) as string[]
-        : ["Organisation générale", "Gestion de la rentabilité"];
-      const advice = await generateStrategicAdvice(negativeTexts, negativeTexts.length === 0);
-      if (advice) {
-        await updateUserProfile(user.uid, { strategicAudit: advice });
-        await refreshProfile();
-      }
-    } catch (err) {
-      alert("Le Mentor est occupé. Réessayez dans un instant.");
-    } finally {
-      setLoadingAudit(false);
     }
   };
 
@@ -125,8 +105,7 @@ const Dashboard: React.FC = () => {
     if (!user?.progress) return { completed: 0, percent: 0 };
     let completedCount = 0;
     TRAINING_CATALOG.forEach(module => {
-      const legacyId = Object.keys(LEGACY_ID_MAP).find(key => LEGACY_ID_MAP[key] === module.id);
-      const score = Math.max(Number(user.progress?.[module.id] || 0), legacyId ? Number(user.progress?.[legacyId] || 0) : 0);
+      const score = Number(user.progress?.[module.id] || 0);
       if (score >= 80) completedCount++;
     });
     return { completed: completedCount, percent: Math.round((completedCount / TRAINING_CATALOG.length) * 100) };
@@ -134,246 +113,112 @@ const Dashboard: React.FC = () => {
 
   if (!user) return null;
 
-  const radius = 35;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (stats.percent / 100) * circumference;
-
   return (
     <div className="min-h-screen bg-slate-50 w-full">
       <KitaTopNav />
 
       <div className="bg-brand-900 pt-16 pb-40 px-6 relative overflow-hidden w-full border-b border-brand-800">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/20 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end gap-12 relative z-10">
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <p className="text-brand-400 font-black text-[10px] uppercase tracking-[0.5em]">{user.isAdmin ? 'Console Administrative' : 'Tableau de Bord'}</p>
-              {isElite && !user.isAdmin && <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[8px] font-black uppercase tracking-widest"><Crown className="w-3 h-3" /> Membre Elite</div>}
-            </div>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight">Bonjour, <span className="text-brand-500 italic">{user.firstName}</span></h1>
-            {!user.isAdmin && (
-              <div className={`inline-flex items-center gap-4 px-6 py-3 rounded-2xl border backdrop-blur-md transition-all ${isElite ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
+            <div className={`inline-flex items-center gap-4 px-6 py-3 rounded-2xl border backdrop-blur-md ${isElite ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
                  {isElite ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4 animate-pulse" />}
-                 <div className="flex flex-col"><span className="text-[9px] font-black uppercase tracking-widest">{isElite ? 'Sauvegarde Cloud Active' : 'Mode Stockage Local'}</span><span className="text-[8px] font-bold opacity-70">{isElite ? 'Données synchronisées' : 'Données non sauvegardées'}</span></div>
-              </div>
-            )}
-          </div>
-          {!user.isAdmin && (
-            <div className="bg-white/5 backdrop-blur-3xl p-4 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl mb-4 group">
-              <div className="relative h-28 w-28 flex items-center justify-center shrink-0">
-                 <svg className="w-full h-full -rotate-90 overflow-visible">
-                    <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" className="text-white/5" />
-                    <circle cx="56" cy="56" r={radius} fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-brand-500 transition-all duration-1000" />
-                 </svg>
-                 <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-2xl font-black text-white">{stats.percent}%</span></div>
-              </div>
-              <div className="pr-4">
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Formation Globale</p>
-                <button onClick={() => navigate('/mes-formations')} className="bg-indigo-600 text-white px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl">MES COURS <ArrowRight className="ml-2 inline-block w-3 h-3" /></button>
-              </div>
+                 <span className="text-[9px] font-black uppercase tracking-widest">{isElite ? 'Sauvegarde Cloud Active' : 'Mode Stockage Local'}</span>
             </div>
-          )}
+          </div>
+          <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl">
+              <div className="text-right">
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Score Académie</p>
+                <p className="text-3xl font-black text-white">{stats.percent}%</p>
+              </div>
+              <button onClick={() => navigate('/mes-formations')} className="bg-brand-500 text-white p-4 rounded-2xl hover:bg-brand-400 transition-all shadow-xl"><ArrowRight className="w-5 h-5" /></button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-12 pb-32 space-y-12 relative z-20 w-full">
+      <div className="max-w-6xl mx-auto px-6 mt-[-100px] pb-32 space-y-12 relative z-20 w-full">
         
-        {/* SECTION 0 : MANTRA & DÉFIS (LA BASE QUOTIDIENNE) */}
-        <section className="grid lg:grid-cols-12 gap-8 w-full">
-           {/* Mantra Stratégique */}
+        {/* QUICK ACTIONS GEANTES */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+           <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
+           <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSE" sub="Sortie Caisse" onClick={() => navigate('/caisse')} color="bg-rose-500" />
+           <QuickActionBtn icon={<Users className="w-6 h-6" />} label="CLIENT VIP" sub="Nouveau Fichier" onClick={() => navigate('/pilotage')} color="bg-amber-500" />
+           <QuickActionBtn icon={<Camera className="w-6 h-6" />} label="POST IA" sub="Marketing" onClick={() => navigate('/marketing')} color="bg-indigo-600" />
+        </section>
+
+        {/* ANALYSE PROACTIVE DU MENTOR */}
+        {businessInsight && (
+          <section className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border-l-[12px] border-emerald-500 animate-in slide-in-from-top-4">
+             <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="h-20 w-20 rounded-full overflow-hidden shrink-0 border-4 border-emerald-50 shadow-xl">
+                   <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover" alt="Coach" />
+                </div>
+                <div className="flex-grow">
+                   <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest mb-2">
+                      <Sparkles className="w-3 h-3" /> Flash Analyse de Coach Kita
+                   </div>
+                   <p className="text-xl font-serif italic text-slate-700 leading-relaxed">
+                     "{businessInsight}"
+                   </p>
+                </div>
+                <button onClick={loadBusinessInsight} className="p-4 text-slate-300 hover:text-emerald-500 transition-colors"><RefreshCw className="w-5 h-5" /></button>
+             </div>
+          </section>
+        )}
+
+        <div className="grid lg:grid-cols-12 gap-8">
+           {/* Mantra */}
            <div className="lg:col-span-4 bg-brand-900 rounded-[3rem] p-10 border border-brand-800 shadow-2xl relative overflow-hidden group">
               <Quote className="absolute top-6 right-6 w-20 h-20 text-brand-800 opacity-20" />
-              <div className="relative z-10 h-full flex flex-col">
-                 <h3 className="text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-8">Mantra du Succès</h3>
-                 <p className="text-2xl font-serif italic text-white leading-relaxed flex-grow">"{COACH_KITA_SLOGAN}"</p>
-                 <div className="mt-8 pt-6 border-t border-brand-800">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Architecte Kita — Abidjan</p>
-                 </div>
-              </div>
+              <h3 className="text-brand-500 font-black text-[10px] uppercase tracking-[0.4em] mb-8">Mantra du Succès</h3>
+              <p className="text-2xl font-serif italic text-white leading-relaxed flex-grow">"{COACH_KITA_SLOGAN}"</p>
            </div>
 
-           {/* Défis de l'Excellence */}
-           <div className="lg:col-span-8 bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 relative overflow-hidden">
-              <div className="absolute bottom-0 right-0 p-12 opacity-[0.03] text-8xl font-black italic">DÉFIS</div>
-              <div className="flex items-center justify-between mb-8 relative z-10">
-                 <div className="flex items-center gap-4">
-                    <Target className="w-6 h-6 text-brand-600" />
-                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Les 3 Défis du Jour</h3>
-                 </div>
-                 <span className="text-[10px] font-black text-brand-600 bg-brand-50 px-3 py-1 rounded-full uppercase">Standard Kita</span>
+           {/* Défis */}
+           <div className="lg:col-span-8 bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100">
+              <div className="flex items-center justify-between mb-8">
+                 <div className="flex items-center gap-4"><Target className="w-6 h-6 text-brand-600" /><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Défis du Jour</h3></div>
               </div>
-              
-              <div className="space-y-4 relative z-10">
+              <div className="space-y-3">
                  {dailyTasks.map((t, idx) => (
-                    <button 
-                      key={idx} 
-                      onClick={() => toggleTask(idx)}
-                      className={`w-full flex items-center gap-6 p-6 rounded-2xl border-2 transition-all text-left ${t.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-transparent hover:border-brand-200'}`}
-                    >
-                       <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${t.completed ? 'bg-emerald-500 text-white' : 'bg-white text-slate-200 border border-slate-100'}`}>
+                    <button key={idx} onClick={() => {
+                        const n = [...dailyTasks]; n[idx].completed = !n[idx].completed; setDailyTasks(n);
+                        localStorage.setItem(`daily_tasks_${user.uid}`, JSON.stringify(n));
+                    }} className={`w-full flex items-center gap-6 p-6 rounded-2xl border-2 transition-all ${t.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-transparent hover:border-brand-200'}`}>
+                       <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${t.completed ? 'bg-emerald-500 text-white' : 'bg-white border'}`}>
                           {t.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                        </div>
-                       <p className={`text-sm font-bold leading-tight ${t.completed ? 'text-emerald-900 line-through' : 'text-slate-700'}`}>{t.task}</p>
+                       <p className={`text-sm font-bold ${t.completed ? 'text-emerald-900 line-through' : 'text-slate-700'}`}>{t.task}</p>
                     </button>
                  ))}
               </div>
            </div>
-        </section>
+        </div>
 
-        {/* SECTION 1 : VISION STRATÉGIQUE DU MENTOR */}
-        <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-l-[12px] border-indigo-500 relative overflow-hidden group w-full">
-           <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-[15rem] font-serif italic pointer-events-none transition-transform duration-1000">Vision</div>
-           <div className="flex flex-col md:flex-row gap-10 items-start relative z-10">
-              <div className="shrink-0 mx-auto md:mx-0">
-                  <div className="h-24 w-24 rounded-3xl overflow-hidden border-2 border-indigo-100 shadow-xl rotate-2"><img src={COACH_KITA_AVATAR} className="w-full h-full object-cover" alt="Mentor" /></div>
-              </div>
-              <div className="flex-grow">
-                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                      <h2 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-1">Vision Stratégique du Mentor</h2>
-                      <p className="text-2xl font-serif font-bold text-slate-900">Directives de Coach Kita</p>
-                    </div>
-                    {user.strategicAudit && <button onClick={handleGenerateAudit} disabled={loadingAudit} className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors flex items-center gap-2">{loadingAudit ? <Loader2 className="animate-spin w-3 h-3" /> : <RefreshCw className="w-3 h-3" />} Mettre à jour mon audit</button>}
-                 </div>
-                 {user.strategicAudit ? <div className="prose-kita whitespace-pre-wrap font-medium" dangerouslySetInnerHTML={{ __html: user.strategicAudit.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-900">$1</strong>') }} /> : (
-                   <div className="py-10 text-center md:text-left">
-                      <p className="text-slate-500 italic mb-8 max-w-lg">"Gérant, votre plan de route personnalisé n'est pas encore activé en ligne. Cliquez ci-dessous pour que je scanne votre potentiel."</p>
-                      <button onClick={handleGenerateAudit} disabled={loadingAudit} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-4 mx-auto md:mx-0">{loadingAudit ? <Loader2 className="animate-spin w-4 h-4" /> : <FileSearch className="w-4 h-4" />}{loadingAudit ? 'Analyse de votre salon...' : 'Générer mon audit stratégique'}</button>
-                   </div>
-                 )}
-              </div>
-           </div>
-        </section>
-
-        {/* SECTION 2 : PLAN DE TRANSFORMATION (ENGAGEMENTS) - PERMANENTE */}
-        {!user.isAdmin && (
-          <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-emerald-500 relative overflow-hidden group w-full">
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
-                    <ClipboardCheck className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <h2 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em] mb-1">Mon Plan de Transformation</h2>
-                    <p className="text-2xl font-serif font-bold text-slate-900">Mes Engagements KITA</p>
-                  </div>
-                </div>
-                {sortedActionPlan.length > 0 && (
-                  <div className="bg-amber-50 border border-amber-100 px-6 py-2 rounded-full flex items-center gap-3">
-                     <Medal className="w-4 h-4 text-amber-500" />
-                     <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">{sortedActionPlan.filter(a => a.isCompleted).length} / {sortedActionPlan.length} Réalisés</span>
-                  </div>
-                )}
-             </div>
-
-             {sortedActionPlan.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {sortedActionPlan.map((item, idx) => {
-                    const uniqueKey = `${item.moduleId}-${item.date}-${item.action}`;
-                    const isPending = isUpdatingCommitment === uniqueKey;
-
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`relative p-10 rounded-[3rem] border-2 transition-all flex flex-col justify-between group overflow-hidden ${
-                          item.isCompleted 
-                          ? 'bg-slate-50 border-emerald-100 opacity-80' 
-                          : 'bg-white border-slate-100 hover:border-emerald-200 hover:shadow-2xl'
-                        }`}
-                      >
-                        {/* Motif d'arrière-plan discret style papier */}
-                        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] pointer-events-none"></div>
-                        
-                        <div className="relative z-10">
-                          <div className="flex justify-between items-start mb-8">
-                             <div className="flex flex-col gap-1">
-                               <span className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em]">{item.moduleTitle}</span>
-                               <div className="h-1 w-8 bg-emerald-500 rounded-full"></div>
-                             </div>
-                             <span className="text-[9px] font-bold text-slate-300 flex items-center gap-1.5 bg-slate-50 px-3 py-1 rounded-lg">
-                               <Calendar className="w-3 h-3" /> {item.date}
-                             </span>
-                          </div>
-                          
-                          <div className="relative mb-10">
-                            <Quote className="absolute -top-4 -left-4 w-10 h-10 text-emerald-500 opacity-10" />
-                            <p className={`text-xl font-serif italic leading-relaxed text-center px-4 ${item.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                               "{item.action}"
-                            </p>
-                          </div>
-                        </div>
-
-                        <button 
-                          onClick={() => handleToggleCommitment(item)}
-                          disabled={isPending}
-                          className={`relative z-10 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                            item.isCompleted 
-                            ? 'bg-emerald-500 text-white shadow-lg' 
-                            : 'bg-brand-900 text-white shadow-xl hover:bg-black hover:-translate-y-1'
-                          }`}
-                        >
-                           {isPending ? (
-                             <Loader2 className="w-4 h-4 animate-spin" />
-                           ) : item.isCompleted ? (
-                             <>
-                               <CheckCircle2 className="w-4 h-4" /> Engagement Tenu
-                             </>
-                           ) : (
-                             <>
-                               <Circle className="w-4 h-4" /> Marquer comme réalisé
-                             </>
-                           )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-             ) : (
-                <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
-                   <div className="h-20 w-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm">
-                      <Sparkles className="w-10 h-10 text-slate-200" />
-                   </div>
-                   <h3 className="text-xl font-serif font-bold text-slate-400 mb-4">Votre transformation commence ici</h3>
-                   <p className="text-slate-400 text-sm max-w-sm mx-auto italic mb-10">
-                     "Gérant, terminez votre première masterclass et scellez votre premier engagement pour voir apparaître votre plan ici."
-                   </p>
-                   <button onClick={() => navigate('/mes-formations')} className="bg-white border-2 border-slate-200 text-slate-400 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-brand-500 hover:text-brand-600 transition-all flex items-center gap-3 mx-auto">
-                      Aller à l'Académie <ArrowRight className="w-4 h-4" />
-                   </button>
-                </div>
-             )}
-          </section>
-        )}
-
-        {/* SECTION FINANCE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
-                 <div className="flex items-center justify-center md:justify-start gap-4 mb-2"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight m-0">GESTION DES FINANCES</h2></div>
-                 <p className="text-slate-500 font-medium max-w-md m-0 leading-relaxed">Suivez vos recettes, vos d&eacute;penses et recouvrez vos ardoises pour garantir la sant&eacute; financi&egrave;re de votre empire.</p>
-                 <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-brand-950 transition-all">Ouvrir la Caisse KITA <ArrowRight className="w-4 h-4 text-amber-400" /></button>
+                 <div className="flex items-center justify-center md:justify-start gap-4"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">GESTION DES FINANCES</h2></div>
+                 <p className="text-slate-500 font-medium max-w-md">Suivez vos recettes, vos dépenses et recouvrez vos ardoises pour garantir la santé financière de votre empire.</p>
+                 <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">Ouvrir la Caisse KITA <ArrowRight className="w-4 h-4 text-amber-400" /></button>
               </div>
-              <div className="h-40 w-40 bg-amber-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-all duration-500"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
+              <div className="h-40 w-40 bg-amber-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-all"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
            </div>
         </section>
 
-        <div className="grid lg:grid-cols-12 gap-10">
-           <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all ${isStockExpert ? 'bg-slate-900 border-none' : 'bg-white border-2 border-sky-500/20 shadow-sky-900/5'}`}>
-              <div className={`absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110 ${isStockExpert ? 'text-sky-500' : 'text-sky-300'}`}><Package className="w-32 h-32" /></div>
+        <div className="grid lg:grid-cols-2 gap-8">
+           <div className={`rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all ${isStockExpert ? 'bg-slate-900 border-none' : 'bg-white border-2 border-sky-500/20'}`}>
               <div className="relative z-10 h-full flex flex-col">
-                 <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE {isStockExpert && 'ACTIV&Eacute;E'}</h2>
+                 <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE</h2>
                  <h3 className={`text-2xl font-serif font-bold mb-6 ${isStockExpert ? 'text-white' : 'text-slate-900'}`}>Gestion du Stock</h3>
-                 <p className={`text-sm leading-relaxed mb-10 flex-grow ${isStockExpert ? 'text-slate-400' : 'text-slate-500'}`}>{isStockExpert ? 'Contr&ocirc;lez vos produits et colorations. &Eacute;vitez les vols et les ruptures.' : 'Augmentez votre marge de 20% en contr&ocirc;lant vos m&eacute;langes et stocks.'}</p>
-                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-400 transition-all flex items-center justify-center gap-3">Acc&eacute;der au Magasin <ArrowRight className="w-4 h-4" /></button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-sky-700 transition-all flex items-center justify-center gap-3"><Zap className="w-4 h-4" /> Activer le Stock (5 000 F)</button>}
+                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Accéder au Magasin</button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><Zap className="w-4 h-4" /> Activer le Stock</button>}
               </div>
            </div>
-           <div className={`lg:col-span-6 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20 shadow-emerald-900/5'}`}>
-              <div className={`absolute top-0 right-0 p-8 opacity-10 rotate-12 transition-transform group-hover:scale-110 ${isPerformance ? 'text-emerald-500' : 'text-emerald-300'}`}><Users className="w-32 h-32" /></div>
+           <div className={`rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20'}`}>
               <div className="relative z-10 h-full flex flex-col">
-                 <h2 className="text-emerald-500 font-black text-[11px] uppercase tracking-[0.3em] mb-4">HUMAINS {isPerformance && 'ACTIFS'}</h2>
+                 <h2 className="text-emerald-500 font-black text-[11px] uppercase tracking-[0.3em] mb-4">HUMAINS</h2>
                  <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6">Ressources Humaines</h3>
-                 <p className="text-slate-500 text-sm leading-relaxed mb-10 flex-grow">{isPerformance ? 'Pilotez votre &eacute;quipe (commissions) et fid&eacute;lisez vos meilleures clientes VIP.' : 'G&eacute;rez les commissions avec transparence et piloter vos clients VIP.'}</p>
-                 {isPerformance ? <button onClick={() => navigate('/pilotage')} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3">Piloter le Staff <ArrowRight className="w-4 h-4" /></button> : <button onClick={() => navigate('/results?pack=performance')} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-3"><Zap className="w-4 h-4" /> Activer les RH (5 000 F)</button>}
+                 {isPerformance ? <button onClick={() => navigate('/pilotage')} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Piloter le Staff</button> : <button onClick={() => navigate('/results?pack=performance')} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><Zap className="w-4 h-4" /> Activer les RH</button>}
               </div>
            </div>
         </div>
@@ -381,5 +226,15 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+const QuickActionBtn = ({ icon, label, sub, onClick, color }: any) => (
+  <button onClick={onClick} className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 hover:scale-105 active:scale-95 transition-all text-left flex flex-col gap-4 group">
+     <div className={`${color} text-white p-3 rounded-2xl w-fit shadow-lg group-hover:rotate-12 transition-transform`}>{icon}</div>
+     <div>
+        <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">{label}</p>
+        <p className="text-[8px] font-bold text-slate-400 uppercase">{sub}</p>
+     </div>
+  </button>
+);
 
 export default Dashboard;
