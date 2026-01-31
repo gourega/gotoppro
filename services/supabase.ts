@@ -2,21 +2,29 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Accès direct pour permettre à Vite de faire le remplacement de texte (Define)
-// On tente d'abord process.env (injecté par Vite), puis import.meta.env (standard Vite)
-const supabaseUrl = (process.env.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL || "").trim();
-const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || "").trim();
+/**
+ * Récupération sécurisée des variables d'environnement.
+ * En production (Cloudflare), elles sont injectées par Vite via process.env ou import.meta.env.
+ */
+const getEnvVar = (name: string): string => {
+  const value = (process.env[name] || (import.meta as any).env?.[name] || "").trim();
+  return value;
+};
+
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides.");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes. Connexion impossible.");
     return null;
   }
   try {
+    // Nettoyage de l'URL pour éviter les doubles slashs
     const cleanUrl = supabaseUrl.replace(/\/$/, "");
     return createClient(cleanUrl, supabaseAnonKey);
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Échec d'initialisation du client.");
+    console.error("Go'Top Pro [Supabase]: Erreur fatale d'initialisation.");
     return null;
   }
 };
