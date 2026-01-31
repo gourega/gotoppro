@@ -3,30 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
 /**
- * Récupération ultra-robuste des variables d'environnement.
- * Tente d'abord via l'injection Vite (process.env) puis via le standard meta.env.
+ * Récupération des variables d'environnement via Vite.
  */
-const getVar = (key: string): string => {
-  try {
-    // @ts-ignore
-    return (process.env[key] || (import.meta as any).env[key] || "").trim();
-  } catch (e) {
-    return "";
-  }
-};
-
-const supabaseUrl = getVar('VITE_SUPABASE_URL');
-const supabaseAnonKey = getVar('VITE_SUPABASE_ANON_KEY');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const getSafeSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn("Go'Top Pro [Supabase]: Variables manquantes. Utilisez 'Retry Deployment' sur Cloudflare après avoir ajouté les secrets.");
+    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides.");
     return null;
   }
   try {
     return createClient(supabaseUrl, supabaseAnonKey);
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Échec d'initialisation du client.");
+    console.error("Go'Top Pro [Supabase]: Erreur d'initialisation du client.");
     return null;
   }
 };

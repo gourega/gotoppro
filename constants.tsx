@@ -6,12 +6,13 @@ export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/o
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/KITA/logo-kita.png";
 
 // Avatar de Coach Kita (Version Officielle)
-export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
+// On utilise une URL plus robuste pour garantir l'affichage
+export const COACH_KITA_AVATAR = "https://ui-avatars.com/api/?name=Coach+Kita&background=0c4a6e&color=fff&size=512";
 
 // Partenaire Excellence : Salon Chez Raymond
-export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/raymond-logo.png";
-export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_PORTRAIT.jpg";
-export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
+export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
+export const RAYMOND_PORTRAIT = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
+export const RAYMOND_STYLING_PHOTO = "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80";
 
 export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
@@ -158,7 +159,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Technique",
     title: "L'art du shampoing : le moment de vérité",
     description: "Le shampoing n'est pas un nettoyage, c'est un soin sensoriel.",
-    mini_course: "C'est au bac que vous gagnez le cœur de votre cliente.",
+    mini_course: "C'est au bac que vous gagnez le cœur de votre clinique.",
     price: 500,
     aiCredits: 2,
     lesson_content: `
@@ -169,8 +170,8 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>2. L'expertise technique : émulsion et rinçage</h2>
       <p>Un bon shampoing commence par une émulsion parfaite. Le rinçage doit être méticuleux : un cheveu qui « crisse » est un cheveu propre.</p>
       <h2>3. Synthèse & Orientation : L'Ancrage Émotionnel</h2>
-      <p>Beaucoup de salons font de bons brushings, peu font des shampoings inoubliables. C'est ici que se joue la fidélité de votre cliente sur les 10 prochaines années.</p>
-      <p><strong>Votre Défi des 24h :</strong> Réalisez un massage crânien de 3 minutes en silence total pour votre prochaine cliente. Observez son visage à la fin. Relevez le défi du quiz maintenant.</p>
+      <p>Beaucoup de salons font de bons brushings, peu font des shampoings inoubliables. C'est ici que se joue la fidélité de votre clinique sur les 10 prochaines années.</p>
+      <p><strong>Votre Défi des 24h :</strong> Réalisez un massage crânien de 3 minutes en silence total pour votre prochaine clinique. Observez son visage à la fin. Relevez le défi du quiz maintenant.</p>
     `,
     coach_tip: "Le silence au bac est d'or.",
     strategic_mantra: "Un shampoing bâclé est une expérience client ratée.",
@@ -269,7 +270,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Marketing",
     title: "Marketing Digital : attirer les meilleurs",
     description: "Utilisez Instagram et WhatsApp pour remplir votre agenda.",
-    mini_course: "Votre vitrine est dans la poche de vos clientes.",
+    mini_course: "Votre vitrine est dans la poche de vos cliniques.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
@@ -278,15 +279,15 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>2. La règle des trois tiers pour vos réseaux</h2>
       <p>1/3 réalisations techniques, 1/3 coulisses du salon, 1/3 conseils d'expert. C'est ce mélange qui crée la confiance.</p>
       <h2>3. Synthèse & Orientation : De l'Ombre à la Lumière</h2>
-      <p>Vous avez du talent, mais le monde doit le savoir. Le digital n'est pas une option, c'est votre haut-parleur pour attirer les clientes VIP de toute la ville.</p>
+      <p>Vous avez du talent, mais le monde doit le savoir. Le digital n'est pas une option, c'est votre haut-parleur pour attirer les cliniques VIP de toute la ville.</p>
       <p><strong>Votre Défi des 24h :</strong> Postez une photo 'Avant/Après' parfaite sur votre statut WhatsApp aujourd'hui. Prêt pour le quiz digital ?</p>
     `,
     coach_tip: "Postez une photo par jour à l'heure du déjeuner.",
     strategic_mantra: "Si on ne vous voit pas, vous n'existez pas.",
     quiz_questions: [
       { question: "Quelle photo attire ?", options: ["Floue", "Avant/Après bien éclairé", "Le salon vide"], correctAnswer: 1, explanation: "Le résultat concret rassure." },
-      { question: "Quel est le meilleur moment pour poster ?", options: ["Minuit", "Heures de pause (12h-13h ou soir)", "Pendant qu'on travaille"], correctAnswer: 1, explanation: "C'est quand vos clientes sont sur leur téléphone." },
-      { question: "Que signifie le tiers 'Conseil' ?", options: ["Donner ses prix", "Aider la cliente avec un tips", "Se plaindre"], correctAnswer: 1, explanation: "Partager votre savoir vous positionne en expert." }
+      { question: "Quel est le meilleur moment pour poster ?", options: ["Minuit", "Heures de pause (12h-13h ou soir)", "Pendant qu'on travaille"], correctAnswer: 1, explanation: "C'est quand vos cliniques sont sur leur téléphone." },
+      { question: "Que signifie le tiers 'Conseil' ?", options: ["Donner ses prix", "Aider la clinique avec un tips", "Se plaindre"], correctAnswer: 1, explanation: "Partager votre savoir vous positionne en expert." }
     ],
     exercises: [],
     tips: []
@@ -305,7 +306,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>2. La précision du mélange : pesez tout !</h2>
       <p>Travailler à l'œil est une erreur de débutant. Utilisez une balance électronique. 5 grammes de trop chaque jour, c'est des milliers de francs jetés par mois.</p>
       <h2>3. Synthèse & Orientation : La Maîtrise Technique</h2>
-      <p>Un coloriste qui ne pèse pas ses mélanges est un amateur qui joue avec l'argent du salon. Soyez le scientifique que vos clientes attendent.</p>
+      <p>Un coloriste qui ne pèse pas ses mélanges est un amateur qui joue avec l'argent du salon. Soyez le scientifique que vos cliniques attendent.</p>
       <p><strong>Votre Défi des 24h :</strong> Pesez chaque gramme de votre prochain mélange couleur. Pas d'exception. Validez votre expertise avec le quiz.</p>
     `,
     coach_tip: "Pesez toujours vos mélanges.",
@@ -323,20 +324,20 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     topic: "Vente",
     title: "Vente de produits : conseiller comme un expert",
     description: "Apprenez à vendre pour augmenter vos revenus sans effort.",
-    mini_course: "Si votre client achète ailleurs, vous perdez de l'argent.",
+    mini_course: "Si votre clinique achète ailleurs, vous perdez de l'argent.",
     price: 500,
     aiCredits: 3,
     lesson_content: `
       <h2>1. La prescription d'expert : ne vendez pas, conseillez</h2>
-      <p>Ne pas conseiller le bon produit à votre cliente, c'est la laisser détruire votre travail avec un shampoing de mauvaise qualité.</p>
+      <p>Ne pas conseiller le bon produit à votre clinique, c'est la laisser détruire votre travail avec un shampoing de mauvaise qualité.</p>
       <h2>2. Le taux de revente : votre indicateur clé</h2>
-      <p>La revente doit représenter 15% de votre CA. C'est de la marque pure sans temps de travail additionnel.</p>
+      <p>La revente doit représenter 15% de votre CA. C'est de la marge pure sans temps de travail additionnel.</p>
       <h2>3. Synthèse & Orientation : Le Service Complet</h2>
-      <p>Votre travail ne s'arrête pas quand la cliente quitte le fauteuil. Il s'arrête quand vous êtes sûr qu'elle saura entretenir sa beauté chez elle grâce à vos produits.</p>
-      <p><strong>Votre Défi des 24h :</strong> Proposez systématiquement un produit de soin à domicile à vos 3 prochaines clientes. Le quiz vous attend pour valider ce levier.</p>
+      <p>Votre travail ne s'arrête pas quand la clinique quitte le fauteuil. Il s'arrête quand vous êtes sûr qu'elle saura entretenir sa beauté chez elle grâce à vos produits.</p>
+      <p><strong>Votre Défi des 24h :</strong> Proposez systématiquement un produit de soin à domicile à vos 3 prochaines cliniques. Le quiz vous attend pour valider ce levier.</p>
     `,
     coach_tip: "Vos bacs sont votre meilleure salle d'exposition.",
-    strategic_mantra: "Vendre un produit, c'est prendre soin du client chez lui.",
+    strategic_mantra: "Vendre un produit, c'est prendre soin de la clinique chez elle.",
     quiz_questions: [
       { question: "Quand parler du produit ?", options: ["À la caisse", "Pendant le service", "Jamais"], correctAnswer: 1, explanation: "L'éducation se fait par la démonstration." },
       { question: "Quel pourcentage du CA doit viser la revente ?", options: ["2%", "15% et plus", "50%"], correctAnswer: 1, explanation: "15% est le seuil de rentabilité d'un salon d'élite." },
@@ -349,7 +350,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     id: "mod_coupe",
     topic: "Technique",
     title: "Coupe & Morphologie : sculpter le visage",
-    description: "Adaptez chaque coupe à la forme unique de vos clientes.",
+    description: "Adaptez chaque coupe à la forme unique de vos cliniques.",
     mini_course: "Une coupe réussie est une coupe qui grandit bien.",
     price: 500,
     aiCredits: 3,
@@ -359,15 +360,15 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>2. La géométrie de la coupe : angles et sections</h2>
       <p>La réussite réside dans la précision de vos séparations. Comprendre l'angles d'élévation vous permet de créer du volume avec précision.</p>
       <h2>3. Synthèse & Orientation : L'Architecte de la Beauté</h2>
-      <p>Ne soyez pas un simple exécutant de photos trouvées sur internet. Soyez l'architecte qui crée une structure adaptée à la personnalité de sa cliente.</p>
-      <p><strong>Votre Défi des 24h :</strong> Expliquez techniquement à votre prochaine cliente pourquoi vous choisissez tel angle de coupe par rapport à son visage. Prêt pour le quiz ?</p>
+      <p>Ne soyez pas un simple exécutant de photos trouvées sur internet. Soyez l'architecte qui crée une structure adaptée à la personnalité de sa clinique.</p>
+      <p><strong>Votre Défi des 24h :</strong> Expliquez techniquement à votre prochaine clinique pourquoi vous choisissez tel angle de coupe par rapport à son visage. Prêt pour le quiz ?</p>
     `,
     coach_tip: "Utilisez le miroir pour valider l'équilibre.",
     strategic_mantra: "L'harmonie visuelle est le but ultime.",
     quiz_questions: [
       { question: "Quelle forme de visage idéale ?", options: ["Rond", "Ovale", "Carré"], correctAnswer: 1, explanation: "L'ovale est l'équilibre parfait en coiffure." },
       { question: "Que crée un angle de 90 degrés ?", options: ["De la masse", "Du dégradé (volume léger)", "Rien"], correctAnswer: 1, explanation: "L'élévation crée le mouvement." },
-      { question: "Pourquoi expliquer le choix technique à la cliente ?", options: ["Pour frimer", "Pour asseoir votre autorité d'expert", "Pour parler"], correctAnswer: 1, explanation: "L'expertise expliquée ne se négocie pas." }
+      { question: "Pourquoi expliquer le choix technique à la clinique ?", options: ["Pour frimer", "Pour asseoir votre autorité d'expert", "Pour parler"], correctAnswer: 1, explanation: "L'expertise expliquée ne se négocie pas." }
     ],
     exercises: [],
     tips: []
@@ -382,18 +383,18 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     aiCredits: 2,
     lesson_content: `
       <h2>1. Le séquençage intelligent (Overlapping)</h2>
-      <p>Pendant qu'une couleur pose, vous devriez déjà effectuer une coupe sur une autre cliente. Optimisez les temps morts.</p>
+      <p>Pendant qu'une couleur pose, vous devriez déjà effectuer une coupe sur une autre clinique. Optimisez les temps morts.</p>
       <h2>2. La lutte contre les rendez-vous manqués</h2>
       <p>Envoyez un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
       <h2>3. Synthèse & Orientation : Maître de son Temps</h2>
       <p>Un gérant débordé est un gérant qui ne pilote plus. Reprenez le contrôle de votre agenda pour libérer du temps pour votre vision stratégique.</p>
-      <p><strong>Votre Défi des 24h :</strong> Appelez ou écrivez à toutes vos clientes de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
+      <p><strong>Votre Défi des 24h :</strong> Appelez ou écrivez à toutes vos cliniques de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
     `,
     coach_tip: "Prévoyez toujours 15 minutes de marge.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
     quiz_questions: [
       { question: "C'est quoi l'overlapping ?", options: ["Attendre", "Coupe pendant pose couleur", "Se reposer"], correctAnswer: 1, explanation: "Optimiser les poses double la rentabilité." },
-      { question: "Comment réduire les rendez-vous manqués ?", options: ["Se fâcher", "Rappel WhatsApp la veille", "Payer d'avance"], correctAnswer: 1, explanation: "Un rappel courtois suffit souvent à libérer un créneau si la cliente ne vient pas." },
+      { question: "Comment réduire les rendez-vous manqués ?", options: ["Se fâcher", "Rappel WhatsApp la veille", "Payer d'avance"], correctAnswer: 1, explanation: "Un rappel courtois suffit souvent à libérer un créneau si la clinique ne vient pas." },
       { question: "Pourquoi laisser 15 min de marge ?", options: ["Pour boire un café", "Pour gérer les imprévus et le nettoyage", "C'est inutile"], correctAnswer: 1, explanation: "La marge évite le stress du retard cumulé." }
     ],
     exercises: [],
@@ -402,7 +403,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
   {
     id: "mod_psychologie",
     topic: "Accueil",
-    title: "Psychologie de la cliente : comprendre l'inexprimé",
+    title: "Psychologie de la clinique : comprendre l'inexprimé",
     description: "Apprenez à lire entre les lignes pour satisfaire les désirs cachés.",
     mini_course: "On coiffe une personne, pas seulement des cheveux.",
     price: 500,
@@ -410,17 +411,17 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     lesson_content: `
       <h2>1. L'écoute active et le décodage</h2>
       <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez... ? ». Cela évite les litiges et prouve que vous écoutez.</p>
-      <h2>2. Gérer les clientes difficiles</h2>
+      <h2>2. Gérer les cliniques difficiles</h2>
       <p>Restez calme, ne justifiez pas l'erreur, proposez une version de solution. Transformer un litige en succès est votre test de Leader.</p>
       <h2>3. Synthèse & Orientation : La Connexion Humaine</h2>
-      <p>Votre salon est un lieu de thérapie autant que de beauté. Maîtriser la psychologie vous rend indispensable aux yeux de vos clientes.</p>
-      <p><strong>Votre Défi des 24h :</strong> Reformulez chaque demande de cliente aujourd'hui pour valider sa compréhension. Passez maintenant à la certification.</p>
+      <p>Votre salon est un lieu de thérapie autant que de beauté. Maîtriser la psychologie vous rend indispensable aux yeux de vos cliniques.</p>
+      <p><strong>Votre Défi des 24h :</strong> Reformulez chaque demande de clinique aujourd'hui pour valider sa compréhension. Passez maintenant à la certification.</p>
     `,
     coach_tip: "Observez le langage corporel.",
     strategic_mantra: "Celui qui comprend gagne le marché.",
     quiz_questions: [
-      { question: "Utilité de l'écoute active ?", options: ["Manipuler", "Mieux conseiller et fidéliser", "Devenir psy"], correctAnswer: 1, explanation: "Une cliente comprise est une cliente en sécurité." },
-      { question: "Quelle réaction face à une cliente mécontente ?", options: ["Argumenter", "Écouter, s'excuser et proposer une solution", "Ignorer"], correctAnswer: 1, explanation: "L'empathie désamorce 90% des conflits." },
+      { question: "Utilité de l'écoute active ?", options: ["Manipuler", "Mieux conseiller et fidéliser", "Devenir psy"], correctAnswer: 1, explanation: "Une clinique comprise est une clinique en sécurité." },
+      { question: "Quelle réaction face à une clinique mécontente ?", options: ["Argumenter", "Écouter, s'excuser et proposer une solution", "Ignorer"], correctAnswer: 1, explanation: "L'empathie désamorce 90% des conflits." },
       { question: "Que trahit un bras croisé ?", options: ["Une fermeture ou un doute", "Un confort", "Rien"], correctAnswer: 0, explanation: "Le corps parle souvent avant la bouche." }
     ],
     exercises: [],
@@ -441,7 +442,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <p>Le client VIP paie pour ne pas être vu. Si vous pouvez, créez un coin discret. Garantissez une discrétion totale sur les échanges.</p>
       <h2>3. Synthèse & Orientation : Élever les Standards</h2>
       <p>Le prestige n'est pas une question de marbre au sol, mais de qualité de présence. Soyez le gérant qui offre l'exceptionnel dans chaque geste.</p>
-      <p><strong>Votre Défi des 24h :</strong> Prévoyez une petite attention particulière pour votre meilleure cliente demain (boisson, échantillon luxe). Relevez le défi du quiz VIP.</p>
+      <p><strong>Votre Défi des 24h :</strong> Prévoyez une petite attention particulière pour votre meilleure clinique demain (boisson, échantillon luxe). Relevez le défi du quiz VIP.</p>
     `,
     coach_tip: "L'exclusivité crée le désir.",
     strategic_mantra: "Le prestige autorise des marges extraordinaires.",
@@ -468,7 +469,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <p>Le produit sur vos étagères est de l'argent qui dort. Apprenez à calculer votre taux de rotation.</p>
       <h2>3. Synthèse & Orientation : Devenir un Gestionnaire</h2>
       <p>Un bon coiffeur gagne sa vie, un bon gestionnaire bâtit un patrimoine. Changez votre regard sur votre caisse pour en faire un moteur de croissance.</p>
-      <p><strong>Votre Défi des 24h :</strong> Calculez votre ticket moyen de la journée (Recettes / Nombre de clientes). Répondez au quiz pour devenir un pro des chiffres.</p>
+      <p><strong>Votre Défi des 24h :</strong> Calculez votre ticket moyen de la journée (Recettes / Nombre de cliniques). Répondez au quiz pour devenir un pro des chiffres.</p>
     `,
     coach_tip: "Vérifiez vos chiffres tous les soirs.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'amplifie pas.",
@@ -519,17 +520,17 @@ export const BADGES: Badge[] = [
 export const DIAGNOSTIC_QUESTIONS = [
   { id: 1, text: "Votre équipe est-elle formée à un accueil téléphonique qui transforme chaque appel ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
   { id: 2, text: "Réalisez-vous un diagnostic visuel et tactile assis avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
-  { id: 3, text: "Désinfectez-vous systématiquement vos outils devant la cliente ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
+  { id: 3, text: "Désinfectez-vous systématiquement vos outils devant la clinique ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
   { id: 4, text: "Le passage au bac est-il un rituel de relaxation avec massage crânien ?", category: "Technique", linkedModuleId: "mod_shampoing" },
   { id: 5, text: "Calculez-vous vos tarifs en fonction de votre coût à la minute réel ?", category: "Finance", linkedModuleId: "mod_pricing" },
   { id: 6, text: "Réunissez-vous votre équipe chaque semaine pour fixer des objectifs ?", category: "Management", linkedModuleId: "mod_management" },
-  { id: 7, text: "Utilisez-vous un fichier client pour relancer les absentes ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
+  { id: 7, text: "Utilisez-vous un fichier clinique pour relancer les absentes ?", category: "Vente", linkedModuleId: "mod_fidelisation" },
   { id: 8, text: "Publiez-vous chaque jour une photo de vos réalisations sur les réseaux ?", category: "Marketing", linkedModuleId: "mod_digital" },
   { id: 9, text: "Maîtrisez-vous parfaitement la roue chromatique pour éviter les erreurs ?", category: "Technique", linkedModuleId: "mod_color" },
   { id: 10, text: "Votre taux de revente de produits représente-t-il plus de 15 % du CA ?", category: "Vente", linkedModuleId: "mod_retail" },
   { id: 11, text: "Adaptez-vous systématiquement vos coupes à la morphologie du visage ?", category: "Technique", linkedModuleId: "mod_coupe" },
   { id: 12, text: "Utilisez-vous un système de réservation optimisé pour éviter les temps morts ?", category: "Management", linkedModuleId: "mod_planning" },
-  { id: 13, text: "Savez-vous décoder le langage corporel de vos clientes ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
+  { id: 13, text: "Savez-vous décoder le langage corporel de vos cliniques ?", category: "Accueil", linkedModuleId: "mod_psychologie" },
   { id: 14, text: "Proposez-vous des rituels de prestige pour justifier des prix luxe ?", category: "Prestige", linkedModuleId: "mod_vip" },
   { id: 15, text: "Analysez-vous vos indicateurs clés (ticket moyen) chaque soir ?", category: "Finance", linkedModuleId: "mod_chiffres" },
   { id: 16, text: "Votre salon dispose-t-il d'une structure claire pour accéder aux prêts ?", category: "Management", linkedModuleId: "mod_formalisation" }
