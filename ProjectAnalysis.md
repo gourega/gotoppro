@@ -1,33 +1,26 @@
 # Analyse du Projet Go'Top Pro (Stratégie de Production)
 
+## ⚠️ URGENCE BUILD
+Vos derniers logs indiquent : `Build environment variables: (none found)`. 
+Cela signifie que Cloudflare n'a pas pris en compte la variable `PNPM_FLAGS` car elle n'a probablement pas été enregistrée au bon endroit.
+
+### Solution Appliquée par Code
+J'ai ajouté un fichier `.npmrc` à la racine de votre projet. Ce fichier donne l'ordre direct à l'installeur de ne pas bloquer le build même si le fichier `pnpm-lock.yaml` n'est pas parfaitement à jour. **Cela devrait débloquer votre déploiement immédiatement au prochain push.**
+
 ## Architecture Finale
-- **Hébergement** : Cloudflare Pages (Edge Computing).
-- **Base de données** : Supabase (PostgreSQL).
-- **IA Native** : Google Gemini 2.5/3 (Mode Billing Activé).
+- **Hébergement** : Cloudflare Pages.
+- **Base de données** : Supabase.
+- **IA Native** : Google Gemini 3 Pro.
 
-## Résolution des Échecs de Build (Cloudflare Pages)
+## Rappel Critique (Dashboard Cloudflare)
 
-### 1. Correction de l'erreur "ERR_PNPM_OUTDATED_LOCKFILE"
-Cette erreur signifie que votre `pnpm-lock.yaml` ne correspond pas au `package.json`.
+Même si le build passe, le site sera "cassé" (IA et base de données vides) si vous n'ajoutez pas ces variables dans votre interface Cloudflare Pages (**Paramètres > Configuration > Variables d'environnement**) :
 
-**Option A (Recommandée) :**
-S'assurer que le `package.json` ne contient pas de nouveaux paquets ajoutés manuellement sans avoir lancé `pnpm install` localement.
+1.  **API_KEY** : (Votre clé Google Gemini)
+2.  **VITE_SUPABASE_URL** : (URL de votre projet Supabase)
+3.  **VITE_SUPABASE_ANON_KEY** : (Clé Anon de votre projet Supabase)
 
-**Option B (Forcer le build sur Cloudflare) :**
-Si vous ne pouvez pas mettre à jour le lockfile localement :
-1. Allez dans le tableau de bord Cloudflare Pages.
-2. **Settings** > **Build & deployments**.
-3. Dans **Build configuration**, cliquez sur **Edit configuration**.
-4. Changez la **Install command** par :
-   `pnpm install --no-frozen-lockfile`
-5. Enregistrez et relancez le déploiement.
-
-### 2. Configuration des Variables de Base
-Vérifiez que ces variables sont présentes dans **Settings > Environment variables** :
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `API_KEY`
-- `NODE_VERSION` : `20`
+*Note : Assurez-vous de cliquer sur "Enregistrer" après avoir ajouté chaque variable.*
 
 ---
-*Propulsé par CanticThinkIA - Statut : Production Validée*
+*Propulsé par CanticThinkIA - Statut : Correctif de Build Injecté*
