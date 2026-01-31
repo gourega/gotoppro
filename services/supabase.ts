@@ -2,29 +2,31 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
+// Récupération sécurisée des variables injectées par Vite
+const getEnv = (key: string): string => {
+  // On teste les deux endroits possibles après injection
+  const val = (import.meta.env && import.meta.env[key]) || (process.env && process.env[key]) || "";
+  return val;
+};
+
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
 
-/**
- * CONFIGURATION DE DÉBOGAGE : 
- * Version 2.5.5-FORCE
- */
-export const BUILD_CONFIG = {
-  // On vérifie que ce n'est pas vide ET que ce n'est pas une chaîne erronée
-  hasUrl: !!import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.length > 10,
-  urlSnippet: import.meta.env.VITE_SUPABASE_URL?.substring(0, 15) + "...",
-  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.VITE_SUPABASE_ANON_KEY.length > 20,
-  keySnippet: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 8) + "...",
-  buildTime,
-  version: "2.5.5-FORCE"
-};
+const supabaseUrl = getEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+export const BUILD_CONFIG = {
+  hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
+  urlSnippet: supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "VIDE",
+  hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
+  keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 8) + "..." : "VIDE",
+  buildTime,
+  version: "2.5.6-STABLE"
+};
 
 const getSafeSupabaseClient = () => {
   if (!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) {
-    console.error(`[Supabase] CRITIQUE : Configuration invalide au build du ${buildTime}`);
+    console.warn(`%c Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides au build du ${buildTime}. `, 'background: #fff1f2; color: #e11d48; font-weight: bold; padding: 4px;');
     return null;
   }
   
@@ -36,7 +38,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("[Supabase] Erreur SDK fatal:", e);
+    console.error("[Supabase] Erreur d'initialisation du SDK:", e);
     return null;
   }
 };
@@ -157,7 +159,7 @@ export const getUserProfile = async (uid: string) => {
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) return { success: true, warning: "Local only" };
+  if (!supabase) return { success: true, warning: "Mode local uniquement" };
   const dbData = mapProfileToDB(profile);
   const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
   if (error) throw error;
@@ -183,8 +185,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commission_rate: t.commission_rate, is_credit: t.is_credit, client_id: t.client_id, 
-    product_id: t.product_id, discount: t.discount || 0, original_amount: t.original_amount || t.amount
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
+    productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
   }));
 };
 
