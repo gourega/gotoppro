@@ -6,24 +6,25 @@ import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, Kita
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
 
 /**
- * CONFIGURATION DE DÉBOGAGE :
- * Permet de voir si les clés sont injectées sans les exposer totalement.
+ * CONFIGURATION DE DÉBOGAGE : 
+ * Version 2.5.5-FORCE
  */
 export const BUILD_CONFIG = {
-  hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
+  // On vérifie que ce n'est pas vide ET que ce n'est pas une chaîne erronée
+  hasUrl: !!import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.length > 10,
   urlSnippet: import.meta.env.VITE_SUPABASE_URL?.substring(0, 15) + "...",
-  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.VITE_SUPABASE_ANON_KEY.length > 20,
   keySnippet: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 8) + "...",
   buildTime,
-  version: "2.5.3-prod"
+  version: "2.5.5-FORCE"
 };
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    console.error(`[Supabase] Erreur : Configuration vide au build du ${buildTime}`);
+  if (!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) {
+    console.error(`[Supabase] CRITIQUE : Configuration invalide au build du ${buildTime}`);
     return null;
   }
   
@@ -35,7 +36,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("[Supabase] Erreur fatale SDK:", e);
+    console.error("[Supabase] Erreur SDK fatal:", e);
     return null;
   }
 };

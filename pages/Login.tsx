@@ -18,7 +18,8 @@ import {
   Settings2,
   RefreshCw,
   Terminal,
-  Clock
+  Clock,
+  Bug
 } from 'lucide-react';
 
 const Login: React.FC = () => {
@@ -37,6 +38,9 @@ const Login: React.FC = () => {
   const businessWaUrl = `https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}`;
 
   useEffect(() => {
+    // Log de sécurité pour confirmer la version en console
+    console.log(`Go'Top Pro: Version ${BUILD_CONFIG.version} - Build: ${BUILD_CONFIG.buildTime}`);
+    
     if (user && !authLoading) {
       if (user.isAdmin) navigate('/admin', { replace: true });
       else navigate('/dashboard', { replace: true });
@@ -91,6 +95,13 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      
+      {/* TRACEUR DE VERSION (Preuve que le code est à jour) */}
+      <div className="fixed top-4 left-4 z-[9999] bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-2xl border border-white/10 flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
+         <Bug className="w-3 h-3 text-amber-500" />
+         V {BUILD_CONFIG.version}
+      </div>
+
       {/* Alerte Proactive si configuration vide */}
       {(!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) && (
         <div className="max-w-md w-full mb-6 animate-in slide-in-from-top-4 duration-500">
@@ -99,6 +110,7 @@ const Login: React.FC = () => {
               <div>
                  <p className="font-black text-[10px] uppercase tracking-widest leading-none mb-1">Système Déconnecté</p>
                  <p className="text-xs font-bold leading-tight opacity-90">Cloudflare n'a pas injecté les clés de base de données lors du build.</p>
+                 <button onClick={() => setShowDiagnostic(true)} className="mt-2 text-[9px] font-black underline uppercase">Voir les détails</button>
               </div>
            </div>
         </div>
@@ -132,7 +144,7 @@ const Login: React.FC = () => {
           <div className="mb-8 p-6 bg-slate-900 rounded-[2rem] text-white border border-white/10 animate-in zoom-in-95">
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-400 flex items-center gap-2"><Terminal className="w-4 h-4" /> Rapport de Diagnostic</h3>
-                <button onClick={() => window.location.reload()} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><RefreshCw className="w-4 h-4" /></button>
+                <button onClick={() => window.location.reload()} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Forcer Rechargement"><RefreshCw className="w-4 h-4" /></button>
              </div>
              <div className="space-y-3">
                 <div className="flex justify-between items-center text-[10px]">
@@ -154,7 +166,7 @@ const Login: React.FC = () => {
                 </div>
              </div>
              <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-slate-500 font-medium leading-relaxed italic">
-                Note : Si "DERNIER BUILD" ne correspond pas à votre heure actuelle, Cloudflare affiche une version mise en cache.
+                Note : Si les clés sont MANQUANTES, redeployez sur Cloudflare après avoir vérifié les variables d'environnement dans "Settings > Build & Deployments".
              </div>
           </div>
         )}
@@ -186,7 +198,7 @@ const Login: React.FC = () => {
                   value={phone} 
                   onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} 
                   className="w-full pl-20 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-xl focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" 
-                  disabled={loading || !BUILD_CONFIG.hasUrl}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -204,7 +216,7 @@ const Login: React.FC = () => {
                   value={pin} 
                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} 
                   className="w-full pl-16 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-2xl tracking-[1em] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner text-brand-900" 
-                  disabled={loading || !BUILD_CONFIG.hasUrl}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -212,7 +224,7 @@ const Login: React.FC = () => {
 
           <button 
             type="submit" 
-            disabled={loading || phone.length < 8 || pin.length < 4 || !BUILD_CONFIG.hasUrl} 
+            disabled={loading || phone.length < 8 || pin.length < 4} 
             className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl hover:bg-brand-950 active:scale-95 transition-all disabled:opacity-30"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
