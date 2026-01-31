@@ -73,20 +73,22 @@ const MarketingVisuel: React.FC = () => {
       const mimeType = image.split(';')[0].split(':')[1];
       const text = await analyzeBeautyImage(base64Data, mimeType);
       
-      // Parsing structuré
+      // Parsing structuré plus robuste pour gérer les variations de format
       const parse = (tag: string) => {
-        const regex = new RegExp(`\\[${tag}\\]\\s*:\\s*([\\s\\S]*?)(?=\\n\\[|$)`, 'i');
+        const regex = new RegExp(`\\[${tag}\\]\\s*[:\\-]?\\s*([\\s\\S]*?)(?=\\n\\[|$)`, 'i');
         const match = text?.match(regex);
         return match ? match[1].trim() : "";
       };
 
-      setResults({
-        technique: parse('TECHNIQUE'),
+      const parsedResults = {
+        technique: parse('TECHNIQUE') || "Coiffure d'Excellence",
         instagram: parse('INSTAGRAM'),
         whatsapp: parse('WHATSAPP'),
         conseil: parse('CONSEIL'),
         hashtags: parse('HASHTAGS')
-      });
+      };
+
+      setResults(parsedResults);
 
       // DÉCRÉMENTATION DES CRÉDITS (si pas Élite)
       if (!isElite) {
@@ -96,6 +98,7 @@ const MarketingVisuel: React.FC = () => {
       }
 
     } catch (err) {
+      console.error("Marketing IA Error:", err);
       alert("Erreur d'analyse. Réessayez avec une image plus claire.");
     } finally {
       setLoading(false);
