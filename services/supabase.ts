@@ -2,18 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Récupération sécurisée des variables injectées par Vite
-const getEnv = (key: string): string => {
-  // On teste les deux endroits possibles après injection
-  const val = (import.meta.env && import.meta.env[key]) || (process.env && process.env[key]) || "";
-  return val;
-};
+/**
+ * ATTENTION: Vite nécessite des accès directs aux variables pour les injecter.
+ * N'utilisez pas de recherche dynamique par clé [key].
+ */
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
-
-const supabaseUrl = getEnv('VITE_SUPABASE_URL');
-const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
 export const BUILD_CONFIG = {
   hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
@@ -21,12 +18,12 @@ export const BUILD_CONFIG = {
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
   keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 8) + "..." : "VIDE",
   buildTime,
-  version: "2.5.6-STABLE"
+  version: "2.5.7-PROD"
 };
 
 const getSafeSupabaseClient = () => {
   if (!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) {
-    console.warn(`%c Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides au build du ${buildTime}. `, 'background: #fff1f2; color: #e11d48; font-weight: bold; padding: 4px;');
+    console.warn(`%c Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides. `, 'background: #fff1f2; color: #e11d48; font-weight: bold; padding: 4px;');
     return null;
   }
   
@@ -185,7 +182,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
+    commission_rate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
     productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
   }));
 };
