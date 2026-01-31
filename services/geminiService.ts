@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 const QUIZ_SCHEMA = {
@@ -24,26 +25,23 @@ const QUIZ_SCHEMA = {
   propertyOrdering: ["quiz_questions", "exercises"]
 } as any;
 
-// Removed getApiKey helper to comply with direct process.env.API_KEY usage requirement
-
 export const generateDynamicQuiz = async (topic: string, moduleTitle: string) => {
-  // Fix: Initializing GoogleGenAI with process.env.API_KEY directly as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `
     Rôle: Coach Kita. Sujet: "${topic}" (${moduleTitle}).
-    Génère 3 questions de quiz et 2 exercices pratiques.
+    Génère 3 questions de quiz et 2 exercices pratiques pour un gérant de salon en Côte d'Ivoire.
     Réponds en JSON uniquement.
   `;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: { parts: [{ text: prompt }] },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: { 
         responseMimeType: "application/json", 
         responseSchema: QUIZ_SCHEMA,
       }
     });
-    return JSON.parse(response.text?.trim() || '{}');
+    return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Gemini Error:", error);
     return null;
@@ -55,7 +53,6 @@ export const generateStrategicAdvice = async (
   isPerfectScore: boolean = false,
   userContext?: { firstName: string; gender: 'M' | 'F'; domain: string }
 ) => {
-  // Fix: Initializing GoogleGenAI with process.env.API_KEY directly as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const name = userContext?.firstName || "Ami";
@@ -72,7 +69,7 @@ export const generateStrategicAdvice = async (
       Ton: Direct, provocateur, visionnaire. Tu l'appelles "${sibling}".
       CONTEXTE : Le score au diagnostic est de 16/16.
       MONNAIE : Franc CFA (FCFA) uniquement.
-      OBJECTIF : Lui faire comprendre que l'excellence actuelle est un plateau dangereux.
+      OBJECTIF : Lui faire comprendre que l'excellence actuelle est un plateau dangereux et qu'il doit viser l'expansion.
     `;
   } else {
     const pointsStr = negativePoints.join(", ");
@@ -81,44 +78,40 @@ export const generateStrategicAdvice = async (
       Destinataire: ${name}, ${sibling} ${passionLabel} de ${domain}.
       Ton: "Grand frère" expert, sans filtre, autoritaire mais bienveillant.
       SITUATION : Ce gérant perd de l'argent sur : ${pointsStr}.
-      MONNAIE : Franc CFA (FCFA) uniquement.
+      MONNAIE : Franc CFA (FCFA) uniquement. Ne mentionne jamais l'euro.
     `;
   }
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: { temperature: 0.9, topP: 0.95 }
     });
     return response.text;
   } catch (error) {
-    return `**L'excellence vous attend, ${name}.**`;
+    return `**L'excellence vous attend, ${name}. Votre plan est prêt.**`;
   }
 };
 
-/**
- * Analyse proactive des tendances du salon
- */
 export const analyzeBusinessTrends = async (transactions: any[], userName: string) => {
-  // Fix: Initializing GoogleGenAI with process.env.API_KEY directly as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const dataSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.type} ${t.amount} (${t.label})`).join('\n');
   
   const prompt = `
     Rôle: Coach Kita. Destinataire: ${userName}.
-    Analyse les 50 dernières transactions de ce salon de coiffure/beauté :
+    Analyse les 50 dernières transactions de ce salon :
     ${dataSummary}
     
     TÂCHE : 
-    Donne un conseil ultra-précis (max 3 phrases) sur une tendance observée (ex: baisse de revenus, trop de dépenses divers, ou pic de succès). 
-    Sois encourageant mais exigeant. Utilise le Franc CFA.
+    Donne un conseil ultra-précis (max 3 phrases) sur une tendance observée. 
+    Sois exigeant sur la rentabilité. Utilise le Franc CFA.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] }
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
     return response.text;
   } catch (err) {
@@ -127,27 +120,30 @@ export const analyzeBusinessTrends = async (transactions: any[], userName: strin
 };
 
 export const analyzeBeautyImage = async (base64Data: string, mimeType: string) => {
-  // Fix: Initializing GoogleGenAI with process.env.API_KEY directly as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Tu es Coach Kita. Analyse cette photo de beauté. Identifie la technique, rédige une légende Instagram et WhatsApp, et donne un conseil mentor.`;
+  const prompt = `Tu es Coach Kita. Analyse cette photo de réalisation. Identifie la technique, rédige une légende Instagram percutante et WhatsApp, et donne un conseil mentor pour vendre ce service plus cher. Réponds au format [TECHNIQUE], [INSTAGRAM], [WHATSAPP], [CONSEIL], [HASHTAGS].`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ inlineData: { data: base64Data, mimeType: mimeType } }, { text: prompt }] }
+      contents: [{ 
+        parts: [
+          { inlineData: { data: base64Data, mimeType: mimeType } }, 
+          { text: prompt }
+        ] 
+      }]
     });
     return response.text;
   } catch (error) {
-    throw new Error("Erreur d'analyse.");
+    throw new Error("Erreur d'analyse IA.");
   }
 };
 
 export const createCoachChat = () => {
-  // Fix: Initializing GoogleGenAI with process.env.API_KEY directly as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
-      systemInstruction: "Tu es Coach Kita, l'expert mentor de Go'Top Pro basé à Abidjan. Ton ton est exigeant, visionnaire, mais bienveillant. Utilise exclusivement le Franc CFA (FCFA) comme monnaie.",
+      systemInstruction: "Tu es Coach Kita, l'expert mentor de Go'Top Pro basé à Abidjan. Ton ton est exigeant, visionnaire, mais bienveillant. Utilise exclusivement le Franc CFA (FCFA) comme monnaie. Tu parles à des gérants de salons qui veulent devenir des leaders.",
     },
   });
 };

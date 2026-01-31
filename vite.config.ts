@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(SUPABASE_ANON_KEY),
       'import.meta.env.VITE_ADMIN_EMAIL': JSON.stringify(ADMIN_EMAIL),
       'import.meta.env.API_KEY': JSON.stringify(API_KEY),
+      // Obligatoire pour le SDK Gemini qui cherche process.env.API_KEY
+      'process.env.API_KEY': JSON.stringify(API_KEY),
+      'process.env.VITE_ADMIN_EMAIL': JSON.stringify(ADMIN_EMAIL),
       '__BUILD_TIME__': JSON.stringify(new Date().toLocaleString('fr-FR')),
     },
     build: {
