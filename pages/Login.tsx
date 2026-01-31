@@ -9,13 +9,10 @@ import {
   Loader2, 
   CheckCircle2, 
   Star, 
-  ExternalLink, 
   ShieldAlert, 
   MessageCircle, 
   Lock, 
-  Database, 
   ServerCrash,
-  Settings2,
   RefreshCw,
   Terminal,
   Clock,
@@ -38,7 +35,6 @@ const Login: React.FC = () => {
   const businessWaUrl = `https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}`;
 
   useEffect(() => {
-    // Log de sécurité pour confirmer la version en console
     console.log(`Go'Top Pro: Version ${BUILD_CONFIG.version} - Build: ${BUILD_CONFIG.buildTime}`);
     
     if (user && !authLoading) {
@@ -96,7 +92,7 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       
-      {/* TRACEUR DE VERSION (Preuve que le code est à jour) */}
+      {/* TRACEUR DE VERSION */}
       <div className="fixed top-4 left-4 z-[9999] bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-2xl border border-white/10 flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
          <Bug className="w-3 h-3 text-amber-500" />
          V {BUILD_CONFIG.version}
@@ -166,7 +162,7 @@ const Login: React.FC = () => {
                 </div>
              </div>
              <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-slate-500 font-medium leading-relaxed italic">
-                Note : Si les clés sont MANQUANTES, redeployez sur Cloudflare après avoir vérifié les variables d'environnement dans "Settings > Build & Deployments".
+                {`Note : Si les clés sont MANQUANTES, redeployez sur Cloudflare après avoir vérifié les variables d'environnement dans "Settings > Build & Deployments".`}
              </div>
           </div>
         )}
