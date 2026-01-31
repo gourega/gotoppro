@@ -16,7 +16,9 @@ import {
   Database, 
   ServerCrash,
   Settings2,
-  RefreshCw
+  RefreshCw,
+  Terminal,
+  Clock
 } from 'lucide-react';
 
 const Login: React.FC = () => {
@@ -26,7 +28,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'pending'>('idle');
-  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey);
   
   const { user, loginManually, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -71,6 +73,9 @@ const Login: React.FC = () => {
       if (!result.success) {
         if (result.error?.includes("attente")) {
           setStatus('pending');
+        } else if (result.error?.includes("technique")) {
+          setError("Blocage : Supabase ne répond pas. Vérifiez le build.");
+          setShowDiagnostic(true);
         } else {
           setError(result.error || "Identifiants invalides.");
         }
@@ -78,18 +83,27 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message === "DB_CONFIG_MISSING") {
-        setError("Blocage stratégique : Le serveur n'a pas les clés de la base de données.");
-        setShowDiagnostic(true);
-      } else {
-        setError("Erreur technique. Vérifiez votre connexion.");
-      }
+      setError("Erreur fatale. Les clés de build sont probablement invalides.");
+      setShowDiagnostic(true);
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      {/* Alerte Proactive si configuration vide */}
+      {(!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) && (
+        <div className="max-w-md w-full mb-6 animate-in slide-in-from-top-4 duration-500">
+           <div className="bg-rose-600 text-white p-6 rounded-[2rem] shadow-xl border-4 border-white flex items-center gap-4">
+              <ServerCrash className="w-8 h-8 shrink-0 animate-pulse" />
+              <div>
+                 <p className="font-black text-[10px] uppercase tracking-widest leading-none mb-1">Système Déconnecté</p>
+                 <p className="text-xs font-bold leading-tight opacity-90">Cloudflare n'a pas injecté les clés de base de données lors du build.</p>
+              </div>
+           </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl p-10 border border-slate-100 overflow-hidden relative mb-8">
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-brand-900 pointer-events-none text-8xl italic font-serif leading-none">Go'Top</div>
         
@@ -107,8 +121,8 @@ const Login: React.FC = () => {
             <div className="space-y-3 flex-grow">
               <p>{error}</p>
               {error.includes("connu") && <Link to="/quiz" className="inline-block bg-rose-600 text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[9px] font-black">Lancer le diagnostic</Link>}
-              {showDiagnostic && (
-                <button onClick={() => setShowDiagnostic(true)} className="flex items-center gap-2 text-amber-900 underline decoration-amber-500/30">Détails du blocage</button>
+              {!showDiagnostic && (
+                <button onClick={() => setShowDiagnostic(true)} className="flex items-center gap-2 text-amber-900 underline decoration-amber-500/30">Détails techniques</button>
               )}
             </div>
           </div>
@@ -117,21 +131,30 @@ const Login: React.FC = () => {
         {showDiagnostic && (
           <div className="mb-8 p-6 bg-slate-900 rounded-[2rem] text-white border border-white/10 animate-in zoom-in-95">
              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-400 flex items-center gap-2"><Settings2 className="w-4 h-4" /> Rapport de Build</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-400 flex items-center gap-2"><Terminal className="w-4 h-4" /> Rapport de Diagnostic</h3>
                 <button onClick={() => window.location.reload()} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><RefreshCw className="w-4 h-4" /></button>
              </div>
              <div className="space-y-3">
                 <div className="flex justify-between items-center text-[10px]">
+                   <span className="text-slate-500">VERSION CODE</span>
+                   <span className="text-slate-300 font-mono">{BUILD_CONFIG.version}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="text-slate-500">DERNIER BUILD</span>
+                   <span className="text-slate-300 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> {BUILD_CONFIG.buildTime}</span>
+                </div>
+                <div className="h-px bg-white/5 my-2"></div>
+                <div className="flex justify-between items-center text-[10px]">
                    <span className="text-slate-400">VITE_SUPABASE_URL</span>
-                   <span className={BUILD_CONFIG.hasUrl ? 'text-emerald-400' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasUrl ? 'INJECTÉ' : 'VIDE'}</span>
+                   <span className={BUILD_CONFIG.hasUrl ? 'text-emerald-400 font-mono' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasUrl ? BUILD_CONFIG.urlSnippet : 'MANQUANT'}</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                    <span className="text-slate-400">VITE_SUPABASE_ANON_KEY</span>
-                   <span className={BUILD_CONFIG.hasKey ? 'text-emerald-400' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasKey ? 'INJECTÉ' : 'VIDE'}</span>
+                   <span className={BUILD_CONFIG.hasKey ? 'text-emerald-400 font-mono' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasKey ? BUILD_CONFIG.keySnippet : 'MANQUANT'}</span>
                 </div>
              </div>
              <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-slate-500 font-medium leading-relaxed italic">
-                Solution : Ajoutez ces variables dans le panneau "Build & Deployments" de Cloudflare et cliquez sur "Retry deployment".
+                Note : Si "DERNIER BUILD" ne correspond pas à votre heure actuelle, Cloudflare affiche une version mise en cache.
              </div>
           </div>
         )}
@@ -163,7 +186,7 @@ const Login: React.FC = () => {
                   value={phone} 
                   onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} 
                   className="w-full pl-20 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-xl focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" 
-                  disabled={loading}
+                  disabled={loading || !BUILD_CONFIG.hasUrl}
                 />
               </div>
             </div>
@@ -181,7 +204,7 @@ const Login: React.FC = () => {
                   value={pin} 
                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} 
                   className="w-full pl-16 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-2xl tracking-[1em] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner text-brand-900" 
-                  disabled={loading}
+                  disabled={loading || !BUILD_CONFIG.hasUrl}
                 />
               </div>
             </div>
@@ -189,7 +212,7 @@ const Login: React.FC = () => {
 
           <button 
             type="submit" 
-            disabled={loading || phone.length < 8 || pin.length < 4} 
+            disabled={loading || phone.length < 8 || pin.length < 4 || !BUILD_CONFIG.hasUrl} 
             className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-xl hover:bg-brand-950 active:scale-95 transition-all disabled:opacity-30"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

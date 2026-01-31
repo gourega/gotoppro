@@ -2,14 +2,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
+// @ts-ignore
+const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
+
 /**
- * EXPORT POUR DIAGNOSTIC : 
- * On expose l'état (pas les clés elles-mêmes) pour l'interface de secours.
+ * CONFIGURATION DE DÉBOGAGE :
+ * Permet de voir si les clés sont injectées sans les exposer totalement.
  */
 export const BUILD_CONFIG = {
   hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
+  urlSnippet: import.meta.env.VITE_SUPABASE_URL?.substring(0, 15) + "...",
   hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-  version: "2.5.2-diag"
+  keySnippet: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 8) + "...",
+  buildTime,
+  version: "2.5.3-prod"
 };
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -17,7 +23,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 const getSafeSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    console.error("Go'Top Pro [Supabase]: CONFIGURATION ABSENTE AU BUILD.");
+    console.error(`[Supabase] Erreur : Configuration vide au build du ${buildTime}`);
     return null;
   }
   
@@ -29,7 +35,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Erreur SDK.", e);
+    console.error("[Supabase] Erreur fatale SDK:", e);
     return null;
   }
 };
