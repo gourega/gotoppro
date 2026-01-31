@@ -4,9 +4,11 @@ import { TrainingModule, Badge, ModuleStatus } from './types';
 // Ressources Visuelles Standard
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/KITA/logo-kita.png";
-export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/COACH_KITA_AVATAR.png";
 
-// Partenaire Excellence : Salon Chez Raymond (Aligné sur tes buckets Supabase)
+// Avatar de Coach Kita (Version Officielle)
+export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/avatars/35ee91c6-b485-4fb0-aefa-7de0c54571e3/COACH_KITA_AVATAR.png";
+
+// Partenaire Excellence : Salon Chez Raymond
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/raymond-logo.png";
 export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_PORTRAIT.jpg";
 export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/RAYMOND_STYLING_PHOTO.jpg";
@@ -115,7 +117,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Écoutez deux fois plus que vous ne parlez pendant le diagnostic.",
     strategic_mantra: "Le client n'achète pas vos outils, il achète votre regard d'expert.",
     quiz_questions: [
-      { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la cliente", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." },
+      { question: "Où doit se situer le gérant ?", options: ["Derrière le fauteuil", "À hauteur des yeux de la clinique", "Au comptoir"], correctAnswer: 1, explanation: "Se mettre à hauteur d'yeux instaure la confiance." },
       { question: "Quelle est la 4ème étape cruciale du diagnostic ?", options: ["Le rinçage", "La prescription", "Le paiement"], correctAnswer: 1, explanation: "Le prescription assure le suivi du soin à domicile et augmente le CA." },
       { question: "Pourquoi toucher les cheveux pendant le diagnostic ?", options: ["Par habitude", "Pour évaluer la santé de la fibre", "Pour les démêler"], correctAnswer: 1, explanation: "Le toucher expert crédibilise votre recommandation de soin." }
     ],
@@ -409,7 +411,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>1. L'écoute active et le décodage</h2>
       <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez... ? ». Cela évite les litiges et prouve que vous écoutez.</p>
       <h2>2. Gérer les clientes difficiles</h2>
-      <p>Restez calme, ne justifiez pas l'erreur, proposez une solution. Transformer un litige en succès est votre test de Leader.</p>
+      <p>Restez calme, ne justifiez pas l'erreur, proposez une version de solution. Transformer un litige en succès est votre test de Leader.</p>
       <h2>3. Synthèse & Orientation : La Connexion Humaine</h2>
       <p>Votre salon est un lieu de thérapie autant que de beauté. Maîtriser la psychologie vous rend indispensable aux yeux de vos clientes.</p>
       <p><strong>Votre Défi des 24h :</strong> Reformulez chaque demande de cliente aujourd'hui pour valider sa compréhension. Passez maintenant à la certification.</p>
