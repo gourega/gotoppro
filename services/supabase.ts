@@ -2,16 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Accès direct aux variables injectées par Vite
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+/**
+ * RÉCUPÉRATION DES VARIABLES :
+ * Vite injecte ces valeurs au moment du build. Si elles sont vides ici, 
+ * c'est que le build Cloudflare n'avait pas accès aux variables.
+ */
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 const getSafeSupabaseClient = () => {
-  // Log de diagnostic au chargement (visible dans la console)
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Go'Top Pro [Supabase]: ÉCHEC DE CONFIGURATION.");
-    if (!supabaseUrl) console.warn("-> URL manquante (VITE_SUPABASE_URL)");
-    if (!supabaseAnonKey) console.warn("-> CLÉ manquante (VITE_SUPABASE_ANON_KEY)");
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
+    // Ce message est crucial pour confirmer que la nouvelle version est en ligne
+    console.error("Go'Top Pro [Supabase]: CONFIGURATION ABSENTE.");
+    console.info("Build Status: URL=" + (supabaseUrl ? "OK" : "VIDE") + ", KEY=" + (supabaseAnonKey ? "OK" : "VIDE"));
     return null;
   }
   
@@ -23,7 +26,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Erreur d'initialisation du SDK.", e);
+    console.error("Go'Top Pro [Supabase]: Erreur critique d'initialisation.", e);
     return null;
   }
 };
@@ -115,7 +118,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) {
-    throw new Error("Connexion impossible : Configuration de base de données manquante.");
+    throw new Error("ERREUR CONFIGURATION : Les clés d'accès à la base de données sont manquantes sur le serveur.");
   }
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);

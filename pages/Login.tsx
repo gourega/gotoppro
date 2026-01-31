@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { RAYMOND_LOGO, RAYMOND_FB_URL, COACH_KITA_PHONE } from '../constants';
-import { AlertCircle, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle, Lock } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle, Lock, Database } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -61,9 +61,14 @@ const Login: React.FC = () => {
         }
         setLoading(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Erreur technique de connexion.");
+      // Distinction claire si les clés Supabase manquent
+      if (err.message?.includes("CONFIGURATION")) {
+        setError("ERREUR SYSTÈME : La liaison avec la base de données n'est pas configurée sur Cloudflare.");
+      } else {
+        setError("Erreur technique de connexion. Veuillez réessayer.");
+      }
       setLoading(false);
     }
   };
@@ -82,11 +87,12 @@ const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div className="bg-rose-50 text-rose-600 p-6 rounded-[2rem] mb-6 text-xs font-bold border border-rose-100 flex items-start gap-4 animate-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 shrink-0" />
+          <div className={`p-6 rounded-[2rem] mb-6 text-xs font-bold border flex items-start gap-4 animate-in slide-in-from-top-2 ${error.includes("SYSTÈME") ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+            {error.includes("SYSTÈME") ? <Database className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
             <div className="space-y-3">
               <p>{error}</p>
               {error.includes("connu") && <Link to="/quiz" className="inline-block bg-rose-600 text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[9px] font-black">Lancer le diagnostic</Link>}
+              {error.includes("SYSTÈME") && <p className="text-[9px] opacity-70">Action : Relancez le déploiement Cloudflare après avoir vérifié les variables d'environnement.</p>}
             </div>
           </div>
         )}
