@@ -3,7 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { RAYMOND_LOGO, RAYMOND_FB_URL, COACH_KITA_PHONE } from '../constants';
-import { AlertCircle, Loader2, CheckCircle2, Star, ExternalLink, ShieldAlert, MessageCircle, Lock, Database } from 'lucide-react';
+import { BUILD_CONFIG } from '../services/supabase';
+import { 
+  AlertCircle, 
+  Loader2, 
+  CheckCircle2, 
+  Star, 
+  ExternalLink, 
+  ShieldAlert, 
+  MessageCircle, 
+  Lock, 
+  Database, 
+  ServerCrash,
+  Settings2,
+  RefreshCw
+} from 'lucide-react';
 
 const Login: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -12,6 +26,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'pending'>('idle');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   
   const { user, loginManually, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -63,11 +78,11 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
-      // Distinction claire si les clés Supabase manquent
-      if (err.message?.includes("CONFIGURATION")) {
-        setError("ERREUR SYSTÈME : La liaison avec la base de données n'est pas configurée sur Cloudflare.");
+      if (err.message === "DB_CONFIG_MISSING") {
+        setError("Blocage stratégique : Le serveur n'a pas les clés de la base de données.");
+        setShowDiagnostic(true);
       } else {
-        setError("Erreur technique de connexion. Veuillez réessayer.");
+        setError("Erreur technique. Vérifiez votre connexion.");
       }
       setLoading(false);
     }
@@ -83,17 +98,41 @@ const Login: React.FC = () => {
             👑
           </div>
           <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2 tracking-tight">Accès Privé</h2>
-          <p className="text-slate-500 font-medium text-sm">Entrez vos accès sécurisés pour piloter votre salon.</p>
+          <p className="text-slate-500 font-medium text-sm">Gérez votre salon avec l'Excellence Kita.</p>
         </div>
 
         {error && (
-          <div className={`p-6 rounded-[2rem] mb-6 text-xs font-bold border flex items-start gap-4 animate-in slide-in-from-top-2 ${error.includes("SYSTÈME") ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-            {error.includes("SYSTÈME") ? <Database className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-            <div className="space-y-3">
+          <div className={`p-6 rounded-[2rem] mb-6 text-xs font-bold border flex items-start gap-4 animate-in slide-in-from-top-2 ${showDiagnostic ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+            {showDiagnostic ? <ServerCrash className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+            <div className="space-y-3 flex-grow">
               <p>{error}</p>
               {error.includes("connu") && <Link to="/quiz" className="inline-block bg-rose-600 text-white px-4 py-2 rounded-xl uppercase tracking-widest text-[9px] font-black">Lancer le diagnostic</Link>}
-              {error.includes("SYSTÈME") && <p className="text-[9px] opacity-70">Action : Relancez le déploiement Cloudflare après avoir vérifié les variables d'environnement.</p>}
+              {showDiagnostic && (
+                <button onClick={() => setShowDiagnostic(true)} className="flex items-center gap-2 text-amber-900 underline decoration-amber-500/30">Détails du blocage</button>
+              )}
             </div>
+          </div>
+        )}
+
+        {showDiagnostic && (
+          <div className="mb-8 p-6 bg-slate-900 rounded-[2rem] text-white border border-white/10 animate-in zoom-in-95">
+             <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-400 flex items-center gap-2"><Settings2 className="w-4 h-4" /> Rapport de Build</h3>
+                <button onClick={() => window.location.reload()} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><RefreshCw className="w-4 h-4" /></button>
+             </div>
+             <div className="space-y-3">
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="text-slate-400">VITE_SUPABASE_URL</span>
+                   <span className={BUILD_CONFIG.hasUrl ? 'text-emerald-400' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasUrl ? 'INJECTÉ' : 'VIDE'}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="text-slate-400">VITE_SUPABASE_ANON_KEY</span>
+                   <span className={BUILD_CONFIG.hasKey ? 'text-emerald-400' : 'text-rose-400 font-black'}>{BUILD_CONFIG.hasKey ? 'INJECTÉ' : 'VIDE'}</span>
+                </div>
+             </div>
+             <div className="mt-6 pt-4 border-t border-white/5 text-[9px] text-slate-500 font-medium leading-relaxed italic">
+                Solution : Ajoutez ces variables dans le panneau "Build & Deployments" de Cloudflare et cliquez sur "Retry deployment".
+             </div>
           </div>
         )}
 
@@ -106,16 +145,9 @@ const Login: React.FC = () => {
               <p className="font-black uppercase text-[10px] tracking-widest">Compte en attente d'activation</p>
             </div>
             <p className="text-sm font-medium leading-relaxed italic mb-6">
-              Coach Kita a bien reçu votre demande. L'accès sera activé (avec votre code PIN) dès réception de votre paiement Wave.
+              Coach Kita a bien reçu votre demande. L'accès sera activé dès réception de votre paiement Wave.
             </p>
-            <a 
-              href={businessWaUrl} 
-              target="_blank" 
-              rel="noreferrer"
-              className="w-full bg-brand-900 text-white py-4 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-3"
-            >
-              <MessageCircle className="w-4 h-4" /> Relancer Coach Kita
-            </a>
+            <a href={businessWaUrl} target="_blank" rel="noreferrer" className="w-full bg-brand-900 text-white py-4 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-3"><MessageCircle className="w-4 h-4" /> Relancer Coach Kita</a>
           </div>
         )}
 
@@ -127,12 +159,11 @@ const Login: React.FC = () => {
                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">+225</span>
                 <input 
                   type="tel" 
-                  placeholder="0544869313" 
+                  placeholder="0515253545" 
                   value={phone} 
                   onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} 
                   className="w-full pl-20 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-xl focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner" 
                   disabled={loading}
-                  autoFocus
                 />
               </div>
             </div>
@@ -140,9 +171,7 @@ const Login: React.FC = () => {
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4 flex justify-between">
                 Code PIN (4 chiffres)
-                <button type="button" onClick={() => setShowPin(!showPin)} className="text-brand-600 lowercase hover:underline">
-                  {showPin ? 'Masquer' : 'Afficher'}
-                </button>
+                <button type="button" onClick={() => setShowPin(!showPin)} className="text-brand-600 lowercase hover:underline">{showPin ? 'Masquer' : 'Afficher'}</button>
               </label>
               <div className="relative">
                 <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -153,8 +182,6 @@ const Login: React.FC = () => {
                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} 
                   className="w-full pl-16 pr-6 py-5 rounded-2xl bg-slate-50 border-none outline-none font-black text-2xl tracking-[1em] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner text-brand-900" 
                   disabled={loading}
-                  inputMode="numeric"
-                  autoComplete="current-password"
                 />
               </div>
             </div>
@@ -171,22 +198,22 @@ const Login: React.FC = () => {
         </form>
       </div>
 
-      {/* Partenaire Footer Login */}
+      {/* Partenaire Footer */}
       <a 
         href={RAYMOND_FB_URL} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="flex items-center gap-4 bg-white/50 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 group hover:bg-white hover:shadow-xl transition-all duration-300"
+        className="flex items-center gap-4 bg-white/50 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 group hover:bg-white transition-all duration-300"
       >
-        <div className="h-8 w-8 rounded-lg overflow-hidden border border-brand-200 shadow-sm flex-shrink-0">
+        <div className="h-8 w-8 rounded-lg overflow-hidden border border-brand-200">
           <img src={RAYMOND_LOGO} alt="Raymond" className="h-full w-full object-cover" />
         </div>
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Partenaire d'Excellence</span>
+            <span className="text-[8px] font-black text-brand-600 uppercase tracking-widest">Partenaire Excellence</span>
             <Star className="w-2.5 h-2.5 text-amber-500 fill-current" />
           </div>
-          <span className="text-[10px] font-bold text-slate-900">Salon Chez Raymond <ExternalLink className="w-3 h-3 inline-block ml-1 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+          <span className="text-[10px] font-bold text-slate-900">Salon Chez Raymond</span>
         </div>
       </a>
     </div>

@@ -3,18 +3,21 @@ import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
 /**
- * RÉCUPÉRATION DES VARIABLES :
- * Vite injecte ces valeurs au moment du build. Si elles sont vides ici, 
- * c'est que le build Cloudflare n'avait pas accès aux variables.
+ * EXPORT POUR DIAGNOSTIC : 
+ * On expose l'état (pas les clés elles-mêmes) pour l'interface de secours.
  */
+export const BUILD_CONFIG = {
+  hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
+  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  version: "2.5.2-diag"
+};
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 const getSafeSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    // Ce message est crucial pour confirmer que la nouvelle version est en ligne
-    console.error("Go'Top Pro [Supabase]: CONFIGURATION ABSENTE.");
-    console.info("Build Status: URL=" + (supabaseUrl ? "OK" : "VIDE") + ", KEY=" + (supabaseAnonKey ? "OK" : "VIDE"));
+    console.error("Go'Top Pro [Supabase]: CONFIGURATION ABSENTE AU BUILD.");
     return null;
   }
   
@@ -26,7 +29,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Erreur critique d'initialisation.", e);
+    console.error("Go'Top Pro [Supabase]: Erreur SDK.", e);
     return null;
   }
 };
@@ -118,13 +121,20 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) {
-    throw new Error("ERREUR CONFIGURATION : Les clés d'accès à la base de données sont manquantes sur le serveur.");
+    throw new Error("DB_CONFIG_MISSING");
   }
+  
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
+  
   try {
-    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`)
+      .maybeSingle();
+      
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) { 
@@ -166,8 +176,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
-    productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
+    commission_rate: t.commission_rate, is_credit: t.is_credit, client_id: t.client_id, 
+    product_id: t.product_id, discount: t.discount || 0, original_amount: t.original_amount || t.amount
   }));
 };
 
