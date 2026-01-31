@@ -2,17 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-/**
- * RÉCUPÉRATION CRITIQUE : 
- * Vite nécessite l'écriture complète des variables pour les remplacer au build.
- */
+// Accès direct aux variables injectées par Vite
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides.");
-    console.info("Info Build: URL=", supabaseUrl ? "OK" : "MANQUANT", " KEY=", supabaseAnonKey ? "OK" : "MANQUANT");
+  // Log de diagnostic au chargement (visible dans la console)
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Go'Top Pro [Supabase]: ÉCHEC DE CONFIGURATION.");
+    if (!supabaseUrl) console.warn("-> URL manquante (VITE_SUPABASE_URL)");
+    if (!supabaseAnonKey) console.warn("-> CLÉ manquante (VITE_SUPABASE_ANON_KEY)");
     return null;
   }
   
@@ -24,7 +23,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Échec d'initialisation.", e);
+    console.error("Go'Top Pro [Supabase]: Erreur d'initialisation du SDK.", e);
     return null;
   }
 };
@@ -115,15 +114,20 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 };
 
 export const getProfileByPhone = async (phoneNumber: string) => {
-  if (!supabase) return null;
+  if (!supabase) {
+    throw new Error("Connexion impossible : Configuration de base de données manquante.");
+  }
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
   try {
     const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
-    if (error) return null;
+    if (error) throw error;
     return mapProfileFromDB(data);
-  } catch (err) { return null; }
+  } catch (err) { 
+    console.error("DB Error:", err);
+    throw err; 
+  }
 };
 
 export const getUserProfile = async (uid: string) => {
