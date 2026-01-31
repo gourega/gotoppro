@@ -3,23 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
 /**
- * Récupération sécurisée des variables d'environnement.
- * Note pour le déploiement : Ces variables doivent être définies dans Cloudflare Pages
- * et le déploiement doit être relancé après leur ajout.
+ * RÉCUPÉRATION CRITIQUE : 
+ * Vite nécessite l'écriture complète des variables pour les remplacer au build.
  */
-const getEnvVar = (key: string): string => {
-  // Tente de récupérer via Vite (meta.env) ou via l'injection globale (process.env)
-  const val = import.meta.env[key] || (typeof process !== 'undefined' ? process.env[key] : "");
-  return (val || "").trim();
-};
-
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Go'Top Pro [Supabase]: Erreur critique - URL ou Clé manquante.");
-    console.info("Action requise : Vérifiez vos Secrets dans Cloudflare Pages et relancez un build.");
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
+    console.warn("Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides.");
+    console.info("Info Build: URL=", supabaseUrl ? "OK" : "MANQUANT", " KEY=", supabaseAnonKey ? "OK" : "MANQUANT");
     return null;
   }
   
@@ -31,7 +24,7 @@ const getSafeSupabaseClient = () => {
       }
     });
   } catch (e) {
-    console.error("Go'Top Pro [Supabase]: Échec d'initialisation du client SDK.", e);
+    console.error("Go'Top Pro [Supabase]: Échec d'initialisation.", e);
     return null;
   }
 };
