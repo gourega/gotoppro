@@ -31,7 +31,10 @@ import {
   PlusCircle,
   MinusCircle,
   TrendingDown,
-  Camera
+  Camera,
+  Award,
+  Book,
+  Check
 } from 'lucide-react';
 import { UserActionCommitment } from '../types';
 
@@ -195,11 +198,81 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
+        {/* SECTION MES ENGAGEMENTS D'ÉLITE */}
+        {user.actionPlan && user.actionPlan.length > 0 && (
+          <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 animate-in slide-in-from-bottom-4 duration-700">
+             <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+                <div className="flex items-center gap-5">
+                   <div className="h-16 w-16 bg-brand-50 text-brand-600 rounded-[1.5rem] flex items-center justify-center shadow-inner">
+                      <Award className="w-8 h-8" />
+                   </div>
+                   <div>
+                      <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Mes Engagements d'Élite</h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Actions scellées avec le Mentor</p>
+                   </div>
+                </div>
+                <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 flex items-center gap-3">
+                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                   <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                      {user.actionPlan.filter(a => a.isCompleted).length} / {user.actionPlan.length} Réalisés
+                   </span>
+                </div>
+             </div>
+
+             <div className="grid md:grid-cols-2 gap-6">
+                {user.actionPlan.map((commitment, idx) => {
+                   const uniqueKey = `${commitment.moduleId}-${commitment.date}-${commitment.action}`;
+                   const isUpdating = isUpdatingCommitment === uniqueKey;
+                   
+                   return (
+                      <div 
+                        key={idx} 
+                        className={`p-8 rounded-[2.5rem] border-2 transition-all relative group ${
+                          commitment.isCompleted 
+                          ? 'bg-emerald-50/30 border-emerald-100 shadow-sm' 
+                          : 'bg-white border-slate-50 shadow-xl hover:border-brand-100'
+                        }`}
+                      >
+                         <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-3">
+                               <div className={`p-2 rounded-lg ${commitment.isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                  <Book className="w-3.5 h-3.5" />
+                               </div>
+                               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest line-clamp-1 max-w-[150px]">
+                                  {commitment.moduleTitle}
+                               </span>
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter">{commitment.date}</span>
+                         </div>
+                         
+                         <p className={`text-lg font-bold leading-relaxed mb-8 ${commitment.isCompleted ? 'text-slate-400 line-through italic' : 'text-slate-900'}`}>
+                            "{commitment.action}"
+                         </p>
+
+                         <button 
+                           onClick={() => handleToggleCommitment(commitment)}
+                           disabled={isUpdating}
+                           className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                             commitment.isCompleted 
+                             ? 'bg-white text-emerald-600 border border-emerald-100 shadow-sm' 
+                             : 'bg-brand-900 text-white shadow-xl hover:bg-brand-950'
+                           }`}
+                         >
+                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : commitment.isCompleted ? <Check className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
+                            {commitment.isCompleted ? 'Action Réalisée' : 'Valider mon action'}
+                         </button>
+                      </div>
+                   );
+                })}
+             </div>
+          </section>
+        )}
+
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
                  <div className="flex items-center justify-center md:justify-start gap-4"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">GESTION DES FINANCES</h2></div>
-                 <p className="text-slate-500 font-medium max-w-md">Suivez vos recettes, vos dépenses et recouvrez vos ardoises pour garantir la santé financière de votre empire.</p>
+                 <p className="text-slate-500 font-medium max-w-md">Suivez vos recettes, vos d’penses et recouvrez vos ardoises pour garantir la sant’ financi’re de votre empire.</p>
                  <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">Ouvrir la Caisse KITA <ArrowRight className="w-4 h-4 text-amber-400" /></button>
               </div>
               <div className="h-40 w-40 bg-amber-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-all"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
@@ -211,7 +284,7 @@ const Dashboard: React.FC = () => {
               <div className="relative z-10 h-full flex flex-col">
                  <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE</h2>
                  <h3 className={`text-2xl font-serif font-bold mb-6 ${isStockExpert ? 'text-white' : 'text-slate-900'}`}>Gestion du Stock</h3>
-                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Accéder au Magasin</button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><Zap className="w-4 h-4" /> Activer le Stock</button>}
+                 {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Acc’der au Magasin</button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><Zap className="w-4 h-4" /> Activer le Stock</button>}
               </div>
            </div>
            <div className={`rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20'}`}>
