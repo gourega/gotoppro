@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -136,9 +136,20 @@ const PilotagePerformance: React.FC = () => {
     try {
       const standardCatalog = [
         { name: "Coupe Homme Simple", category: "Coiffure", defaultPrice: 2000 },
-        { name: "Coupe Femme", category: "Coiffure", defaultPrice: 3000 },
-        { name: "Brushing", category: "Coiffure", defaultPrice: 5000 },
-        { name: "Tresses simples", category: "Coiffure", defaultPrice: 10000 }
+        { name: "Coupe Femme (Rafraîchissement)", category: "Coiffure", defaultPrice: 3000 },
+        { name: "Brushing Simple", category: "Coiffure", defaultPrice: 5000 },
+        { name: "Tresses (Nattes classiques)", category: "Coiffure", defaultPrice: 10000 },
+        { name: "Tissage Fermé de Luxe", category: "Coiffure", defaultPrice: 15000 },
+        { name: "Shampoing & Soin Profond", category: "Coiffure", defaultPrice: 5000 },
+        { name: "Teinture / Coloration", category: "Coiffure", defaultPrice: 15000 },
+        { name: "Pédicure complète", category: "Soins", defaultPrice: 7000 },
+        { name: "Manucure simple", category: "Soins", defaultPrice: 5000 },
+        { name: "Pose Capsules + Gel", category: "Onglerie", defaultPrice: 15000 },
+        { name: "Soin de Visage Éclat", category: "Esthétique", defaultPrice: 20000 },
+        { name: "Maquillage Jour / Pro", category: "Esthétique", defaultPrice: 10000 },
+        { name: "Tracé de Sourcils", category: "Esthétique", defaultPrice: 2000 },
+        { name: "Défrisage Technique", category: "Coiffure", defaultPrice: 8000 },
+        { name: "Chignon Mariée / Soirée", category: "Coiffure", defaultPrice: 25000 }
       ];
       await bulkAddKitaServices(user.uid, standardCatalog);
       await loadData();
@@ -152,7 +163,6 @@ const PilotagePerformance: React.FC = () => {
     staff.forEach(member => {
       const memberTrans = transactions.filter(t => t.staffName === member.name && t.type === 'INCOME' && !t.isCredit);
       const totalCA = memberTrans.reduce((acc, t) => acc + t.amount, 0);
-      // Fix: Property 'commission_rate' does not exist on type 'KitaTransaction'. Use 'commissionRate'.
       const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || 0) / 100), 0);
       results.push({ ...member, totalCA, totalComm, count: memberTrans.length });
     });
@@ -356,7 +366,7 @@ const PilotagePerformance: React.FC = () => {
           </div>
         ) : activeTab === 'services' ? (
           <div className="space-y-12 animate-in fade-in">
-              {services.length === 0 && !loading && (
+              {services.length <= 4 && !loading && (
                 <section className="bg-indigo-900 rounded-[3rem] p-10 md:p-16 shadow-2xl relative overflow-hidden group">
                    <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 transition-transform group-hover:scale-110">
                       <Wand2 className="w-48 h-48 text-indigo-400" />
@@ -369,7 +379,7 @@ const PilotagePerformance: React.FC = () => {
                         Chargez la méthode <span className="text-indigo-400 italic">Coach Kita</span>
                       </h2>
                       <p className="text-indigo-100 text-lg mb-10 leading-relaxed font-medium">
-                        Ne perdez pas de temps à tout saisir. Importez les prestations standards et ajustez simplement vos prix.
+                        Ne perdez pas de temps à tout saisir. Importez les 15 prestations standards (Coiffure, Soins, Onglerie) et ajustez simplement vos prix.
                       </p>
                       <button 
                         onClick={handleImportStandardCatalog}
@@ -377,7 +387,7 @@ const PilotagePerformance: React.FC = () => {
                         className="bg-white text-indigo-900 px-10 py-6 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-50 transition-all flex items-center gap-4 active:scale-95"
                       >
                          {isImporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Wand2 className="w-6 h-6" />}
-                         {isImporting ? "Injection en cours..." : "Importer le catalogue standard"}
+                         {isImporting ? "Injection en cours..." : "Importer le catalogue (15 services)"}
                       </button>
                    </div>
                 </section>
