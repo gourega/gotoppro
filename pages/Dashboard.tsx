@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +36,8 @@ import {
   Award,
   Book,
   Check,
-  ClipboardList
+  ClipboardList,
+  Scissors
 } from 'lucide-react';
 import { UserActionCommitment } from '../types';
 
@@ -141,10 +143,11 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-[-100px] pb-32 space-y-12 relative z-20 w-full">
         
-        {/* QUICK ACTIONS GEANTES */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* QUICK ACTIONS GEANTES - Ajout de "SERVICES" */}
+        <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
            <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSE" sub="Sortie Caisse" onClick={() => navigate('/caisse')} color="bg-rose-500" />
+           <QuickActionBtn icon={<Scissors className="w-6 h-6" />} label="SERVICES" sub="Tarifs Salon" onClick={() => navigate('/pilotage?tab=services')} color="bg-indigo-500" />
            <QuickActionBtn icon={<Users className="w-6 h-6" />} label="CLIENT VIP" sub="Nouveau Fichier" onClick={() => navigate('/pilotage')} color="bg-amber-500" />
            <QuickActionBtn icon={<Camera className="w-6 h-6" />} label="POST IA" sub="Marketing" onClick={() => navigate('/marketing')} color="bg-indigo-600" />
         </section>
@@ -198,7 +201,7 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        {/* SECTION MES ENGAGEMENTS D'ÉLITE - TOUJOURS VISIBLE */}
+        {/* SECTION MES ENGAGEMENTS D'ÉLITE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100 animate-in slide-in-from-bottom-4 duration-700">
            <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
               <div className="flex items-center gap-5">

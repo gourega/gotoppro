@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   getKitaStaff, 
@@ -47,9 +48,18 @@ import { KitaService, KitaTransaction } from '../types';
 const PilotagePerformance: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
+  
+  // Gestion de l'onglet actif via paramètre d'URL (?tab=services)
   const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes' | 'services'>('staff');
   
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'services') setActiveTab('services');
+  }, [location]);
+
   const [staff, setStaff] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
@@ -165,7 +175,7 @@ const PilotagePerformance: React.FC = () => {
           <div className="flex justify-center bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
              <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'staff' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Équipe</button>
              <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'commissions' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Performance</button>
-             <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Catalogue</button>
+             <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Services & Tarifs</button>
              <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'clients' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Clients VIP</button>
              <button onClick={() => setActiveTab('dettes')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'dettes' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Ardoises</button>
           </div>
@@ -208,7 +218,7 @@ const PilotagePerformance: React.FC = () => {
                         <p className="text-xl font-black text-emerald-600 mt-4">{svc.defaultPrice.toLocaleString()} F</p>
                     </div>
                   ))}
-                  {services.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Catalogue vide. Configurez vos prix ici.</div>}
+                  {services.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucun service créé. Configurez vos prix ici pour la caisse.</div>}
               </div>
           </div>
         ) : activeTab === 'commissions' ? (

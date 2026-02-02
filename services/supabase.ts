@@ -2,14 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-/**
- * ATTENTION: Vite nécessite des accès directs aux variables pour les injecter.
- * N'utilisez pas de recherche dynamique par clé [key].
- */
-// Fix: Use type casting to access environment variables via import.meta.env which is defined by Vite
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL || "";
-// Fix: Use type casting to access environment variables via import.meta.env which is defined by Vite
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY || "";
+// Accès sécurisé aux variables d'environnement via import.meta.env (Vite standard)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
@@ -20,7 +15,7 @@ export const BUILD_CONFIG = {
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
   keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 8) + "..." : "VIDE",
   buildTime,
-  version: "2.5.7-PROD"
+  version: "2.5.8-PROD"
 };
 
 const getSafeSupabaseClient = () => {
@@ -184,7 +179,8 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    commission_rate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
+    // Fix: Using commissionRate to match KitaTransaction interface
+    commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
     productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
   }));
 };
@@ -194,6 +190,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
+    // Fix: Using transaction.paymentMethod (camelCase) to match the interface property name
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
