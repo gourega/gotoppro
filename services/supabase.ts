@@ -2,27 +2,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Accès aux variables d'environnement (Vite injecte ces valeurs au build)
+// Récupération des variables injectées au moment du BUILD
 // @ts-ignore
-const supabaseUrl = (import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : "") || "";
+const supabaseUrl = process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || "";
 // @ts-ignore
-const supabaseAnonKey = (import.meta.env?.VITE_SUPABASE_ANON_KEY) || (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_ANON_KEY : "") || "";
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 // @ts-ignore
-const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
+const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Non défini';
 
 export const BUILD_CONFIG = {
   hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
-  urlSnippet: supabaseUrl ? supabaseUrl.substring(0, 20) + "..." : "MANQUANT",
+  urlSnippet: supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "MANQUANT",
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
-  keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + "..." : "MANQUANT",
+  keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 8) + "..." : "MANQUANT",
   buildTime,
-  version: "2.6.0-PROD"
+  version: "2.6.1-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
-    console.error("%c [Supabase] ÉCHEC : Variables d'environnement introuvables. L'application est en mode déconnecté. ", "color: white; background: #e11d48; font-weight: bold; padding: 8px; border-radius: 4px;");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(`%c [Supabase] ERREUR : Clés introuvables au build de ${buildTime}. Redéployez sur Cloudflare. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
     return null;
   }
   
@@ -33,10 +33,10 @@ const getSafeSupabaseClient = () => {
         autoRefreshToken: true,
       }
     });
-    console.info(`%c [Supabase] Initialisé avec succès (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px; border-radius: 2px;");
+    console.info(`%c [Supabase] CONNECTÉ (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
     return client;
   } catch (e) {
-    console.error("[Supabase] Erreur critique d'initialisation:", e);
+    console.error("[Supabase] Erreur d'initialisation:", e);
     return null;
   }
 };
@@ -297,7 +297,6 @@ export const deleteKitaService = async (id: string) => {
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_products').select('*').eq('user_id', userId);
-  // Correct mapping from snake_case database fields to camelCase KitaProduct interface properties
   return (data || []).map(p => ({
     id: p.id, 
     name: p.name, 
