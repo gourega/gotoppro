@@ -2,7 +2,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Récupération des constantes globales injectées par Vite
 // @ts-ignore
 const supabaseUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
@@ -11,17 +10,21 @@ const supabaseAnonKey = typeof __KITA_KEY__ !== 'undefined' ? __KITA_KEY__ : "";
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
 
 export const BUILD_CONFIG = {
-  hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
+  hasUrl: !!supabaseUrl && supabaseUrl.length > 5,
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
-  urlSnippet: supabaseUrl ? (supabaseUrl.length > 20 ? `${supabaseUrl.substring(0, 20)}...` : supabaseUrl) : 'VIDE',
-  keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '********') : 'VIDE',
+  urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
+  keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.7.0-STABLE"
+  version: "2.7.5-PROD"
 };
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(`%c [Supabase] ERREUR : Build du ${buildTime} sans variables. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
+  const missing = [];
+  if (!supabaseUrl) missing.push("URL");
+  if (!supabaseAnonKey) missing.push("KEY");
+
+  if (missing.length > 0) {
+    console.error(`%c [Supabase] ERREUR CRITIQUE : ${missing.join(' et ')} non injecté(s) au build du ${buildTime}. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
     return null;
   }
   
@@ -32,7 +35,7 @@ const getSafeSupabaseClient = () => {
         autoRefreshToken: true,
       }
     });
-    console.info(`%c [Supabase] VERSION ${BUILD_CONFIG.version} CONNECTÉE `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
+    console.info(`%c [Supabase] SYSTÈME OPÉRATIONNEL (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
     return client;
   } catch (e) {
     console.error("[Supabase] Erreur d'initialisation:", e);
@@ -184,6 +187,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+    // Fix: Using transaction.staffName instead of transaction.staff_name to match KitaTransaction interface
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
     original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
@@ -210,7 +214,7 @@ export const addKitaStaff = async (userId: string, staff: any) => {
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_staff').insert({
     id: newId, user_id: userId, name: staff.name, phone: staff.phone,
-    commission_rate: staff.commission_rate, specialty: staff.specialty
+    commission_rate: staff.commissionRate, specialty: staff.specialty
   }).select().single();
   
   if (error) throw error;
