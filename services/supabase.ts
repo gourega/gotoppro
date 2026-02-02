@@ -55,7 +55,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.8.9-STABLE"
+  version: "2.8.11-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -301,10 +301,12 @@ export const getKitaStaff = async (userId: string) => {
 // Fix for PilotagePerformance.tsx
 export const addKitaStaff = async (userId: string, staff: any) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
+  const newId = generateUUID();
   try {
-    // On laisse Supabase générer l'ID (via le DEFAULT gen_random_uuid())
-    // pour éviter les conflits 409 si un ID est déjà utilisé ou mal généré.
+    // On force l'utilisation de newId généré par l'app pour éviter les conflits 409
+    // On s'assure que user_id est envoyé tel quel.
     const { data, error } = await supabase.from('kita_staff').insert({
+      id: newId,
       user_id: userId, 
       name: staff.name, 
       phone: staff.phone || "", 
