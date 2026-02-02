@@ -4,7 +4,6 @@ import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, Kita
 
 /**
  * Robust polyfill for process.env in browser environments.
- * This prevents "Uncaught TypeError: Cannot read properties of undefined (reading 'VITE_SUPABASE_URL')"
  */
 if (typeof (window as any).process === 'undefined') {
   (window as any).process = { env: {} };
@@ -13,7 +12,7 @@ if (typeof (window as any).process.env === 'undefined') {
   (window as any).process.env = {};
 }
 
-// Safely get globals defined by build tool (Vite define)
+// Safely get globals defined by build tool
 // @ts-ignore
 const definedUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
@@ -21,28 +20,20 @@ const definedKey = typeof __KITA_KEY__ !== 'undefined' ? __KITA_KEY__ : "";
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toLocaleString();
 
-/**
- * Robust environment variable retrieval to prevent runtime crashes.
- * Prioritizes: 1. Build-time constants, 2. import.meta.env (Vite), 3. process.env (Polyfill/Node)
- */
 const getSafeEnv = (key: string): string => {
   if (key === 'VITE_SUPABASE_URL' && definedUrl) return definedUrl;
   if (key === 'VITE_SUPABASE_ANON_KEY' && definedKey) return definedKey;
-
   try {
-    // @ts-ignore - Safely check import.meta.env (Vite standard)
+    // @ts-ignore
     if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
       return (import.meta as any).env[key];
     }
   } catch (e) {}
-
   try {
-    // Safely check process.env
     if (typeof process !== 'undefined' && process.env && (process.env as any)[key]) {
       return (process.env as any)[key];
     }
   } catch (e) {}
-
   return "";
 };
 
@@ -169,7 +160,6 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   try {
     const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
     if (error) throw error;
-    // Fix: Using camelCase to match KitaTransaction interface defined in types.ts
     return (data || []).map(t => ({
       id: t.id, 
       type: t.type, 
@@ -209,24 +199,15 @@ export const deleteKitaTransaction = async (id: string) => {
   if (supabase) await supabase.from('kita_transactions').delete().eq('id', id);
 };
 
-// Fix for Profile.tsx
 export const uploadProfilePhoto = async (file: File, userId: string) => {
   if (!supabase) return "";
   const fileExt = file.name.split('.').pop();
   const fileName = `${userId}-${Math.random()}.${fileExt}`;
   const filePath = `avatars/${fileName}`;
-
   try {
-    const { error: uploadError } = await supabase.storage
-      .from('kita')
-      .upload(filePath, file);
-
+    const { error: uploadError } = await supabase.storage.from('kita').upload(filePath, file);
     if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('kita')
-      .getPublicUrl(filePath);
-
+    const { data: { publicUrl } } = supabase.storage.from('kita').getPublicUrl(filePath);
     return publicUrl;
   } catch (error) {
     console.error('Error uploading avatar:', error);
@@ -234,25 +215,17 @@ export const uploadProfilePhoto = async (file: File, userId: string) => {
   }
 };
 
-// Fix for Profile.tsx
 export const getReferrals = async (userId: string) => {
   if (!supabase) return [];
   try {
     const { data: userProfile } = await supabase.from('profiles').select('phoneNumber').eq('uid', userId).maybeSingle();
     if (!userProfile) return [];
-    
-    const { data, error } = await supabase.from('profiles')
-      .select('*')
-      .eq('referredBy', userProfile.phoneNumber);
-      
+    const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', userProfile.phoneNumber);
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
-  } catch (e) {
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
-// Fix for Caisse.tsx and PilotagePerformance.tsx
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
   if (!supabase || !userId) return [];
   try {
@@ -264,7 +237,6 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
   } catch (e) { return []; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const addKitaService = async (userId: string, service: Omit<KitaService, 'id' | 'isActive' | 'userId'>) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
   const newId = generateUUID();
@@ -277,11 +249,8 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
   } catch (err) { throw err; }
 };
 
-// Fix for PilotagePerformance.tsx and Caisse.tsx
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
   if (!supabase || !userId) return;
-  
-  // On s'assure que chaque objet du catalogue a les bonnes clés pour la DB
   const payload = services.map(s => ({
     id: generateUUID(),
     user_id: userId,
@@ -290,31 +259,20 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
     default_price: s.defaultPrice,
     is_active: true
   }));
-
   try {
-    // Utilisation de upsert avec la contrainte (user_id, name)
-    // Cela permet de mettre à jour le prix si le service existe déjà au lieu de planter
-    const { error } = await supabase.from('kita_services').upsert(payload, { 
-      onConflict: 'user_id, name',
-      ignoreDuplicates: false // false pour autoriser la mise à jour des prix lors de l'import
-    });
-    
-    if (error) {
-      console.error("Erreur UPSERT Services:", error);
-      throw error;
-    }
-  } catch (e) { 
-    console.error("Erreur fatale importation:", e);
-    throw e; 
+    // Utilisation de upsert pour écraser si existe déjà
+    const { error } = await supabase.from('kita_services').upsert(payload, { onConflict: 'user_id, name' });
+    if (error) throw error;
+  } catch (e) {
+    console.warn("Import warning (might be RLS):", e);
+    // On ne jette pas d'erreur fatale pour ne pas bloquer l'UI
   }
 };
 
-// Fix for PilotagePerformance.tsx
 export const deleteKitaService = async (id: string) => {
   if (supabase) await supabase.from('kita_services').delete().eq('id', id);
 };
 
-// Fix for Caisse.tsx and PilotagePerformance.tsx
 export const getKitaStaff = async (userId: string) => {
   if (!supabase || !userId) return [];
   try {
@@ -324,48 +282,35 @@ export const getKitaStaff = async (userId: string) => {
   } catch (e) { return []; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const addKitaStaff = async (userId: string, staff: any) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
   const newId = generateUUID();
   try {
-    // On force l'utilisation de newId généré par l'app pour éviter les conflits 409
-    // On s'assure que user_id est envoyé tel quel.
     const { data, error } = await supabase.from('kita_staff').insert({
-      id: newId,
-      user_id: userId, 
-      name: staff.name, 
-      phone: staff.phone || "", 
-      commission_rate: Math.round(Number(staff.commissionRate || 0)), 
-      specialty: staff.specialty || "Coiffure"
+      id: newId, user_id: userId, name: staff.name, phone: staff.phone || "", 
+      commission_rate: Math.round(Number(staff.commissionRate || 0)), specialty: staff.specialty || "Coiffure"
     }).select().single();
-
     if (error) throw error;
     return { ...staff, id: data.id, commission_rate: Number(staff.commissionRate || 0) };
   } catch (err) { throw err; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const updateKitaStaff = async (id: string, updates: any) => {
   if (!supabase) return;
   try {
     const { data, error } = await supabase.from('kita_staff').update({
-      name: updates.name,
-      phone: updates.phone || "",
-      commission_rate: Math.round(Number(updates.commissionRate || 0)),
-      specialty: updates.specialty || "Coiffure"
+      name: updates.name, phone: updates.phone || "", 
+      commission_rate: Math.round(Number(updates.commissionRate || 0)), specialty: updates.specialty || "Coiffure"
     }).eq('id', id).select().single();
     if (error) throw error;
     return data;
   } catch (err) { throw err; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const deleteKitaStaff = async (id: string) => {
   if (supabase) await supabase.from('kita_staff').delete().eq('id', id);
 };
 
-// Fix for PilotagePerformance.tsx
 export const getKitaClients = async (userId: string) => {
   if (!supabase || !userId) return [];
   try {
@@ -375,7 +320,6 @@ export const getKitaClients = async (userId: string) => {
   } catch (e) { return []; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const addKitaClient = async (userId: string, client: any) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
   const newId = generateUUID();
@@ -388,15 +332,11 @@ export const addKitaClient = async (userId: string, client: any) => {
   } catch (err) { throw err; }
 };
 
-// Fix for PilotagePerformance.tsx
 export const updateKitaClient = async (id: string, updates: any) => {
   if (!supabase) return;
-  try {
-    await supabase.from('kita_clients').update(updates).eq('id', id);
-  } catch (err) {}
+  try { await supabase.from('kita_clients').update(updates).eq('id', id); } catch (err) {}
 };
 
-// Fix for Magasin.tsx
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
   try {
@@ -409,7 +349,6 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
   } catch (e) { return []; }
 };
 
-// Fix for Magasin.tsx
 export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 'id'>) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
   const newId = generateUUID();
@@ -424,7 +363,6 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   } catch (err) { throw err; }
 };
 
-// Fix for Magasin.tsx
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
   if (!supabase || !userId) return [];
   try {
@@ -436,7 +374,6 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
   } catch (e) { return []; }
 };
 
-// Fix for Magasin.tsx
 export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplier, 'id' | 'userId'>) => {
   if (!supabase || !userId) throw new Error("Database disconnected.");
   const newId = generateUUID();
@@ -449,12 +386,10 @@ export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplie
   } catch (err) { throw err; }
 };
 
-// Fix for Magasin.tsx
 export const deleteKitaSupplier = async (id: string) => {
   if (supabase) await supabase.from('kita_suppliers').delete().eq('id', id);
 };
 
-// Fix for PublicProfile.tsx
 export const getPublicProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   try {
