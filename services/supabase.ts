@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Utilisation des constantes globales définies dans vite.config.ts
+// Récupération des constantes globales injectées par Vite
 // @ts-ignore
 const supabaseUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
@@ -11,17 +11,17 @@ const supabaseAnonKey = typeof __KITA_KEY__ !== 'undefined' ? __KITA_KEY__ : "";
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
 
 export const BUILD_CONFIG = {
-  hasUrl: !!supabaseUrl && supabaseUrl.length > 5,
-  hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 10,
-  urlSnippet: supabaseUrl ? (supabaseUrl.length > 15 ? `${supabaseUrl.substring(0, 15)}...` : supabaseUrl) : 'NON_DEFINI',
-  keySnippet: supabaseAnonKey ? (supabaseAnonKey.length > 10 ? `${supabaseAnonKey.substring(0, 10)}...` : supabaseAnonKey) : 'NON_DEFINI',
+  hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
+  hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
+  urlSnippet: supabaseUrl ? (supabaseUrl.length > 20 ? `${supabaseUrl.substring(0, 20)}...` : supabaseUrl) : 'VIDE',
+  keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '********') : 'VIDE',
   buildTime,
-  version: "2.6.4-GOLD"
+  version: "2.7.0-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(`%c [Supabase] ÉCHEC CRITIQUE : Clés introuvables au build. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
+    console.error(`%c [Supabase] ERREUR : Build du ${buildTime} sans variables. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
     return null;
   }
   
@@ -32,7 +32,7 @@ const getSafeSupabaseClient = () => {
         autoRefreshToken: true,
       }
     });
-    console.info(`%c [Supabase] PRODUCTION OK (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
+    console.info(`%c [Supabase] VERSION ${BUILD_CONFIG.version} CONNECTÉE `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
     return client;
   } catch (e) {
     console.error("[Supabase] Erreur d'initialisation:", e);
@@ -210,7 +210,7 @@ export const addKitaStaff = async (userId: string, staff: any) => {
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_staff').insert({
     id: newId, user_id: userId, name: staff.name, phone: staff.phone,
-    commission_rate: staff.commissionRate, specialty: staff.specialty
+    commission_rate: staff.commission_rate, specialty: staff.specialty
   }).select().single();
   
   if (error) throw error;
