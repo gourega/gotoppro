@@ -3,21 +3,24 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  // Charge toutes les variables, y compris celles injectées par Cloudflare sans préfixe VITE_
-  const env = loadEnv(mode, process.cwd(), '');
+  // Charge les variables des fichiers .env
+  const envFile = loadEnv(mode, process.cwd(), '');
   
-  // Extraction avec fallbacks
-  const SUPABASE_URL = env.VITE_SUPABASE_URL || "";
-  const SUPABASE_KEY = env.VITE_SUPABASE_ANON_KEY || "";
-  const GEMINI_KEY = env.API_KEY || "";
-  const ADMIN_EMAIL = env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
+  // FUSION : On donne la priorité aux variables du tableau de bord Cloudflare (process.env)
+  // puis on complète avec les fichiers .env
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL || envFile.VITE_SUPABASE_URL || "";
+  const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || envFile.VITE_SUPABASE_ANON_KEY || "";
+  const GEMINI_KEY = process.env.API_KEY || envFile.API_KEY || "";
+  const ADMIN_EMAIL = process.env.VITE_ADMIN_EMAIL || envFile.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
-  console.log("Vite Build: Injection des variables d'environnement...");
+  console.log("Vite Build: Vérification des secrets...");
+  if (!SUPABASE_URL) console.warn("Attention: VITE_SUPABASE_URL est vide au build.");
+  if (!SUPABASE_KEY) console.warn("Attention: VITE_SUPABASE_ANON_KEY est vide au build.");
 
   return {
     plugins: [react()],
     define: {
-      // Remplacement statique pour le navigateur (important pour les SDK)
+      // Injection statique pour le navigateur
       'process.env.API_KEY': JSON.stringify(GEMINI_KEY),
       'process.env.VITE_SUPABASE_URL': JSON.stringify(SUPABASE_URL),
       'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(SUPABASE_KEY),
@@ -29,7 +32,7 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_ADMIN_EMAIL': JSON.stringify(ADMIN_EMAIL),
       'import.meta.env.API_KEY': JSON.stringify(GEMINI_KEY),
 
-      // Marqueur de version/temps pour debug
+      // Marqueur de temps pour confirmer le déploiement
       '__BUILD_TIME__': JSON.stringify(new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan' })),
     },
     build: {
