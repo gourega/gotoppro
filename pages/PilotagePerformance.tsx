@@ -75,7 +75,7 @@ const PilotagePerformance: React.FC = () => {
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
-  const [newStaff, setNewStaff] = useState({ name: '', commissionRate: 30, specialty: 'Coiffure' });
+  const [newStaff, setNewStaff] = useState({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
@@ -168,7 +168,7 @@ const PilotagePerformance: React.FC = () => {
       const saved = await addKitaStaff(user.uid, newStaff);
       if (saved) setStaff([...staff, saved]);
       setShowAddStaffModal(false);
-      setNewStaff({ name: '', commissionRate: 30, specialty: 'Coiffure' });
+      setNewStaff({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
     } catch (e: any) {
       alert("Erreur Staff : " + (e.message || "Vérifiez que la table kita_staff existe"));
     } finally { setSaving(false); }
@@ -444,10 +444,31 @@ const PilotagePerformance: React.FC = () => {
               <button onClick={() => setShowAddStaffModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Staff</h2>
               <form onSubmit={handleAddStaff} className="space-y-6">
-                 <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom complet" required />
-                 <input type="number" value={newStaff.commissionRate} onChange={e => setNewStaff({...newStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Commission %" />
-                 <button type="submit" disabled={saving} className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl">
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Valider"}
+                 <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom Complet</label>
+                   <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: Honoré" required />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Commission %</label>
+                      <input type="number" value={newStaff.commissionRate} onChange={e => setNewStaff({...newStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: 25" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Spécialité</label>
+                      <select value={newStaff.specialty} onChange={e => setNewStaff({...newStaff, specialty: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold appearance-none">
+                        <option>Coiffure</option>
+                        <option>Esthétique</option>
+                        <option>Onglerie</option>
+                        <option>Général</option>
+                      </select>
+                    </div>
+                 </div>
+                 <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Téléphone (Optionnel)</label>
+                   <input type="tel" value={newStaff.phone} onChange={e => setNewStaff({...newStaff, phone: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="0101..." />
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl flex items-center justify-center gap-3">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Créer le membre
                  </button>
               </form>
            </div>

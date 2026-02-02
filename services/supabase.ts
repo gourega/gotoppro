@@ -19,7 +19,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.8.0-ELITE"
+  version: "2.8.1-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -250,12 +250,27 @@ export const addKitaStaff = async (userId: string, staff: any) => {
   if (!supabase || !userId) throw new Error("Base de données déconnectée.");
   const newId = generateUUID();
   try {
-    const { data, error } = await supabase.from('kita_staff').insert({
-      id: newId, user_id: userId, name: staff.name, phone: staff.phone,
-      commission_rate: staff.commissionRate, specialty: staff.specialty
-    }).select().single();
+    // On nettoie les valeurs pour éviter d'envoyer des undefined
+    const insertData = {
+      id: newId,
+      user_id: userId,
+      name: staff.name || "Inconnu",
+      phone: staff.phone || "",
+      commission_rate: Number(staff.commissionRate || 0),
+      specialty: staff.specialty || "Généraliste",
+      is_active: true
+    };
+
+    const { data, error } = await supabase
+      .from('kita_staff')
+      .insert(insertData)
+      .select()
+      .single();
     
-    if (error) throw error;
+    if (error) {
+       console.error("Supabase Staff Error Details:", error);
+       throw error;
+    }
     return { id: data.id, ...staff, user_id: userId };
   } catch (err) {
     console.error("DB Error (AddStaff):", err);
@@ -287,7 +302,7 @@ export const addKitaClient = async (userId: string, client: any) => {
   const newId = generateUUID();
   try {
     const { data, error } = await supabase.from('kita_clients').insert({
-      id: newId, user_id: userId, name: client.name, phone: client.phone
+      id: newId, user_id: userId, name: client.name, phone: client.phone || ""
     }).select().single();
     
     if (error) throw error;
