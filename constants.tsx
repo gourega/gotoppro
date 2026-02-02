@@ -5,8 +5,8 @@ import { TrainingModule, Badge, ModuleStatus } from './types';
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 
-// Avatar de Coach Kita (Version Officielle extraite de votre bucket 'kita')
-export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/coach-kita.jpg";
+// Avatar de Coach Kita (Version Officielle extraite de votre bucket 'coach-kita')
+export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/coach-kita/coach-kita.jpg";
 
 // Partenaire Excellence : Salon Chez Raymond (Extraits de vos buckets dédiés)
 export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/logo-raymond.png";
@@ -136,12 +136,12 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>1. La désinfection visible : un acte marketing</h2>
       <p>Désinfecter ses outils dans l'arrière-boutique est une erreur. Le client doit voir le geste pour y croire.</p>
       <blockquote>« L'hygiène n'est pas une contrainte, c'est votre signature de luxe. »</blockquote>
-      <p>Nettoyez le fauteuil avec un spray devant la cliente. Cela augmente instantanément la valeur perçue de votre travail.</p>
+      <p>Nettoyez le fauteuil avec un spray devant la clinique. Cela augmente instantanément la valeur perçue de votre travail.</p>
       <h2>2. Les points critiques : bacs et brosses</h2>
       <p>Rien ne détruit plus la confiance que des cheveux restés sur une brosse. Installez une routine : après chaque client, le poste redeviendra « neuf ».</p>
       <h2>3. Synthèse & Orientation : La Rigueur qui Rassure</h2>
       <p>Dans un marché où l'informel domine, votre rigueur sur l'hygiène est ce qui vous fera sortir du lot et attirera la clientèle VIP, celle qui ne négocie pas les prix.</p>
-      <p><strong>Votre Défi des 24h :</strong> Nettoyez systématiquement vos ciseaux et votre peigne devant votre prochaine cliente en expliquant pourquoi vous le faites. Prêt pour la certification ?</p>
+      <p><strong>Votre Défi des 24h :</strong> Nettoyez systématiquement vos ciseaux et votre peigne devant votre prochaine clinique en expliquant pourquoi vous le faites. Prêt pour la certification ?</p>
     `,
     coach_tip: "Un bac à shampoing sale fait fuir les meilleurs clients définitivement.",
     strategic_mantra: "L'excellence commence par un peigne sans cheveux.",
@@ -386,7 +386,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>2. La lutte contre les rendez-vous manqués</h2>
       <p>Envoyez un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
       <h2>3. Synthèse & Orientation : Maître de son Temps</h2>
-      <p>Un gérant débordé est un gérant qui ne pilote plus. Reprenez le contrôle de votre agenda pour libérer du temps pour votre vision stratégique.</p>
+      <p>Un gérant délégué est un gérant qui ne pilote plus. Reprenez le contrôle de votre agenda pour libérer du temps pour votre vision stratégique.</p>
       <p><strong>Votre Défi des 24h :</strong> Appelez ou écrivez à toutes vos cliniques de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
     `,
     coach_tip: "Prévoyez toujours 15 minutes de marge.",
