@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   // Charge .env local (utile pour le dev)
-  const env = loadEnv(mode, process.cwd(), '');
+  // Fix: Casting process to any to access cwd() method which might be missing from the environment's Process type definition during build-time type checking.
+  const env = loadEnv(mode, (process as any).cwd(), '');
   
   // Dans Cloudflare, les variables sont dans process.env ou chargées via loadEnv
   const config = {

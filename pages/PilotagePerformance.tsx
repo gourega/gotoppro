@@ -157,10 +157,12 @@ const PilotagePerformance: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Add Staff Error:", err);
-      if (err.message?.includes('column')) {
+      if (err.code === '23505' || err.status === 409 || err.message?.includes('duplicate')) {
+        setSaveError(`Le membre "${newStaff.name}" existe déjà dans votre équipe. Utilisez un nom légèrement différent si c'est un homonyme.`);
+      } else if (err.message?.includes('column')) {
         setSaveError("Structure de table incorrecte. Vérifiez que les colonnes 'commission_rate' et 'specialty' existent.");
       } else {
-        setSaveError("Impossible d'enregistrer. Vérifiez votre connexion ou contactez le support.");
+        setSaveError("Impossible d'enregistrer. Vérifiez votre connexion ou contactez Coach Kita sur WhatsApp.");
       }
     } finally { setSaving(false); }
   };
