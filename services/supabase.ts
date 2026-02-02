@@ -280,6 +280,8 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
 // Fix for PilotagePerformance.tsx and Caisse.tsx
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
   if (!supabase || !userId) return;
+  
+  // On s'assure que chaque objet du catalogue a les bonnes clés pour la DB
   const payload = services.map(s => ({
     id: generateUUID(),
     user_id: userId,
@@ -288,10 +290,23 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
     default_price: s.defaultPrice,
     is_active: true
   }));
+
   try {
-    const { error } = await supabase.from('kita_services').insert(payload);
-    if (error) throw error;
-  } catch (e) { throw e; }
+    // Utilisation de upsert avec la contrainte (user_id, name)
+    // Cela permet de mettre à jour le prix si le service existe déjà au lieu de planter
+    const { error } = await supabase.from('kita_services').upsert(payload, { 
+      onConflict: 'user_id, name',
+      ignoreDuplicates: false // false pour autoriser la mise à jour des prix lors de l'import
+    });
+    
+    if (error) {
+      console.error("Erreur UPSERT Services:", error);
+      throw error;
+    }
+  } catch (e) { 
+    console.error("Erreur fatale importation:", e);
+    throw e; 
+  }
 };
 
 // Fix for PilotagePerformance.tsx
