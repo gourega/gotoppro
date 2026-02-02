@@ -44,7 +44,8 @@ import {
   Ban,
   List,
   Sparkles,
-  Wand2
+  Wand2,
+  Phone
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 
@@ -98,6 +99,8 @@ const PilotagePerformance: React.FC = () => {
       setClients(clientsData);
       setServices(serviceData);
       setTransactions(transData);
+    } catch (e) {
+      console.error("Erreur de chargement des données pilotage", e);
     } finally { setLoading(false); }
   };
 
@@ -137,8 +140,8 @@ const PilotagePerformance: React.FC = () => {
     try {
       await bulkAddKitaServices(user.uid, standardCatalog);
       await loadData();
-    } catch (e) {
-      alert("Erreur lors de l'importation.");
+    } catch (e: any) {
+      alert("Erreur importation : " + (e.message || "Table manquante dans Supabase"));
     } finally {
       setIsImporting(false);
     }
@@ -166,6 +169,22 @@ const PilotagePerformance: React.FC = () => {
       if (saved) setStaff([...staff, saved]);
       setShowAddStaffModal(false);
       setNewStaff({ name: '', commissionRate: 30, specialty: 'Coiffure' });
+    } catch (e: any) {
+      alert("Erreur Staff : " + (e.message || "Vérifiez que la table kita_staff existe"));
+    } finally { setSaving(false); }
+  };
+
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newClient.name) return;
+    setSaving(true);
+    try {
+      const saved = await addKitaClient(user.uid, newClient);
+      if (saved) setClients([saved, ...clients]);
+      setShowAddClientModal(false);
+      setNewClient({ name: '', phone: '', notes: '' });
+    } catch (e: any) {
+      alert("Erreur Client : " + (e.message || "Vérifiez que la table kita_clients existe"));
     } finally { setSaving(false); }
   };
 
@@ -178,13 +197,19 @@ const PilotagePerformance: React.FC = () => {
       if (saved) setServices([...services, saved as KitaService]);
       setShowAddServiceModal(false);
       setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
+    } catch (e: any) {
+      alert("Erreur Service : " + (e.message || "Vérifiez que la table kita_services existe"));
     } finally { setSaving(false); }
   };
 
   const handleDeleteSvc = async (id: string) => {
     if (!window.confirm("Supprimer cette prestation du catalogue ?")) return;
-    await deleteKitaService(id);
-    setServices(services.filter(s => s.id !== id));
+    try {
+      await deleteKitaService(id);
+      setServices(services.filter(s => s.id !== id));
+    } catch (e) {
+      alert("Erreur suppression");
+    }
   };
 
   const LockedScreen = () => (
@@ -244,6 +269,7 @@ const PilotagePerformance: React.FC = () => {
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commissionRate}%</p>
                     </div>
                   ))}
+                  {staff.length === 0 && !loading && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucun membre dans l'équipe. Cliquez sur Nouveau.</div>}
               </div>
           </div>
         ) : activeTab === 'services' ? (
@@ -327,12 +353,13 @@ const PilotagePerformance: React.FC = () => {
                     {clients.map(c => (
                         <div key={c.id} className="p-6 border-b flex items-center justify-between hover:bg-slate-50 transition-all gap-4">
                           <div className="flex items-center gap-6">
-                              <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-xl">{c.name[0]}</div>
+                              <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 text-xl">{c.name?.[0] || 'V'}</div>
                               <div><p className="font-bold text-slate-900 text-lg">{c.name}</p><p className="text-[10px] font-black text-slate-400 uppercase">{c.phone}</p></div>
                           </div>
                           <button onClick={() => setSelectedClient(c)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all"><ClipboardList className="w-5 h-5" /></button>
                         </div>
                     ))}
+                    {clients.length === 0 && !loading && <div className="py-20 text-center text-slate-300 italic">Aucun client VIP enregistré.</div>}
                 </div>
             </div>
           )
@@ -384,16 +411,44 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL NOUVEAU VIP */}
+      {showAddClientModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
+              <button onClick={() => setShowAddClientModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
+              <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Client VIP</h2>
+              <form onSubmit={handleAddClient} className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du Client</label>
+                    <input type="text" value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom complet" required />
+                 </div>
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label>
+                    <div className="relative">
+                       <Phone className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                       <input type="tel" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} className="w-full pl-16 pr-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="0505..." />
+                    </div>
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-amber-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl flex items-center justify-center gap-3">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Créer la fiche VIP
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
+
       {/* MODAL STAFF */}
       {showAddStaffModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
-              <button onClick={() => setShowAddStaffModal(false)} className="absolute top-10 right-10 text-slate-300"><X /></button>
+              <button onClick={() => setShowAddStaffModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Staff</h2>
               <form onSubmit={handleAddStaff} className="space-y-6">
                  <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom complet" required />
                  <input type="number" value={newStaff.commissionRate} onChange={e => setNewStaff({...newStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Commission %" />
-                 <button type="submit" className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl">Valider</button>
+                 <button type="submit" disabled={saving} className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Valider"}
+                 </button>
               </form>
            </div>
         </div>
@@ -403,7 +458,7 @@ const PilotagePerformance: React.FC = () => {
       {showAddServiceModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
-              <button onClick={() => setShowAddServiceModal(false)} className="absolute top-10 right-10 text-slate-300"><X /></button>
+              <button onClick={() => setShowAddServiceModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Service</h2>
               <form onSubmit={handleAddService} className="space-y-6">
                  <div>

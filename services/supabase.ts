@@ -112,6 +112,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.hasStockPack !== undefined) dbData.hasStockPack = profile.hasStockPack;
   if (profile.crmExpiryDate !== undefined) dbData.crmExpiryDate = profile.crmExpiryDate;
   if (profile.strategicAudit !== undefined) dbData.strategicAudit = profile.strategicAudit;
+  // Fix: changed marketing_credits to marketingCredits to match UserProfile interface
   if (profile.marketingCredits !== undefined) dbData.marketing_credits = profile.marketingCredits;
   if (profile.badges !== undefined) dbData.badges = profile.badges;
   if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
@@ -191,9 +192,9 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
-    label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-    date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
-    is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
+    label: transaction.label, category: transaction.category, payment_method: transaction.payment_method,
+    date: transaction.date, staff_name: transaction.staff_name, commission_rate: transaction.commission_rate,
+    is_credit: transaction.is_credit, client_id: transaction.clientId, product_id: transaction.productId,
     original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
   });
   return error ? null : { ...transaction, id: newId } as KitaTransaction;
@@ -213,13 +214,15 @@ export const getKitaStaff = async (userId: string) => {
 };
 
 export const addKitaStaff = async (userId: string, staff: any) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Database non connectée");
   const newId = generateUUID();
-  const { error } = await supabase.from('kita_staff').insert({
+  const { data, error } = await supabase.from('kita_staff').insert({
     id: newId, user_id: userId, name: staff.name, phone: staff.phone,
-    commission_rate: staff.commissionRate || staff.commission_rate, specialty: staff.specialty
-  });
-  return error ? null : { id: newId, ...staff, user_id: userId };
+    commission_rate: staff.commissionRate, specialty: staff.specialty
+  }).select().single();
+  
+  if (error) throw error;
+  return { id: data.id, ...staff, user_id: userId };
 };
 
 export const deleteKitaStaff = async (id: string) => {
@@ -236,12 +239,14 @@ export const getKitaClients = async (userId: string) => {
 };
 
 export const addKitaClient = async (userId: string, client: any) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Database non connectée");
   const newId = generateUUID();
-  const { error } = await supabase.from('kita_clients').insert({
+  const { data, error } = await supabase.from('kita_clients').insert({
     id: newId, user_id: userId, name: client.name, phone: client.phone
-  });
-  return error ? null : { id: newId, ...client, user_id: userId };
+  }).select().single();
+  
+  if (error) throw error;
+  return { id: data.id, ...client, user_id: userId };
 };
 
 export const updateKitaClient = async (id: string, updates: any) => {
@@ -263,13 +268,15 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
 };
 
 export const addKitaService = async (userId: string, service: any) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Database non connectée");
   const newId = generateUUID();
-  const { error } = await supabase.from('kita_services').insert({
+  const { data, error } = await supabase.from('kita_services').insert({
     id: newId, user_id: userId, name: service.name, category: service.category,
-    default_price: service.defaultPrice || service.default_price, is_active: true
-  });
-  return error ? null : { id: newId, ...service, user_id: userId };
+    default_price: service.defaultPrice, is_active: true
+  }).select().single();
+  
+  if (error) throw error;
+  return { id: data.id, ...service, user_id: userId };
 };
 
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
@@ -278,7 +285,8 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
     id: generateUUID(), user_id: userId, name: s.name, category: s.category,
     default_price: s.defaultPrice || 0, is_active: true
   }));
-  await supabase.from('kita_services').insert(payload);
+  const { error } = await supabase.from('kita_services').insert(payload);
+  if (error) throw error;
 };
 
 export const updateKitaService = async (id: string, updates: any) => {
