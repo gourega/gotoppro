@@ -2,32 +2,26 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Récupération des variables injectées
+// Utilisation des constantes globales définies dans vite.config.ts
 // @ts-ignore
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
+const supabaseAnonKey = typeof __KITA_KEY__ !== 'undefined' ? __KITA_KEY__ : "";
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
 
 export const BUILD_CONFIG = {
   hasUrl: !!supabaseUrl && supabaseUrl.length > 5,
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 10,
-  // Added urlSnippet and keySnippet to fix Error in file pages/Login.tsx
-  urlSnippet: supabaseUrl ? (supabaseUrl.length > 15 ? `${supabaseUrl.substring(0, 15)}...` : supabaseUrl) : '',
-  keySnippet: supabaseAnonKey ? (supabaseAnonKey.length > 15 ? `${supabaseAnonKey.substring(0, 15)}...` : supabaseAnonKey) : '',
+  urlSnippet: supabaseUrl ? (supabaseUrl.length > 15 ? `${supabaseUrl.substring(0, 15)}...` : supabaseUrl) : 'NON_DEFINI',
+  keySnippet: supabaseAnonKey ? (supabaseAnonKey.length > 10 ? `${supabaseAnonKey.substring(0, 10)}...` : supabaseAnonKey) : 'NON_DEFINI',
   buildTime,
-  version: "2.6.2-PROD"
+  version: "2.6.4-GOLD"
 };
 
 const getSafeSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    const missing = [];
-    if (!supabaseUrl) missing.push("URL");
-    if (!supabaseAnonKey) missing.push("KEY");
-    
-    console.error(`%c [Supabase] ERREUR : Manquant [${missing.join(', ')}] au build du ${buildTime}. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
+    console.error(`%c [Supabase] ÉCHEC CRITIQUE : Clés introuvables au build. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
     return null;
   }
   
@@ -38,7 +32,7 @@ const getSafeSupabaseClient = () => {
         autoRefreshToken: true,
       }
     });
-    console.info(`%c [Supabase] OK : Connecté (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
+    console.info(`%c [Supabase] PRODUCTION OK (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
     return client;
   } catch (e) {
     console.error("[Supabase] Erreur d'initialisation:", e);
@@ -216,7 +210,7 @@ export const addKitaStaff = async (userId: string, staff: any) => {
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_staff').insert({
     id: newId, user_id: userId, name: staff.name, phone: staff.phone,
-    commission_rate: staff.commission_rate, specialty: staff.specialty
+    commission_rate: staff.commissionRate, specialty: staff.specialty
   }).select().single();
   
   if (error) throw error;
