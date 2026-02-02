@@ -50,7 +50,8 @@ import {
   Database,
   Terminal,
   Copy,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 import { COACH_KITA_PHONE } from '../constants';
@@ -84,7 +85,7 @@ const PilotagePerformance: React.FC = () => {
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<{message: string, isRls: boolean} | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isUnlocked = user?.hasPerformancePack;
   const isCRMActive = useMemo(() => user?.isAdmin || (user?.crmExpiryDate && new Date(user.crmExpiryDate) > new Date()), [user]);
@@ -94,6 +95,7 @@ const PilotagePerformance: React.FC = () => {
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
+    setSaveError(null);
     try {
       const [staffData, clientsData, serviceData, transData] = await Promise.all([
         getKitaStaff(user.uid),
@@ -105,34 +107,27 @@ const PilotagePerformance: React.FC = () => {
       setClients(clientsData);
       setServices(serviceData);
       setTransactions(transData);
-    } catch (e) {
-      console.error("Erreur de chargement des données pilotage", e);
+    } catch (e: any) {
+      console.error("Erreur de chargement", e);
+      setSaveError("Erreur de connexion aux tables. Vérifiez que les tables existent dans Supabase.");
     } finally { setLoading(false); }
   };
 
   const handleImportStandardCatalog = async () => {
     if (!user || isImporting) return;
     setIsImporting(true);
-    
-    const standardCatalog = [
-      { name: "Coupe Homme Simple", category: "Coiffure", defaultPrice: 2000 },
-      { name: "Coupe Femme", category: "Coiffure", defaultPrice: 3000 },
-      { name: "Brushing", category: "Coiffure", defaultPrice: 5000 },
-      { name: "Tresses simples", category: "Coiffure", defaultPrice: 10000 },
-      { name: "Shampoing Expert", category: "Soins", defaultPrice: 2000 },
-      { name: "Pose Gel", category: "Onglerie", defaultPrice: 10000 },
-      { name: "Manucure", category: "Onglerie", defaultPrice: 5000 },
-      { name: "Soin du Visage", category: "Esthétique", defaultPrice: 15000 }
-    ];
-
     try {
+      const standardCatalog = [
+        { name: "Coupe Homme Simple", category: "Coiffure", defaultPrice: 2000 },
+        { name: "Coupe Femme", category: "Coiffure", defaultPrice: 3000 },
+        { name: "Brushing", category: "Coiffure", defaultPrice: 5000 },
+        { name: "Tresses simples", category: "Coiffure", defaultPrice: 10000 }
+      ];
       await bulkAddKitaServices(user.uid, standardCatalog);
       await loadData();
     } catch (e: any) {
       alert("Erreur importation : " + (e.message || "Table manquante"));
-    } finally {
-      setIsImporting(false);
-    }
+    } finally { setIsImporting(false); }
   };
 
   const staffStats = useMemo(() => {
@@ -161,33 +156,19 @@ const PilotagePerformance: React.FC = () => {
         setNewStaff({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
       }
     } catch (err: any) {
-      console.error("Staff Insert Error:", err);
-      if (err.message?.includes('row-level security') || err.code === '42501' || err.message?.includes('permission denied')) {
-        setSaveError({ 
-          message: "Action requise : Votre salon n'est pas encore autorisé à modifier son équipe sur le cloud. Un correctif SQL est nécessaire.", 
-          isRls: true 
-        });
+      console.error("Add Staff Error:", err);
+      if (err.message?.includes('column')) {
+        setSaveError("Structure de table incorrecte. Vérifiez que les colonnes 'commission_rate' et 'specialty' existent.");
       } else {
-        setSaveError({ message: "Une erreur est survenue lors de l'enregistrement.", isRls: false });
+        setSaveError("Impossible d'enregistrer. Vérifiez votre connexion ou contactez le support.");
       }
     } finally { setSaving(false); }
-  };
-
-  const copySqlFix = () => {
-    const sql = `DROP POLICY IF EXISTS "Gestion staff personnel" ON public.kita_staff;
-CREATE POLICY "Gestion staff personnel" ON public.kita_staff
-FOR ALL TO authenticated 
-USING (auth.uid()::text = user_id::text) 
-WITH CHECK (auth.uid()::text = user_id::text);`;
-    navigator.clipboard.writeText(sql);
-    alert("Script SQL copié ! Collez-le dans l'éditeur SQL de Supabase.");
   };
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newClient.name) return;
     setSaving(true);
-    setSaveError(null);
     try {
       const saved = await addKitaClient(user.uid, newClient);
       if (saved) {
@@ -196,11 +177,7 @@ WITH CHECK (auth.uid()::text = user_id::text);`;
         setNewClient({ name: '', phone: '', notes: '' });
       }
     } catch (err: any) {
-      if (err.message?.includes('row-level security') || err.code === '42501') {
-        setSaveError({ message: "Accès CRM restreint. Un correctif SQL est nécessaire.", isRls: true });
-      } else {
-        setSaveError({ message: "Erreur Client.", isRls: false });
-      }
+      setSaveError("Erreur lors de l'ajout du client.");
     } finally { setSaving(false); }
   };
 
@@ -216,7 +193,7 @@ WITH CHECK (auth.uid()::text = user_id::text);`;
         setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
       }
     } catch (e: any) {
-      alert("Erreur Service. Vérifiez vos permissions.");
+      alert("Erreur technique sur la table Services.");
     } finally { setSaving(false); }
   };
 
@@ -274,6 +251,16 @@ WITH CHECK (auth.uid()::text = user_id::text);`;
 
       <div className="max-w-6xl mx-auto px-6 -mt-20 space-y-12 relative z-20">
         
+        {saveError && (
+          <div className="bg-rose-50 border-2 border-rose-100 p-6 rounded-[2rem] flex items-center justify-between shadow-xl animate-in slide-in-from-top-4">
+             <div className="flex items-center gap-4">
+                <AlertCircle className="w-8 h-8 text-rose-500" />
+                <p className="text-sm font-bold text-rose-900">{saveError}</p>
+             </div>
+             <button onClick={loadData} className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-brand-600 transition-all"><RefreshCw className="w-5 h-5" /></button>
+          </div>
+        )}
+
         {activeTab === 'staff' ? (
           <div className="space-y-8 animate-in fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
@@ -432,7 +419,6 @@ WITH CHECK (auth.uid()::text = user_id::text);`;
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddClientModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Client VIP</h2>
-              {saveError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-black mb-6 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {saveError.message}</div>}
               <form onSubmit={handleAddClient} className="space-y-6">
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du Client</label>
@@ -459,34 +445,6 @@ WITH CHECK (auth.uid()::text = user_id::text);`;
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddStaffModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Staff</h2>
-              
-              {saveError && (
-                <div className={`p-6 rounded-[2rem] mb-8 border-2 flex items-start gap-4 animate-in slide-in-from-top-2 ${saveError.isRls ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
-                  {saveError.isRls ? <ShieldAlert className="w-6 h-6 shrink-0 mt-1" /> : <AlertCircle className="w-6 h-6 shrink-0 mt-1" />}
-                  <div className="space-y-4">
-                    <p className="text-xs font-bold leading-relaxed">{saveError.message}</p>
-                    {saveError.isRls && (
-                      <div className="flex flex-col gap-3">
-                        <button 
-                          type="button"
-                          onClick={copySqlFix}
-                          className="bg-amber-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 justify-center shadow-lg"
-                        >
-                          <Copy className="w-4 h-4" /> Copier le correctif SQL
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g,'')}?text=${encodeURIComponent("Bonjour Coach Kita, mon salon a une erreur de permission lors de l'ajout du Staff. Pouvez-vous vérifier mon projet Supabase ?")}`, '_blank')}
-                          className="bg-brand-900 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 justify-center shadow-lg"
-                        >
-                          <MessageCircle className="w-4 h-4" /> Alerter Coach Kita
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <form onSubmit={handleAddStaff} className="space-y-6">
                  <div>
                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom Complet</label>
