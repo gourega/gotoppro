@@ -14,6 +14,7 @@ import {
   updateKitaClient,
   getKitaServices,
   addKitaService,
+  updateKitaService,
   deleteKitaService,
   bulkAddKitaServices
 } from '../services/supabase';
@@ -84,12 +85,14 @@ const PilotagePerformance: React.FC = () => {
   const [showEditStaffModal, setShowEditStaffModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
-  const [newStaff, setNewStaff] = useState({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
+  const [newStaff, setNewStaff] = useState({ name: '', phone: '', commission_rate: 25, specialty: 'Coiffure' });
   const [editingStaff, setEditingStaff] = useState<any | null>(null);
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
+  const [editingService, setEditingService] = useState<KitaService | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<{message: string, code?: string, raw?: any} | null>(null);
 
@@ -163,7 +166,7 @@ const PilotagePerformance: React.FC = () => {
     staff.forEach(member => {
       const memberTrans = transactions.filter(t => t.staffName === member.name && t.type === 'INCOME' && !t.isCredit);
       const totalCA = memberTrans.reduce((acc, t) => acc + t.amount, 0);
-      const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || 0) / 100), 0);
+      const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || t.commission_rate || 0) / 100), 0);
       results.push({ ...member, totalCA, totalComm, count: memberTrans.length });
     });
     return results.sort((a,b) => b.totalCA - a.totalCA);
@@ -181,31 +184,24 @@ const PilotagePerformance: React.FC = () => {
       if (saved) {
         setStaff([...staff, saved]);
         setShowAddStaffModal(false);
-        setNewStaff({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
+        setNewStaff({ name: '', phone: '', commission_rate: 25, specialty: 'Coiffure' });
       }
     } catch (err: any) {
-      console.error("DEBUG - Erreur insertion Staff:", err);
       if (err.code === '23505' || err.status === 409 || err.message?.includes('duplicate')) {
         setSaveError({ 
-          message: `Le membre "${newStaff.name}" existe déjà. Utilisez un nom légèrement différent (ex: ${newStaff.name} 2).`,
+          message: `Le membre "${newStaff.name}" existe déjà. Utilisez un nom légèrement différent.`,
           code: "DOUBLON",
           raw: err
         });
-      } else if (err.code === '42P01') {
-        setSaveError({ message: "La table 'kita_staff' est introuvable.", code: "SQL_TABLE_MISSING", raw: err });
       } else {
-        setSaveError({ 
-          message: "L'enregistrement a échoué. Vérifiez votre script SQL dans Supabase.", 
-          code: err.code || "UNK",
-          raw: err
-        });
+        setSaveError({ message: "L'enregistrement a échoué.", code: err.code || "UNK", raw: err });
       }
     } finally { setSaving(false); }
   };
 
   const handleEditStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingStaff || !editingStaff.name) return;
+    if (!editingStaff || !editingStaff.id) return;
     setSaving(true);
     try {
       const updated = await updateKitaStaff(editingStaff.id, editingStaff);
@@ -258,6 +254,22 @@ const PilotagePerformance: React.FC = () => {
       }
     } catch (e: any) {
       alert("Erreur technique sur la table Services.");
+    } finally { setSaving(false); }
+  };
+
+  const handleEditService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService || !editingService.id) return;
+    setSaving(true);
+    try {
+      const updated = await updateKitaService(editingService.id, editingService);
+      if (updated) {
+        setServices(services.map(s => s.id === editingService.id ? updated : s));
+        setShowEditServiceModal(false);
+        setEditingService(null);
+      }
+    } catch (err: any) {
+      alert("Erreur lors de la mise à jour du service.");
     } finally { setSaving(false); }
   };
 
@@ -339,16 +351,16 @@ const PilotagePerformance: React.FC = () => {
           <div className="space-y-8 animate-in fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Staff</h3>
-                 <button onClick={() => { setShowAddStaffModal(true); setSaveError(null); }} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
+                 <button onClick={() => { setShowAddStaffModal(true); setSaveError(null); }} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau Collaborateur</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {staff.map(member => (
                     <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all relative overflow-hidden">
                         <div className="flex justify-between items-start mb-6">
                            <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center"><Scissors className="w-6 h-6" /></div>
-                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditingStaff({ ...member, commissionRate: member.commission_rate || member.commissionRate }); setShowEditStaffModal(true); }} className="p-2 text-slate-400 hover:text-brand-600 transition-colors"><Pencil className="w-4 h-4" /></button>
-                              <button onClick={() => handleDeleteStaff(member.id)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                           <div className="flex gap-2">
+                              <button onClick={() => { setEditingStaff({ ...member, commission_rate: member.commission_rate || member.commissionRate }); setShowEditStaffModal(true); }} className="p-3 bg-slate-50 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all shadow-sm"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteStaff(member.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm"><Trash2 className="w-4 h-4" /></button>
                            </div>
                         </div>
                         <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
@@ -400,15 +412,18 @@ const PilotagePerformance: React.FC = () => {
               
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {services.map(svc => (
-                    <div key={svc.id} className="bg-white rounded-[2.5rem] p-6 border shadow-sm group hover:border-indigo-500 transition-all flex flex-col justify-between">
+                    <div key={svc.id} className="bg-white rounded-[2.5rem] p-8 border shadow-sm group hover:border-indigo-500 transition-all flex flex-col justify-between">
                         <div>
-                          <div className="flex justify-between items-start mb-4">
+                          <div className="flex justify-between items-start mb-6">
                             <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[8px] font-black uppercase">{svc.category}</span>
-                            <button onClick={() => handleDeleteSvc(svc.id)} className="p-2 text-slate-200 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <div className="flex gap-1">
+                              <button onClick={() => { setEditingService(svc); setShowEditServiceModal(true); }} className="p-2.5 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteSvc(svc.id)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                            </div>
                           </div>
                           <h4 className="text-lg font-bold text-slate-900 mb-2 leading-tight">{svc.name}</h4>
                         </div>
-                        <p className="text-xl font-black text-emerald-600 mt-4">{svc.defaultPrice.toLocaleString()} F</p>
+                        <p className="text-2xl font-black text-emerald-600 mt-6">{svc.defaultPrice.toLocaleString()} F</p>
                     </div>
                   ))}
               </div>
@@ -539,7 +554,7 @@ const PilotagePerformance: React.FC = () => {
                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Commission %</label>
-                      <input type="number" value={newStaff.commissionRate} onChange={e => setNewStaff({...newStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: 25" />
+                      <input type="number" value={newStaff.commission_rate} onChange={e => setNewStaff({...newStaff, commission_rate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: 25" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Spécialité</label>
@@ -577,7 +592,7 @@ const PilotagePerformance: React.FC = () => {
                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Commission %</label>
-                      <input type="number" value={editingStaff.commissionRate} onChange={e => setEditingStaff({...editingStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" />
+                      <input type="number" value={editingStaff.commission_rate} onChange={e => setEditingStaff({...editingStaff, commission_rate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Spécialité</label>
@@ -601,7 +616,7 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL SERVICE */}
+      {/* MODAL SERVICE (AJOUT) */}
       {showAddServiceModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
@@ -629,6 +644,40 @@ const PilotagePerformance: React.FC = () => {
                  </div>
                  <button type="submit" disabled={saving} className="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer au catalogue
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL SERVICE (EDITION) */}
+      {showEditServiceModal && editingService && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
+              <button onClick={() => { setShowEditServiceModal(false); setEditingService(null); }} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
+              <h2 className="text-3xl font-serif font-bold text-center mb-10">Modifier Tarif : {editingService.name}</h2>
+              <form onSubmit={handleEditService} className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de la prestation</label>
+                    <input type="text" value={editingService.name} onChange={e => setEditingService({...editingService, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom" required />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Prix (F)</label>
+                        <input type="number" value={editingService.defaultPrice} onChange={e => setEditingService({...editingService, defaultPrice: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-black text-emerald-600 text-xl" required />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Catégorie</label>
+                        <select value={editingService.category} onChange={e => setEditingService({...editingService, category: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold appearance-none">
+                            <option>Coiffure</option>
+                            <option>Esthétique</option>
+                            <option>Onglerie</option>
+                            <option>Soins</option>
+                        </select>
+                    </div>
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Mettre à jour le tarif
                  </button>
               </form>
            </div>

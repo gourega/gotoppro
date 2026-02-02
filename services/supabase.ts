@@ -249,6 +249,26 @@ export const addKitaService = async (userId: string, service: Omit<KitaService, 
   } catch (err) { throw err; }
 };
 
+export const updateKitaService = async (id: string, updates: Partial<KitaService>) => {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from('kita_services').update({
+      name: updates.name,
+      category: updates.category,
+      default_price: updates.defaultPrice
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return {
+      id: data.id,
+      name: data.name,
+      category: data.category,
+      defaultPrice: data.default_price,
+      isActive: data.is_active,
+      userId: data.user_id
+    } as KitaService;
+  } catch (err) { throw err; }
+};
+
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
   if (!supabase || !userId) return;
   const payload = services.map(s => ({
@@ -260,12 +280,10 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
     is_active: true
   }));
   try {
-    // Utilisation de upsert pour écraser si existe déjà
     const { error } = await supabase.from('kita_services').upsert(payload, { onConflict: 'user_id, name' });
     if (error) throw error;
   } catch (e) {
-    console.warn("Import warning (might be RLS):", e);
-    // On ne jette pas d'erreur fatale pour ne pas bloquer l'UI
+    console.warn("Import warning:", e);
   }
 };
 
@@ -288,10 +306,10 @@ export const addKitaStaff = async (userId: string, staff: any) => {
   try {
     const { data, error } = await supabase.from('kita_staff').insert({
       id: newId, user_id: userId, name: staff.name, phone: staff.phone || "", 
-      commission_rate: Math.round(Number(staff.commissionRate || 0)), specialty: staff.specialty || "Coiffure"
+      commission_rate: Math.round(Number(staff.commission_rate || 0)), specialty: staff.specialty || "Coiffure"
     }).select().single();
     if (error) throw error;
-    return { ...staff, id: data.id, commission_rate: Number(staff.commissionRate || 0) };
+    return { ...staff, id: data.id, commission_rate: Number(staff.commission_rate || 0) };
   } catch (err) { throw err; }
 };
 
@@ -299,8 +317,10 @@ export const updateKitaStaff = async (id: string, updates: any) => {
   if (!supabase) return;
   try {
     const { data, error } = await supabase.from('kita_staff').update({
-      name: updates.name, phone: updates.phone || "", 
-      commission_rate: Math.round(Number(updates.commissionRate || 0)), specialty: updates.specialty || "Coiffure"
+      name: updates.name, 
+      phone: updates.phone || "", 
+      commission_rate: Math.round(Number(updates.commission_rate || 0)), 
+      specialty: updates.specialty || "Coiffure"
     }).eq('id', id).select().single();
     if (error) throw error;
     return data;
