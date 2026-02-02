@@ -56,7 +56,6 @@ const PilotagePerformance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   
-  // Gestion de l'onglet actif via paramètre d'URL (?tab=services)
   const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes' | 'services'>('staff');
   
   useEffect(() => {
@@ -79,6 +78,7 @@ const PilotagePerformance: React.FC = () => {
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isUnlocked = user?.hasPerformancePack;
   const isCRMActive = useMemo(() => user?.isAdmin || (user?.crmExpiryDate && new Date(user.crmExpiryDate) > new Date()), [user]);
@@ -108,40 +108,22 @@ const PilotagePerformance: React.FC = () => {
     if (!user || isImporting) return;
     setIsImporting(true);
     
-    // Définition structurée du catalogue standard Coach Kita
     const standardCatalog = [
       { name: "Coupe Homme Simple", category: "Coiffure", defaultPrice: 2000 },
-      { name: "Coupe Homme + Barbe", category: "Coiffure", defaultPrice: 3000 },
       { name: "Coupe Femme", category: "Coiffure", defaultPrice: 3000 },
       { name: "Brushing", category: "Coiffure", defaultPrice: 5000 },
       { name: "Tresses simples", category: "Coiffure", defaultPrice: 10000 },
-      { name: "Chignon Prestige", category: "Coiffure", defaultPrice: 15000 },
-      { name: "Coloration / Teinture", category: "Coiffure", defaultPrice: 8000 },
-      { name: "Mise en plis", category: "Coiffure", defaultPrice: 7000 },
       { name: "Shampoing Expert", category: "Soins", defaultPrice: 2000 },
-      { name: "Bain d'huile", category: "Soins", defaultPrice: 5000 },
-      { name: "Défrisage", category: "Coiffure", defaultPrice: 5000 },
-      { name: "Babyliss / Boucles", category: "Coiffure", defaultPrice: 5000 },
-      { name: "Balayage", category: "Coiffure", defaultPrice: 15000 },
-      { name: "Tissage", category: "Coiffure", defaultPrice: 10000 },
-      { name: "Pose Vernis simple", category: "Onglerie", defaultPrice: 2000 },
       { name: "Pose Gel", category: "Onglerie", defaultPrice: 10000 },
       { name: "Manucure", category: "Onglerie", defaultPrice: 5000 },
-      { name: "Pédicure", category: "Onglerie", defaultPrice: 7000 },
-      { name: "Pose Capsules", category: "Onglerie", defaultPrice: 5000 },
-      { name: "Massage Crânien Kita", category: "Soins", defaultPrice: 3000 },
-      { name: "Soin du Visage", category: "Esthétique", defaultPrice: 15000 },
-      { name: "Massage Corps", category: "Esthétique", defaultPrice: 25000 },
-      { name: "Épilation Sourcils", category: "Esthétique", defaultPrice: 2000 },
-      { name: "Maquillage Jour", category: "Esthétique", defaultPrice: 10000 },
-      { name: "Vente Produit Retail", category: "Autre", defaultPrice: 5000 }
+      { name: "Soin du Visage", category: "Esthétique", defaultPrice: 15000 }
     ];
 
     try {
       await bulkAddKitaServices(user.uid, standardCatalog);
       await loadData();
     } catch (e: any) {
-      alert("Erreur importation : " + (e.message || "Table manquante dans Supabase"));
+      alert("Erreur importation : " + (e.message || "Table manquante"));
     } finally {
       setIsImporting(false);
     }
@@ -164,13 +146,16 @@ const PilotagePerformance: React.FC = () => {
     e.preventDefault();
     if (!user || !newStaff.name) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const saved = await addKitaStaff(user.uid, newStaff);
-      if (saved) setStaff([...staff, saved]);
-      setShowAddStaffModal(false);
-      setNewStaff({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
+      if (saved) {
+        setStaff([...staff, saved]);
+        setShowAddStaffModal(false);
+        setNewStaff({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
+      }
     } catch (e: any) {
-      alert("Erreur Staff : " + (e.message || "Vérifiez que la table kita_staff existe"));
+      setSaveError(e.message || "Erreur lors de l'enregistrement. Vérifiez vos permissions.");
     } finally { setSaving(false); }
   };
 
@@ -178,13 +163,16 @@ const PilotagePerformance: React.FC = () => {
     e.preventDefault();
     if (!user || !newClient.name) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const saved = await addKitaClient(user.uid, newClient);
-      if (saved) setClients([saved, ...clients]);
-      setShowAddClientModal(false);
-      setNewClient({ name: '', phone: '', notes: '' });
+      if (saved) {
+        setClients([saved, ...clients]);
+        setShowAddClientModal(false);
+        setNewClient({ name: '', phone: '', notes: '' });
+      }
     } catch (e: any) {
-      alert("Erreur Client : " + (e.message || "Vérifiez que la table kita_clients existe"));
+      setSaveError("Erreur Client. Vérifiez votre connexion.");
     } finally { setSaving(false); }
   };
 
@@ -194,16 +182,18 @@ const PilotagePerformance: React.FC = () => {
     setSaving(true);
     try {
       const saved = await addKitaService(user.uid, newService);
-      if (saved) setServices([...services, saved as KitaService]);
-      setShowAddServiceModal(false);
-      setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
+      if (saved) {
+        setServices([...services, saved as KitaService]);
+        setShowAddServiceModal(false);
+        setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
+      }
     } catch (e: any) {
-      alert("Erreur Service : " + (e.message || "Vérifiez que la table kita_services existe"));
+      alert("Erreur Service.");
     } finally { setSaving(false); }
   };
 
   const handleDeleteSvc = async (id: string) => {
-    if (!window.confirm("Supprimer cette prestation du catalogue ?")) return;
+    if (!window.confirm("Supprimer cette prestation ?")) return;
     try {
       await deleteKitaService(id);
       setServices(services.filter(s => s.id !== id));
@@ -245,21 +235,22 @@ const PilotagePerformance: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-center bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
-             <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'staff' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Équipe</button>
-             <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'commissions' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Performance</button>
-             <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Services & Tarifs</button>
-             <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'clients' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Clients VIP</button>
-             <button onClick={() => setActiveTab('dettes')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'dettes' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Ardoises</button>
+             <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'staff' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Équipe</button>
+             <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'commissions' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Performance</button>
+             <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Services & Tarifs</button>
+             <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'clients' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Clients VIP</button>
+             <button onClick={() => setActiveTab('dettes')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'dettes' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Ardoises</button>
           </div>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-6 -mt-20 space-y-12 relative z-20">
+        
         {activeTab === 'staff' ? (
           <div className="space-y-8 animate-in fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Staff</h3>
-                 <button onClick={() => setShowAddStaffModal(true)} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
+                 <button onClick={() => { setShowAddStaffModal(true); setSaveError(null); }} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau</button>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {staff.map(member => (
@@ -274,7 +265,6 @@ const PilotagePerformance: React.FC = () => {
           </div>
         ) : activeTab === 'services' ? (
           <div className="space-y-12 animate-in fade-in">
-              {/* CARTE D'IMPORTATION SI VIDE */}
               {services.length === 0 && !loading && (
                 <section className="bg-indigo-900 rounded-[3rem] p-10 md:p-16 shadow-2xl relative overflow-hidden group">
                    <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 transition-transform group-hover:scale-110">
@@ -288,7 +278,7 @@ const PilotagePerformance: React.FC = () => {
                         Chargez la méthode <span className="text-indigo-400 italic">Coach Kita</span>
                       </h2>
                       <p className="text-indigo-100 text-lg mb-10 leading-relaxed font-medium">
-                        Ne perdez pas de temps à tout saisir. Importez en un clic les 25 prestations standards (Coiffure, Soins, Esthétique) et ajustez simplement vos prix.
+                        Ne perdez pas de temps à tout saisir. Importez les prestations standards et ajustez simplement vos prix.
                       </p>
                       <button 
                         onClick={handleImportStandardCatalog}
@@ -320,7 +310,6 @@ const PilotagePerformance: React.FC = () => {
                         <p className="text-xl font-black text-emerald-600 mt-4">{svc.defaultPrice.toLocaleString()} F</p>
                     </div>
                   ))}
-                  {(services.length === 0 && loading) && <div className="col-span-full py-20 text-center"><Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto" /></div>}
               </div>
           </div>
         ) : activeTab === 'commissions' ? (
@@ -359,7 +348,6 @@ const PilotagePerformance: React.FC = () => {
                           <button onClick={() => setSelectedClient(c)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all"><ClipboardList className="w-5 h-5" /></button>
                         </div>
                     ))}
-                    {clients.length === 0 && !loading && <div className="py-20 text-center text-slate-300 italic">Aucun client VIP enregistré.</div>}
                 </div>
             </div>
           )
@@ -380,13 +368,12 @@ const PilotagePerformance: React.FC = () => {
                         </div>
                         <div className="flex items-center justify-between pt-6 border-t border-slate-50">
                            <p className="text-3xl font-black text-rose-600">{t.amount.toLocaleString()} F</p>
-                           <a href={`https://wa.me/${user?.phoneNumber.replace(/\+/g,'')}?text=${encodeURIComponent(`Bonjour, Coach Kita ici. Nous vous rappelons le règlement de votre ardoise de ${t.amount} F pour votre prestation ${t.label}. Merci !`)}`} target="_blank" className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-lg shadow-emerald-200">
+                           <a href={`https://wa.me/${user?.phoneNumber.replace(/\+/g,'')}?text=${encodeURIComponent(`Bonjour, Coach Kita ici. Nous vous rappelons le règlement de votre ardoise de ${t.amount} F.`)}`} target="_blank" className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-lg">
                               <MessageCircle className="w-4 h-4" /> Relancer
                            </a>
                         </div>
                      </div>
                    ))}
-                   {ardoises.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucune ardoise en cours. Vos comptes sont au top !</div>}
                 </div>
             </div>
           )
@@ -402,7 +389,7 @@ const PilotagePerformance: React.FC = () => {
                 <div className="h-20 w-20 bg-brand-50 text-brand-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><ClipboardList className="w-10 h-10" /></div>
                 <h2 className="text-3xl font-serif font-bold text-slate-900">{selectedClient.name}</h2>
               </div>
-              <textarea value={selectedClient.notes || ''} onChange={e => setSelectedClient({...selectedClient, notes: e.target.value})} placeholder="Notes techniques ou préférences..." className="w-full p-8 rounded-[2rem] bg-slate-50 border-none outline-none font-medium min-h-[150px] mb-8" />
+              <textarea value={selectedClient.notes || ''} onChange={e => setSelectedClient({...selectedClient, notes: e.target.value})} placeholder="Notes techniques..." className="w-full p-8 rounded-[2rem] bg-slate-50 border-none outline-none font-medium min-h-[150px] mb-8" />
               <button onClick={async () => {
                 await updateKitaClient(selectedClient.id, { notes: selectedClient.notes });
                 loadData(); setSelectedClient(null);
@@ -417,6 +404,7 @@ const PilotagePerformance: React.FC = () => {
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddClientModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Client VIP</h2>
+              {saveError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-black mb-6 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {saveError}</div>}
               <form onSubmit={handleAddClient} className="space-y-6">
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du Client</label>
@@ -443,6 +431,16 @@ const PilotagePerformance: React.FC = () => {
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddStaffModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Staff</h2>
+              
+              {saveError && (
+                 <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-[2rem] mb-8 animate-in slide-in-from-top-4">
+                    <div className="flex items-start gap-4">
+                       <AlertCircle className="w-6 h-6 text-rose-600 shrink-0 mt-1" />
+                       <p className="text-[11px] font-bold text-rose-900 leading-relaxed italic">{saveError}</p>
+                    </div>
+                 </div>
+              )}
+
               <form onSubmit={handleAddStaff} className="space-y-6">
                  <div>
                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom Complet</label>
@@ -484,7 +482,7 @@ const PilotagePerformance: React.FC = () => {
               <form onSubmit={handleAddService} className="space-y-6">
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de la prestation</label>
-                    <input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: Brushing simple" required />
+                    <input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Brushing..." required />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -498,8 +496,6 @@ const PilotagePerformance: React.FC = () => {
                             <option>Esthétique</option>
                             <option>Onglerie</option>
                             <option>Soins</option>
-                            <option>Mariage</option>
-                            <option>Autre</option>
                         </select>
                     </div>
                  </div>

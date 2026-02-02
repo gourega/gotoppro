@@ -2,7 +2,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Récupération multi-sources pour éviter les échecs de build sur Cloudflare
 // @ts-ignore
 const definedUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
@@ -19,26 +18,16 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.8.1-STABLE"
+  version: "2.8.4-RELEASE"
 };
 
 const getSafeSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(`%c [Supabase] ERREUR CONFIGURATION : URL ou KEY manquante dans l'environnement de build. `, "color: white; background: #e11d48; font-weight: bold; padding: 8px;");
-    return null;
-  }
-  
+  if (!supabaseUrl || !supabaseAnonKey) return null;
   try {
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      }
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: true, autoRefreshToken: true }
     });
-    console.info(`%c [Supabase] SYSTÈME OPÉRATIONNEL V${BUILD_CONFIG.version} (Connecté à ${supabaseUrl.substring(8, 20)}...) `, "color: white; background: #10b981; font-weight: bold; padding: 4px;");
-    return client;
   } catch (e) {
-    console.error("[Supabase] Erreur fatale d'initialisation:", e);
     return null;
   }
 };
@@ -91,56 +80,16 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   } as UserProfile;
 };
 
-const mapProfileToDB = (profile: Partial<UserProfile>) => {
-  const dbData: any = {};
-  if (profile.uid !== undefined) dbData.uid = profile.uid;
-  if (profile.phoneNumber !== undefined) dbData.phoneNumber = profile.phoneNumber;
-  if (profile.pinCode !== undefined) dbData.pinCode = profile.pinCode;
-  if (profile.email !== undefined) dbData.email = profile.email;
-  if (profile.firstName !== undefined) dbData.firstName = profile.firstName;
-  if (profile.lastName !== undefined) dbData.lastName = profile.lastName;
-  if (profile.establishmentName !== undefined) dbData.establishmentName = profile.establishmentName;
-  if (profile.photoURL !== undefined) dbData.photoURL = profile.photoURL;
-  if (profile.bio !== undefined) dbData.bio = profile.bio;
-  if (profile.adminNotes !== undefined) dbData.admin_notes = profile.adminNotes;
-  if (profile.employeeCount !== undefined) dbData.employeeCount = profile.employeeCount;
-  if (profile.yearsOfExistence !== undefined) dbData.yearsOfExistence = profile.yearsOfExistence;
-  if (profile.openingYear !== undefined) dbData.openingYear = profile.openingYear;
-  if (profile.role !== undefined) dbData.role = profile.role;
-  if (profile.isActive !== undefined) dbData.isActive = profile.isActive;
-  if (profile.isAdmin !== undefined) dbData.isAdmin = profile.isAdmin;
-  if (profile.isPublic !== undefined) dbData.isPublic = profile.isPublic;
-  if (profile.isKitaPremium !== undefined) dbData.isKitaPremium = profile.isKitaPremium;
-  if (profile.kitaPremiumUntil !== undefined) dbData.kitaPremiumUntil = profile.kitaPremiumUntil;
-  if (profile.hasPerformancePack !== undefined) dbData.hasPerformancePack = profile.hasPerformancePack;
-  if (profile.hasStockPack !== undefined) dbData.hasStockPack = profile.hasStockPack;
-  if (profile.crmExpiryDate !== undefined) dbData.crmExpiryDate = profile.crmExpiryDate;
-  if (profile.strategicAudit !== undefined) dbData.strategicAudit = profile.strategicAudit;
-  if (profile.marketingCredits !== undefined) dbData.marketing_credits = profile.marketingCredits;
-  if (profile.badges !== undefined) dbData.badges = profile.badges;
-  if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
-  if (profile.pendingModuleIds !== undefined) dbData.pendingModuleIds = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) dbData.action_plan = profile.actionPlan;
-  if (profile.referralCount !== undefined) dbData.referralCount = profile.referralCount;
-  if (profile.createdAt !== undefined) dbData.createdAt = profile.createdAt;
-  if (profile.progress !== undefined) dbData.progress = profile.progress;
-  if (profile.attempts !== undefined) dbData.attempts = profile.attempts;
-  return dbData;
-};
-
 export const getProfileByPhone = async (phoneNumber: string) => {
-  if (!supabase) throw new Error("DB_CONFIG_MISSING");
+  if (!supabase) return null;
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
   try {
     const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
-    if (error) throw error;
+    if (error) return null;
     return mapProfileFromDB(data);
-  } catch (err) { 
-    console.error("DB Error (Phone):", err);
-    throw err; 
-  }
+  } catch (err) { return null; }
 };
 
 export const getUserProfile = async (uid: string) => {
@@ -149,34 +98,23 @@ export const getUserProfile = async (uid: string) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
-  } catch (e) {
-    console.error("DB Error (GetProfile):", e);
-    return null;
-  }
+  } catch (e) { return null; }
 };
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
-  if (!supabase) return { success: true, warning: "Mode local uniquement" };
-  const dbData = mapProfileToDB(profile);
+  if (!supabase) return { success: true };
   try {
-    const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
+    const { error } = await supabase.from('profiles').upsert(profile, { onConflict: 'uid' });
     if (error) throw error;
     return { success: true };
-  } catch (err) {
-    console.error("DB Error (SaveProfile):", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
-  const dbData = mapProfileToDB(updates);
   try {
-    const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
-    if (error) throw error;
-  } catch (err) {
-    console.error("DB Error (UpdateProfile):", err);
-  }
+    await supabase.from('profiles').update(updates).eq('uid', uid);
+  } catch (err) {}
 };
 
 export const getAllUsers = async () => {
@@ -185,10 +123,7 @@ export const getAllUsers = async () => {
     const { data, error } = await supabase.from('profiles').select('*');
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
-  } catch (e) {
-    console.error("DB Error (AllUsers):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
@@ -202,10 +137,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
       commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
       productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
     }));
-  } catch (e) {
-    console.error("DB Error (Transactions):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
@@ -221,10 +153,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     });
     if (error) throw error;
     return { ...transaction, id: newId } as KitaTransaction;
-  } catch (err) {
-    console.error("DB Error (AddTransaction):", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -240,42 +169,26 @@ export const getKitaStaff = async (userId: string) => {
       id: s.id, name: s.name, phone: s.phone, commissionRate: s.commission_rate,
       specialty: s.specialty, isActive: s.is_active, userId: s.user_id
     }));
-  } catch (e) {
-    console.error("DB Error (Staff):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaStaff = async (userId: string, staff: any) => {
   if (!supabase || !userId) throw new Error("Base de données déconnectée.");
   const newId = generateUUID();
   try {
-    // On nettoie les valeurs pour éviter d'envoyer des undefined
     const insertData = {
       id: newId,
       user_id: userId,
-      name: staff.name || "Inconnu",
+      name: staff.name,
       phone: staff.phone || "",
       commission_rate: Number(staff.commissionRate || 0),
       specialty: staff.specialty || "Généraliste",
       is_active: true
     };
-
-    const { data, error } = await supabase
-      .from('kita_staff')
-      .insert(insertData)
-      .select()
-      .single();
-    
-    if (error) {
-       console.error("Supabase Staff Error Details:", error);
-       throw error;
-    }
-    return { id: data.id, ...staff, user_id: userId };
-  } catch (err) {
-    console.error("DB Error (AddStaff):", err);
-    throw err;
-  }
+    const { error } = await supabase.from('kita_staff').insert(insertData);
+    if (error) throw error;
+    return { ...insertData, id: newId, commissionRate: insertData.commission_rate };
+  } catch (err) { throw err; }
 };
 
 export const deleteKitaStaff = async (id: string) => {
@@ -291,39 +204,26 @@ export const getKitaClients = async (userId: string) => {
       id: c.id, name: c.name, phone: c.phone, totalSpent: c.total_spent,
       totalVisits: c.total_visits, lastVisit: c.last_visit, notes: c.notes, userId: c.user_id
     }));
-  } catch (e) {
-    console.error("DB Error (Clients):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaClient = async (userId: string, client: any) => {
   if (!supabase || !userId) throw new Error("Base de données déconnectée.");
   const newId = generateUUID();
   try {
-    const { data, error } = await supabase.from('kita_clients').insert({
+    const { error } = await supabase.from('kita_clients').insert({
       id: newId, user_id: userId, name: client.name, phone: client.phone || ""
-    }).select().single();
-    
+    });
     if (error) throw error;
-    return { id: data.id, ...client, user_id: userId };
-  } catch (err) {
-    console.error("DB Error (AddClient):", err);
-    throw err;
-  }
+    return { id: newId, ...client, user_id: userId };
+  } catch (err) { throw err; }
 };
 
 export const updateKitaClient = async (id: string, updates: any) => {
   if (!supabase) return;
-  const dbUpdates: any = {};
-  if (updates.name !== undefined) dbUpdates.name = updates.name;
-  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
-  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
   try {
-    await supabase.from('kita_clients').update(dbUpdates).eq('id', id);
-  } catch (e) {
-    console.error("DB Error (UpdateClient):", e);
-  }
+    await supabase.from('kita_clients').update(updates).eq('id', id);
+  } catch (e) {}
 };
 
 export const getKitaServices = async (userId: string): Promise<KitaService[]> => {
@@ -335,27 +235,20 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
       id: s.id, name: s.name, category: s.category, defaultPrice: s.default_price,
       isActive: s.is_active, userId: s.user_id
     }));
-  } catch (e) {
-    console.error("DB Error (Services):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaService = async (userId: string, service: any) => {
   if (!supabase || !userId) throw new Error("Base de données déconnectée.");
   const newId = generateUUID();
   try {
-    const { data, error } = await supabase.from('kita_services').insert({
+    const { error } = await supabase.from('kita_services').insert({
       id: newId, user_id: userId, name: service.name, category: service.category,
       default_price: service.defaultPrice, is_active: true
-    }).select().single();
-    
+    });
     if (error) throw error;
-    return { id: data.id, ...service, user_id: userId };
-  } catch (err) {
-    console.error("DB Error (AddService):", err);
-    throw err;
-  }
+    return { id: newId, ...service, user_id: userId };
+  } catch (err) { throw err; }
 };
 
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
@@ -367,22 +260,14 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
   try {
     const { error } = await supabase.from('kita_services').insert(payload);
     if (error) throw error;
-  } catch (err) {
-    console.error("DB Error (BulkServices):", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const updateKitaService = async (id: string, updates: any) => {
   if (!supabase) return;
-  const dbUpdates: any = {};
-  if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
-  if (updates.defaultPrice !== undefined) dbUpdates.default_price = updates.defaultPrice;
   try {
-    await supabase.from('kita_services').update(dbUpdates).eq('id', id);
-  } catch (e) {
-    console.error("DB Error (UpdateService):", e);
-  }
+    await supabase.from('kita_services').update(updates).eq('id', id);
+  } catch (e) {}
 };
 
 export const deleteKitaService = async (id: string) => {
@@ -395,19 +280,11 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
     const { data, error } = await supabase.from('kita_products').select('*').eq('user_id', userId);
     if (error) throw error;
     return (data || []).map(p => ({
-      id: p.id, 
-      name: p.name, 
-      quantity: p.quantity, 
-      purchasePrice: p.purchase_price,
-      sellPrice: p.sell_price, 
-      alertThreshold: p.alert_threshold, 
-      category: p.category, 
+      id: p.id, name: p.name, quantity: p.quantity, purchasePrice: p.purchase_price,
+      sellPrice: p.sell_price, alertThreshold: p.alert_threshold, category: p.category, 
       supplierId: p.supplier_id
     }));
-  } catch (e) {
-    console.error("DB Error (Products):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaProduct = async (userId: string, p: any) => {
@@ -421,10 +298,7 @@ export const addKitaProduct = async (userId: string, p: any) => {
     });
     if (error) throw error;
     return { id: newId, ...p };
-  } catch (err) {
-    console.error("DB Error (AddProduct):", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
@@ -433,10 +307,7 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
     const { data, error } = await supabase.from('kita_suppliers').select('*').eq('user_id', userId);
     if (error) throw error;
     return (data || []).map(s => ({ id: s.id, name: s.name, phone: s.phone, category: s.category, userId: s.user_id }));
-  } catch (e) {
-    console.error("DB Error (Suppliers):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const addKitaSupplier = async (userId: string, s: any) => {
@@ -446,10 +317,7 @@ export const addKitaSupplier = async (userId: string, s: any) => {
     const { error } = await supabase.from('kita_suppliers').insert({ id: newId, user_id: userId, name: s.name, phone: s.phone, category: s.category });
     if (error) throw error;
     return { id: newId, ...s, userId };
-  } catch (err) {
-    console.error("DB Error (AddSupplier):", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const deleteKitaSupplier = async (id: string) => {
@@ -464,10 +332,7 @@ export const uploadProfilePhoto = async (file: File, userId: string): Promise<st
     if (error) throw error;
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
     return publicUrl;
-  } catch (err) {
-    console.error("Storage Error:", err);
-    throw err;
-  }
+  } catch (err) { throw err; }
 };
 
 export const getReferrals = async (uid: string) => {
@@ -476,10 +341,7 @@ export const getReferrals = async (uid: string) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', uid);
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
-  } catch (e) {
-    console.error("DB Error (Referrals):", e);
-    return [];
-  }
+  } catch (e) { return []; }
 };
 
 export const getPublicProfile = async (uid: string) => {
@@ -488,8 +350,5 @@ export const getPublicProfile = async (uid: string) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).eq('is_public', true).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
-  } catch (e) {
-    console.error("DB Error (PublicProfile):", e);
-    return null;
-  }
+  } catch (e) { return null; }
 };

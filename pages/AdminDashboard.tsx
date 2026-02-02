@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +9,6 @@ import {
   getAllUsers,
   getKitaTransactions
 } from '../services/supabase';
-import { TRAINING_CATALOG } from '../constants';
 import { UserProfile } from '../types';
 import { 
   Loader2, 
@@ -18,16 +18,10 @@ import {
   Search, 
   ChevronRight,
   X,
-  ShieldAlert,
   AlertCircle,
-  UserPlus,
-  UserX,
-  UserCheck,
   Activity,
-  Crown,
   CheckCircle2,
   TrendingUp,
-  History,
   Smartphone,
   Cpu,
   Terminal,
@@ -36,11 +30,8 @@ import {
   Radio,
   Zap,
   Banknote,
-  CalendarDays,
-  FileText,
   Save,
   MessageCircle,
-  Package,
   Copy
 } from 'lucide-react';
 
@@ -64,9 +55,6 @@ const AdminDashboard: React.FC = () => {
   const [simPhone, setSimPhone] = useState('');
   const [simAmount, setSimAmount] = useState('15000');
   const [isSimulating, setIsSimulating] = useState(false);
-  
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newUserData, setNewUserData] = useState({ phone: '', firstName: '', lastName: '', establishment: '' });
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -208,13 +196,11 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
             <button className="bg-emerald-100 text-emerald-700 px-8 py-4 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-200 transition-all flex items-center gap-3"><Megaphone className="w-4 h-4" /> Diffusion SMS</button>
-            <button onClick={() => setShowAddModal(true)} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"><UserPlus className="w-4 h-4 text-brand-500" /> Nouveau Gérant</button>
             <button onClick={fetchUsers} className="bg-white border border-slate-200 p-4 rounded-2xl hover:bg-slate-50 shadow-sm transition-all"><RefreshCcw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
         </div>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           {/* Added AdminStatCard component below to fix line 217-220 errors */}
            <AdminStatCard icon={<Users />} label="Inscrits" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
            <AdminStatCard icon={<ShieldCheck />} label="Statut Robot" val={stats.total >= 11 ? 'SCALE' : 'MANUEL'} sub={stats.total >= 11 ? 'Bouton Maître Actif' : 'Vérification Manuelle'} />
@@ -270,7 +256,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Équipement (Outils)</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
+              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map(u => {
                   const certs = Object.values(u.progress || {}).filter(s => Number(s) >= 80).length;
@@ -283,13 +269,6 @@ const AdminDashboard: React.FC = () => {
                           </div>
                           <div><p className="font-bold text-slate-900 text-xl leading-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || 'Salon GoTop'} • {u.phoneNumber}</p></div>
                         </div>
-                      </td>
-                      <td className="px-8 py-8">
-                         <div className="flex justify-center gap-3">
-                            <div title="Packs RH" className={`p-2 rounded-lg ${u.hasPerformancePack ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-200'}`}><Users className="w-4 h-4" /></div>
-                            <div title="Pack Stock" className={`p-2 rounded-lg ${u.hasStockPack ? 'bg-sky-50 text-sky-500' : 'bg-slate-50 text-slate-200'}`}><Package className="w-4 h-4" /></div>
-                            <div title="Académie" className={`p-2 rounded-lg ${u.isKitaPremium ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-200'}`}><Crown className="w-4 h-4" /></div>
-                         </div>
                       </td>
                       <td className="px-8 py-8">
                          <div className="flex flex-col gap-1">
@@ -364,7 +343,6 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-// Component for statistics in the admin dashboard to fix line 217-220 errors
 const AdminStatCard = ({ icon, label, val, sub, color = "text-slate-900" }: any) => (
   <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 group hover:-translate-y-1 transition-all">
      <div className="flex justify-between items-start mb-6">
@@ -376,5 +354,4 @@ const AdminStatCard = ({ icon, label, val, sub, color = "text-slate-900" }: any)
   </div>
 );
 
-// Added default export to fix Error in file App.tsx on line 15
 export default AdminDashboard;
