@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Accès sécurisé aux variables d'environnement via des fallbacks robustes
+// Accès aux variables d'environnement (Vite injecte ces valeurs au build)
 // @ts-ignore
 const supabaseUrl = (import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : "") || "";
 // @ts-ignore
@@ -13,28 +13,30 @@ const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inco
 
 export const BUILD_CONFIG = {
   hasUrl: !!supabaseUrl && supabaseUrl.length > 10,
-  urlSnippet: supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "VIDE",
+  urlSnippet: supabaseUrl ? supabaseUrl.substring(0, 20) + "..." : "MANQUANT",
   hasKey: !!supabaseAnonKey && supabaseAnonKey.length > 20,
-  keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 8) + "..." : "VIDE",
+  keySnippet: supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + "..." : "MANQUANT",
   buildTime,
-  version: "2.5.8-PROD"
+  version: "2.6.0-PROD"
 };
 
 const getSafeSupabaseClient = () => {
-  if (!BUILD_CONFIG.hasUrl || !BUILD_CONFIG.hasKey) {
-    console.warn(`%c Go'Top Pro [Supabase]: Variables d'environnement manquantes ou invalides. `, 'background: #fff1f2; color: #e11d48; font-weight: bold; padding: 4px;');
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "" || supabaseAnonKey === "") {
+    console.error("%c [Supabase] ÉCHEC : Variables d'environnement introuvables. L'application est en mode déconnecté. ", "color: white; background: #e11d48; font-weight: bold; padding: 8px; border-radius: 4px;");
     return null;
   }
   
   try {
-    return createClient(supabaseUrl, supabaseAnonKey, {
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
       }
     });
+    console.info(`%c [Supabase] Initialisé avec succès (Build: ${buildTime}) `, "color: white; background: #10b981; font-weight: bold; padding: 4px; border-radius: 2px;");
+    return client;
   } catch (e) {
-    console.error("[Supabase] Erreur d'initialisation du SDK:", e);
+    console.error("[Supabase] Erreur critique d'initialisation:", e);
     return null;
   }
 };
@@ -112,7 +114,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
   if (profile.hasStockPack !== undefined) dbData.hasStockPack = profile.hasStockPack;
   if (profile.crmExpiryDate !== undefined) dbData.crmExpiryDate = profile.crmExpiryDate;
   if (profile.strategicAudit !== undefined) dbData.strategicAudit = profile.strategicAudit;
-  // Fix: changed marketing_credits to marketingCredits to match UserProfile interface
   if (profile.marketingCredits !== undefined) dbData.marketing_credits = profile.marketingCredits;
   if (profile.badges !== undefined) dbData.badges = profile.badges;
   if (profile.purchasedModuleIds !== undefined) dbData.purchasedModuleIds = profile.purchasedModuleIds;
@@ -126,21 +127,12 @@ const mapProfileToDB = (profile: Partial<UserProfile>) => {
 };
 
 export const getProfileByPhone = async (phoneNumber: string) => {
-  if (!supabase) {
-    throw new Error("DB_CONFIG_MISSING");
-  }
-  
+  if (!supabase) throw new Error("DB_CONFIG_MISSING");
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
-  
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`)
-      .maybeSingle();
-      
+    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (err) { 
@@ -188,16 +180,17 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
 };
 
 export const addKitaTransaction = async (userId: string, transaction: Omit<KitaTransaction, 'id'>) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
-    label: transaction.label, category: transaction.category, payment_method: transaction.payment_method,
-    date: transaction.date, staff_name: transaction.staff_name, commission_rate: transaction.commission_rate,
-    is_credit: transaction.is_credit, client_id: transaction.clientId, product_id: transaction.productId,
+    label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+    date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
+    is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
     original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
   });
-  return error ? null : { ...transaction, id: newId } as KitaTransaction;
+  if (error) throw error;
+  return { ...transaction, id: newId } as KitaTransaction;
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -214,7 +207,7 @@ export const getKitaStaff = async (userId: string) => {
 };
 
 export const addKitaStaff = async (userId: string, staff: any) => {
-  if (!supabase || !userId) throw new Error("Database non connectée");
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_staff').insert({
     id: newId, user_id: userId, name: staff.name, phone: staff.phone,
@@ -239,7 +232,7 @@ export const getKitaClients = async (userId: string) => {
 };
 
 export const addKitaClient = async (userId: string, client: any) => {
-  if (!supabase || !userId) throw new Error("Database non connectée");
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_clients').insert({
     id: newId, user_id: userId, name: client.name, phone: client.phone
@@ -268,7 +261,7 @@ export const getKitaServices = async (userId: string): Promise<KitaService[]> =>
 };
 
 export const addKitaService = async (userId: string, service: any) => {
-  if (!supabase || !userId) throw new Error("Database non connectée");
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { data, error } = await supabase.from('kita_services').insert({
     id: newId, user_id: userId, name: service.name, category: service.category,
@@ -280,7 +273,7 @@ export const addKitaService = async (userId: string, service: any) => {
 };
 
 export const bulkAddKitaServices = async (userId: string, services: any[]) => {
-  if (!supabase || !userId) return;
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const payload = services.map(s => ({
     id: generateUUID(), user_id: userId, name: s.name, category: s.category,
     default_price: s.defaultPrice || 0, is_active: true
@@ -304,21 +297,29 @@ export const deleteKitaService = async (id: string) => {
 export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_products').select('*').eq('user_id', userId);
+  // Correct mapping from snake_case database fields to camelCase KitaProduct interface properties
   return (data || []).map(p => ({
-    id: p.id, name: p.name, quantity: p.quantity, purchasePrice: p.purchase_price,
-    sellPrice: p.sell_price, alertThreshold: p.alert_threshold, category: p.category, supplierId: p.supplier_id
+    id: p.id, 
+    name: p.name, 
+    quantity: p.quantity, 
+    purchasePrice: p.purchase_price,
+    sellPrice: p.sell_price, 
+    alertThreshold: p.alert_threshold, 
+    category: p.category, 
+    supplierId: p.supplier_id
   }));
 };
 
 export const addKitaProduct = async (userId: string, p: any) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: p.name, quantity: p.quantity,
     purchase_price: p.purchasePrice, sell_price: p.sellPrice,
-    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplier_id
+    alert_threshold: p.alertThreshold, category: p.category, supplier_id: p.supplierId
   });
-  return error ? null : { id: newId, ...p };
+  if (error) throw error;
+  return { id: newId, ...p };
 };
 
 export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> => {
@@ -328,10 +329,11 @@ export const getKitaSuppliers = async (userId: string): Promise<KitaSupplier[]> 
 };
 
 export const addKitaSupplier = async (userId: string, s: any) => {
-  if (!supabase || !userId) return null;
+  if (!supabase || !userId) throw new Error("Base de données déconnectée. Veuillez redéployer votre application sur Cloudflare.");
   const newId = generateUUID();
   const { error } = await supabase.from('kita_suppliers').insert({ id: newId, user_id: userId, name: s.name, phone: s.phone, category: s.category });
-  return error ? null : { id: newId, ...s, userId };
+  if (error) throw error;
+  return { id: newId, ...s, userId };
 };
 
 export const deleteKitaSupplier = async (id: string) => {
