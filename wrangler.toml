@@ -1,2 +1,2 @@
-#:schema node_modules/wrangler/config-schema.json
+name = "gotoppro"
 pages_build_output_dir = "dist"
