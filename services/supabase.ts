@@ -6,8 +6,10 @@ import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, Kita
  * ATTENTION: Vite nécessite des accès directs aux variables pour les injecter.
  * N'utilisez pas de recherche dynamique par clé [key].
  */
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+// Fix: Use type casting to access environment variables via import.meta.env which is defined by Vite
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL || "";
+// Fix: Use type casting to access environment variables via import.meta.env which is defined by Vite
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY || "";
 
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';

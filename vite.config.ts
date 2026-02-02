@@ -4,12 +4,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   // Charge toutes les variables du système, incluant celles de Cloudflare sans préfixe
-  const env = loadEnv(mode, process.cwd(), '');
+  // Fix: Cast process to any to avoid TypeScript error on cwd() which is a standard Node.js method
+  const env = loadEnv(mode, (process as any).cwd(), '');
   
-  const VITE_SUPABASE_URL = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-  const VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-  const API_KEY = env.API_KEY || process.env.API_KEY || "";
-  const VITE_ADMIN_EMAIL = env.VITE_ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
+  const VITE_SUPABASE_URL = env.VITE_SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL || "";
+  const VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY || "";
+  const API_KEY = env.API_KEY || (process.env as any).API_KEY || "";
+  const VITE_ADMIN_EMAIL = env.VITE_ADMIN_EMAIL || (process.env as any).VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
 
   console.log("Vite Build: Variables detection active.");
 

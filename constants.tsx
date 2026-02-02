@@ -1,18 +1,17 @@
 
 import { TrainingModule, Badge, ModuleStatus } from './types';
 
-// Ressources Visuelles Standard
+// Ressources Visuelles Standard - Basées sur vos buckets Supabase
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
-export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/KITA/logo-kita.png";
+export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 
-// Avatar de Coach Kita (Version Officielle)
-// On utilise une URL plus robuste pour garantir l'affichage
-export const COACH_KITA_AVATAR = "https://ui-avatars.com/api/?name=Coach+Kita&background=0c4a6e&color=fff&size=512";
+// Avatar de Coach Kita (Version Officielle extraite de votre bucket 'kita')
+export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/coach-kita.jpg";
 
-// Partenaire Excellence : Salon Chez Raymond
-export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
-export const RAYMOND_PORTRAIT = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80";
-export const RAYMOND_STYLING_PHOTO = "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1200&q=80";
+// Partenaire Excellence : Salon Chez Raymond (Extraits de vos buckets dédiés)
+export const RAYMOND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_LOGO/logo-raymond.png";
+export const RAYMOND_PORTRAIT = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/raymond-portrait.jpg";
+export const RAYMOND_STYLING_PHOTO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/RAYMOND_STYLING_PHOTO/styling-raymond.jpg";
 
 export const RAYMOND_FB_URL = "https://web.facebook.com/salondecoiffurechezraymond";
 export const RAYMOND_ADDRESS = "Cocody-II Plateaux-les Vallons, Rue des Jardins";
@@ -204,7 +203,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Votre talent n'est pas négociable.",
     strategic_mantra: "Mieux vaut 10 clients au juste prix que 30 à perte.",
     quiz_questions: [
-      { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marge." },
+      { question: "Sur quoi baser votre tarif ?", options: ["Prix du voisin", "Coût minute + Expertise", "Humeur du client"], correctAnswer: 1, explanation: "Le prix doit couvrir vos charges et votre marque." },
       { question: "Pourquoi proposer 3 niveaux de prix ?", options: ["Pour perdre le client", "Pour orienter vers l'offre intermédiaire", "Pour faire joli"], correctAnswer: 1, explanation: "C'est l'effet d'ancrage psychologique pour augmenter le panier moyen." },
       { question: "Que faire si un client dit que c'est trop cher ?", options: ["Baisser le prix", "Expliquer la valeur et les produits utilisés", "Se fâcher"], correctAnswer: 1, explanation: "On ne défend un prix, on justifie une valeur." }
     ],
