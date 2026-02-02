@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   getKitaStaff, 
   addKitaStaff, 
+  updateKitaStaff,
   getKitaClients, 
   addKitaClient, 
   deleteKitaStaff,
@@ -24,7 +25,7 @@ import {
   Loader2, 
   Plus,
   BarChart3,
-  Star,
+  Star, 
   Trash2,
   CheckCircle2,
   X,
@@ -51,7 +52,10 @@ import {
   Terminal,
   Copy,
   Info,
-  RefreshCw
+  RefreshCw,
+  Bug,
+  Share2,
+  Pencil
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 import { COACH_KITA_PHONE } from '../constants';
@@ -77,15 +81,17 @@ const PilotagePerformance: React.FC = () => {
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showEditStaffModal, setShowEditStaffModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
   const [newStaff, setNewStaff] = useState({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
+  const [editingStaff, setEditingStaff] = useState<any | null>(null);
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<{message: string, code?: string, raw?: any} | null>(null);
 
   const isUnlocked = user?.hasPerformancePack;
   const isCRMActive = useMemo(() => user?.isAdmin || (user?.crmExpiryDate && new Date(user.crmExpiryDate) > new Date()), [user]);
@@ -109,8 +115,19 @@ const PilotagePerformance: React.FC = () => {
       setTransactions(transData);
     } catch (e: any) {
       console.error("Erreur de chargement", e);
-      setSaveError("Erreur de connexion aux tables. Vérifiez que les tables existent dans Supabase.");
+      setSaveError({ 
+        message: "Erreur de connexion aux tables. Vérifiez que les tables existent dans Supabase.", 
+        code: e.code,
+        raw: e
+      });
     } finally { setLoading(false); }
+  };
+
+  const handleCopyError = () => {
+    if (!saveError) return;
+    const text = `Erreur Go'Top Pro: ${saveError.message}\nCode: ${saveError.code}\nRaw: ${JSON.stringify(saveError.raw)}`;
+    navigator.clipboard.writeText(text);
+    alert("Détails techniques copiés ! Envoyez-les au support.");
   };
 
   const handleImportStandardCatalog = async () => {
@@ -135,6 +152,7 @@ const PilotagePerformance: React.FC = () => {
     staff.forEach(member => {
       const memberTrans = transactions.filter(t => t.staffName === member.name && t.type === 'INCOME' && !t.isCredit);
       const totalCA = memberTrans.reduce((acc, t) => acc + t.amount, 0);
+      // Fix: Property 'commission_rate' does not exist on type 'KitaTransaction'. Use 'commissionRate'.
       const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || 0) / 100), 0);
       results.push({ ...member, totalCA, totalComm, count: memberTrans.length });
     });
@@ -156,15 +174,49 @@ const PilotagePerformance: React.FC = () => {
         setNewStaff({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
       }
     } catch (err: any) {
-      console.error("Add Staff Error:", err);
+      console.error("DEBUG - Erreur insertion Staff:", err);
       if (err.code === '23505' || err.status === 409 || err.message?.includes('duplicate')) {
-        setSaveError(`Le membre "${newStaff.name}" existe déjà dans votre équipe. Utilisez un nom légèrement différent si c'est un homonyme.`);
-      } else if (err.message?.includes('column')) {
-        setSaveError("Structure de table incorrecte. Vérifiez que les colonnes 'commission_rate' et 'specialty' existent.");
+        setSaveError({ 
+          message: `Le membre "${newStaff.name}" existe déjà. Utilisez un nom légèrement différent (ex: ${newStaff.name} 2).`,
+          code: "DOUBLON",
+          raw: err
+        });
+      } else if (err.code === '42P01') {
+        setSaveError({ message: "La table 'kita_staff' est introuvable.", code: "SQL_TABLE_MISSING", raw: err });
       } else {
-        setSaveError("Impossible d'enregistrer. Vérifiez votre connexion ou contactez Coach Kita sur WhatsApp.");
+        setSaveError({ 
+          message: "L'enregistrement a échoué. Vérifiez votre script SQL dans Supabase.", 
+          code: err.code || "UNK",
+          raw: err
+        });
       }
     } finally { setSaving(false); }
+  };
+
+  const handleEditStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff || !editingStaff.name) return;
+    setSaving(true);
+    try {
+      const updated = await updateKitaStaff(editingStaff.id, editingStaff);
+      if (updated) {
+        setStaff(staff.map(s => s.id === editingStaff.id ? updated : s));
+        setShowEditStaffModal(false);
+        setEditingStaff(null);
+      }
+    } catch (err: any) {
+      setSaveError({ message: "Erreur lors de la modification.", code: err.code, raw: err });
+    } finally { setSaving(false); }
+  };
+
+  const handleDeleteStaff = async (id: string) => {
+    if (!window.confirm("Supprimer ce membre de l'équipe ? Ses statistiques ne seront plus visibles.")) return;
+    try {
+      await deleteKitaStaff(id);
+      setStaff(staff.filter(s => s.id !== id));
+    } catch (e) {
+      alert("Erreur suppression");
+    }
   };
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -179,7 +231,7 @@ const PilotagePerformance: React.FC = () => {
         setNewClient({ name: '', phone: '', notes: '' });
       }
     } catch (err: any) {
-      setSaveError("Erreur lors de l'ajout du client.");
+      setSaveError({ message: "Erreur lors de l'ajout du client.", code: err.code, raw: err });
     } finally { setSaving(false); }
   };
 
@@ -254,12 +306,22 @@ const PilotagePerformance: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6 -mt-20 space-y-12 relative z-20">
         
         {saveError && (
-          <div className="bg-rose-50 border-2 border-rose-100 p-6 rounded-[2rem] flex items-center justify-between shadow-xl animate-in slide-in-from-top-4">
+          <div className="bg-rose-50 border-2 border-rose-100 p-6 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between shadow-xl animate-in slide-in-from-top-4 gap-4">
              <div className="flex items-center gap-4">
-                <AlertCircle className="w-8 h-8 text-rose-500" />
-                <p className="text-sm font-bold text-rose-900">{saveError}</p>
+                <AlertCircle className="w-8 h-8 text-rose-500 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-rose-900 leading-tight">{saveError.message}</p>
+                  <p className="text-[8px] font-mono text-rose-400 mt-1 uppercase">CODE: {saveError.code}</p>
+                </div>
              </div>
-             <button onClick={loadData} className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-brand-600 transition-all"><RefreshCw className="w-5 h-5" /></button>
+             <div className="flex gap-2 shrink-0">
+               <button onClick={handleCopyError} title="Copier l'erreur pour le support" className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-brand-600 transition-all flex items-center gap-2">
+                 <Copy className="w-4 h-4" />
+                 <span className="text-[8px] font-black uppercase">Copier Log</span>
+               </button>
+               <button onClick={loadData} className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-brand-600 transition-all"><RefreshCw className="w-5 h-5" /></button>
+               <button onClick={() => window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g,'')}?text=${encodeURIComponent(`Bonjour Coach Kita, j'ai une erreur ${saveError.code} lors de l'ajout de mon staff.`)}`, '_blank')} className="p-3 bg-brand-900 rounded-xl shadow-sm text-white hover:bg-black transition-all"><MessageCircle className="w-5 h-5" /></button>
+             </div>
           </div>
         )}
 
@@ -271,10 +333,22 @@ const PilotagePerformance: React.FC = () => {
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {staff.map(member => (
-                    <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all">
-                        <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center mb-6"><Scissors className="w-6 h-6" /></div>
+                    <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-6">
+                           <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center"><Scissors className="w-6 h-6" /></div>
+                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => { setEditingStaff({ ...member, commissionRate: member.commission_rate || member.commissionRate }); setShowEditStaffModal(true); }} className="p-2 text-slate-400 hover:text-brand-600 transition-colors"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteStaff(member.id)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                           </div>
+                        </div>
                         <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commission_rate || member.commissionRate}%</p>
+                        {member.phone && (
+                          <div className="mt-4 flex items-center gap-2 text-slate-400">
+                             <Phone className="w-3 h-3" />
+                             <span className="text-[10px] font-bold">{member.phone}</span>
+                          </div>
+                        )}
                     </div>
                   ))}
                   {staff.length === 0 && !loading && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucun membre dans l'équipe. Cliquez sur Nouveau.</div>}
@@ -441,7 +515,7 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL STAFF */}
+      {/* MODAL STAFF (AJOUT) */}
       {showAddStaffModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
@@ -468,11 +542,49 @@ const PilotagePerformance: React.FC = () => {
                     </div>
                  </div>
                  <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Téléphone (Optionnel)</label>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Téléphone WhatsApp</label>
                    <input type="tel" value={newStaff.phone} onChange={e => setNewStaff({...newStaff, phone: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="0101..." />
                  </div>
                  <button type="submit" disabled={saving} className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl flex items-center justify-center gap-3">
                     {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Créer le membre
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL STAFF (EDITION) */}
+      {showEditStaffModal && editingStaff && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
+              <button onClick={() => { setShowEditStaffModal(false); setEditingStaff(null); }} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
+              <h2 className="text-3xl font-serif font-bold text-center mb-10">Modifier : {editingStaff.name}</h2>
+              <form onSubmit={handleEditStaff} className="space-y-6">
+                 <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom Complet</label>
+                   <input type="text" value={editingStaff.name} onChange={e => setEditingStaff({...editingStaff, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom" required />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Commission %</label>
+                      <input type="number" value={editingStaff.commissionRate} onChange={e => setEditingStaff({...editingStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Spécialité</label>
+                      <select value={editingStaff.specialty} onChange={e => setEditingStaff({...editingStaff, specialty: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold appearance-none">
+                        <option>Coiffure</option>
+                        <option>Esthétique</option>
+                        <option>Onglerie</option>
+                        <option>Général</option>
+                      </select>
+                    </div>
+                 </div>
+                 <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Téléphone WhatsApp</label>
+                   <input type="tel" value={editingStaff.phone || ''} onChange={e => setEditingStaff({...editingStaff, phone: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="0101..." />
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase shadow-xl flex items-center justify-center gap-3">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer les modifications
                  </button>
               </form>
            </div>

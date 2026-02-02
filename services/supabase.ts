@@ -169,11 +169,22 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   try {
     const { data, error } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
     if (error) throw error;
+    // Fix: Using camelCase to match KitaTransaction interface defined in types.ts
     return (data || []).map(t => ({
-      id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-      paymentMethod: t.payment_method, date: t.date, staff_name: t.staff_name,
-      commission_rate: t.commission_rate, is_credit: t.is_credit, clientId: t.client_id, 
-      productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
+      id: t.id, 
+      type: t.type, 
+      amount: t.amount, 
+      label: t.label, 
+      category: t.category,
+      paymentMethod: t.payment_method, 
+      date: t.date, 
+      staffName: t.staff_name,
+      commissionRate: t.commission_rate, 
+      isCredit: t.is_credit, 
+      clientId: t.client_id, 
+      productId: t.product_id, 
+      discount: t.discount || 0, 
+      originalAmount: t.original_amount || t.amount
     }));
   } catch (e) { return []; }
 };
@@ -316,6 +327,21 @@ export const addKitaStaff = async (userId: string, staff: any) => {
 
     if (error) throw error;
     return { ...staff, id: data.id, commission_rate: Number(staff.commissionRate || 0) };
+  } catch (err) { throw err; }
+};
+
+// Fix for PilotagePerformance.tsx
+export const updateKitaStaff = async (id: string, updates: any) => {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from('kita_staff').update({
+      name: updates.name,
+      phone: updates.phone || "",
+      commission_rate: Math.round(Number(updates.commissionRate || 0)),
+      specialty: updates.specialty || "Coiffure"
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
   } catch (err) { throw err; }
 };
 
