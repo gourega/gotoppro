@@ -1,6 +1,9 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+// @ts-ignore
+const GEMINI_KEY = typeof __KITA_GEMINI__ !== 'undefined' ? __KITA_GEMINI__ : "";
+
 const QUIZ_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -26,7 +29,7 @@ const QUIZ_SCHEMA = {
 } as any;
 
 export const generateDynamicQuiz = async (topic: string, moduleTitle: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const prompt = `
     Rôle: Coach Kita. Sujet: "${topic}" (${moduleTitle}).
     Génère 3 questions de quiz et 2 exercices pratiques pour un gérant de salon en Côte d'Ivoire.
@@ -53,7 +56,7 @@ export const generateStrategicAdvice = async (
   isPerfectScore: boolean = false,
   userContext?: { firstName: string; gender: 'M' | 'F'; domain: string }
 ) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   
   const name = userContext?.firstName || "Ami";
   const sibling = userContext?.gender === 'F' ? "petite sœur" : "petit frère";
@@ -95,7 +98,7 @@ export const generateStrategicAdvice = async (
 };
 
 export const analyzeBusinessTrends = async (transactions: any[], userName: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const dataSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.type} ${t.amount} (${t.label})`).join('\n');
   
   const prompt = `
@@ -120,7 +123,7 @@ export const analyzeBusinessTrends = async (transactions: any[], userName: strin
 };
 
 export const analyzeBeautyImage = async (base64Data: string, mimeType: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const prompt = `Tu es Coach Kita. Analyse cette photo de réalisation. Identifie la technique, rédige une légende Instagram percutante et WhatsApp, et donne un conseil mentor pour vendre ce service plus cher. Réponds au format [TECHNIQUE], [INSTAGRAM], [WHATSAPP], [CONSEIL], [HASHTAGS].`;
   try {
     const response = await ai.models.generateContent({
@@ -139,7 +142,7 @@ export const analyzeBeautyImage = async (base64Data: string, mimeType: string) =
 };
 
 export const createCoachChat = () => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {

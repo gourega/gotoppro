@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   // Charge .env local (utile pour le dev)
   const env = loadEnv(mode, process.cwd(), '');
   
-  // Dans Cloudflare, les variables sont dans process.env
+  // Dans Cloudflare, les variables sont dans process.env ou chargées via loadEnv
   const config = {
     URL: process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || "",
     KEY: process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || "",
@@ -22,9 +22,17 @@ export default defineConfig(({ mode }) => {
       '__KITA_GEMINI__': JSON.stringify(config.GEMINI),
       '__KITA_ADMIN__': JSON.stringify(config.ADMIN),
       '__BUILD_TIME__': JSON.stringify(new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan' })),
+      // Polyfill pour les bibliothèques qui attendent process.env
       'process.env.VITE_SUPABASE_URL': JSON.stringify(config.URL),
       'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(config.KEY),
       'process.env.API_KEY': JSON.stringify(config.GEMINI),
+      'process.env.VITE_ADMIN_EMAIL': JSON.stringify(config.ADMIN),
+      'process.env': JSON.stringify({
+        VITE_SUPABASE_URL: config.URL,
+        VITE_SUPABASE_ANON_KEY: config.KEY,
+        API_KEY: config.GEMINI,
+        VITE_ADMIN_EMAIL: config.ADMIN
+      }),
     },
     build: {
       outDir: 'dist',

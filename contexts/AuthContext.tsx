@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
 import { 
@@ -13,9 +14,14 @@ import {
 } from '../constants';
 
 const FALLBACK_ADMIN = "teletechnologyci@gmail.com";
-const MASTER_ADMIN_EMAIL = (process.env.VITE_ADMIN_EMAIL && process.env.VITE_ADMIN_EMAIL.trim() !== "" 
-  ? process.env.VITE_ADMIN_EMAIL 
+// @ts-ignore
+const MASTER_ADMIN_EMAIL = (typeof __KITA_ADMIN__ !== 'undefined' && __KITA_ADMIN__ 
+// @ts-ignore
+  ? __KITA_ADMIN__ 
   : FALLBACK_ADMIN).toLowerCase().trim();
+
+// On utilise un UUID "zéro" qui est syntaxiquement correct pour la base de données
+const MASTER_ADMIN_UUID = "00000000-0000-0000-0000-000000000000";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -39,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const getMasterAdminProfile = (uid: string = 'master-admin-bypass'): UserProfile => ({
+  const getMasterAdminProfile = (uid: string = MASTER_ADMIN_UUID): UserProfile => ({
     uid,
     phoneNumber: SUPER_ADMIN_PHONE_NUMBER,
     pinCode: '0000',
@@ -57,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isKitaPremium: true,
     hasPerformancePack: true,
     hasStockPack: true,
-    // Fix: Added missing marketingCredits to comply with UserProfile interface
     marketingCredits: 999,
     badges: BADGES.map(b => b.id),
     purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
