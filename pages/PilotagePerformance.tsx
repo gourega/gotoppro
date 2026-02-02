@@ -45,9 +45,15 @@ import {
   List,
   Sparkles,
   Wand2,
-  Phone
+  Phone,
+  ShieldAlert,
+  Database,
+  Terminal,
+  Copy,
+  Info
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
+import { COACH_KITA_PHONE } from '../constants';
 
 const PilotagePerformance: React.FC = () => {
   const { user } = useAuth();
@@ -74,11 +80,11 @@ const PilotagePerformance: React.FC = () => {
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
-  const [newStaff, setNewStaff] = useState({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
+  const [newStaff, setNewStaff] = useState({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
   const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<{message: string, isRls: boolean} | null>(null);
 
   const isUnlocked = user?.hasPerformancePack;
   const isCRMActive = useMemo(() => user?.isAdmin || (user?.crmExpiryDate && new Date(user.crmExpiryDate) > new Date()), [user]);
@@ -152,11 +158,29 @@ const PilotagePerformance: React.FC = () => {
       if (saved) {
         setStaff([...staff, saved]);
         setShowAddStaffModal(false);
-        setNewStaff({ name: '', phone: '', commissionRate: 30, specialty: 'Coiffure' });
+        setNewStaff({ name: '', phone: '', commissionRate: 25, specialty: 'Coiffure' });
       }
-    } catch (e: any) {
-      setSaveError(e.message || "Erreur lors de l'enregistrement. Vérifiez vos permissions.");
+    } catch (err: any) {
+      console.error("Staff Insert Error:", err);
+      if (err.message?.includes('row-level security') || err.code === '42501' || err.message?.includes('permission denied')) {
+        setSaveError({ 
+          message: "Action requise : Votre salon n'est pas encore autorisé à modifier son équipe sur le cloud. Un correctif SQL est nécessaire.", 
+          isRls: true 
+        });
+      } else {
+        setSaveError({ message: "Une erreur est survenue lors de l'enregistrement.", isRls: false });
+      }
     } finally { setSaving(false); }
+  };
+
+  const copySqlFix = () => {
+    const sql = `DROP POLICY IF EXISTS "Gestion staff personnel" ON public.kita_staff;
+CREATE POLICY "Gestion staff personnel" ON public.kita_staff
+FOR ALL TO authenticated 
+USING (auth.uid()::text = user_id::text) 
+WITH CHECK (auth.uid()::text = user_id::text);`;
+    navigator.clipboard.writeText(sql);
+    alert("Script SQL copié ! Collez-le dans l'éditeur SQL de Supabase.");
   };
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -171,8 +195,12 @@ const PilotagePerformance: React.FC = () => {
         setShowAddClientModal(false);
         setNewClient({ name: '', phone: '', notes: '' });
       }
-    } catch (e: any) {
-      setSaveError("Erreur Client. Vérifiez votre connexion.");
+    } catch (err: any) {
+      if (err.message?.includes('row-level security') || err.code === '42501') {
+        setSaveError({ message: "Accès CRM restreint. Un correctif SQL est nécessaire.", isRls: true });
+      } else {
+        setSaveError({ message: "Erreur Client.", isRls: false });
+      }
     } finally { setSaving(false); }
   };
 
@@ -188,7 +216,7 @@ const PilotagePerformance: React.FC = () => {
         setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
       }
     } catch (e: any) {
-      alert("Erreur Service.");
+      alert("Erreur Service. Vérifiez vos permissions.");
     } finally { setSaving(false); }
   };
 
@@ -257,7 +285,7 @@ const PilotagePerformance: React.FC = () => {
                     <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all">
                         <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center mb-6"><Scissors className="w-6 h-6" /></div>
                         <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commissionRate}%</p>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commission_rate || member.commissionRate}%</p>
                     </div>
                   ))}
                   {staff.length === 0 && !loading && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucun membre dans l'équipe. Cliquez sur Nouveau.</div>}
@@ -404,7 +432,7 @@ const PilotagePerformance: React.FC = () => {
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowAddClientModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Client VIP</h2>
-              {saveError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-black mb-6 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {saveError}</div>}
+              {saveError && <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[10px] font-black mb-6 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0" /> {saveError.message}</div>}
               <form onSubmit={handleAddClient} className="space-y-6">
                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du Client</label>
@@ -433,12 +461,30 @@ const PilotagePerformance: React.FC = () => {
               <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Staff</h2>
               
               {saveError && (
-                 <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-[2rem] mb-8 animate-in slide-in-from-top-4">
-                    <div className="flex items-start gap-4">
-                       <AlertCircle className="w-6 h-6 text-rose-600 shrink-0 mt-1" />
-                       <p className="text-[11px] font-bold text-rose-900 leading-relaxed italic">{saveError}</p>
-                    </div>
-                 </div>
+                <div className={`p-6 rounded-[2rem] mb-8 border-2 flex items-start gap-4 animate-in slide-in-from-top-2 ${saveError.isRls ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                  {saveError.isRls ? <ShieldAlert className="w-6 h-6 shrink-0 mt-1" /> : <AlertCircle className="w-6 h-6 shrink-0 mt-1" />}
+                  <div className="space-y-4">
+                    <p className="text-xs font-bold leading-relaxed">{saveError.message}</p>
+                    {saveError.isRls && (
+                      <div className="flex flex-col gap-3">
+                        <button 
+                          type="button"
+                          onClick={copySqlFix}
+                          className="bg-amber-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 justify-center shadow-lg"
+                        >
+                          <Copy className="w-4 h-4" /> Copier le correctif SQL
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g,'')}?text=${encodeURIComponent("Bonjour Coach Kita, mon salon a une erreur de permission lors de l'ajout du Staff. Pouvez-vous vérifier mon projet Supabase ?")}`, '_blank')}
+                          className="bg-brand-900 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 justify-center shadow-lg"
+                        >
+                          <MessageCircle className="w-4 h-4" /> Alerter Coach Kita
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               <form onSubmit={handleAddStaff} className="space-y-6">
