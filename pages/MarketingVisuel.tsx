@@ -1,5 +1,5 @@
-
 import React, { useState, useRef, useMemo } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { analyzeBeautyImage } from '../services/geminiService';

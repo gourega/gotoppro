@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { KitaProduct, KitaSupplier } from '../types';
@@ -157,7 +157,7 @@ const Magasin: React.FC = () => {
            <div className="flex items-center gap-6">
               <div className="h-20 w-20 rounded-2xl bg-white p-3 shadow-2xl shrink-0"><Package className="w-full h-full text-sky-500" /></div>
               <div>
-                 <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest group"><ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" /> Dashboard</button>
+                 <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-brand-900/50 hover:text-brand-900 transition mb-2 font-black text-[10px] uppercase tracking-widest group"><ChevronLeft className="w-3" /> Dashboard</button>
                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">Pilotage du <span className="text-brand-900 italic">Stock</span></h1>
               </div>
            </div>

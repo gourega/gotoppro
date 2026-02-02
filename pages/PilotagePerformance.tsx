@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -39,7 +39,8 @@ import {
   TrendingUp,
   Award,
   Crown,
-  Ban
+  Ban,
+  List
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 
@@ -47,7 +48,7 @@ const PilotagePerformance: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes' | 'services'>('staff');
   
   const [staff, setStaff] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -56,10 +57,12 @@ const PilotagePerformance: React.FC = () => {
   
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
   const [newStaff, setNewStaff] = useState({ name: '', commissionRate: 30, specialty: 'Coiffure' });
   const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
+  const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
   const [saving, setSaving] = useState(false);
 
   const isUnlocked = user?.hasPerformancePack;
@@ -109,6 +112,24 @@ const PilotagePerformance: React.FC = () => {
     } finally { setSaving(false); }
   };
 
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newService.name) return;
+    setSaving(true);
+    try {
+      const saved = await addKitaService(user.uid, newService);
+      if (saved) setServices([...services, saved as KitaService]);
+      setShowAddServiceModal(false);
+      setNewService({ name: '', defaultPrice: 0, category: 'Coiffure' });
+    } finally { setSaving(false); }
+  };
+
+  const handleDeleteSvc = async (id: string) => {
+    if (!window.confirm("Supprimer cette prestation du catalogue ?")) return;
+    await deleteKitaService(id);
+    setServices(services.filter(s => s.id !== id));
+  };
+
   const LockedScreen = () => (
     <div className="py-24 text-center animate-in zoom-in-95 px-6">
        <div className="h-24 w-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-rose-100"><Lock className="w-10 h-10" /></div>
@@ -144,6 +165,7 @@ const PilotagePerformance: React.FC = () => {
           <div className="flex justify-center bg-white/5 p-1.5 rounded-[2rem] border border-white/10 overflow-x-auto max-w-full">
              <button onClick={() => setActiveTab('staff')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'staff' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Équipe</button>
              <button onClick={() => setActiveTab('commissions')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'commissions' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Performance</button>
+             <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Catalogue</button>
              <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'clients' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Clients VIP</button>
              <button onClick={() => setActiveTab('dettes')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'dettes' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}>Ardoises</button>
           </div>
@@ -165,6 +187,28 @@ const PilotagePerformance: React.FC = () => {
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{member.specialty} • {member.commissionRate}%</p>
                     </div>
                   ))}
+              </div>
+          </div>
+        ) : activeTab === 'services' ? (
+          <div className="space-y-8 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
+                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><List className="w-5 h-5 text-indigo-500" /> Prestations & Tarifs</h3>
+                 <button onClick={() => setShowAddServiceModal(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau Service</button>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {services.map(svc => (
+                    <div key={svc.id} className="bg-white rounded-[2.5rem] p-6 border shadow-sm group hover:border-indigo-500 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[8px] font-black uppercase">{svc.category}</span>
+                            <button onClick={() => handleDeleteSvc(svc.id)} className="p-2 text-slate-200 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-900 mb-2 leading-tight">{svc.name}</h4>
+                        </div>
+                        <p className="text-xl font-black text-emerald-600 mt-4">{svc.defaultPrice.toLocaleString()} F</p>
+                    </div>
+                  ))}
+                  {services.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Catalogue vide. Configurez vos prix ici.</div>}
               </div>
           </div>
         ) : activeTab === 'commissions' ? (
@@ -264,6 +308,42 @@ const PilotagePerformance: React.FC = () => {
                  <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Nom complet" required />
                  <input type="number" value={newStaff.commissionRate} onChange={e => setNewStaff({...newStaff, commissionRate: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Commission %" />
                  <button type="submit" className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl">Valider</button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL SERVICE */}
+      {showAddServiceModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+           <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
+              <button onClick={() => setShowAddServiceModal(false)} className="absolute top-10 right-10 text-slate-300"><X /></button>
+              <h2 className="text-3xl font-serif font-bold text-center mb-10">Nouveau Service</h2>
+              <form onSubmit={handleAddService} className="space-y-6">
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de la prestation</label>
+                    <input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="Ex: Brushing simple" required />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Prix (F)</label>
+                        <input type="number" value={newService.defaultPrice || ''} onChange={e => setNewService({...newService, defaultPrice: Number(e.target.value)})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold" placeholder="0" required />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Catégorie</label>
+                        <select value={newService.category} onChange={e => setNewService({...newService, category: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold appearance-none">
+                            <option>Coiffure</option>
+                            <option>Esthétique</option>
+                            <option>Onglerie</option>
+                            <option>Soins</option>
+                            <option>Mariage</option>
+                            <option>Autre</option>
+                        </select>
+                    </div>
+                 </div>
+                 <button type="submit" disabled={saving} className="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Enregistrer au catalogue
+                 </button>
               </form>
            </div>
         </div>

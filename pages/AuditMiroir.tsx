@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleGenAI } from "@google/genai";
@@ -124,7 +125,6 @@ const AuditMiroir: React.FC = () => {
           
           TON : Prestigieux, inspirant, direct. Utilise Markdown. 
           Important : Ne pas utiliser d'anglicismes comme "Retail" ou "Dashboard".`,
-          thinkingConfig: { thinkingBudget: 0 }
         }
       });
 

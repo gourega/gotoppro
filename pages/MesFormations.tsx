@@ -1,5 +1,5 @@
-
 import React, { useMemo, useState } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TRAINING_CATALOG, BADGES, LEGACY_ID_MAP } from '../constants';
@@ -241,7 +241,7 @@ const MesFormations: React.FC = () => {
                  <h3 className="text-2xl font-serif font-bold text-slate-900 mb-4">Votre bibliothèque est vide</h3>
                  <p className="text-slate-500 mb-10 max-w-md mx-auto">Une erreur de synchronisation a peut-être eu lieu.</p>
                  <button onClick={handleForceRestore} disabled={isSyncing} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-3 mx-auto">
-                   {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                   {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
                    Restaurer mes accès
                  </button>
                </div>

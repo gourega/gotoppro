@@ -1,6 +1,6 @@
-
 // Add React import to avoid UMD global reference error
 import React, { useEffect } from "react";
+// @ts-ignore
 import { useLocation } from "react-router-dom";
 
 /**

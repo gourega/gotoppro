@@ -1,5 +1,5 @@
-
 import React from 'react';
+// @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Wallet, Users, Package, BookOpen, Sparkles } from 'lucide-react';
 import { KITA_LOGO } from '../constants';

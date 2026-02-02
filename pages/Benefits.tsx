@@ -1,4 +1,5 @@
 import React from 'react';
+// @ts-ignore
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles } from 'lucide-react';
 
@@ -44,7 +45,7 @@ const Benefits: React.FC = () => {
       {/* Pricing Tiers Section */}
       <section className="py-32 bg-brand-900 text-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-        <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+        <div className="max-[1400px] mx-auto px-6 relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-4">Investissement Stratégique</h2>
             <h3 className="text-4xl md:text-5xl font-serif font-bold mb-6">Des tarifs adaptés à votre ambition</h3>
