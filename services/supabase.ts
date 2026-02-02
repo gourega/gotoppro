@@ -2,9 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
 
-// Accès sécurisé aux variables d'environnement via import.meta.env (Vite standard)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+// Accès sécurisé aux variables d'environnement via des fallbacks robustes
+// @ts-ignore
+const supabaseUrl = (import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : "") || "";
+// @ts-ignore
+const supabaseAnonKey = (import.meta.env?.VITE_SUPABASE_ANON_KEY) || (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_ANON_KEY : "") || "";
 
 // @ts-ignore
 const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'Inconnu';
@@ -52,7 +54,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   return {
     uid: data.uid,
     phoneNumber: data.phoneNumber || data.phone_number || '',
-    pinCode: data.pinCode || data.pin_code || '1234',
+    pinCode: data.pinCode || data.phone_code || '1234',
     email: data.email,
     firstName: data.firstName || data.first_name || '',
     lastName: data.lastName || data.last_name || '',
@@ -179,7 +181,6 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
-    // Fix: Using commissionRate to match KitaTransaction interface
     commissionRate: t.commission_rate, isCredit: t.is_credit, clientId: t.client_id, 
     productId: t.product_id, discount: t.discount || 0, originalAmount: t.original_amount || t.amount
   }));
@@ -190,7 +191,6 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const newId = generateUUID();
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
-    // Fix: Using transaction.paymentMethod (camelCase) to match the interface property name
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
     is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,

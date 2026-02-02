@@ -1,3 +1,4 @@
+
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -5,10 +6,10 @@ export default defineConfig(({ mode }) => {
   // Charge toutes les variables du système, incluant celles de Cloudflare sans préfixe
   const env = loadEnv(mode, (process as any).cwd(), '');
   
-  const VITE_SUPABASE_URL = env.VITE_SUPABASE_URL || (process.env as any).VITE_SUPABASE_URL || "";
-  const VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || (process.env as any).VITE_SUPABASE_ANON_KEY || "";
-  const API_KEY = env.API_KEY || (process.env as any).API_KEY || "";
-  const VITE_ADMIN_EMAIL = env.VITE_ADMIN_EMAIL || (process.env as any).VITE_ADMIN_EMAIL || "teletechnologyci@gmail.com";
+  const VITE_SUPABASE_URL = env.VITE_SUPABASE_URL || (typeof process !== 'undefined' && process.env ? (process.env as any).VITE_SUPABASE_URL : "") || "";
+  const VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || (typeof process !== 'undefined' && process.env ? (process.env as any).VITE_SUPABASE_ANON_KEY : "") || "";
+  const API_KEY = env.API_KEY || (typeof process !== 'undefined' && process.env ? (process.env as any).API_KEY : "") || "";
+  const VITE_ADMIN_EMAIL = env.VITE_ADMIN_EMAIL || (typeof process !== 'undefined' && process.env ? (process.env as any).VITE_ADMIN_EMAIL : "") || "teletechnologyci@gmail.com";
 
   console.log("Vite Build: Variables detection active.");
 

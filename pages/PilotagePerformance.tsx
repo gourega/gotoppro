@@ -13,7 +13,8 @@ import {
   updateKitaClient,
   getKitaServices,
   addKitaService,
-  deleteKitaService
+  deleteKitaService,
+  bulkAddKitaServices
 } from '../services/supabase';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -41,7 +42,9 @@ import {
   Award,
   Crown,
   Ban,
-  List
+  List,
+  Sparkles,
+  Wand2
 } from 'lucide-react';
 import { KitaService, KitaTransaction } from '../types';
 
@@ -50,6 +53,7 @@ const PilotagePerformance: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
   
   // Gestion de l'onglet actif via paramètre d'URL (?tab=services)
   const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes' | 'services'>('staff');
@@ -95,6 +99,49 @@ const PilotagePerformance: React.FC = () => {
       setServices(serviceData);
       setTransactions(transData);
     } finally { setLoading(false); }
+  };
+
+  const handleImportStandardCatalog = async () => {
+    if (!user || isImporting) return;
+    setIsImporting(true);
+    
+    // Définition structurée du catalogue standard Coach Kita
+    const standardCatalog = [
+      { name: "Coupe Homme Simple", category: "Coiffure", defaultPrice: 2000 },
+      { name: "Coupe Homme + Barbe", category: "Coiffure", defaultPrice: 3000 },
+      { name: "Coupe Femme", category: "Coiffure", defaultPrice: 3000 },
+      { name: "Brushing", category: "Coiffure", defaultPrice: 5000 },
+      { name: "Tresses simples", category: "Coiffure", defaultPrice: 10000 },
+      { name: "Chignon Prestige", category: "Coiffure", defaultPrice: 15000 },
+      { name: "Coloration / Teinture", category: "Coiffure", defaultPrice: 8000 },
+      { name: "Mise en plis", category: "Coiffure", defaultPrice: 7000 },
+      { name: "Shampoing Expert", category: "Soins", defaultPrice: 2000 },
+      { name: "Bain d'huile", category: "Soins", defaultPrice: 5000 },
+      { name: "Défrisage", category: "Coiffure", defaultPrice: 5000 },
+      { name: "Babyliss / Boucles", category: "Coiffure", defaultPrice: 5000 },
+      { name: "Balayage", category: "Coiffure", defaultPrice: 15000 },
+      { name: "Tissage", category: "Coiffure", defaultPrice: 10000 },
+      { name: "Pose Vernis simple", category: "Onglerie", defaultPrice: 2000 },
+      { name: "Pose Gel", category: "Onglerie", defaultPrice: 10000 },
+      { name: "Manucure", category: "Onglerie", defaultPrice: 5000 },
+      { name: "Pédicure", category: "Onglerie", defaultPrice: 7000 },
+      { name: "Pose Capsules", category: "Onglerie", defaultPrice: 5000 },
+      { name: "Massage Crânien Kita", category: "Soins", defaultPrice: 3000 },
+      { name: "Soin du Visage", category: "Esthétique", defaultPrice: 15000 },
+      { name: "Massage Corps", category: "Esthétique", defaultPrice: 25000 },
+      { name: "Épilation Sourcils", category: "Esthétique", defaultPrice: 2000 },
+      { name: "Maquillage Jour", category: "Esthétique", defaultPrice: 10000 },
+      { name: "Vente Produit Retail", category: "Autre", defaultPrice: 5000 }
+    ];
+
+    try {
+      await bulkAddKitaServices(user.uid, standardCatalog);
+      await loadData();
+    } catch (e) {
+      alert("Erreur lors de l'importation.");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const staffStats = useMemo(() => {
@@ -200,11 +247,40 @@ const PilotagePerformance: React.FC = () => {
               </div>
           </div>
         ) : activeTab === 'services' ? (
-          <div className="space-y-8 animate-in fade-in">
+          <div className="space-y-12 animate-in fade-in">
+              {/* CARTE D'IMPORTATION SI VIDE */}
+              {services.length === 0 && !loading && (
+                <section className="bg-indigo-900 rounded-[3rem] p-10 md:p-16 shadow-2xl relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 transition-transform group-hover:scale-110">
+                      <Wand2 className="w-48 h-48 text-indigo-400" />
+                   </div>
+                   <div className="relative z-10 max-w-2xl">
+                      <div className="flex items-center gap-3 text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em] mb-6">
+                        <Sparkles className="w-4 h-4" /> Configuration Express
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
+                        Chargez la méthode <span className="text-indigo-400 italic">Coach Kita</span>
+                      </h2>
+                      <p className="text-indigo-100 text-lg mb-10 leading-relaxed font-medium">
+                        Ne perdez pas de temps à tout saisir. Importez en un clic les 25 prestations standards (Coiffure, Soins, Esthétique) et ajustez simplement vos prix.
+                      </p>
+                      <button 
+                        onClick={handleImportStandardCatalog}
+                        disabled={isImporting}
+                        className="bg-white text-indigo-900 px-10 py-6 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-50 transition-all flex items-center gap-4 active:scale-95"
+                      >
+                         {isImporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Wand2 className="w-6 h-6" />}
+                         {isImporting ? "Injection en cours..." : "Importer le catalogue standard"}
+                      </button>
+                   </div>
+                </section>
+              )}
+
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4">
                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><List className="w-5 h-5 text-indigo-500" /> Prestations & Tarifs</h3>
                  <button onClick={() => setShowAddServiceModal(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl"><Plus className="w-4 h-4" /> Nouveau Service</button>
               </div>
+              
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {services.map(svc => (
                     <div key={svc.id} className="bg-white rounded-[2.5rem] p-6 border shadow-sm group hover:border-indigo-500 transition-all flex flex-col justify-between">
@@ -218,7 +294,7 @@ const PilotagePerformance: React.FC = () => {
                         <p className="text-xl font-black text-emerald-600 mt-4">{svc.defaultPrice.toLocaleString()} F</p>
                     </div>
                   ))}
-                  {services.length === 0 && <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] text-slate-300 italic">Aucun service créé. Configurez vos prix ici pour la caisse.</div>}
+                  {(services.length === 0 && loading) && <div className="col-span-full py-20 text-center"><Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto" /></div>}
               </div>
           </div>
         ) : activeTab === 'commissions' ? (
