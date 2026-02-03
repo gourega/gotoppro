@@ -1,5 +1,5 @@
 
-export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN';
 
 export interface UserActionCommitment {
   moduleId: string;
@@ -29,7 +29,7 @@ export interface KitaTransaction {
   id: string;
   type: 'INCOME' | 'EXPENSE';
   amount: number;
-  label: string; // Pour les ventes groupées, contiendra un résumé
+  label: string; 
   category: string;
   paymentMethod: string;
   date: string;
@@ -37,7 +37,8 @@ export interface KitaTransaction {
   productId?: string;
   staffName?: string;
   commissionRate?: number;
-  isCredit?: boolean; // True si c'est une ardoise (non payé)
+  tipAmount?: number; // Nouveau: Pourboire pour le collaborateur
+  isCredit?: boolean; 
   discount?: number;
   originalAmount?: number;
 }

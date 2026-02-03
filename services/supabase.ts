@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService } from '../types';
+import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole } from '../types';
 
 /**
  * Robust polyfill for process.env in browser environments.
@@ -46,7 +46,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.8.11-STABLE"
+  version: "2.9.0-BETA"
 };
 
 const getSafeSupabaseClient = () => {
@@ -87,7 +87,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     employeeCount: data.employeeCount || data.employee_count || 0,
     yearsOfExistence: data.yearsOfExistence || data.years_of_existence || 0,
     openingYear: data.openingYear || data.opening_year || 0,
-    role: data.role || 'CLIENT',
+    role: (data.role || 'CLIENT') as UserRole,
     isActive: data.isActive ?? data.is_active ?? false,
     isAdmin: data.isAdmin ?? data.is_admin ?? false,
     isPublic: data.isPublic ?? data.is_public ?? true,
@@ -103,6 +103,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
     actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
     referralCount: data.referralCount || data.referral_count || 0,
+    referredBy: data.referredBy || data.referred_by || '',
     createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
@@ -170,6 +171,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
       date: t.date, 
       staffName: t.staff_name,
       commissionRate: t.commission_rate, 
+      tipAmount: t.tip_amount || 0,
       isCredit: t.is_credit, 
       clientId: t.client_id, 
       productId: t.product_id, 
@@ -187,6 +189,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
       id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
       label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
       date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
+      tip_amount: transaction.tipAmount || 0,
       is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
       original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
     });
@@ -283,7 +286,7 @@ export const bulkAddKitaServices = async (userId: string, services: any[]) => {
     const { error } = await supabase.from('kita_services').upsert(payload, { onConflict: 'user_id, name' });
     if (error) throw error;
   } catch (e) {
-    console.warn("Import warning:", e);
+    console.warn("Import warning (might be RLS):", e);
   }
 };
 
@@ -317,10 +320,8 @@ export const updateKitaStaff = async (id: string, updates: any) => {
   if (!supabase) return;
   try {
     const { data, error } = await supabase.from('kita_staff').update({
-      name: updates.name, 
-      phone: updates.phone || "", 
-      commission_rate: Math.round(Number(updates.commission_rate || 0)), 
-      specialty: updates.specialty || "Coiffure"
+      name: updates.name, phone: updates.phone || "", 
+      commission_rate: Math.round(Number(updates.commission_rate || 0)), specialty: updates.specialty || "Coiffure"
     }).eq('id', id).select().single();
     if (error) throw error;
     return data;
