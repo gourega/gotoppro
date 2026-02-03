@@ -1,4 +1,3 @@
-
 // @ts-ignore: Deno types
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
 
@@ -12,7 +11,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Gestion du preflight CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -25,19 +23,16 @@ Deno.serve(async (req) => {
   let logEntry = { sender: 'Inconnu', message: '', status: 'ÉCHEC', details: '' };
 
   try {
-    // 1. Sécurité
     const authHeader = req.headers.get('X-Kita-Auth');
     if (authHeader !== KITA_SECRET) {
       console.error("Auth Failed");
       return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401, headers: corsHeaders });
     }
 
-    // 2. Lecture des données
     const { message, from } = await req.json();
     logEntry.sender = from;
     logEntry.message = message;
 
-    // 3. Extraction (Regex)
     const amountMatch = message.match(/(\d+(?:[\s.]\d+)*)\s*[fF]/);
     const phoneMatch = message.match(/(?:01|05|07)\d{8}/);
 
@@ -51,7 +46,6 @@ Deno.serve(async (req) => {
     let phone = phoneMatch[0];
     if (!phone.startsWith('+225')) phone = `+225${phone}`;
 
-    // 4. Recherche profil
     const { data: profile } = await supabaseAdmin.from('profiles').select('*').eq('phoneNumber', phone).maybeSingle();
 
     if (!profile) {
@@ -61,12 +55,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Client inconnu' }), { status: 404, headers: corsHeaders });
     }
 
-    // 5. Activation
     const updates: any = { isActive: true };
+    const ALL_MODULES = ["mod_accueil_tel", "mod_diagnostic", "mod_hygiene", "mod_shampoing", "mod_pricing", "mod_management", "mod_fidelisation", "mod_digital", "mod_color", "mod_retail", "mod_coupe", "mod_planning", "mod_psychologie", "mod_vip", "mod_chiffres", "mod_formalisation"];
+
+    // CAS COLLABORATEUR (2 500 F)
+    if (amount === 2500) {
+      updates.role = 'STAFF_ELITE';
+      updates.purchasedModuleIds = ALL_MODULES;
+    }
+
+    // CAS ELITE (10 000 F)
     if (amount >= 10000) {
       updates.isKitaPremium = true;
-      updates.purchasedModuleIds = ["mod_accueil_tel", "mod_diagnostic", "mod_hygiene", "mod_shampoing", "mod_pricing", "mod_management", "mod_fidelisation", "mod_digital", "mod_color", "mod_retail", "mod_coupe", "mod_planning", "mod_psychologie", "mod_vip", "mod_chiffres", "mod_formalisation"];
+      updates.purchasedModuleIds = ALL_MODULES;
     }
+
+    // CAS EXCELLENCE TOTALE (15 000 F)
     if (amount >= 15000) {
       updates.hasPerformancePack = true;
       updates.hasStockPack = true;
@@ -75,7 +79,7 @@ Deno.serve(async (req) => {
     await supabaseAdmin.from('profiles').update(updates).eq('uid', profile.uid);
 
     logEntry.status = "SUCCÈS";
-    logEntry.details = `Compte de ${profile.firstName} activé (${amount} F).`;
+    logEntry.details = `Compte de ${profile.firstName} activé (${amount} F). Rôle: ${updates.role || profile.role}`;
     await supabaseAdmin.from('automation_logs').insert([logEntry]);
 
     return new Response(JSON.stringify({ success: true, message: logEntry.details }), { status: 200, headers: corsHeaders });

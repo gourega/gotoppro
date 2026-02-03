@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
+// @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { saveUserProfile, uploadProfilePhoto, getAllUsers, getReferrals } from '../services/supabase';
@@ -31,7 +31,10 @@ import {
   Mail,
   Phone,
   Eye,
-  EyeOff
+  EyeOff,
+  UserCircle,
+  // Fix: added Crown to the list of icons imported from lucide-react
+  Crown
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -42,7 +45,7 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [copying, setCopying] = useState(false);
+  const [copying, setCopying] = useState<'collab' | 'owner' | null>(null);
   
   const [filleuls, setFilleuls] = useState<UserProfile[]>([]);
   const [allPotentialSponsors, setAllPotentialSponsors] = useState<UserProfile[]>([]);
@@ -60,7 +63,6 @@ const Profile: React.FC = () => {
     isPublic: user?.isPublic ?? true
   });
 
-  // Logique unifiée Elite / Cloud
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   
   const isCloudActive = useMemo(() => {
@@ -95,9 +97,8 @@ const Profile: React.FC = () => {
         isPublic: user?.isPublic ?? true
       });
       fetchFilleuls();
-      if (isEditing) fetchSponsors();
     }
-  }, [user, isEditing]);
+  }, [user]);
 
   const fetchFilleuls = async () => {
     if (user) {
@@ -107,15 +108,6 @@ const Profile: React.FC = () => {
       } catch (err) {
         console.warn("Erreur chargement filleuls");
       }
-    }
-  };
-
-  const fetchSponsors = async () => {
-    try {
-      const data = await getAllUsers();
-      setAllPotentialSponsors(data.filter(u => u.uid !== user?.uid && !u.isAdmin));
-    } catch (err) {
-      console.warn("Erreur chargement parrains");
     }
   };
 
@@ -137,18 +129,12 @@ const Profile: React.FC = () => {
     }
   };
 
-  const copyRefLink = () => {
+  const copyRefLink = (type: 'collab' | 'owner') => {
     const link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
     navigator.clipboard.writeText(link);
-    setCopying(true);
-    setTimeout(() => setCopying(false), 2000);
+    setCopying(type);
+    setTimeout(() => setCopying(null), 2000);
   };
-
-  const filteredSponsors = allPotentialSponsors.filter(s => {
-    const search = sponsorSearch.toLowerCase().replace(/\s/g, '');
-    const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase().replace(/\s/g, '');
-    return fullName.includes(search) || (s.phoneNumber || '').includes(search);
-  }).slice(0, 3);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -190,32 +176,33 @@ const Profile: React.FC = () => {
               </div>
             </div>
             <div className="pb-4 flex-grow text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
+              <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-4xl font-serif font-bold text-slate-900">{user.firstName} {user.lastName}</h1>
                 {user.isAdmin && <Sparkles className="text-amber-500 w-6 h-6 fill-current" />}
               </div>
-              <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mb-4">
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mb-6">
                  <p className="text-brand-600 font-black tracking-widest text-sm">{user.isAdmin ? COACH_KITA_TITLE : user.phoneNumber}</p>
                  {!user.isAdmin && (
-                   <>
-                    <span className="h-1.5 w-1.5 bg-slate-200 rounded-full"></span>
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isPublic ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
+                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isPublic ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'}`}>
                         {user.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                         {user.isPublic ? 'Profil Public' : 'Profil Privé'}
                     </div>
-                   </>
                  )}
               </div>
-              <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                <button onClick={copyRefLink} className="inline-flex items-center gap-2 px-6 py-3 bg-brand-50 text-brand-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-100 transition-all shadow-sm border border-brand-200">
-                  {copying ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copying ? 'Lien copié !' : 'Mon lien de parrainage'}
-                </button>
-                {user.isAdmin && (
-                  <a href={`mailto:${COACH_KITA_EMAIL}`} className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg">
-                    <Mail className="w-3.5 h-3.5" /> Contact Mentor
-                  </a>
-                )}
-              </div>
+
+              {/* BOUTONS DE PARRAINAGE DOUBLES */}
+              {!user.isAdmin && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto md:mx-0">
+                  <button onClick={() => copyRefLink('collab')} className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border-2 ${copying === 'collab' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}>
+                    {copying === 'collab' ? <Check className="w-4 h-4" /> : <UserCircle className="w-4 h-4" />}
+                    {copying === 'collab' ? 'Lien copié !' : 'Parrainage Collaborateur'}
+                  </button>
+                  <button onClick={() => copyRefLink('owner')} className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border-2 ${copying === 'owner' ? 'bg-brand-900 text-white border-brand-900' : 'bg-white text-brand-900 border-brand-100 hover:bg-brand-50'}`}>
+                    {copying === 'owner' ? <Check className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
+                    {copying === 'owner' ? 'Lien copié !' : 'Parrainer un Propriétaire'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -280,17 +267,8 @@ const Profile: React.FC = () => {
 
                   <div className="space-y-4">
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Bio Professionnelle</label>
-                    <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 mb-2 flex items-start gap-4">
-                      <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-                      <div>
-                         <p className="text-[11px] font-black text-indigo-900 uppercase tracking-widest mb-1">Conseil Marketing (Privé)</p>
-                         <p className="text-[11px] font-medium text-indigo-800 leading-relaxed italic">
-                           "Votre profil est votre véritable carte d'identité marketing d'élite. Rédigez une bio professionnelle et inspirante pour attirer des partenaires et clients VIP. Ce conseil n'apparaîtra pas sur votre profil final."
-                         </p>
-                      </div>
-                    </div>
                     <textarea 
-                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience, spécialisé dans les rituels de soins capillaires de luxe..." 
+                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience..." 
                       value={formData.bio} 
                       onChange={e => setFormData({...formData, bio: e.target.value})} 
                       className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none min-h-[150px] resize-none"
@@ -307,11 +285,9 @@ const Profile: React.FC = () => {
                   {user.bio && (
                     <div className={`relative p-10 rounded-[3rem] border group ${user.isAdmin ? 'bg-brand-900 border-amber-500/30 shadow-2xl' : 'bg-brand-50/20 border-brand-100/30'}`}>
                       <Quote className={`absolute top-6 left-6 opacity-10 w-12 h-12 ${user.isAdmin ? 'text-amber-500' : 'text-brand-500'}`} />
-                      {user.isAdmin && <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-6 text-center">Vision du Mentor</p>}
                       <p className={`text-xl font-serif italic leading-relaxed pl-6 relative z-10 ${user.isAdmin ? 'text-slate-200' : 'text-slate-700'}`}>
                         {user.bio}
                       </p>
-                      {user.isAdmin && <p className="mt-8 text-center font-black text-amber-400 text-[11px] uppercase tracking-[0.3em]">{COACH_KITA_SLOGAN}</p>}
                     </div>
                   )}
                   
@@ -333,26 +309,6 @@ const Profile: React.FC = () => {
                       <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Taille Équipe</p>
                         <p className="font-bold text-slate-900 text-lg">{user.employeeCount || 0} employé(s)</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:bg-white transition-all">
-                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 transition-transform">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Ouvert en</p>
-                        <p className="font-bold text-slate-900 text-lg">{user.openingYear || 'Non renseigné'}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:bg-white transition-all">
-                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
-                        <ShieldCheck className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Statut</p>
-                        <p className="font-bold text-slate-900 text-lg">{user.isAdmin ? 'Administrateur' : isElite ? 'Membre Elite' : 'Standard'}</p>
                       </div>
                     </div>
                   </div>
@@ -406,7 +362,6 @@ const Profile: React.FC = () => {
                 <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 pb-4 mb-8">Trophées</h2>
                 <div className="grid grid-cols-2 gap-4">
                   {BADGES.map(badge => {
-                    // Sécurisation de l'accès aux badges
                     const isUnlocked = user.isAdmin || (Array.isArray(user.badges) && user.badges.includes(badge.id));
                     return (
                       <div 
