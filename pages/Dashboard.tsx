@@ -171,14 +171,15 @@ const Dashboard: React.FC = () => {
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
            <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            
-           {(user.isAdmin || user.role === 'STAFF_ADMIN') && (
-             <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSE" sub="Sortie Caisse" onClick={() => navigate('/caisse?mode=expense')} color="bg-rose-500" />
+           {/* RESTAURÉ : Accessible au gérant (!isStaff) et au staff admin */}
+           {(!isStaff || user.role === 'STAFF_ADMIN') && (
+             <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSES" sub="Sortie Caisse" onClick={() => navigate('/caisse?mode=expense')} color="bg-rose-500" />
            )}
 
            <QuickActionBtn icon={<Scissors className="w-6 h-6" />} label="SERVICES" sub="Tarifs Salon" onClick={() => navigate('/pilotage?tab=services')} color="bg-indigo-500" />
            
            {(!isStaff || user.role === 'STAFF_ADMIN') && (
-             <QuickActionBtn icon={<Users className="w-6 h-6" />} label="CLIENT VIP" sub="Fichier CRM" onClick={() => navigate('/pilotage')} color="bg-amber-500" />
+             <QuickActionBtn icon={<Users className="w-6 h-6" />} label="CLIENT VIP" sub="Fichier CRM" onClick={() => navigate('/pilotage?tab=clients')} color="bg-amber-500" />
            )}
            
            <QuickActionBtn icon={<Camera className="w-6 h-6" />} label="POST IA" sub="Marketing" onClick={() => navigate('/marketing')} color="bg-indigo-600" />
