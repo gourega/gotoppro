@@ -10,14 +10,10 @@ import {
   addKitaClient, 
   deleteKitaStaff,
   getKitaTransactions,
-  updateKitaClient,
   getKitaServices,
   addKitaService,
-  updateKitaService,
   deleteKitaService,
-  getProfileByPhone,
   updateUserProfile,
-  getAllUsers,
   getReferrals
 } from '../services/supabase';
 import KitaTopNav from '../components/KitaTopNav';
@@ -32,38 +28,30 @@ import {
   Award,
   Crown,
   Sparkles,
-  Phone,
   AlertCircle,
-  Pencil,
   ShieldCheck,
-  Smartphone,
   UserPlus,
-  ArrowRight,
   Settings2,
-  ShieldAlert,
   UserCheck,
   AlertTriangle,
   Plus,
-  Target,
-  UserCircle,
-  Tag
+  UserCircle
 } from 'lucide-react';
 import { KitaService, KitaTransaction, UserProfile } from '../types';
 
 const PilotagePerformance: React.FC = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'services'>('staff');
   
-  const [staffConfigs, setStaffConfigs] = useState<any[]>([]);
-  const [referrals, setReferrals] = useState<UserProfile[]>([]);
+  const [staffConfigs, setStaffConfigs] = useState<any[]>([]); // Données techniques (commissions)
+  const [referrals, setReferrals] = useState<UserProfile[]>([]); // Données humaines (comptes réels)
   const [clients, setClients] = useState<any[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   
-  // États des Modaux
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -98,15 +86,15 @@ const PilotagePerformance: React.FC = () => {
       setTransactions(transData);
       setReferrals(referralsData);
     } catch (e: any) {
-      setSaveError("Erreur de chargement des données.");
+      setSaveError("Erreur de chargement.");
     } finally { setLoading(false); }
   };
 
+  // On ne garde que les parrainages qui ont un rôle de STAFF
   const staffReferrals = useMemo(() => {
     return referrals.filter(ref => ref.role === 'STAFF_ELITE' || ref.role === 'STAFF_ADMIN');
   }, [referrals]);
 
-  // Handlers pour les Services
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newService.name) return;
@@ -116,12 +104,9 @@ const PilotagePerformance: React.FC = () => {
       await loadData();
       setShowAddServiceModal(false);
       setNewService({ name: '', category: 'Coiffure', defaultPrice: 0 });
-    } catch (err) {
-      setSaveError("Erreur lors de l'ajout du service.");
     } finally { setSaving(false); }
   };
 
-  // Handlers pour les Clients
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newClient.name) return;
@@ -131,18 +116,16 @@ const PilotagePerformance: React.FC = () => {
       await loadData();
       setShowAddClientModal(false);
       setNewClient({ name: '', phone: '', notes: '' });
-    } catch (err) {
-      setSaveError("Erreur lors de l'ajout du client.");
     } finally { setSaving(false); }
   };
 
   const handleOpenConfig = (collab: UserProfile) => {
-    const existingConfig = staffConfigs.find(s => s.phone?.replace(/\D/g,'').endsWith(collab.phoneNumber.replace(/\D/g,'').slice(-10)));
+    const config = staffConfigs.find(s => s.phone?.replace(/\D/g,'').endsWith(collab.phoneNumber.replace(/\D/g,'').slice(-10)));
     setSelectedCollab(collab);
     setConfigData({
-      commission_rate: existingConfig ? existingConfig.commission_rate : 25,
+      commission_rate: config ? config.commission_rate : 25,
       isAdmin: collab.role === 'STAFF_ADMIN',
-      specialty: existingConfig ? existingConfig.specialty : 'Coiffure'
+      specialty: config ? config.specialty : 'Coiffure'
     });
     setShowConfigModal(true);
   };
@@ -156,6 +139,7 @@ const PilotagePerformance: React.FC = () => {
       const phoneMatch = selectedCollab.phoneNumber;
       const existingConfig = staffConfigs.find(s => s.phone?.replace(/\D/g,'').endsWith(phoneMatch.replace(/\D/g,'').slice(-10)));
       
+      // Injection ou mise à jour dans la table opérationnelle "Staff"
       if (existingConfig) {
         await updateKitaStaff(existingConfig.id, { 
           commission_rate: configData.commission_rate,
@@ -172,6 +156,7 @@ const PilotagePerformance: React.FC = () => {
         });
       }
 
+      // Mise à jour du rôle global du compte collaborateur
       const newRole = configData.isAdmin ? 'STAFF_ADMIN' : 'STAFF_ELITE';
       if (selectedCollab.role !== newRole) {
         await updateUserProfile(selectedCollab.uid, { role: newRole });
@@ -180,7 +165,7 @@ const PilotagePerformance: React.FC = () => {
       await loadData();
       setShowConfigModal(false);
     } catch (err) {
-      setSaveError("Échec de la sauvegarde.");
+      setSaveError("Échec de l'injection des données Staff.");
     } finally { setSaving(false); }
   };
 
@@ -212,7 +197,6 @@ const PilotagePerformance: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#fcfdfe] text-slate-900 pb-20">
       <KitaTopNav />
-      
       <header className="pt-16 pb-32 px-6 relative overflow-hidden bg-slate-900">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
@@ -229,21 +213,14 @@ const PilotagePerformance: React.FC = () => {
                 <button onClick={() => setActiveTab('services')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'services' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Services</button>
                 <button onClick={() => setActiveTab('clients')} className={`px-6 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeTab === 'clients' ? 'bg-emerald-500 text-white' : 'text-slate-50'}`}>Clients</button>
              </div>
-             
-             {/* Bouton d'Action Dynamique selon l'onglet */}
-             {activeTab === 'services' && (
-               <button onClick={() => setShowAddServiceModal(true)} className="bg-indigo-500 text-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl hover:scale-105 transition-all"><Plus className="w-6 h-6" /></button>
-             )}
-             {activeTab === 'clients' && (
-               <button onClick={() => setShowAddClientModal(true)} className="bg-amber-500 text-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl hover:scale-105 transition-all"><UserPlus className="w-6 h-6" /></button>
-             )}
+             {activeTab === 'services' && <button onClick={() => setShowAddServiceModal(true)} className="bg-indigo-500 text-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl hover:scale-105 transition-all"><Plus className="w-6 h-6" /></button>}
+             {activeTab === 'clients' && <button onClick={() => setShowAddClientModal(true)} className="bg-amber-500 text-white h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl hover:scale-105 transition-all"><UserPlus className="w-6 h-6" /></button>}
           </div>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-6 -mt-20 space-y-12 relative z-20">
         
-        {/* ONGLET ÉQUIPE */}
         {activeTab === 'staff' && (
           <div className="space-y-8 animate-in fade-in">
               <div className="flex justify-between items-center px-4">
@@ -253,7 +230,7 @@ const PilotagePerformance: React.FC = () => {
                 <div className="bg-white rounded-[3rem] p-20 text-center border-2 border-dashed border-slate-200 shadow-xl">
                    <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><UserPlus className="w-10 h-10 text-slate-200" /></div>
                    <h4 className="text-xl font-bold text-slate-400 mb-6 italic">"Aucun collaborateur parrainé détecté."</h4>
-                   <button onClick={() => navigate('/profile')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl">Voir mon lien de parrainage</button>
+                   <button onClick={() => navigate('/profile')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl">Générer mon lien de parrainage</button>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -273,7 +250,19 @@ const PilotagePerformance: React.FC = () => {
                             </div>
                             <h4 className="text-xl font-bold text-slate-900 mb-1">{collab.firstName} {collab.lastName}</h4>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">{collab.phoneNumber}</p>
-                            <button onClick={() => handleOpenConfig(collab)} className="w-full mt-6 bg-slate-50 group-hover:bg-brand-900 group-hover:text-white text-slate-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 border border-slate-100 group-hover:border-brand-900"><Settings2 className="w-4 h-4" /> Configurer</button>
+                            
+                            <div className="space-y-3 mb-6">
+                               <div className="flex justify-between text-[10px] font-bold">
+                                  <span className="text-slate-400 uppercase">Commission</span>
+                                  <span className="text-brand-900">{isConfigured ? `${config.commission_rate}%` : 'Non définie'}</span>
+                               </div>
+                               <div className="flex justify-between text-[10px] font-bold">
+                                  <span className="text-slate-400 uppercase">Spécialité</span>
+                                  <span className="text-slate-700">{isConfigured ? config.specialty : 'Non définie'}</span>
+                               </div>
+                            </div>
+
+                            <button onClick={() => handleOpenConfig(collab)} className="w-full bg-slate-50 group-hover:bg-brand-900 group-hover:text-white text-slate-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 border border-slate-100 group-hover:border-brand-900"><Settings2 className="w-4 h-4" /> Configurer</button>
                         </div>
                       );
                     })}
@@ -282,7 +271,6 @@ const PilotagePerformance: React.FC = () => {
           </div>
         )}
 
-        {/* ONGLET SERVICES (RESTAURÉ) */}
         {activeTab === 'services' && (
            <div className="bg-white rounded-[3rem] p-10 border shadow-xl animate-in fade-in">
               <div className="flex justify-between items-center mb-10">
@@ -295,20 +283,14 @@ const PilotagePerformance: React.FC = () => {
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all">
                          <button onClick={() => deleteKitaService(s.id).then(loadData)} className="p-2 text-slate-300 hover:text-rose-500"><X className="w-4 h-4" /></button>
                       </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase">{s.category}</p>
-                        <p className="font-bold text-slate-800">{s.name}</p>
-                      </div>
+                      <div><p className="text-[9px] font-black text-slate-400 uppercase">{s.category}</p><p className="font-bold text-slate-800">{s.name}</p></div>
                       <p className="font-black text-indigo-600">{s.defaultPrice.toLocaleString()} F</p>
                    </div>
-                 )) : (
-                    <div className="col-span-full py-20 text-center text-slate-400 italic">"Aucun service dans votre catalogue."</div>
-                 )}
+                 )) : <div className="col-span-full py-20 text-center text-slate-400 italic">"Aucun service dans votre catalogue."</div>}
               </div>
            </div>
         )}
 
-        {/* ONGLET CLIENTS (RESTAURÉ) */}
         {activeTab === 'clients' && (
            <div className="bg-white rounded-[3rem] p-10 border shadow-xl animate-in fade-in">
               <div className="flex justify-between items-center mb-10">
@@ -319,43 +301,27 @@ const PilotagePerformance: React.FC = () => {
                  {clients.length > 0 ? clients.map(c => (
                    <div key={c.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
                       <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center text-amber-500 shadow-sm"><UserCircle className="w-7 h-7" /></div>
-                      <div>
-                         <p className="font-bold text-slate-900">{c.name}</p>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{c.phone || 'Pas de numéro'}</p>
-                      </div>
+                      <div><p className="font-bold text-slate-900">{c.name}</p><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{c.phone || 'Pas de numéro'}</p></div>
                    </div>
-                 )) : (
-                    <div className="col-span-full py-20 text-center text-slate-400 italic">"Votre fichier client est vide."</div>
-                 )}
+                 )) : <div className="col-span-full py-20 text-center text-slate-400 italic">"Votre fichier client est vide."</div>}
               </div>
            </div>
         )}
 
-        {/* ONGLET PERFORMANCE */}
         {activeTab === 'commissions' && (
            <div className="space-y-8 animate-in fade-in">
-              <div className="px-4 flex items-center justify-between">
-                <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Crown className="w-5 h-5 text-amber-500" /> Podium de Performance</h3>
-              </div>
+              <div className="px-4 flex items-center justify-between"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Crown className="w-5 h-5 text-amber-500" /> Podium de Performance</h3></div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {staffStats.map((member, i) => (
                   <div key={member.uid} className={`bg-white rounded-[3rem] p-8 border shadow-sm relative overflow-hidden transition-all hover:shadow-xl ${i === 0 ? 'ring-4 ring-amber-400' : ''}`}>
                     {i === 0 && <div className="absolute top-6 right-6 bg-amber-400 text-white p-2.5 rounded-full animate-bounce shadow-lg"><Award className="w-6 h-6" /></div>}
                     <div className="flex items-center gap-4 mb-8">
-                       <div className="h-14 w-14 rounded-2xl overflow-hidden bg-slate-50 border shadow-inner">
-                          {member.photoURL ? <img src={member.photoURL} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black text-slate-300">{member.firstName?.[0]}</div>}
-                       </div>
+                       <div className="h-14 w-14 rounded-2xl overflow-hidden bg-slate-50 border shadow-inner">{member.photoURL ? <img src={member.photoURL} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black text-slate-300">{member.firstName?.[0]}</div>}</div>
                        <div><h4 className="text-xl font-bold">{member.firstName}</h4><p className="text-[9px] font-black text-emerald-600 uppercase">Config: {member.commission_rate}%</p></div>
                     </div>
                     <div className="space-y-6">
-                       <div className="flex justify-between items-end">
-                          <div><p className="text-[9px] font-black text-slate-400 uppercase mb-1">CA Généré</p><p className="text-3xl font-black text-slate-900 tracking-tighter">{member.totalCA.toLocaleString()} F</p></div>
-                          <div className="text-right"><p className="text-[9px] font-black text-emerald-600 uppercase mb-1">Commissions</p><p className="text-lg font-black text-emerald-600">{member.totalComm.toLocaleString()} F</p></div>
-                       </div>
-                       <div className="bg-slate-900 p-5 rounded-[2rem] text-center shadow-xl group">
-                          <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-1">Revenu Total Collaborateur</p>
-                          <p className="text-3xl font-black text-white tracking-tighter">{(member.totalComm + member.totalTips).toLocaleString()} <span className="text-sm font-bold opacity-30">F</span></p>
-                       </div>
+                       <div className="flex justify-between items-end"><div><p className="text-[9px] font-black text-slate-400 uppercase mb-1">CA Généré</p><p className="text-3xl font-black text-slate-900 tracking-tighter">{member.totalCA.toLocaleString()} F</p></div><div className="text-right"><p className="text-[9px] font-black text-emerald-600 uppercase mb-1">Commissions</p><p className="text-lg font-black text-emerald-600">{member.totalComm.toLocaleString()} F</p></div></div>
+                       <div className="bg-slate-900 p-5 rounded-[2rem] text-center shadow-xl group"><p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-1">Revenu Total Collaborateur</p><p className="text-3xl font-black text-white tracking-tighter">{(member.totalComm + member.totalTips).toLocaleString()} <span className="text-sm font-bold opacity-30">F</span></p></div>
                     </div>
                   </div>
                 ))}
@@ -364,15 +330,13 @@ const PilotagePerformance: React.FC = () => {
         )}
       </div>
 
-      {/* MODAL CONFIGURATION STAFF */}
+      {/* MODAL CONFIGURATION STAFF AVEC INJECTION */}
       {showConfigModal && selectedCollab && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
               <button onClick={() => setShowConfigModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <div className="text-center mb-10">
-                 <div className="h-20 w-20 rounded-[2rem] mx-auto mb-6 bg-slate-100 p-1 shadow-inner overflow-hidden border-2 border-white">
-                    {selectedCollab.photoURL ? <img src={selectedCollab.photoURL} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-3xl font-black text-slate-300">{selectedCollab.firstName?.[0]}</div>}
-                 </div>
+                 <div className="h-20 w-20 rounded-[2rem] mx-auto mb-6 bg-slate-100 p-1 shadow-inner overflow-hidden border-2 border-white">{selectedCollab.photoURL ? <img src={selectedCollab.photoURL} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-3xl font-black text-slate-300">{selectedCollab.firstName?.[0]}</div>}</div>
                  <h2 className="text-2xl font-serif font-bold text-slate-900">{selectedCollab.firstName} {selectedCollab.lastName}</h2>
               </div>
               <form onSubmit={handleSaveConfig} className="space-y-8">
@@ -383,34 +347,24 @@ const PilotagePerformance: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-4">Domaine d'expertise</label>
-                      <select value={configData.specialty} onChange={e => setConfigData({...configData, specialty: e.target.value})} className="w-full px-8 py-5 rounded-[1.5rem] bg-slate-50 border-none outline-none font-bold appearance-none cursor-pointer shadow-inner">
-                         <option>Coiffure</option><option>Esthétique</option><option>Onglerie</option><option>Mixte</option>
-                      </select>
+                      <select value={configData.specialty} onChange={e => setConfigData({...configData, specialty: e.target.value})} className="w-full px-8 py-5 rounded-[1.5rem] bg-slate-50 border-none outline-none font-bold appearance-none cursor-pointer shadow-inner"><option>Coiffure</option><option>Esthétique</option><option>Onglerie</option><option>Mixte</option></select>
                     </div>
                     <div className="bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 flex items-center justify-between">
-                       <div className="flex items-center gap-4">
-                          <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${configData.isAdmin ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-slate-300'}`}><ShieldCheck className="w-6 h-6" /></div>
-                          <div><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Droits Admin</p><p className="text-xs font-bold text-slate-600">Autoriser la gestion caisse</p></div>
-                       </div>
+                       <div className="flex items-center gap-4"><div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${configData.isAdmin ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-slate-300'}`}><ShieldCheck className="w-6 h-6" /></div><div><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Droits Admin</p><p className="text-xs font-bold text-slate-600">Autoriser la gestion caisse</p></div></div>
                        <button type="button" onClick={() => setConfigData({...configData, isAdmin: !configData.isAdmin})} className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${configData.isAdmin ? 'bg-amber-500' : 'bg-slate-200'}`}><span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${configData.isAdmin ? 'translate-x-7' : 'translate-x-1'}`} /></button>
                     </div>
                  </div>
-                 <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-[2rem] font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-black transition-all">
-                    {saving ? <Loader2 className="animate-spin w-5 h-5" /> : <UserCheck className="w-5 h-5 text-amber-400" />} Valider les Paramètres
-                 </button>
+                 <button type="submit" disabled={saving} className="w-full bg-brand-900 text-white py-6 rounded-[2rem] font-black uppercase text-[11px] shadow-2xl flex items-center justify-center gap-4 hover:bg-black transition-all">{saving ? <Loader2 className="animate-spin w-5 h-5" /> : <UserCheck className="w-5 h-5 text-amber-400" />} Valider les Paramètres</button>
               </form>
            </div>
         </div>
       )}
 
-      {/* MODAL AJOUT SERVICE */}
+      {/* MODAUX AJOUT SERVICE/CLIENT ... RESTENT IDENTIQUES */}
       {showAddServiceModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 animate-in zoom-in-95">
-              <div className="flex justify-between items-center mb-8">
-                 <h2 className="text-2xl font-serif font-bold">Nouveau Service</h2>
-                 <button onClick={() => setShowAddServiceModal(false)} className="text-slate-300 hover:text-rose-500"><X /></button>
-              </div>
+              <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-serif font-bold">Nouveau Service</h2><button onClick={() => setShowAddServiceModal(false)} className="text-slate-300 hover:text-rose-500"><X /></button></div>
               <form onSubmit={handleAddService} className="space-y-6">
                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom de la prestation</label><input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border-none outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Ex: Brushing Elite" required /></div>
                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prix de base (F)</label><input type="number" value={newService.defaultPrice || ''} onChange={e => setNewService({...newService, defaultPrice: Number(e.target.value)})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-black text-indigo-600 text-xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="0" required /></div>
@@ -421,14 +375,10 @@ const PilotagePerformance: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL AJOUT CLIENT */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 animate-in zoom-in-95">
-              <div className="flex justify-between items-center mb-8">
-                 <h2 className="text-2xl font-serif font-bold">Ajouter Client VIP</h2>
-                 <button onClick={() => setShowAddClientModal(false)} className="text-slate-300 hover:text-rose-500"><X /></button>
-              </div>
+              <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-serif font-bold">Ajouter Client VIP</h2><button onClick={() => setShowAddClientModal(false)} className="text-slate-300 hover:text-rose-500"><X /></button></div>
               <form onSubmit={handleAddClient} className="space-y-6">
                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom complet</label><input type="text" value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border-none outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="Mme Koné..." required /></div>
                  <div><label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Numéro WhatsApp</label><input type="tel" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border-none outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="07..." /></div>
