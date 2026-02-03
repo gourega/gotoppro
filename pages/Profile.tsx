@@ -131,11 +131,11 @@ const Profile: React.FC = () => {
   const copyRefLink = (type: 'collab' | 'owner') => {
     let link = "";
     if (type === 'collab') {
-      // Pour les collaborateurs, on les envoie directement aux résultats avec le pack injecté
+      // Pour les collaborateurs : Redirection directe vers Results avec injection du pack
       link = `${window.location.origin}/#/results?ref=${user.phoneNumber}&pack=collaborateur`;
     } else {
-      // Pour les propriétaires, cycle normal via login/diagnostic
-      link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
+      // Pour les propriétaires : Redirection vers le début du diagnostic (formulaire)
+      link = `${window.location.origin}/#/quiz?ref=${user.phoneNumber}`;
     }
     
     navigator.clipboard.writeText(link);
@@ -183,7 +183,7 @@ const Profile: React.FC = () => {
               </div>
             </div>
             <div className="pb-4 flex-grow text-center md:text-left">
-              <div className="flex items-center gap-3 mb-1">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
                 <h1 className="text-4xl font-serif font-bold text-slate-900">{user.firstName} {user.lastName}</h1>
                 {user.isAdmin && <Sparkles className="text-amber-500 w-6 h-6 fill-current" />}
               </div>

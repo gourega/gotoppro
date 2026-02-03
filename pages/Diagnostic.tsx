@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+// @ts-ignore
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DIAGNOSTIC_QUESTIONS, RAYMOND_LOGO, RAYMOND_ADDRESS, RAYMOND_PHONE } from '../constants';
 import { ChevronLeft, Info, AlertCircle, MapPin, Phone, Star, User, Sparkles, Scissors, UserCheck, Heart, ArrowRight } from 'lucide-react';
 
@@ -12,6 +13,16 @@ const Diagnostic: React.FC = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [results, setResults] = useState<{questionId: number, answer: boolean}[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Capture du parrainage dès l'entrée sur le quiz
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('gotop_temp_ref', ref);
+    }
+  }, [location]);
 
   const handleStart = () => {
     if (!firstName || !gender || !domain) return;
