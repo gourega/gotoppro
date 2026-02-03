@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -173,7 +172,7 @@ const Dashboard: React.FC = () => {
            <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            
            {(user.isAdmin || user.role === 'STAFF_ADMIN') && (
-             <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSE" sub="Sortie Caisse" onClick={() => navigate('/caisse')} color="bg-rose-500" />
+             <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSE" sub="Sortie Caisse" onClick={() => navigate('/caisse?mode=expense')} color="bg-rose-500" />
            )}
 
            <QuickActionBtn icon={<Scissors className="w-6 h-6" />} label="SERVICES" sub="Tarifs Salon" onClick={() => navigate('/pilotage?tab=services')} color="bg-indigo-500" />
@@ -349,9 +348,16 @@ const Dashboard: React.FC = () => {
                     ? "Suivez vos commissions et pourboires en temps réel pour mesurer votre montée en gamme." 
                     : "Suivez vos recettes, vos dépenses et recouvrez vos ardoises pour garantir la santé financière de votre empire."}
                  </p>
-                 <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
-                   {isStaff ? 'Ouvrir mon Journal' : 'Ouvrir la Caisse KITA'} <ArrowRight className="w-4 h-4 text-amber-400" />
-                 </button>
+                 <div className="flex gap-4 justify-center md:justify-start">
+                    <button onClick={() => navigate('/caisse')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
+                      {isStaff ? 'Journal de bord' : 'Ouvrir la Caisse'} <ArrowRight className="w-4 h-4 text-amber-400" />
+                    </button>
+                    {!isStaff && (
+                      <button onClick={() => navigate('/caisse?mode=expense')} className="bg-rose-50 text-rose-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-rose-100 shadow-sm hover:bg-rose-100 transition-all flex items-center gap-3">
+                        <MinusCircle className="w-4 h-4" /> Dépense
+                      </button>
+                    )}
+                 </div>
               </div>
               <div className="h-40 w-40 bg-amber-50 rounded-[3rem] flex items-center justify-center shadow-inner shrink-0 group-hover:rotate-12 transition-all"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
            </div>
