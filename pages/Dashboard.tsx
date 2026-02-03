@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { updateUserProfile, getKitaTransactions, getProfileByPhone } from '../services/supabase';
+import { updateUserProfile, getKitaTransactions, getProfileByPhone, addKitaTransaction } from '../services/supabase';
 import { DAILY_CHALLENGES, TRAINING_CATALOG, BADGES, COACH_KITA_AVATAR, COACH_KITA_SLOGAN } from '../constants';
 import { analyzeBusinessTrends } from '../services/geminiService';
 import KitaTopNav from '../components/KitaTopNav';
+import DocumentVault from '../components/DocumentVault';
 import { 
   ArrowRight,
   Wallet,
@@ -27,7 +29,8 @@ import {
   Book,
   Check,
   Gem,
-  Star
+  Star,
+  Shield
 } from 'lucide-react';
 import { UserActionCommitment, KitaTransaction } from '../types';
 
@@ -40,6 +43,7 @@ const Dashboard: React.FC = () => {
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [salonTransactions, setSalonTransactions] = useState<KitaTransaction[]>([]);
   const [loadingTrans, setLoadingTrans] = useState(false);
+  const [isInjectingZero, setIsInjectingZero] = useState(false);
   
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
   const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
@@ -71,7 +75,6 @@ const Dashboard: React.FC = () => {
     try {
       let targetUid = user.uid;
       
-      // Si c'est un employé, on doit charger les transactions du salon du gérant parrain
       if (isStaff && user.referredBy) {
          const sponsor = await getProfileByPhone(user.referredBy);
          if (sponsor) targetUid = sponsor.uid;
@@ -79,6 +82,30 @@ const Dashboard: React.FC = () => {
 
       const trans = await getKitaTransactions(targetUid);
       setSalonTransactions(trans);
+      
+      // LOGIQUE : Injection de la Facture en Dépense (Opération Zéro)
+      if (!isStaff && user.isActive && !isInjectingZero) {
+        const hasZeroOp = trans.some(t => t.label.includes("Investissement Initial Go'Top Pro"));
+        if (!hasZeroOp) {
+          setIsInjectingZero(true);
+          // Calcul du montant basé sur le statut
+          const amount = isElite ? 15000 : (user.purchasedModuleIds.length * 500);
+          if (amount > 0) {
+            await addKitaTransaction(user.uid, {
+              type: 'EXPENSE',
+              amount: amount,
+              label: "Investissement Initial Go'Top Pro (Facture #001)",
+              category: "Formation & Stratégie",
+              paymentMethod: "Wave CI",
+              date: user.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+              staffName: "Gérant"
+            });
+            // Recharger les transactions pour inclure l'opération zéro
+            const updatedTrans = await getKitaTransactions(user.uid);
+            setSalonTransactions(updatedTrans);
+          }
+        }
+      }
       
       if (trans.length > 5 && !isStaff) {
         const insight = await analyzeBusinessTrends(trans, user.firstName || 'Gérant');
@@ -167,11 +194,15 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-[-100px] pb-32 space-y-12 relative z-20 w-full">
         
+        {/* COFFRE-FORT STRATÉGIQUE (ACTES OFFICIELS) */}
+        {!isStaff && (
+          <DocumentVault user={user} isElite={isElite} />
+        )}
+
         {/* QUICK ACTIONS */}
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
            <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            
-           {/* CORRECTION : On affiche le bouton Dépenses pour tous les gérants (!isStaff) et admins */}
            {(!isStaff || user.role === 'STAFF_ADMIN') && (
              <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSES" sub="Sortie Caisse" onClick={() => navigate('/caisse?mode=expense')} color="bg-rose-500" />
            )}

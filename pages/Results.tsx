@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -102,7 +103,6 @@ const Results: React.FC = () => {
     if (refParam) localStorage.setItem('gotop_temp_ref', refParam);
     const savedRef = localStorage.getItem('gotop_temp_ref');
 
-    // Gestion du flux collaborateur direct
     if (packParam === 'collaborateur' || (savedRef && !localStorage.getItem('temp_quiz_results'))) {
       setActivePack('collaborateur');
       setIsCollabFlow(true);
@@ -141,6 +141,11 @@ const Results: React.FC = () => {
             userContext
           );
           setAiAdvice(advice ?? null);
+          
+          // Si l'utilisateur est déjà connecté, on scelle l'audit immédiatement
+          if (user && advice) {
+            await updateUserProfile(user.uid, { strategicAudit: advice });
+          }
         } catch (err) {
           setAiAdvice("L'analyse du Mentor est temporairement indisponible.");
         } finally {
@@ -150,7 +155,6 @@ const Results: React.FC = () => {
       getAdvice();
     } else {
       setLoadingAdvice(false);
-      // Message de secours si on arrive sans diagnostic
       setAiAdvice(packParam === 'collaborateur' 
         ? "Bienvenue Futur Collaborateur Élite !\n\nTon gérant t'invite à valider tes compétences avec Coach Kita. Ce pack te donne accès aux **16 Masterclass** et à **ta caisse personnelle** pour suivre tes commissions." 
         : "Préparez votre parcours vers l'Excellence.");
@@ -172,7 +176,7 @@ const Results: React.FC = () => {
       setIsPlaying(false);
       return;
     }
-    if (!aiAdvice || isCollabFlow) return; // Pas d'audio pour le flux collab direct
+    if (!aiAdvice || isCollabFlow) return;
 
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -282,9 +286,30 @@ const Results: React.FC = () => {
 
       const existing = await getProfileByPhone(cleanPhone);
       if (existing) {
-        await updateUserProfile(existing.uid, { establishmentName: regStoreName, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
+        await updateUserProfile(existing.uid, { 
+          establishmentName: regStoreName, 
+          pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])],
+          strategicAudit: aiAdvice || existing.strategicAudit 
+        });
       } else {
-        const newUser: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: '1234', establishmentName: regStoreName, firstName: userContext?.firstName || (isCollabFlow ? 'Collaborateur' : 'Gérant'), role: 'CLIENT', isActive: false, isAdmin: false, isKitaPremium: false, pendingModuleIds: pendingIds, createdAt: new Date().toISOString(), purchasedModuleIds: [], actionPlan: [], badges: [], referredBy: ref || '' };
+        const newUser: any = { 
+          uid: generateUUID(), 
+          phoneNumber: cleanPhone, 
+          pinCode: '1234', 
+          establishmentName: regStoreName, 
+          firstName: userContext?.firstName || (isCollabFlow ? 'Collaborateur' : 'Gérant'), 
+          role: 'CLIENT', 
+          isActive: false, 
+          isAdmin: false, 
+          isKitaPremium: false, 
+          pendingModuleIds: pendingIds, 
+          createdAt: new Date().toISOString(), 
+          purchasedModuleIds: [], 
+          actionPlan: [], 
+          badges: [], 
+          referredBy: ref || '',
+          strategicAudit: aiAdvice || ''
+        };
         await saveUserProfile(newUser);
       }
       setRegStep('success');
@@ -297,7 +322,10 @@ const Results: React.FC = () => {
     setLoading(true);
     try {
       let newPending = activePack !== 'none' ? ["REQUEST_" + activePack.toUpperCase()] : cart.map(m => m.id);
-      await updateUserProfile(user.uid, { pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])] });
+      await updateUserProfile(user.uid, { 
+        pendingModuleIds: [...new Set([...(user.pendingModuleIds || []), ...newPending])],
+        strategicAudit: aiAdvice || user.strategicAudit
+      });
       setRegStep('success');
       setIsRegisterModalOpen(true);
     } catch (err: any) { setDbError("Erreur lors de la mise à jour."); } finally { setLoading(false); }
