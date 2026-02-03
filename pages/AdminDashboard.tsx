@@ -183,21 +183,17 @@ const AdminDashboard: React.FC = () => {
       <div className="max-w-[1600px] mx-auto space-y-12">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
           <div>
-            <div className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-3">
-               <Activity className="w-4 h-4 animate-pulse" /> Live Operations — Global HQ
-            </div>
+            {/* PORTE DÉROBÉE VERS LA WAR ROOM SUR LE TEXTE "LIVE OPERATIONS" */}
+            <button 
+              onClick={() => navigate('/war-room')}
+              className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-3 hover:text-amber-500 transition-colors group cursor-pointer"
+            >
+               <Activity className="w-4 h-4 animate-pulse group-hover:scale-125 transition-transform" /> 
+               Live Operations — Global HQ
+            </button>
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
-            {/* BOUTON SECRET WAR ROOM */}
-            <button 
-              onClick={() => navigate('/war-room')}
-              className="h-14 w-14 rounded-2xl bg-slate-900 text-amber-500 flex items-center justify-center shadow-xl hover:scale-105 transition-all border border-amber-500/20"
-              title="Vision 2027"
-            >
-              <Eye className="w-6 h-6" />
-            </button>
-            
             {stats.pending > 0 && (
               <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
                 {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}

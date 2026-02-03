@@ -19,7 +19,6 @@ import {
   Activity,
   Globe,
   Star,
-  // Fix: Added missing CheckCircle2 icon
   CheckCircle2
 } from 'lucide-react';
 
@@ -33,7 +32,8 @@ const WarRoom: React.FC = () => {
     const fetchStats = async () => {
       try {
         const users = await getAllUsers();
-        setTotalManagers(users.filter(u => u.role === 'CLIENT' || u.role === 'ADMIN').length);
+        // Filtrer les admins pour ne compter que les gérants réels pour les paliers
+        setTotalManagers(users.filter(u => u.role === 'CLIENT').length);
       } catch (e) {
         console.warn("Stats load error");
       } finally {
@@ -179,7 +179,6 @@ const WarRoom: React.FC = () => {
                       ? 'bg-amber-500 border-amber-400 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.2)]' 
                       : 'bg-slate-900 border-white/10 text-slate-600'
                    }`}>
-                      {/* Fixed: CheckCircle2 is now imported above */}
                       {m.status === 'ACTIVE' ? <CheckCircle2 className="w-8 h-8" /> : m.icon}
                    </div>
                    
