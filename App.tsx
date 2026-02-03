@@ -1,5 +1,5 @@
-
 import React from 'react';
+// @ts-ignore
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
@@ -13,6 +13,7 @@ import Vision from './pages/Vision';
 import Benefits from './pages/Benefits';
 import AuditMiroir from './pages/AuditMiroir';
 import AdminDashboard from './pages/AdminDashboard';
+import WarRoom from './pages/WarRoom';
 import Caisse from './pages/Caisse';
 import PilotagePerformance from './pages/PilotagePerformance';
 import Magasin from './pages/Magasin';
@@ -111,6 +112,12 @@ const AppContent: React.FC = () => {
           <Route path="/admin" element={
             <ProtectedRoute adminOnly>
               <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/war-room" element={
+            <ProtectedRoute adminOnly>
+              <WarRoom />
             </ProtectedRoute>
           } />
 
