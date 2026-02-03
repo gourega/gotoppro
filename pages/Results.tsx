@@ -24,7 +24,8 @@ import {
   Package,
   TrendingDown,
   Gift,
-  UserCircle
+  UserCircle,
+  Heart
 } from 'lucide-react';
 import { TRAINING_CATALOG, DIAGNOSTIC_QUESTIONS, COACH_KITA_AVATAR, COACH_KITA_WAVE_NUMBER, COACH_KITA_PHONE } from '../constants';
 import { TrainingModule } from '../types';
@@ -74,6 +75,7 @@ const Results: React.FC = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(true);
   const [recommendedModuleIds, setRecommendedModuleIds] = useState<string[]>([]);
+  const [isCollabFlow, setIsCollabFlow] = useState(false);
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [regStep, setRegStep] = useState<'form' | 'success'>('form');
@@ -95,14 +97,20 @@ const Results: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const rechargeId = params.get('recharge');
     const packParam = params.get('pack');
-    const refParam = params.get('ref') || localStorage.getItem('gotop_temp_ref');
+    const refParam = params.get('ref');
     
-    if (packParam === 'full') setActivePack('full');
+    if (refParam) localStorage.setItem('gotop_temp_ref', refParam);
+    const savedRef = localStorage.getItem('gotop_temp_ref');
+
+    // Gestion du flux collaborateur direct
+    if (packParam === 'collaborateur' || (savedRef && !localStorage.getItem('temp_quiz_results'))) {
+      setActivePack('collaborateur');
+      setIsCollabFlow(true);
+    } else if (packParam === 'full') setActivePack('full');
     else if (packParam === 'performance') setActivePack('performance'); 
     else if (packParam === 'elite') setActivePack('elite');
     else if (packParam === 'stock') setActivePack('stock');
     else if (packParam === 'crm') setActivePack('crm');
-    else if (refParam) setActivePack('collaborateur');
 
     let initialCart: TrainingModule[] = [];
     const rawResults = localStorage.getItem('temp_quiz_results');
@@ -142,7 +150,10 @@ const Results: React.FC = () => {
       getAdvice();
     } else {
       setLoadingAdvice(false);
-      setAiAdvice("Préparez votre parcours vers l'Excellence.");
+      // Message de secours si on arrive sans diagnostic
+      setAiAdvice(packParam === 'collaborateur' 
+        ? "Bienvenue Futur Collaborateur Élite !\n\nTon gérant t'invite à valider tes compétences avec Coach Kita. Ce pack te donne accès aux **16 Masterclass** et à **ta caisse personnelle** pour suivre tes commissions." 
+        : "Préparez votre parcours vers l'Excellence.");
     }
 
     return () => {
@@ -161,7 +172,7 @@ const Results: React.FC = () => {
       setIsPlaying(false);
       return;
     }
-    if (!aiAdvice) return;
+    if (!aiAdvice || isCollabFlow) return; // Pas d'audio pour le flux collab direct
 
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -273,7 +284,7 @@ const Results: React.FC = () => {
       if (existing) {
         await updateUserProfile(existing.uid, { establishmentName: regStoreName, pendingModuleIds: [...new Set([...(existing.pendingModuleIds || []), ...pendingIds])] });
       } else {
-        const newUser: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: '1234', establishmentName: regStoreName, firstName: userContext?.firstName || 'Gérant', role: 'CLIENT', isActive: false, isAdmin: false, isKitaPremium: false, pendingModuleIds: pendingIds, createdAt: new Date().toISOString(), purchasedModuleIds: [], actionPlan: [], badges: [], referredBy: ref || '' };
+        const newUser: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: '1234', establishmentName: regStoreName, firstName: userContext?.firstName || (isCollabFlow ? 'Collaborateur' : 'Gérant'), role: 'CLIENT', isActive: false, isAdmin: false, isKitaPremium: false, pendingModuleIds: pendingIds, createdAt: new Date().toISOString(), purchasedModuleIds: [], actionPlan: [], badges: [], referredBy: ref || '' };
         await saveUserProfile(newUser);
       }
       setRegStep('success');
@@ -328,19 +339,26 @@ const Results: React.FC = () => {
           </div>
           <div className="text-center md:text-left text-white">
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6">Plan de <span className="text-brand-500 italic">Succès</span></h1>
-            <p className="text-slate-300 text-lg opacity-90 max-w-2xl">J'ai analysé tes besoins, {userContext?.firstName || 'Gérant'}. Voici le catalogue pour ton salon.</p>
+            <p className="text-slate-300 text-lg opacity-90 max-w-2xl">
+              {isCollabFlow 
+                ? "Ton gérant t'a choisi pour rejoindre l'Élite. Voici ton offre dédiée."
+                : `J'ai analysé tes besoins, ${userContext?.firstName || 'Gérant'}. Voici le catalogue pour ton salon.`
+              }
+            </p>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 -mt-24 space-y-12 relative z-20">
-        <section className="bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 border border-slate-100">
+        <section className={`bg-white rounded-[4rem] shadow-2xl p-10 md:p-16 border-2 transition-all ${isCollabFlow ? 'border-emerald-500' : 'border-slate-100'}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
             <div className="flex items-center gap-4">
-              <Zap className="w-6 h-6 text-brand-600" />
-              <h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">Analyse de Coach Kita</h2>
+              {isCollabFlow ? <Heart className="w-6 h-6 text-emerald-500 fill-current" /> : <Zap className="w-6 h-6 text-brand-600" />}
+              <h2 className="text-[11px] font-black text-brand-900 uppercase tracking-[0.4em]">
+                {isCollabFlow ? "Invitation de ton Gérant" : "Analyse de Coach Kita"}
+              </h2>
             </div>
-            {aiAdvice && !loadingAdvice && (
+            {aiAdvice && !loadingAdvice && !isCollabFlow && (
               <button onClick={handlePlayAdvice} disabled={isAudioLoading} className={`flex items-center gap-4 px-8 py-4 rounded-2xl font-black text-[10px] uppercase transition-all shadow-xl ${isPlaying ? 'bg-rose-500 text-white' : 'bg-emerald-600 text-white'}`}>
                 {isAudioLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 {isPlaying ? "En lecture..." : "Écouter l'analyse"}

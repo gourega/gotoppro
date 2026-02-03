@@ -33,7 +33,6 @@ import {
   Eye,
   EyeOff,
   UserCircle,
-  // Fix: added Crown to the list of icons imported from lucide-react
   Crown
 } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -130,7 +129,15 @@ const Profile: React.FC = () => {
   };
 
   const copyRefLink = (type: 'collab' | 'owner') => {
-    const link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
+    let link = "";
+    if (type === 'collab') {
+      // Pour les collaborateurs, on les envoie directement aux résultats avec le pack injecté
+      link = `${window.location.origin}/#/results?ref=${user.phoneNumber}&pack=collaborateur`;
+    } else {
+      // Pour les propriétaires, cycle normal via login/diagnostic
+      link = `${window.location.origin}/#/login?ref=${user.phoneNumber}`;
+    }
+    
     navigator.clipboard.writeText(link);
     setCopying(type);
     setTimeout(() => setCopying(null), 2000);
