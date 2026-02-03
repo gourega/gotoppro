@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -19,7 +18,8 @@ import {
   bulkAddKitaServices,
   getProfileByPhone,
   updateUserProfile,
-  getAllUsers
+  getAllUsers,
+  getReferrals
 } from '../services/supabase';
 import KitaTopNav from '../components/KitaTopNav';
 import { 
@@ -44,7 +44,9 @@ import {
   Copy,
   Pencil,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  UserPlus,
+  ArrowRight
 } from 'lucide-react';
 import { KitaService, KitaTransaction, UserProfile } from '../types';
 import { COACH_KITA_PHONE } from '../constants';
@@ -54,27 +56,21 @@ const PilotagePerformance: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
   
-  const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'dettes' | 'services'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'commissions' | 'clients' | 'services'>('staff');
   
   const [staff, setStaff] = useState<any[]>([]);
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
+  const [referrals, setReferrals] = useState<UserProfile[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [services, setServices] = useState<KitaService[]>([]);
   const [transactions, setTransactions] = useState<KitaTransaction[]>([]);
   
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showEditStaffModal, setShowEditStaffModal] = useState(false);
-  const [showAddClientModal, setShowAddClientModal] = useState(false);
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
-  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
   
   const [newStaff, setNewStaff] = useState({ name: '', phone: '', commission_rate: 25, specialty: 'Coiffure' });
   const [editingStaff, setEditingStaff] = useState<any | null>(null);
-  const [newClient, setNewClient] = useState({ name: '', phone: '', notes: '' });
-  const [newService, setNewService] = useState({ name: '', defaultPrice: 0, category: 'Coiffure' });
-  const [editingService, setEditingService] = useState<KitaService | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<{message: string, code?: string} | null>(null);
 
@@ -86,33 +82,62 @@ const PilotagePerformance: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [staffData, clientsData, serviceData, transData, profilesData] = await Promise.all([
+      const [staffData, clientsData, serviceData, transData, profilesData, referralsData] = await Promise.all([
         getKitaStaff(user.uid),
         getKitaClients(user.uid),
         getKitaServices(user.uid),
         getKitaTransactions(user.uid),
-        getAllUsers()
+        getAllUsers(),
+        getReferrals(user.uid)
       ]);
       setStaff(staffData);
       setClients(clientsData);
       setServices(serviceData);
       setTransactions(transData);
       setAllProfiles(profilesData);
+      setReferrals(referralsData);
     } catch (e: any) {
       setSaveError({ message: "Erreur de chargement." });
     } finally { setLoading(false); }
   };
 
+  // Identification des parrainages pas encore dans kita_staff
+  const orphanReferrals = useMemo(() => {
+    return referrals.filter(ref => {
+      // Uniquement les collaborateurs (pas les autres gérants parrainés)
+      if (ref.role !== 'STAFF_ELITE' && ref.role !== 'STAFF_ADMIN') return false;
+      // Pas encore présent dans la table kita_staff (comparaison par numéro de téléphone)
+      return !staff.some(s => s.phone?.replace(/\D/g,'').endsWith(ref.phoneNumber.replace(/\D/g,'').slice(-10)));
+    });
+  }, [referrals, staff]);
+
   const handlePromoteToAdmin = async (phone: string) => {
     const profile = allProfiles.find(p => p.phoneNumber.replace(/\D/g,'').endsWith(phone.replace(/\D/g,'').slice(-10)));
     if (!profile) {
-       alert("Aucun compte App trouvé pour ce numéro. Le collaborateur doit s'abonner d'abord.");
+       alert("Aucun compte App trouvé pour ce numéro.");
        return;
     }
     if (window.confirm(`Nommer ${profile.firstName} comme Staff Admin ? Il pourra gérer les dépenses et le marketing IA.`)) {
        await updateUserProfile(profile.uid, { role: 'STAFF_ADMIN' });
        loadData();
-       alert("Promotion effectuée !");
+    }
+  };
+
+  const handleImportReferral = async (ref: UserProfile) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await addKitaStaff(user!.uid, {
+        name: ref.firstName || 'Sans nom',
+        phone: ref.phoneNumber,
+        commission_rate: 25,
+        specialty: 'Coiffure'
+      });
+      await loadData();
+    } catch (e) {
+      alert("Erreur lors de l'intégration.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -190,53 +215,102 @@ const PilotagePerformance: React.FC = () => {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 -mt-20 space-y-12 relative z-20">
+        
+        {/* BRIDGE D'INTÉGRATION : Nouveaux parrainages */}
+        {orphanReferrals.length > 0 && activeTab === 'staff' && (
+           <section className="bg-emerald-50 border-2 border-emerald-500 rounded-[3rem] p-8 md:p-12 shadow-2xl animate-in slide-in-from-top-4 duration-700">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                 <div className="h-20 w-20 bg-white rounded-[2rem] flex items-center justify-center text-emerald-600 shadow-lg shrink-0">
+                    <UserPlus className="w-10 h-10" />
+                 </div>
+                 <div className="flex-grow text-center md:text-left">
+                    <h2 className="text-2xl font-serif font-bold text-emerald-900 mb-2">Un collaborateur a rejoint l'Élite !</h2>
+                    <p className="text-emerald-700 font-medium max-w-xl">Coach Kita a détecté des parrainages actifs qui n'ont pas encore été intégrés à votre tableau de bord financier. Intégrez-les pour piloter leurs revenus.</p>
+                 </div>
+              </div>
+              <div className="mt-10 grid gap-4">
+                 {orphanReferrals.map(ref => (
+                    <div key={ref.uid} className="bg-white p-6 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between border border-emerald-100 shadow-sm group">
+                       <div className="flex items-center gap-6">
+                          <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 overflow-hidden">
+                             {ref.photoURL ? <img src={ref.photoURL} className="w-full h-full object-cover" /> : ref.firstName?.[0]}
+                          </div>
+                          <div>
+                             <p className="font-bold text-slate-900">{ref.firstName} {ref.lastName}</p>
+                             <p className="text-[10px] font-black text-emerald-600 uppercase">{ref.phoneNumber}</p>
+                          </div>
+                       </div>
+                       <button 
+                        onClick={() => handleImportReferral(ref)}
+                        disabled={saving}
+                        className="mt-4 sm:mt-0 bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-emerald-700 transition-all active:scale-95"
+                       >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                          Intégrer à mon équipe
+                       </button>
+                    </div>
+                 ))}
+              </div>
+           </section>
+        )}
+
         {activeTab === 'staff' && (
           <div className="space-y-8 animate-in fade-in">
               <div className="flex justify-between items-center px-4">
-                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Mon Staff</h3>
-                 <button onClick={() => setShowAddStaffModal(true)} className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl flex items-center gap-2"><Plus className="w-4 h-4" /> Nouveau</button>
+                 <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Users className="w-5 h-5 text-emerald-500" /> Équipe Opérationnelle</h3>
+                 <button onClick={() => setShowAddStaffModal(true)} className="bg-brand-900 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl flex items-center gap-2 hover:bg-black transition-all"><Plus className="w-4 h-4" /> Manuel</button>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {staff.map(member => {
-                     const profile = allProfiles.find(p => p.phoneNumber.replace(/\D/g,'').endsWith(member.phone?.replace(/\D/g,'').slice(-10) || 'INVALID'));
-                     return (
-                       <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all relative overflow-hidden">
-                           <div className="flex justify-between items-start mb-6">
-                              <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center">
-                                 {profile?.role === 'STAFF_ADMIN' ? <ShieldCheck className="w-6 h-6" /> : <Scissors className="w-6 h-6" />}
-                              </div>
-                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <button onClick={() => { setEditingStaff(member); setShowEditStaffModal(true); }} className="p-2 text-slate-400 hover:text-brand-600"><Pencil className="w-4 h-4" /></button>
-                                 <button onClick={() => deleteKitaStaff(member.id).then(loadData)} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                           </div>
-                           <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
-                           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4">{member.specialty} • {member.commission_rate}%</p>
-                           
-                           {profile ? (
-                             <div className="bg-emerald-50 p-4 rounded-2xl flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                   <span className="text-[10px] font-black text-emerald-700 uppercase">Compte App Actif</span>
+              
+              {staff.length === 0 && orphanReferrals.length === 0 ? (
+                <div className="bg-white rounded-[3rem] p-20 text-center border-2 border-dashed border-slate-200">
+                   <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><Users className="w-10 h-10 text-slate-200" /></div>
+                   <h4 className="text-xl font-bold text-slate-400 mb-6 italic">"Votre équipe est vide. Utilisez votre lien de parrainage pour les inviter."</h4>
+                   <button onClick={() => navigate('/profile')} className="bg-brand-50 text-brand-600 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">Voir mon lien de parrainage</button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {staff.map(member => {
+                      const profile = allProfiles.find(p => p.phoneNumber.replace(/\D/g,'').endsWith(member.phone?.replace(/\D/g,'').slice(-10) || 'INVALID'));
+                      return (
+                        <div key={member.id} className="bg-white rounded-[2.5rem] p-8 border group hover:shadow-xl transition-all relative overflow-hidden">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="h-12 w-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center">
+                                  {profile?.role === 'STAFF_ADMIN' ? <ShieldCheck className="w-6 h-6" /> : <Scissors className="w-6 h-6" />}
                                 </div>
-                                {profile.role !== 'STAFF_ADMIN' && (
-                                   <button onClick={() => handlePromoteToAdmin(member.phone)} className="bg-white text-emerald-600 px-3 py-1 rounded-full text-[8px] font-black uppercase shadow-sm border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all">Nommer Admin</button>
-                                )}
-                                {profile.role === 'STAFF_ADMIN' && <span className="text-[8px] font-black text-emerald-600 uppercase">Admin Salon</span>}
-                             </div>
-                           ) : member.phone && (
-                             <div className="mt-4 flex items-center gap-2 text-slate-400 bg-slate-50 p-4 rounded-2xl">
-                                <Smartphone className="w-3 h-3" />
-                                <span className="text-[10px] font-bold">En attente d'abonnement App</span>
-                             </div>
-                           )}
-                       </div>
-                     );
-                  })}
-              </div>
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => { setEditingStaff(member); setShowEditStaffModal(true); }} className="p-2 text-slate-400 hover:text-brand-600"><Pencil className="w-4 h-4" /></button>
+                                  <button onClick={() => deleteKitaStaff(member.id).then(loadData)} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                            </div>
+                            <h4 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h4>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4">{member.specialty} • {member.commission_rate}%</p>
+                            
+                            {profile ? (
+                              <div className="bg-emerald-50 p-4 rounded-2xl flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <span className="text-[10px] font-black text-emerald-700 uppercase">Compte App Actif</span>
+                                  </div>
+                                  {profile.role !== 'STAFF_ADMIN' && (
+                                    <button onClick={() => handlePromoteToAdmin(member.phone)} className="bg-white text-emerald-600 px-3 py-1 rounded-full text-[8px] font-black uppercase shadow-sm border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all">Nommer Admin</button>
+                                  )}
+                                  {profile.role === 'STAFF_ADMIN' && <span className="text-[8px] font-black text-emerald-600 uppercase">Admin Salon</span>}
+                              </div>
+                            ) : member.phone && (
+                              <div className="mt-4 flex items-center gap-2 text-slate-400 bg-slate-50 p-4 rounded-2xl">
+                                  <Smartphone className="w-3 h-3" />
+                                  <span className="text-[10px] font-bold">En attente d'abonnement App</span>
+                              </div>
+                            )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
           </div>
         )}
 
+        {/* ... Reste du composant sans changement ... */}
         {activeTab === 'commissions' && (
            <div className="space-y-8 animate-in fade-in">
               <div className="px-4"><h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-3"><Crown className="w-5 h-5 text-amber-500" /> Podium de Performance</h3></div>
@@ -264,10 +338,9 @@ const PilotagePerformance: React.FC = () => {
               </div>
            </div>
         )}
-        
-        {/* Reste des onglets comme avant... */}
       </div>
 
+      {/* Modaux de modification et d'ajout sans changement ... */}
       {showEditStaffModal && editingStaff && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
            <div className="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl p-10 relative animate-in zoom-in-95">
@@ -301,7 +374,7 @@ const PilotagePerformance: React.FC = () => {
                     <select value={newStaff.specialty} onChange={e => setNewStaff({...newStaff, specialty: e.target.value})} className="w-full px-8 py-5 rounded-2xl bg-slate-50 font-bold appearance-none"><option>Coiffure</option><option>Esthétique</option><option>Onglerie</option></select>
                  </div>
                  <button type="submit" disabled={saving} className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black uppercase shadow-xl flex items-center justify-center gap-3">
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Créer
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Créer
                  </button>
               </form>
            </div>

@@ -33,7 +33,8 @@ import {
   Eye,
   EyeOff,
   UserCircle,
-  Crown
+  Crown,
+  ShieldAlert
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -47,8 +48,6 @@ const Profile: React.FC = () => {
   const [copying, setCopying] = useState<'collab' | 'owner' | null>(null);
   
   const [filleuls, setFilleuls] = useState<UserProfile[]>([]);
-  const [allPotentialSponsors, setAllPotentialSponsors] = useState<UserProfile[]>([]);
-  const [sponsorSearch, setSponsorSearch] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -56,7 +55,6 @@ const Profile: React.FC = () => {
     establishmentName: user?.establishmentName || '',
     email: user?.email || '',
     bio: user?.bio || '',
-    employeeCount: user?.employeeCount || 0,
     openingYear: user?.openingYear || new Date().getFullYear(),
     referredBy: user?.referredBy || '',
     isPublic: user?.isPublic ?? true
@@ -71,6 +69,11 @@ const Profile: React.FC = () => {
     }
     return false;
   }, [user, isElite]);
+
+  // Le nombre d'employés est maintenant dynamique : Filleuls qui ont le rôle STAFF
+  const actualStaffCount = useMemo(() => {
+    return filleuls.filter(f => f.role === 'STAFF_ELITE' || f.role === 'STAFF_ADMIN').length;
+  }, [filleuls]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     if (type === 'success') {
@@ -90,7 +93,6 @@ const Profile: React.FC = () => {
         establishmentName: user?.establishmentName || '',
         email: user?.email || '',
         bio: user?.bio || '',
-        employeeCount: user?.employeeCount || 0,
         openingYear: user?.openingYear || new Date().getFullYear(),
         referredBy: user?.referredBy || '',
         isPublic: user?.isPublic ?? true
@@ -104,6 +106,11 @@ const Profile: React.FC = () => {
       try {
         const data = await getReferrals(user.uid);
         setFilleuls(data);
+        
+        // On met à jour le compteur dans la base de données automatiquement s'il a changé
+        if (data.length !== user.employeeCount) {
+           await saveUserProfile({ uid: user.uid, employeeCount: data.length });
+        }
       } catch (err) {
         console.warn("Erreur chargement filleuls");
       }
@@ -131,10 +138,8 @@ const Profile: React.FC = () => {
   const copyRefLink = (type: 'collab' | 'owner') => {
     let link = "";
     if (type === 'collab') {
-      // Pour les collaborateurs : Redirection directe vers Results avec injection du pack
       link = `${window.location.origin}/#/results?ref=${user.phoneNumber}&pack=collaborateur`;
     } else {
-      // Pour les propriétaires : Redirection vers le début du diagnostic (formulaire)
       link = `${window.location.origin}/#/quiz?ref=${user.phoneNumber}`;
     }
     
@@ -197,7 +202,6 @@ const Profile: React.FC = () => {
                  )}
               </div>
 
-              {/* BOUTONS DE PARRAINAGE DOUBLES */}
               {!user.isAdmin && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto md:mx-0">
                   <button onClick={() => copyRefLink('collab')} className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border-2 ${copying === 'collab' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}>
@@ -256,11 +260,11 @@ const Profile: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nombre d'employés</label>
+                    <div className="opacity-60 grayscale">
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Équipe Élite (Verrouillé)</label>
                       <div className="relative">
                         <Users className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input type="number" placeholder="0" value={formData.employeeCount} onChange={e => setFormData({...formData, employeeCount: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                        <input type="number" readOnly value={actualStaffCount} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-100 border border-slate-200 font-black cursor-not-allowed" />
                       </div>
                     </div>
                     <div>
@@ -310,12 +314,12 @@ const Profile: React.FC = () => {
                     </div>
 
                     <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:bg-white transition-all">
-                      <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition-transform">
-                        <Users className="w-6 h-6" />
+                      <div className={`h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ${actualStaffCount > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        {actualStaffCount > 0 ? <CheckCircle2 className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
                       </div>
                       <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Taille Équipe</p>
-                        <p className="font-bold text-slate-900 text-lg">{user.employeeCount || 0} employé(s)</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Collaborateurs Élite</p>
+                        <p className="font-bold text-slate-900 text-lg">{actualStaffCount} actif(s)</p>
                       </div>
                     </div>
                   </div>
