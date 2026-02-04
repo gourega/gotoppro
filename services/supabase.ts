@@ -163,7 +163,7 @@ export const getPublicDirectory = async () => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('uid, establishmentName, firstName, lastName, photoURL, purchasedModuleIds, isKitaPremium, badges, isPublic, isActive, gmb_status, gmb_url')
+      .select('uid, establishmentName, firstName, lastName, photoURL, purchasedModuleIds, isKitaPremium, badges, isPublic, isActive, gmbStatus, gmbUrl, bio, progress')
       .eq('isPublic', true)
       .eq('isActive', true)
       .neq('role', 'SUPER_ADMIN')
@@ -205,7 +205,6 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     const { error } = await supabase.from('kita_transactions').insert({
       id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
       label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-      // Fix: Property 'commissionRate' does not exist on type 'Omit<KitaTransaction, "id">'. Using 'commission_rate' instead.
       date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
       tip_amount: transaction.tipAmount || 0,
       is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
