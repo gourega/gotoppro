@@ -66,6 +66,7 @@ const AdminDashboard: React.FC = () => {
   // Database Health Check States
   const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<Record<string, 'loading' | 'ok' | 'error'>>({});
+  const [globalDbHealth, setGlobalDbHealth] = useState<'checking' | 'healthy' | 'warning'>('checking');
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -75,12 +76,23 @@ const AdminDashboard: React.FC = () => {
     } catch (e) { console.error("Log fetch error", e); }
   };
 
+  const silentHealthCheck = async () => {
+    if (!supabase) return;
+    try {
+      const { error } = await supabase.from('profiles').select('uid').limit(1);
+      setGlobalDbHealth(error ? 'warning' : 'healthy');
+    } catch (e) {
+      setGlobalDbHealth('warning');
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const allUsers = await getAllUsers();
       setUsers(allUsers || []);
       await fetchLogs();
+      await silentHealthCheck();
     } catch (err) { 
       console.error("Erreur chargement gérants:", err);
       showNotify("Erreur de connexion base de données", "error");
@@ -140,14 +152,18 @@ const AdminDashboard: React.FC = () => {
     tables.forEach(t => initialStatus[t] = 'loading');
     setDbStatus(initialStatus);
 
+    let hasError = false;
     for (const table of tables) {
       try {
         const { error } = await supabase.from(table).select('*').limit(1);
+        if (error) hasError = true;
         setDbStatus(prev => ({ ...prev, [table]: error ? 'error' : 'ok' }));
       } catch (e) {
+        hasError = true;
         setDbStatus(prev => ({ ...prev, [table]: 'error' }));
       }
     }
+    setGlobalDbHealth(hasError ? 'warning' : 'healthy');
   };
 
   const handleSaveAdminNotes = async () => {
@@ -240,7 +256,18 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
-            {/* BOUTON SCANNER D'INTÉGRITÉ REPOSITIONNÉ ET RENOMMÉ */}
+            {/* BADGE DE SANTÉ PROACTIF */}
+            <div className={`px-4 py-3 rounded-2xl border flex items-center gap-2 transition-all duration-700 ${
+              globalDbHealth === 'healthy' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 
+              globalDbHealth === 'warning' ? 'bg-rose-50 border-rose-100 text-rose-600 animate-bounce' : 
+              'bg-slate-50 border-slate-100 text-slate-400'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${globalDbHealth === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : globalDbHealth === 'warning' ? 'bg-rose-500' : 'bg-slate-300'}`}></div>
+              <span className="text-[9px] font-black uppercase tracking-widest">
+                {globalDbHealth === 'healthy' ? 'Système Sain' : globalDbHealth === 'warning' ? 'Alerte Structure' : 'Diagnostic...'}
+              </span>
+            </div>
+
             <button 
               onClick={runDatabaseDiagnostic}
               className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3 relative group overflow-hidden ring-4 ring-brand-500/10"
