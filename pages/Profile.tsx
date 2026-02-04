@@ -293,7 +293,7 @@ const Profile: React.FC = () => {
                 </form>
               ) : (
                 <div className="space-y-12">
-                  {/* BLOC VISIBILITÉ GOOGLE - PRIORITÉ HAUTE */}
+                  {/* BLOC VISIBILITÉ GOOGLE BUSINESS - PRIORITÉ HAUTE */}
                   <div className="bg-white rounded-[2.5rem] p-8 border-2 border-slate-100 shadow-xl relative overflow-hidden group hover:border-brand-500 transition-all">
                      <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform">
                         <Globe className="w-32 h-32 text-brand-900" />
@@ -304,7 +304,7 @@ const Profile: React.FC = () => {
                               <MapPin className="w-8 h-8" />
                            </div>
                            <div>
-                              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Visibilité Google</h3>
+                              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Google Business</h3>
                               <div className="flex items-center gap-2 mt-1">
                                  <div className={`w-2 h-2 rounded-full ${user.gmbStatus === 'ACTIVE' ? 'bg-emerald-500' : user.gmbStatus === 'PENDING' ? 'bg-amber-400 animate-pulse' : 'bg-slate-300'}`}></div>
                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -319,7 +319,7 @@ const Profile: React.FC = () => {
                            </a>
                         ) : (
                            <button onClick={() => navigate('/gmb-expert')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
-                              {user.gmbStatus === 'PENDING' ? 'Suivre ma demande' : 'Créer ma fiche GMB'}
+                              {user.gmbStatus === 'PENDING' ? 'Suivre ma demande' : 'Créer ma fiche Google Business'}
                               <ChevronRight className="w-4 h-4" />
                            </button>
                         )}

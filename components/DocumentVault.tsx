@@ -46,7 +46,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     doc.setFont('helvetica', 'bold');
     doc.text("CONTRAT DE VISIBILITÉ DIGITALE", 15, 30);
     doc.setFontSize(10);
-    doc.text("Standard d'Excellence KITA — Google My Business", 15, 40);
+    doc.text("Standard d'Excellence KITA — Google Business Profile", 15, 40);
 
     // --- Parties ---
     doc.setTextColor(51, 65, 85);
@@ -69,7 +69,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     doc.text("ARTICLE 1 : OBJET DE LA MISSION", 15, 100);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text("Le présent contrat a pour objet la création, le paramétrage et l'optimisation SEO de la fiche Google My Business", 15, 107);
+    doc.text("Le présent contrat a pour objet la création, le paramétrage et l'optimisation SEO de la fiche Google Business", 15, 107);
     doc.text("de l'établissement cité ci-dessus par l'équipe d'experts Go'Top Pro.", 15, 112);
 
     doc.setFont('helvetica', 'bold');
@@ -110,7 +110,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     doc.setFontSize(12);
     doc.text("CONTRAT SCELLÉ", 125, finalY + 50);
 
-    doc.save(`Contrat_GMB_${user.establishmentName?.replace(/\s/g, '_')}.pdf`);
+    doc.save(`Contrat_Google_Business_${user.establishmentName?.replace(/\s/g, '_')}.pdf`);
     setLoading(false);
   };
 
@@ -151,7 +151,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
       body.push([isElite ? "Pack Excellence Totale" : "Modules Académie", 'Licence Unique', `${formatCFA(trainingAmount)} F`, `${formatCFA(trainingAmount)} F`]);
     }
     if (gmbAmount > 0) {
-      body.push(["Contrat Visibilité Google (GMB)", 'Prestation 12 mois', "5 000 F", "5 000 F"]);
+      body.push(["Contrat Visibilité Google Business", 'Prestation 12 mois', "5 000 F", "5 000 F"]);
     }
 
     doc.autoTable({
@@ -229,7 +229,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
               {loading ? <Loader2 className="w-5 h-5 text-amber-400 animate-spin" /> : <Download className="w-5 h-5 text-slate-500 group-hover/card:text-amber-400" />}
            </button>
 
-           {/* CARTE CONTRAT GMB (Si actif ou en attente) */}
+           {/* CARTE CONTRAT GOOGLE BUSINESS (Si actif ou en attente) */}
            {user.gmbContractSignedAt && (
              <button 
                onClick={generateGMBContractPDF}
@@ -241,7 +241,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
                       <PenTool className="w-7 h-7" />
                    </div>
                    <div>
-                      <h3 className="text-white font-bold text-lg mb-1">Mon Contrat GMB</h3>
+                      <h3 className="text-white font-bold text-lg mb-1">Contrat Google Business</h3>
                       <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Prestation Visibilité</p>
                    </div>
                 </div>

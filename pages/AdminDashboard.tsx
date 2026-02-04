@@ -184,7 +184,7 @@ const AdminDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <AdminStatCard icon={<Users />} label="Inscrits" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
-           <AdminStatCard icon={<PenTool />} label="Contrats GMB" val={users.filter(u => u.gmbContractSignedAt).length} sub="Commandes en cours" />
+           <AdminStatCard icon={<PenTool />} label="Google Business" val={users.filter(u => u.gmbContractSignedAt).length} sub="Commandes en cours" />
            <AdminStatCard icon={<TrendingUp />} label="Recettes" val={`${stats.revenue.toLocaleString()} F`} />
         </section>
 
@@ -202,7 +202,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut & GMB</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
+              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut & Business</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map(u => {
                   const certs = Object.values(u.progress || {}).filter(s => Number(s) >= 80).length;
@@ -224,7 +224,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                {u.gmbContractSignedAt ? (
-                                  <span className="bg-sky-50 text-sky-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border border-sky-100 flex items-center gap-1"><PenTool className="w-2.5 h-2.5" /> GMB Signé</span>
+                                  <span className="bg-sky-50 text-sky-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border border-sky-100 flex items-center gap-1"><PenTool className="w-2.5 h-2.5" /> Google Business</span>
                                ) : (
                                   <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifs</span>
                                )}
@@ -262,10 +262,10 @@ const AdminDashboard: React.FC = () => {
                  <div className="bg-sky-50 rounded-[2.5rem] p-8 border border-sky-100">
                     <div className="flex items-center gap-4 mb-6">
                        <PenTool className="w-6 h-6 text-sky-600" />
-                       <h4 className="text-xl font-bold text-sky-900">Contrat GMB à traiter</h4>
+                       <h4 className="text-xl font-bold text-sky-900">Google Business à traiter</h4>
                     </div>
                     <p className="text-sm text-sky-700 leading-relaxed italic mb-6">
-                       Ce gérant a validé l'engagement GMB le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}. Vérifiez le paiement Wave de 5 000 F avant de lancer la création.
+                       Ce gérant a validé l'engagement Google Business le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}. Vérifiez le paiement Wave de 5 000 F avant de lancer la création.
                     </p>
                     <div className="flex gap-4">
                        <button className="flex-1 bg-white text-sky-600 py-3 rounded-xl font-black text-[10px] uppercase border border-sky-200 shadow-sm flex items-center justify-center gap-2">

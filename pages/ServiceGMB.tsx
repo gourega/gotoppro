@@ -59,7 +59,7 @@ const ServiceGMB: React.FC = () => {
   };
 
   const handleWhatsAppConfirm = () => {
-    const text = `Bonjour Coach Kita, je viens de signer mon contrat GMB pour mon établissement "${user?.establishmentName}". J'ai pris connaissance du tarif de ${GMB_SERVICE_PRICE.toLocaleString()} F CFA et des clauses du service.`;
+    const text = `Bonjour Coach Kita, je viens de signer mon contrat Google Business pour mon établissement "${user?.establishmentName}". J'ai pris connaissance du tarif de ${GMB_SERVICE_PRICE.toLocaleString()} F CFA et des clauses du service.`;
     window.open(`https://wa.me/${COACH_KITA_PHONE.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
     navigate('/profile');
   };
@@ -75,7 +75,7 @@ const ServiceGMB: React.FC = () => {
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Retour Profil
            </button>
            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-brand-500 text-[10px] font-black uppercase tracking-[0.4em] mb-8">
-              <Globe className="w-4 h-4" /> Service Croissance Local
+              <Globe className="w-4 h-4" /> Expert Google Business
            </div>
            <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6">Dominez la <span className="text-brand-500 italic">Recherche</span> Locale</h1>
            <p className="text-slate-300 text-lg max-w-2xl mx-auto opacity-80 leading-relaxed font-medium">
@@ -89,7 +89,7 @@ const ServiceGMB: React.FC = () => {
           <div className="grid lg:grid-cols-12 gap-12 items-start">
              <div className="lg:col-span-7 space-y-8">
                 <section className="bg-white rounded-[3rem] p-10 md:p-14 shadow-2xl border border-slate-100">
-                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-10">Pourquoi une fiche Google optimisée ?</h2>
+                   <h2 className="text-2xl font-serif font-bold text-slate-900 mb-10">Pourquoi une fiche Google Business optimisée ?</h2>
                    <div className="space-y-10">
                       <Benefit icon={<Navigation className="text-brand-500" />} title="Visibilité Géographique" desc="Soyez trouvé par les clientes qui cherchent 'Coiffure à proximité' ou dans votre quartier." />
                       <Benefit icon={<Star className="text-amber-500" />} title="Preuve Sociale Directe" desc="Permettez à vos clientes de laisser des avis 5 étoiles pour convaincre les nouvelles." />
@@ -103,7 +103,7 @@ const ServiceGMB: React.FC = () => {
                       <h3 className="text-xl font-serif font-bold text-brand-900">Résumé du Contrat de Service</h3>
                    </div>
                    <div className="space-y-4 text-sm text-brand-800 font-medium leading-relaxed italic">
-                      <p>• <strong>Objet :</strong> Création, paramétrage et optimisation SEO de votre fiche Google My Business.</p>
+                      <p>• <strong>Objet :</strong> Création, paramétrage et optimisation SEO de votre fiche Google Business.</p>
                       <p>• <strong>Durée :</strong> 12 mois de maintenance technique et support Go'Top Pro inclus.</p>
                       <p>• <strong>Engagement :</strong> Go'Top Pro s'engage à livrer la fiche sous 10 jours après réception des photos et du paiement.</p>
                       <p>• <strong>Tarif :</strong> Investissement unique de {GMB_SERVICE_PRICE.toLocaleString()} F CFA pour l'année en cours.</p>
