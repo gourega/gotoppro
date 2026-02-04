@@ -156,6 +156,21 @@ export const getAllUsers = async () => {
   } catch (e) { return []; }
 };
 
+export const getPublicDirectory = async () => {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('uid, establishmentName, firstName, lastName, photoURL, purchasedModuleIds, isKitaPremium, badges, isPublic, isActive')
+      .eq('isPublic', true)
+      .eq('isActive', true)
+      .neq('role', 'SUPER_ADMIN')
+      .order('establishmentName', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(mapProfileFromDB) as UserProfile[];
+  } catch (e) { return []; }
+};
+
 export const getKitaTransactions = async (userId: string): Promise<KitaTransaction[]> => {
   if (!supabase || !userId) return [];
   try {
@@ -170,7 +185,7 @@ export const getKitaTransactions = async (userId: string): Promise<KitaTransacti
       paymentMethod: t.payment_method, 
       date: t.date, 
       staffName: t.staff_name,
-      commissionRate: t.commission_rate, 
+      commission_rate: t.commission_rate, 
       tipAmount: t.tip_amount || 0,
       isCredit: t.is_credit, 
       clientId: t.client_id, 
@@ -365,7 +380,7 @@ export const getKitaProducts = async (userId: string): Promise<KitaProduct[]> =>
     if (error) throw error;
     return (data || []).map(p => ({
       id: p.id, name: p.name, quantity: p.quantity, purchasePrice: p.purchase_price,
-      sellPrice: p.sell_price, alertThreshold: p.alert_threshold, category: p.category, supplierId: p.supplier_id
+      sellPrice: p.sell_price, alertThreshold: p.alert_threshold, category: p.category, supplier_id: p.supplier_id
     }));
   } catch (e) { return []; }
 };

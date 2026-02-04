@@ -1,3 +1,4 @@
+
 import React from 'react';
 // @ts-ignore
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -19,6 +20,8 @@ import PilotagePerformance from './pages/PilotagePerformance';
 import Magasin from './pages/Magasin';
 import MesFormations from './pages/MesFormations';
 import MarketingVisuel from './pages/MarketingVisuel';
+import Directory from './pages/Directory';
+import PublicProfile from './pages/PublicProfile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -60,6 +63,8 @@ const AppContent: React.FC = () => {
           <Route path="/quiz" element={<Diagnostic />} />
           <Route path="/audit-miroir" element={<AuditMiroir />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/nos-gerants" element={<Directory />} />
+          <Route path="/p/:uid" element={<PublicProfile />} />
           
           <Route path="/dashboard" element={
             <ProtectedRoute>

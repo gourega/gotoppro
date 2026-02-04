@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react';
+// @ts-ignore
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BRAND_LOGO, KITA_LOGO } from '../constants';
@@ -11,7 +13,8 @@ import {
   Star, 
   ClipboardCheck, 
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  Users
 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
@@ -30,6 +33,7 @@ const Navbar: React.FC = () => {
     { to: '/', label: 'Accueil', icon: null },
     { to: '/vision', label: 'Vision', icon: <Eye className="w-3.5 h-3.5" /> },
     { to: '/avantages', label: 'Avantages', icon: <Star className="w-3.5 h-3.5" /> },
+    { to: '/nos-gerants', label: 'Nos Gérants', icon: <Users className="w-3.5 h-3.5" /> },
     { to: '/audit-miroir', label: 'Miroir du Succès', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { to: '/quiz', label: 'Diagnostic', icon: <ClipboardCheck className="w-3.5 h-3.5" /> },
   ];
