@@ -36,7 +36,10 @@ import {
   Globe,
   PenTool,
   ExternalLink,
-  MapPin
+  MapPin,
+  Database,
+  ShieldAlert,
+  Server
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -58,6 +61,10 @@ const AdminDashboard: React.FC = () => {
   // GMB Management States
   const [gmbUrlInput, setGmbUrlInput] = useState('');
   const [isUpdatingGMB, setIsUpdatingGMB] = useState(false);
+
+  // Database Health Check States
+  const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState<Record<string, 'loading' | 'ok' | 'error'>>({});
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -108,6 +115,34 @@ const AdminDashboard: React.FC = () => {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  const runDatabaseDiagnostic = async () => {
+    if (!supabase) return;
+    setIsHealthCheckOpen(true);
+    const tables = [
+      'profiles', 
+      'kita_transactions', 
+      'kita_services', 
+      'kita_staff', 
+      'kita_clients', 
+      'kita_products', 
+      'kita_suppliers', 
+      'automation_logs'
+    ];
+    
+    const initialStatus: any = {};
+    tables.forEach(t => initialStatus[t] = 'loading');
+    setDbStatus(initialStatus);
+
+    for (const table of tables) {
+      try {
+        const { error } = await supabase.from(table).select('*').limit(1);
+        setDbStatus(prev => ({ ...prev, [table]: error ? 'error' : 'ok' }));
+      } catch (e) {
+        setDbStatus(prev => ({ ...prev, [table]: 'error' }));
+      }
+    }
+  };
+
   const handleSaveAdminNotes = async () => {
     if (!selectedUser || !supabase) return;
     setIsSavingNotes(true);
@@ -131,7 +166,6 @@ const AdminDashboard: React.FC = () => {
         gmbUrl: gmbUrlInput.trim()
       });
       showNotify("Fiche Google Business activée !");
-      // Mettre à jour l'utilisateur sélectionné localement pour refléter le changement immédiat
       setSelectedUser({ ...selectedUser, gmbStatus: 'ACTIVE', gmbUrl: gmbUrlInput.trim() });
       fetchUsers();
     } catch (err) {
@@ -199,13 +233,18 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
+            <button 
+              onClick={runDatabaseDiagnostic}
+              className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"
+            >
+              <Database className="w-4 h-4 text-brand-400" /> Diagnostic Base
+            </button>
             {stats.pending > 0 && (
-              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-50 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
+              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
                 {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Activer les {stats.pending} gérants
               </button>
             )}
-            <button className="bg-emerald-100 text-emerald-700 px-8 py-4 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-200 transition-all flex items-center gap-3"><Megaphone className="w-4 h-4" /> Diffusion SMS</button>
             <button onClick={fetchUsers} className="bg-white border border-slate-200 p-4 rounded-2xl hover:bg-slate-50 shadow-sm transition-all"><RefreshCcw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
         </div>
@@ -272,6 +311,49 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* MODAL DIAGNOSTIC BASE DE DONNÉES */}
+      {isHealthCheckOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 relative overflow-hidden animate-in zoom-in-95">
+             <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-slate-900 pointer-events-none text-8xl font-black italic">DB</div>
+             <button onClick={() => setIsHealthCheckOpen(false)} className="absolute top-8 right-8 p-3 text-slate-400 hover:text-rose-500 transition-colors"><X /></button>
+             
+             <div className="flex items-center gap-4 mb-10">
+                <div className="h-14 w-14 bg-slate-900 text-brand-400 rounded-2xl flex items-center justify-center shadow-lg">
+                   <Server className="w-7 h-7" />
+                </div>
+                <div>
+                   <h2 className="text-2xl font-serif font-bold text-slate-900">Intégrité Supabase</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scan de la structure en temps réel</p>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                {Object.entries(dbStatus).map(([table, status]) => (
+                  <div key={table} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                     <div className="flex items-center gap-4">
+                        <div className={`h-3 w-3 rounded-full ${status === 'loading' ? 'bg-slate-300 animate-pulse' : status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                        <span className="font-mono text-xs font-bold text-slate-700">{table}</span>
+                     </div>
+                     <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg ${status === 'loading' ? 'text-slate-400' : status === 'ok' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {status === 'loading' ? 'Vérification...' : status === 'ok' ? 'Connecté' : 'Erreur / Manquante'}
+                     </span>
+                  </div>
+                ))}
+             </div>
+
+             <div className="mt-10 p-6 bg-slate-900 rounded-[2rem] text-white border border-white/5">
+                <div className="flex items-start gap-4">
+                   <ShieldAlert className="w-5 h-5 text-brand-500 shrink-0 mt-1" />
+                   <p className="text-[10px] font-medium leading-relaxed italic opacity-80">
+                     Si une table affiche "Erreur", assurez-vous de l'avoir créée dans l'éditeur SQL de Supabase. Une table manquante bloquera les fonctionnalités correspondantes de l'application.
+                   </p>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
 
       {selectedUser && (
         <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/40 backdrop-blur-md animate-in fade-in">

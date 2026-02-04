@@ -72,8 +72,11 @@ export const generateUUID = () => {
 
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
+  // Resilience Fix: Check both data.uid and data.id (Supabase default)
+  const actualUid = data.uid || data.id;
+  
   return {
-    uid: data.uid,
+    uid: actualUid,
     phoneNumber: data.phoneNumber || data.phone_number || '',
     pinCode: data.pinCode || data.phone_code || '1234',
     email: data.email,
@@ -127,8 +130,14 @@ export const getProfileByPhone = async (phoneNumber: string) => {
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
-    if (error) throw error;
+    // Check both columns to be sure
+    const { data, error } = await supabase.from('profiles').select('*').or(`uid.eq.${uid}`).maybeSingle();
+    if (error) {
+        // Fallback for default Supabase column name
+        const { data: fallback, error: fbError } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+        if (fbError) throw fbError;
+        return mapProfileFromDB(fallback);
+    }
     return mapProfileFromDB(data);
   } catch (e) { return null; }
 };
@@ -145,7 +154,11 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
   try {
-    await supabase.from('profiles').update(updates).eq('uid', uid);
+    const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
+    if (error) {
+        // Fallback to Supabase default column name
+        await supabase.from('profiles').update(updates).eq('id', uid);
+    }
   } catch (err) {}
 };
 
@@ -161,30 +174,15 @@ export const getAllUsers = async () => {
 export const getPublicDirectory = async () => {
   if (!supabase) return [];
   try {
-    // Tentative de récupération flexible mais respectant isPublic
-    // On essaie d'abord avec les colonnes snake_case (recommandé Supabase)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .neq('role', 'SUPER_ADMIN')
-      .filter('isActive', 'eq', true)
-      .filter('isPublic', 'eq', true)
-      .order('establishmentName', { ascending: true });
-    
-    if (error) {
-      // Fallback si les noms de colonnes sont en snake_case dans la DB réelle
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('role', 'SUPER_ADMIN')
-        .filter('is_active', 'eq', true)
-        .filter('is_public', 'eq', true)
-        .order('establishment_name', { ascending: true });
+      .filter('is_active', 'eq', true)
+      .filter('is_public', 'eq', true)
+      .order('establishment_name', { ascending: true });
         
-      if (fallbackError) throw fallbackError;
-      return (fallbackData || []).map(mapProfileFromDB) as UserProfile[];
-    }
-    
+    if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { 
     console.error("Erreur annuaire:", e);
@@ -223,7 +221,6 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   try {
     const { error } = await supabase.from('kita_transactions').insert({
       id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
-      // Fix: Used camelCase properties (paymentMethod, staffName) from the transaction object as defined in types.ts
       label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
       date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
       tip_amount: transaction.tipAmount || 0,
@@ -350,7 +347,6 @@ export const addKitaStaff = async (userId: string, staff: any) => {
     }).select().single();
     if (error) throw error;
     return { ...staff, id: data.id, commission_rate: Number(staff.commission_rate || 0) };
-    // Fix: Added braces to catch block to resolve syntax error and "Cannot find name 'err'"
   } catch (err) { throw err; }
 };
 
@@ -363,7 +359,6 @@ export const updateKitaStaff = async (id: string, updates: any) => {
     }).eq('id', id).select().single();
     if (error) throw error;
     return data;
-    // Fix: Added braces to catch block to resolve syntax error and "Cannot find name 'err'"
   } catch (err) { throw err; }
 };
 
@@ -389,7 +384,6 @@ export const addKitaClient = async (userId: string, client: any) => {
     });
     if (error) throw error;
     return { ...client, id: newId };
-    // Fix: Added braces to catch block to resolve syntax error and "Cannot find name 'err'"
   } catch (err) { throw err; }
 };
 
@@ -421,7 +415,6 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
     });
     if (error) throw error;
     return { ...product, id: newId } as KitaProduct;
-    // Fix: Added braces to catch block to resolve syntax error and "Cannot find name 'err'"
   } catch (err) { throw err; }
 };
 
@@ -445,7 +438,6 @@ export const addKitaSupplier = async (userId: string, supplier: Omit<KitaSupplie
     });
     if (error) throw error;
     return { ...supplier, id: newId, userId } as KitaSupplier;
-    // Fix: Added braces to catch block to resolve syntax error and "Cannot find name 'err'"
   } catch (err) { throw err; }
 };
 
