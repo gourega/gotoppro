@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,7 +34,9 @@ import {
   Copy,
   Eye,
   Globe,
-  PenTool
+  PenTool,
+  ExternalLink,
+  MapPin
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -52,6 +54,10 @@ const AdminDashboard: React.FC = () => {
   const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
   const [tempAdminNotes, setTempAdminNotes] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // GMB Management States
+  const [gmbUrlInput, setGmbUrlInput] = useState('');
+  const [isUpdatingGMB, setIsUpdatingGMB] = useState(false);
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -84,6 +90,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedUser) {
       setTempAdminNotes(selectedUser.adminNotes || '');
+      setGmbUrlInput(selectedUser.gmbUrl || '');
       fetchUserFinancials(selectedUser.uid);
     }
   }, [selectedUser]);
@@ -110,6 +117,28 @@ const AdminDashboard: React.FC = () => {
       fetchUsers();
     } catch (err) { showNotify("Erreur sauvegarde notes", "error"); }
     finally { setIsSavingNotes(false); }
+  };
+
+  const handleValidateGMB = async () => {
+    if (!selectedUser || !gmbUrlInput.trim()) {
+      showNotify("L'URL Google Maps est requise.", "error");
+      return;
+    }
+    setIsUpdatingGMB(true);
+    try {
+      await updateUserProfile(selectedUser.uid, { 
+        gmbStatus: 'ACTIVE',
+        gmbUrl: gmbUrlInput.trim()
+      });
+      showNotify("Fiche Google Business activée !");
+      // Mettre à jour l'utilisateur sélectionné localement pour refléter le changement immédiat
+      setSelectedUser({ ...selectedUser, gmbStatus: 'ACTIVE', gmbUrl: gmbUrlInput.trim() });
+      fetchUsers();
+    } catch (err) {
+      showNotify("Erreur lors de la validation GMB", "error");
+    } finally {
+      setIsUpdatingGMB(false);
+    }
   };
 
   const handleActivateAll = async () => {
@@ -211,7 +240,7 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-12 py-8">
                         <div className="flex items-center gap-5">
                           <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>
-                            {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" /> : u.firstName?.[0]}
+                            {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" alt="" /> : u.firstName?.[0]}
                           </div>
                           <div><p className="font-bold text-slate-900 text-xl leading-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || 'Salon GoTop'} • {u.phoneNumber}</p></div>
                         </div>
@@ -224,7 +253,10 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                {u.gmbContractSignedAt ? (
-                                  <span className="bg-sky-50 text-sky-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border border-sky-100 flex items-center gap-1"><PenTool className="w-2.5 h-2.5" /> Google Business</span>
+                                  <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border flex items-center gap-1 ${u.gmbStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-sky-50 text-sky-600 border-sky-100'}`}>
+                                    <PenTool className="w-2.5 h-2.5" /> 
+                                    {u.gmbStatus === 'ACTIVE' ? 'Google Actif' : 'Google à créer'}
+                                  </span>
                                ) : (
                                   <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifs</span>
                                )}
@@ -250,7 +282,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="space-y-12 pb-20">
                <div className="p-12 bg-slate-50 rounded-[4rem] border border-slate-100 text-center relative overflow-hidden shadow-inner">
-                  <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" /> : selectedUser.firstName?.[0]}</div>
+                  <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" alt="" /> : selectedUser.firstName?.[0]}</div>
                   <h3 className="text-3xl font-bold text-slate-900">{selectedUser.firstName} {selectedUser.lastName}</h3>
                   <div className="flex items-center justify-center gap-3 mt-4">
                      <button onClick={() => copyToClipboard(selectedUser.phoneNumber)} className="bg-white border px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-slate-50 transition-all"><Copy className="w-3 h-3" /> {selectedUser.phoneNumber}</button>
@@ -258,19 +290,81 @@ const AdminDashboard: React.FC = () => {
                   </div>
                </div>
 
+               {/* PILOTAGE GOOGLE BUSINESS (GMB) DIRECT */}
                {selectedUser.gmbContractSignedAt && (
-                 <div className="bg-sky-50 rounded-[2.5rem] p-8 border border-sky-100">
-                    <div className="flex items-center gap-4 mb-6">
-                       <PenTool className="w-6 h-6 text-sky-600" />
-                       <h4 className="text-xl font-bold text-sky-900">Google Business à traiter</h4>
+                 <div className={`rounded-[2.5rem] p-8 border-2 transition-all ${selectedUser.gmbStatus === 'ACTIVE' ? 'bg-emerald-50 border-emerald-100' : 'bg-sky-50 border-sky-100 shadow-xl shadow-sky-100'}`}>
+                    <div className="flex items-center justify-between mb-8">
+                       <div className="flex items-center gap-4">
+                          <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-sm ${selectedUser.gmbStatus === 'ACTIVE' ? 'bg-emerald-500 text-white' : 'bg-sky-500 text-white'}`}>
+                             <Globe className="w-6 h-6" />
+                          </div>
+                          <div>
+                             <h4 className={`text-xl font-bold ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-900' : 'text-sky-900'}`}>
+                                {selectedUser.gmbStatus === 'ACTIVE' ? 'Fiche Google Active' : 'Pilotage Google Business'}
+                             </h4>
+                             <p className={`text-[10px] font-black uppercase tracking-widest ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-600' : 'text-sky-600'}`}>
+                                Commandé le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}
+                             </p>
+                          </div>
+                       </div>
+                       {selectedUser.gmbStatus === 'ACTIVE' && (
+                         <div className="bg-emerald-100 text-emerald-700 p-2 rounded-full">
+                           <CheckCircle2 className="w-6 h-6" />
+                         </div>
+                       )}
                     </div>
-                    <p className="text-sm text-sky-700 leading-relaxed italic mb-6">
-                       Ce gérant a validé l'engagement Google Business le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}. Vérifiez le paiement Wave de 5 000 F avant de lancer la création.
-                    </p>
-                    <div className="flex gap-4">
-                       <button className="flex-1 bg-white text-sky-600 py-3 rounded-xl font-black text-[10px] uppercase border border-sky-200 shadow-sm flex items-center justify-center gap-2">
-                          <Eye className="w-4 h-4" /> Voir Contrat (PDF)
-                       </button>
+
+                    <div className="space-y-6">
+                       <div>
+                          <label className={`block text-[9px] font-black uppercase mb-2 ml-4 ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-400' : 'text-sky-400'}`}>
+                             URL Google Maps (Lien final)
+                          </label>
+                          <div className="relative group">
+                             <MapPin className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-300' : 'text-sky-300'}`} />
+                             <input 
+                               type="text" 
+                               placeholder="https://maps.app.goo.gl/..." 
+                               value={gmbUrlInput}
+                               onChange={e => setGmbUrlInput(e.target.value)}
+                               className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold focus:ring-2 focus:ring-sky-500/20 outline-none"
+                             />
+                          </div>
+                       </div>
+
+                       <div className="flex gap-4">
+                          <button 
+                             onClick={handleValidateGMB}
+                             disabled={isUpdatingGMB || !gmbUrlInput.trim()}
+                             className={`flex-grow py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all ${
+                               selectedUser.gmbStatus === 'ACTIVE' 
+                               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                               : 'bg-brand-900 text-white hover:bg-black'
+                             }`}
+                          >
+                             {isUpdatingGMB ? <Loader2 className="w-5 h-5 animate-spin" /> : selectedUser.gmbStatus === 'ACTIVE' ? <Save className="w-5 h-5" /> : <PenTool className="w-5 h-5" />}
+                             {selectedUser.gmbStatus === 'ACTIVE' ? 'Mettre à jour le lien' : 'Publier & Activer la Fiche'}
+                          </button>
+                          
+                          {selectedUser.gmbUrl && (
+                             <a 
+                               href={selectedUser.gmbUrl} 
+                               target="_blank" 
+                               rel="noreferrer" 
+                               className="h-14 w-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-brand-600 hover:border-brand-100 transition-all"
+                             >
+                                <ExternalLink className="w-6 h-6" />
+                             </a>
+                          )}
+                       </div>
+
+                       {selectedUser.gmbStatus !== 'ACTIVE' && (
+                         <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                           <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                           <p className="text-[10px] text-amber-700 font-medium leading-relaxed italic">
+                             Action irréversible : L'activation informera le gérant par notification et débloquera son contrat scellé.
+                           </p>
+                         </div>
+                       )}
                     </div>
                  </div>
                )}
