@@ -38,7 +38,8 @@ import {
   Search,
   ExternalLink,
   ChevronRight,
-  Globe
+  Globe,
+  Lightbulb
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -228,11 +229,12 @@ const Profile: React.FC = () => {
                 <form onSubmit={handleSave} className="space-y-8">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Prénom</label>
-                      <input type="text" placeholder="Prénom" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Prénom</label>
+                      {/* Fix: setFirstName was undefined, using setFormData instead */}
+                      <input type="text" placeholder="Prénom" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom</label>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom</label>
                       <input type="text" placeholder="Nom" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                     </div>
                   </div>
@@ -255,20 +257,20 @@ const Profile: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Nom du Salon</label>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du Salon</label>
                     <input type="text" placeholder="Nom du Salon" value={formData.establishmentName} onChange={e => setFormData({...formData, establishmentName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="opacity-60 grayscale">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Équipe Élite (Verrouillé)</label>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Équipe Élite (Verrouillé)</label>
                       <div className="relative">
                         <Users className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input type="number" readOnly value={actualStaffCount} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-100 border border-slate-200 font-black cursor-not-allowed" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Année d'ouverture</label>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Année d'ouverture</label>
                       <div className="relative">
                         <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input type="number" placeholder="Ex: 2020" value={formData.openingYear} onChange={e => setFormData({...formData, openingYear: Number(e.target.value)})} className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none" />
@@ -276,14 +278,30 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-4">Bio Professionnelle</label>
-                    <textarea 
-                      placeholder="Ex: Gérant passionné avec 10 ans d'expérience..." 
-                      value={formData.bio} 
-                      onChange={e => setFormData({...formData, bio: e.target.value})} 
-                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none min-h-[150px] resize-none"
-                    />
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Bio Professionnelle</label>
+                      
+                      {/* BLOC INDICATIF GOOGLE BUSINESS */}
+                      <div className="bg-brand-50 p-6 rounded-2xl border border-brand-100 mb-6 flex items-start gap-4 animate-in fade-in duration-700">
+                         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-brand-600 shadow-sm shrink-0">
+                            <Lightbulb className="w-6 h-6" />
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-brand-900 uppercase tracking-widest mb-1">Conseil Stratégique</p>
+                            <p className="text-[11px] font-medium text-brand-800 leading-relaxed italic">
+                              Rédigez ici une présentation soignée de votre expertise et de vos diplômes. Ce texte valorise votre image et sera utilisé pour optimiser votre <strong>Fiche Google Business</strong> afin d'attirer des clients VIP.
+                            </p>
+                         </div>
+                      </div>
+
+                      <textarea 
+                        placeholder="Ex: Gérant passionné avec 10 ans d'expérience, spécialisé dans les colorations techniques et le visagisme..." 
+                        value={formData.bio} 
+                        onChange={e => setFormData({...formData, bio: e.target.value})} 
+                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-2 focus:ring-brand-500/20 outline-none min-h-[180px] resize-none shadow-inner"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex gap-4 pt-4">
