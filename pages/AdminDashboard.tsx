@@ -39,7 +39,8 @@ import {
   MapPin,
   Database,
   ShieldAlert,
-  Server
+  Server,
+  Shield
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -80,7 +81,10 @@ const AdminDashboard: React.FC = () => {
       const allUsers = await getAllUsers();
       setUsers(allUsers || []);
       await fetchLogs();
-    } catch (err) { console.error("Erreur chargement gérants:", err); }
+    } catch (err) { 
+      console.error("Erreur chargement gérants:", err);
+      showNotify("Erreur de connexion base de données", "error");
+    }
     finally { setLoading(false); }
   };
 
@@ -116,7 +120,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   const runDatabaseDiagnostic = async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      showNotify("Supabase non initialisé.", "error");
+      return;
+    }
     setIsHealthCheckOpen(true);
     const tables = [
       'profiles', 
@@ -233,12 +240,16 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
+            {/* BOUTON SCANNER D'INTÉGRITÉ REPOSITIONNÉ ET RENOMMÉ */}
             <button 
               onClick={runDatabaseDiagnostic}
-              className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"
+              className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3 relative group overflow-hidden ring-4 ring-brand-500/10"
             >
-              <Database className="w-4 h-4 text-brand-400" /> Diagnostic Base
+              <div className="absolute inset-0 bg-brand-500/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+              <Shield className="w-4 h-4 text-emerald-400 relative z-10 animate-pulse" /> 
+              <span className="relative z-10">Scanner d'Intégrité</span>
             </button>
+
             {stats.pending > 0 && (
               <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
                 {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -312,7 +323,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DIAGNOSTIC BASE DE DONNÉES */}
+      {/* MODAL SCANNER D'INTÉGRITÉ */}
       {isHealthCheckOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 relative overflow-hidden animate-in zoom-in-95">
@@ -320,12 +331,12 @@ const AdminDashboard: React.FC = () => {
              <button onClick={() => setIsHealthCheckOpen(false)} className="absolute top-8 right-8 p-3 text-slate-400 hover:text-rose-500 transition-colors"><X /></button>
              
              <div className="flex items-center gap-4 mb-10">
-                <div className="h-14 w-14 bg-slate-900 text-brand-400 rounded-2xl flex items-center justify-center shadow-lg">
-                   <Server className="w-7 h-7" />
+                <div className="h-14 w-14 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg">
+                   <Shield className="w-7 h-7" />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-serif font-bold text-slate-900">Intégrité Supabase</h2>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scan de la structure en temps réel</p>
+                   <h2 className="text-2xl font-serif font-bold text-slate-900">Scanner d'Intégrité</h2>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vérification des structures SQL</p>
                 </div>
              </div>
 
@@ -337,7 +348,7 @@ const AdminDashboard: React.FC = () => {
                         <span className="font-mono text-xs font-bold text-slate-700">{table}</span>
                      </div>
                      <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg ${status === 'loading' ? 'text-slate-400' : status === 'ok' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        {status === 'loading' ? 'Vérification...' : status === 'ok' ? 'Connecté' : 'Erreur / Manquante'}
+                        {status === 'loading' ? 'Vérification...' : status === 'ok' ? 'Opérationnelle' : 'Structure Erreur'}
                      </span>
                   </div>
                 ))}
@@ -347,7 +358,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex items-start gap-4">
                    <ShieldAlert className="w-5 h-5 text-brand-500 shrink-0 mt-1" />
                    <p className="text-[10px] font-medium leading-relaxed italic opacity-80">
-                     Si une table affiche "Erreur", assurez-vous de l'avoir créée dans l'éditeur SQL de Supabase. Une table manquante bloquera les fonctionnalités correspondantes de l'application.
+                     Si une ligne est rouge, copiez-collez le script SQL fourni par le mentor dans l'éditeur de Supabase pour réparer la structure.
                    </p>
                 </div>
              </div>
