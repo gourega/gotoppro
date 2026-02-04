@@ -1,4 +1,3 @@
-
 import React from 'react';
 // @ts-ignore
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -22,6 +21,7 @@ import MesFormations from './pages/MesFormations';
 import MarketingVisuel from './pages/MarketingVisuel';
 import Directory from './pages/Directory';
 import PublicProfile from './pages/PublicProfile';
+import ServiceGMB from './pages/ServiceGMB';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -99,6 +99,12 @@ const AppContent: React.FC = () => {
           <Route path="/marketing" element={
             <ProtectedRoute>
               <MarketingVisuel />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/gmb-expert" element={
+            <ProtectedRoute>
+              <ServiceGMB />
             </ProtectedRoute>
           } />
           

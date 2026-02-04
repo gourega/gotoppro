@@ -318,7 +318,7 @@ const Profile: React.FC = () => {
                               <ExternalLink className="w-4 h-4" /> Voir ma fiche
                            </a>
                         ) : (
-                           <button onClick={() => navigate('/services/google-my-business')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
+                           <button onClick={() => navigate('/gmb-expert')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
                               {user.gmbStatus === 'PENDING' ? 'Suivre ma demande' : 'Créer ma fiche GMB'}
                               <ChevronRight className="w-4 h-4" />
                            </button>

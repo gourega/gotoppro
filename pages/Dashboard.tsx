@@ -310,7 +310,7 @@ const Dashboard: React.FC = () => {
                  sub={user.gmbStatus === 'ACTIVE' ? "Votre salon est sur Maps" : "Attirer de nouveaux clients"}
                  color={user.gmbStatus === 'ACTIVE' ? "text-emerald-600" : "text-amber-600"}
                  bgColor={user.gmbStatus === 'ACTIVE' ? "bg-emerald-50" : "bg-amber-50"}
-                 onClick={() => navigate('/services/google-my-business')}
+                 onClick={() => navigate('/gmb-expert')}
                />
 
                {/* 3. Ardoises Clients */}
