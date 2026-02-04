@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -27,6 +26,11 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Fonction de formatage robuste pour éviter les séparateurs exotiques (ex: /)
+  const formatCFA = (amount: number) => {
+    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
+
   const generateInvoicePDF = () => {
     setLoading(true);
     const doc = new jsPDF() as any;
@@ -35,6 +39,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     
     const packName = isElite ? "Pack Excellence Totale (Go'Top Pro)" : `Pack Formation (${user.purchasedModuleIds.length} modules)`;
     const amount = isElite ? 15000 : (user.purchasedModuleIds.length * 500);
+    const formattedAmount = formatCFA(amount);
 
     // --- Header Style ---
     doc.setFillColor(12, 74, 110); // brand-900
@@ -80,29 +85,40 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
       startY: 135,
       head: [['Description de l\'Investissement', 'Type', 'Prix Unitaire', 'Total (F CFA)']],
       body: [
-        [packName, 'Licence Unique', `${amount.toLocaleString()} F`, `${amount.toLocaleString()} F`]
+        [packName, 'Licence Unique', `${formattedAmount} F`, `${formattedAmount} F`]
       ],
       theme: 'grid',
       headStyles: { fillColor: [12, 74, 110], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } }
+      columnStyles: { 
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' } 
+      }
     });
 
-    // --- Total ---
+    // --- Total Section (CORRECTION CHEVAUCHEMENT) ---
     const finalY = (doc as any).lastAutoTable.finalY || 160;
-    doc.setFontSize(12);
+    
+    // Ligne horizontale de séparation
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, finalY + 10, 195, finalY + 10);
+
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text("MONTANT TOTAL RÉGLÉ :", 110, finalY + 20);
-    doc.setFontSize(16);
+    doc.setTextColor(100, 116, 139);
+    doc.text("MONTANT TOTAL RÉGLÉ :", 15, finalY + 22); // Aligné à Gauche
+
+    doc.setFontSize(18);
     doc.setTextColor(16, 185, 129); // emerald-500
-    doc.text(`${amount.toLocaleString()} F CFA`, 160, finalY + 20, { align: 'right' });
+    doc.text(`${formattedAmount} F CFA`, 195, finalY + 22, { align: 'right' }); // Aligné à Droite
 
     // --- Stamp & Legal ---
     doc.setDrawColor(16, 185, 129);
     doc.setLineWidth(1);
     doc.setTextColor(16, 185, 129);
     doc.setFontSize(14);
-    doc.rect(140, finalY + 40, 50, 20);
-    doc.text("PAYÉ", 155, finalY + 53);
+    // Cadre "PAYÉ" repositionné pour la clarté
+    doc.rect(145, finalY + 35, 50, 20);
+    doc.text("PAYÉ", 160, finalY + 48);
     
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(8);
@@ -222,7 +238,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
                  </div>
                  <button 
                    onClick={() => window.print()}
-                   className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-black transition-all"
+                   className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all"
                  >
                     <Eye className="w-4 h-4" /> Imprimer Rapport
                  </button>
