@@ -33,7 +33,9 @@ import {
   BarChart3,
   UserCheck,
   AlertTriangle,
-  Receipt
+  Receipt,
+  Globe,
+  MapPin
 } from 'lucide-react';
 import { UserActionCommitment, KitaTransaction } from '../types';
 
@@ -280,7 +282,7 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        {/* SECTION INDICATEURS DE PERFORMANCE (DÉCISIONNEL) - REMPLACE LES BLOCS LOGISTIQUE/HUMAINS */}
+        {/* SECTION INDICATEURS DE PERFORMANCE (DÉCISIONNEL) */}
         {!isStaff && (
           <section className="space-y-8 animate-in slide-in-from-bottom-6">
             <div className="flex items-center gap-4 px-4">
@@ -300,15 +302,15 @@ const Dashboard: React.FC = () => {
                  bgColor="bg-indigo-50"
                />
 
-               {/* 2. Top Collaborateur */}
+               {/* 2. Présence Google Maps */}
                <KPICard 
-                 icon={<UserCheck className="w-6 h-6" />}
-                 label="Top Staff"
-                 value={kpis.topCollab ? kpis.topCollab.name : "—"}
-                 sub={kpis.topCollab ? `${kpis.topCollab.amount.toLocaleString()} F générés` : "Aucune vente staff"}
-                 color="text-emerald-600"
-                 bgColor="bg-emerald-50"
-                 onClick={() => navigate('/pilotage')}
+                 icon={<MapPin className="w-6 h-6" />}
+                 label="Présence Google"
+                 value={user.gmbStatus === 'ACTIVE' ? "Répertorié" : user.gmbStatus === 'PENDING' ? "En cours..." : "Non visible"}
+                 sub={user.gmbStatus === 'ACTIVE' ? "Votre salon est sur Maps" : "Attirer de nouveaux clients"}
+                 color={user.gmbStatus === 'ACTIVE' ? "text-emerald-600" : "text-amber-600"}
+                 bgColor={user.gmbStatus === 'ACTIVE' ? "bg-emerald-50" : "bg-amber-50"}
+                 onClick={() => navigate('/services/google-my-business')}
                />
 
                {/* 3. Ardoises Clients */}

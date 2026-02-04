@@ -34,7 +34,11 @@ import {
   EyeOff,
   UserCircle,
   Crown,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  ExternalLink,
+  ChevronRight,
+  Globe
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -70,7 +74,6 @@ const Profile: React.FC = () => {
     return false;
   }, [user, isElite]);
 
-  // Le nombre d'employés est maintenant dynamique : Filleuls qui ont le rôle STAFF
   const actualStaffCount = useMemo(() => {
     return filleuls.filter(f => f.role === 'STAFF_ELITE' || f.role === 'STAFF_ADMIN').length;
   }, [filleuls]);
@@ -106,8 +109,6 @@ const Profile: React.FC = () => {
       try {
         const data = await getReferrals(user.uid);
         setFilleuls(data);
-        
-        // On met à jour le compteur dans la base de données automatiquement s'il a changé
         if (data.length !== user.employeeCount) {
            await saveUserProfile({ uid: user.uid, employeeCount: data.length });
         }
@@ -142,7 +143,6 @@ const Profile: React.FC = () => {
     } else {
       link = `${window.location.origin}/#/quiz?ref=${user.phoneNumber}`;
     }
-    
     navigator.clipboard.writeText(link);
     setCopying(type);
     setTimeout(() => setCopying(null), 2000);
@@ -293,6 +293,39 @@ const Profile: React.FC = () => {
                 </form>
               ) : (
                 <div className="space-y-12">
+                  {/* BLOC VISIBILITÉ GOOGLE - PRIORITÉ HAUTE */}
+                  <div className="bg-white rounded-[2.5rem] p-8 border-2 border-slate-100 shadow-xl relative overflow-hidden group hover:border-brand-500 transition-all">
+                     <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform">
+                        <Globe className="w-32 h-32 text-brand-900" />
+                     </div>
+                     <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
+                        <div className="flex items-center gap-6">
+                           <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg ${user.gmbStatus === 'ACTIVE' ? 'bg-emerald-500 text-white' : user.gmbStatus === 'PENDING' ? 'bg-amber-400 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                              <MapPin className="w-8 h-8" />
+                           </div>
+                           <div>
+                              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Visibilité Google</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                 <div className={`w-2 h-2 rounded-full ${user.gmbStatus === 'ACTIVE' ? 'bg-emerald-500' : user.gmbStatus === 'PENDING' ? 'bg-amber-400 animate-pulse' : 'bg-slate-300'}`}></div>
+                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    {user.gmbStatus === 'ACTIVE' ? 'Répertorié sur Maps' : user.gmbStatus === 'PENDING' ? 'En cours de création' : 'Non répertorié'}
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                        {user.gmbStatus === 'ACTIVE' ? (
+                           <a href={user.gmbUrl} target="_blank" rel="noreferrer" className="bg-brand-50 text-brand-600 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-brand-100 transition-all">
+                              <ExternalLink className="w-4 h-4" /> Voir ma fiche
+                           </a>
+                        ) : (
+                           <button onClick={() => navigate('/services/google-my-business')} className="bg-brand-900 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-brand-950 transition-all flex items-center gap-3">
+                              {user.gmbStatus === 'PENDING' ? 'Suivre ma demande' : 'Créer ma fiche GMB'}
+                              <ChevronRight className="w-4 h-4" />
+                           </button>
+                        )}
+                     </div>
+                  </div>
+
                   {user.bio && (
                     <div className={`relative p-10 rounded-[3rem] border group ${user.isAdmin ? 'bg-brand-900 border-amber-500/30 shadow-2xl' : 'bg-brand-50/20 border-brand-100/30'}`}>
                       <Quote className={`absolute top-6 left-6 opacity-10 w-12 h-12 ${user.isAdmin ? 'text-amber-500' : 'text-brand-500'}`} />
