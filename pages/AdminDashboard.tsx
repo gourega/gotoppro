@@ -32,7 +32,9 @@ import {
   Save,
   MessageCircle,
   Copy,
-  Eye
+  Eye,
+  Globe,
+  PenTool
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -50,11 +52,6 @@ const AdminDashboard: React.FC = () => {
   const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
   const [tempAdminNotes, setTempAdminNotes] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-
-  // Simulation
-  const [simPhone, setSimPhone] = useState('');
-  const [simAmount, setSimAmount] = useState('15000');
-  const [isSimulating, setIsSimulating] = useState(false);
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -131,26 +128,6 @@ const AdminDashboard: React.FC = () => {
     finally { setIsActivatingAll(false); }
   };
 
-  const handleSimulate = async () => {
-    if (!simPhone || isSimulating) return;
-    setIsSimulating(true);
-    try {
-      let cleanPhone = simPhone.replace(/\s/g, '');
-      if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
-      if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-      const response = await fetch("https://uyqjorpvmqremxbfeepl.supabase.co/functions/v1/wave-webhook", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Kita-Auth': 'KITA_WEBHOOK_SECURE_2024' },
-        body: JSON.stringify({ message: `Vous avez reçu ${simAmount}F de ${cleanPhone}`, from: "TEST_CONSOLE" })
-      });
-      if (response.ok) {
-        showNotify("Signal capté par le Robot !");
-        setTimeout(fetchUsers, 2000);
-      } else { showNotify("Erreur Robot", "error"); }
-    } catch (err) { showNotify("Échec de connexion", "error"); }
-    finally { setIsSimulating(false); }
-  };
-
   const filteredUsers = useMemo(() => {
     const s = searchTerm.toLowerCase().trim();
     if (s) return users.filter(u => !u.isAdmin && (`${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || (u.establishmentName || '').toLowerCase().includes(s) || u.phoneNumber.includes(s)));
@@ -183,7 +160,6 @@ const AdminDashboard: React.FC = () => {
       <div className="max-w-[1600px] mx-auto space-y-12">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
           <div>
-            {/* PORTE DÉROBÉE VERS LA WAR ROOM SUR LE TEXTE "LIVE OPERATIONS" */}
             <button 
               onClick={() => navigate('/war-room')}
               className="flex items-center gap-3 text-brand-600 font-black text-[10px] uppercase tracking-[0.4em] mb-3 hover:text-amber-500 transition-colors group cursor-pointer"
@@ -195,7 +171,7 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-4 items-center">
             {stats.pending > 0 && (
-              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
+              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-50 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
                 {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Activer les {stats.pending} gérants
               </button>
@@ -208,43 +184,8 @@ const AdminDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <AdminStatCard icon={<Users />} label="Inscrits" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
-           <AdminStatCard icon={<ShieldCheck />} label="Statut Robot" val={stats.total >= 11 ? 'SCALE' : 'MANUEL'} sub={stats.total >= 11 ? 'Bouton Maître Actif' : 'Vérification Manuelle'} />
+           <AdminStatCard icon={<PenTool />} label="Contrats GMB" val={users.filter(u => u.gmbContractSignedAt).length} sub="Commandes en cours" />
            <AdminStatCard icon={<TrendingUp />} label="Recettes" val={`${stats.revenue.toLocaleString()} F`} />
-        </section>
-
-        <section className="bg-slate-900 rounded-[4rem] p-10 md:p-14 border border-white/5 shadow-2xl relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 transition-transform group-hover:scale-110"><Smartphone className="w-48 h-48 text-emerald-500" /></div>
-           <div className="relative z-10 flex flex-col lg:flex-row gap-16">
-              <div className="flex-grow space-y-8">
-                 <div className="flex items-center gap-5">
-                    <div className="h-16 w-16 bg-emerald-500 text-slate-900 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-emerald-500/20"><Cpu className="w-10 h-10" /></div>
-                    <div><h3 className="text-2xl font-serif font-bold text-white tracking-tight">Radar Wave Automatisé</h3><p className="text-emerald-400 font-black text-[9px] uppercase tracking-[0.3em] flex items-center gap-2"><Radio className="w-3 h-3 animate-pulse" /> Live Monitoring</p></div>
-                 </div>
-                 <div className="grid sm:grid-cols-2 gap-8 max-w-3xl">
-                    <div className="space-y-6">
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Test Signal Robot</p>
-                       <div className="space-y-4">
-                          <input type="tel" placeholder="0544869313" value={simPhone} onChange={e => setSimPhone(e.target.value)} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl px-6 py-4 text-white text-lg font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none" />
-                          <select value={simAmount} onChange={e => setSimAmount(e.target.value)} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl px-6 py-4 text-white text-xs font-black appearance-none cursor-pointer"><option value="15000">PACK FULL (15.000 F)</option><option value="10000">PACK ELITE (10.000 F)</option><option value="5000">PACK OUTILS (5.000 F)</option></select>
-                          <button onClick={handleSimulate} disabled={isSimulating || !simPhone} className="w-full bg-emerald-500 text-slate-900 py-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 hover:bg-emerald-400 transition-all">
-                             {isSimulating ? <Loader2 className="animate-spin w-5 h-5" /> : <Terminal className="w-5 h-5" />} Simuler Réception Wave
-                          </button>
-                       </div>
-                    </div>
-                    <div className="bg-black/40 backdrop-blur-md p-8 rounded-[3rem] border border-white/5 flex flex-col h-full min-h-[300px]">
-                       <div className="flex justify-between items-center mb-6"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flux d'activité</p><button onClick={fetchLogs} className="p-2 text-slate-500 hover:text-white transition-colors"><RefreshCcw className="w-3.5 h-3.5" /></button></div>
-                       <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-3">
-                          {logs.map((log, i) => (
-                            <div key={i} className={`border-l-4 pl-5 py-3 rounded-r-2xl bg-white/[0.02] ${log.status === 'SUCCÈS' ? 'border-emerald-500' : 'border-amber-500'}`}>
-                               <div className="flex justify-between items-center mb-1"><p className="text-[11px] text-white font-black uppercase">{log.sender}</p><span className="text-[8px] text-slate-600">{new Date(log.created_at).toLocaleTimeString()}</span></div>
-                               <p className={`text-[10px] font-bold ${log.status === 'SUCCÈS' ? 'text-emerald-400' : 'text-slate-300'}`}>{log.details || log.message}</p>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-                 </div>
-              </div>
-           </div>
         </section>
 
         <div className="bg-white rounded-[3.5rem] border border-slate-200 overflow-hidden shadow-2xl">
@@ -261,7 +202,7 @@ const AdminDashboard: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
+              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut & GMB</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map(u => {
                   const certs = Object.values(u.progress || {}).filter(s => Number(s) >= 80).length;
@@ -281,7 +222,13 @@ const AdminDashboard: React.FC = () => {
                                <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{u.isActive ? 'Actif' : 'En attente'}</span>
                             </div>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifications</span>
+                            <div className="flex items-center gap-2">
+                               {u.gmbContractSignedAt ? (
+                                  <span className="bg-sky-50 text-sky-600 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border border-sky-100 flex items-center gap-1"><PenTool className="w-2.5 h-2.5" /> GMB Signé</span>
+                               ) : (
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifs</span>
+                               )}
+                            </div>
                          </div>
                       </td>
                       <td className="px-12 py-8 text-right"><button className="p-4 bg-slate-100 rounded-2xl text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all shadow-sm"><ChevronRight className="w-5 h-5" /></button></td>
@@ -310,6 +257,24 @@ const AdminDashboard: React.FC = () => {
                      <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-500 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
                   </div>
                </div>
+
+               {selectedUser.gmbContractSignedAt && (
+                 <div className="bg-sky-50 rounded-[2.5rem] p-8 border border-sky-100">
+                    <div className="flex items-center gap-4 mb-6">
+                       <PenTool className="w-6 h-6 text-sky-600" />
+                       <h4 className="text-xl font-bold text-sky-900">Contrat GMB à traiter</h4>
+                    </div>
+                    <p className="text-sm text-sky-700 leading-relaxed italic mb-6">
+                       Ce gérant a validé l'engagement GMB le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}. Vérifiez le paiement Wave de 5 000 F avant de lancer la création.
+                    </p>
+                    <div className="flex gap-4">
+                       <button className="flex-1 bg-white text-sky-600 py-3 rounded-xl font-black text-[10px] uppercase border border-sky-200 shadow-sm flex items-center justify-center gap-2">
+                          <Eye className="w-4 h-4" /> Voir Contrat (PDF)
+                       </button>
+                    </div>
+                 </div>
+               )}
+
                <div className="grid grid-cols-2 gap-6">
                   <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
                      <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />

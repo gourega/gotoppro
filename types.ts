@@ -1,4 +1,3 @@
-
 export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN';
 
 export interface UserActionCommitment {
@@ -36,7 +35,7 @@ export interface KitaTransaction {
   clientId?: string;
   productId?: string;
   staffName?: string;
-  commissionRate?: number;
+  commission_rate?: number;
   tipAmount?: number; // Nouveau: Pourboire pour le collaborateur
   isCredit?: boolean; 
   discount?: number;
@@ -100,6 +99,11 @@ export interface UserProfile {
   
   strategicAudit?: string;
   marketingCredits: number;
+
+  // Google My Business Integration
+  gmbStatus?: 'NONE' | 'PENDING' | 'ACTIVE';
+  gmbUrl?: string;
+  gmbContractSignedAt?: string;
   
   badges: string[];
   purchasedModuleIds: string[];

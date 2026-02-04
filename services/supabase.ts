@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole } from '../types';
 
@@ -98,6 +97,9 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
     strategicAudit: data.strategicAudit || data.strategic_audit || '',
     marketingCredits: data.marketingCredits ?? data.marketing_credits ?? 3,
+    gmbStatus: data.gmbStatus || data.gmb_status || 'NONE',
+    gmbUrl: data.gmbUrl || data.gmb_url || '',
+    gmbContractSignedAt: data.gmbContractSignedAt || data.gmb_contract_signed_at || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
     purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
     pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
@@ -161,7 +163,7 @@ export const getPublicDirectory = async () => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('uid, establishmentName, firstName, lastName, photoURL, purchasedModuleIds, isKitaPremium, badges, isPublic, isActive')
+      .select('uid, establishmentName, firstName, lastName, photoURL, purchasedModuleIds, isKitaPremium, badges, isPublic, isActive, gmb_status, gmb_url')
       .eq('isPublic', true)
       .eq('isActive', true)
       .neq('role', 'SUPER_ADMIN')
@@ -203,7 +205,8 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     const { error } = await supabase.from('kita_transactions').insert({
       id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
       label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-      date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commissionRate,
+      // Fix: Property 'commissionRate' does not exist on type 'Omit<KitaTransaction, "id">'. Using 'commission_rate' instead.
+      date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
       tip_amount: transaction.tipAmount || 0,
       is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
       original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0

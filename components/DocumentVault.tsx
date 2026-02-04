@@ -12,10 +12,12 @@ import {
   Award,
   ExternalLink,
   ChevronRight,
-  Eye
+  Eye,
+  Globe,
+  PenTool
 } from 'lucide-react';
 import { UserProfile } from '../types';
-import { KITA_LOGO, BRAND_LOGO, COACH_KITA_FULL_NAME, COACH_KITA_PHONE, COACH_KITA_ADDRESS } from '../constants';
+import { KITA_LOGO, BRAND_LOGO, COACH_KITA_FULL_NAME, COACH_KITA_PHONE, COACH_KITA_ADDRESS, COACH_KITA_ESTABLISHMENT } from '../constants';
 
 interface DocumentVaultProps {
   user: UserProfile;
@@ -26,9 +28,90 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Fonction de formatage robuste pour éviter les séparateurs exotiques (ex: /)
   const formatCFA = (amount: number) => {
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
+
+  const generateGMBContractPDF = () => {
+    setLoading(true);
+    const doc = new jsPDF() as any;
+    const today = new Date();
+    const signDate = user.gmbContractSignedAt ? new Date(user.gmbContractSignedAt).toLocaleDateString('fr-FR') : today.toLocaleDateString('fr-FR');
+    
+    // --- Header ---
+    doc.setFillColor(12, 74, 110);
+    doc.rect(0, 0, 210, 50, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text("CONTRAT DE VISIBILITÉ DIGITALE", 15, 30);
+    doc.setFontSize(10);
+    doc.text("Standard d'Excellence KITA — Google My Business", 15, 40);
+
+    // --- Parties ---
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text("PRESTATAIRE :", 15, 65);
+    doc.setFont('helvetica', 'normal');
+    doc.text(COACH_KITA_ESTABLISHMENT, 15, 72);
+    doc.text(COACH_KITA_ADDRESS, 15, 77);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("BÉNÉFICIAIRE :", 110, 65);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${user.firstName} ${user.lastName}`, 110, 72);
+    doc.text(user.establishmentName || "Salon Go'Top", 110, 77);
+    doc.text(`Tél : ${user.phoneNumber}`, 110, 82);
+
+    // --- Clauses ---
+    doc.setFont('helvetica', 'bold');
+    doc.text("ARTICLE 1 : OBJET DE LA MISSION", 15, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text("Le présent contrat a pour objet la création, le paramétrage et l'optimisation SEO de la fiche Google My Business", 15, 107);
+    doc.text("de l'établissement cité ci-dessus par l'équipe d'experts Go'Top Pro.", 15, 112);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("ARTICLE 2 : DURÉE ET MAINTENANCE", 15, 125);
+    doc.setFont('helvetica', 'normal');
+    doc.text("Le contrat est conclu pour une durée de 12 mois renouvelables. Durant cette période, le prestataire assure", 15, 132);
+    doc.text("la mise à jour technique des informations et le support en cas de suspension de la fiche par Google.", 15, 137);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("ARTICLE 3 : INVESTISSEMENT", 15, 150);
+    doc.setFont('helvetica', 'normal');
+    doc.text("Le montant total de la prestation s'élève à 5 000 F CFA, payable en une seule fois via Wave.", 15, 157);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("ARTICLE 4 : OBLIGATIONS", 15, 170);
+    doc.setFont('helvetica', 'normal');
+    doc.text("- Le prestataire s'engage à livrer la fiche sous 10 jours ouvrés après réception du paiement et des photos.", 15, 177);
+    doc.text("- Le bénéficiaire s'engage à fournir des photos de haute qualité et des informations exactes.", 15, 182);
+
+    // --- Signatures ---
+    const finalY = 220;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(15, finalY, 195, finalY);
+
+    doc.setFontSize(10);
+    doc.text("Signature du Mentor (Kita)", 15, finalY + 15);
+    doc.text("Signature du Gérant (Digitale)", 120, finalY + 15);
+    
+    doc.setFontSize(8);
+    doc.text("CANTIC THINK IA — Cachet Officiel", 15, finalY + 22);
+    doc.text(`Signé le : ${signDate}`, 120, finalY + 22);
+    doc.text(`ID Transaction : ${user.uid.substring(0,8).toUpperCase()}`, 120, finalY + 27);
+
+    // Cadre Signature Digitale
+    doc.setDrawColor(16, 185, 129);
+    doc.rect(120, finalY + 35, 60, 25);
+    doc.setTextColor(16, 185, 129);
+    doc.setFontSize(12);
+    doc.text("CONTRAT SCELLÉ", 125, finalY + 50);
+
+    doc.save(`Contrat_GMB_${user.establishmentName?.replace(/\s/g, '_')}.pdf`);
+    setLoading(false);
   };
 
   const generateInvoicePDF = () => {
@@ -37,40 +120,24 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     const today = new Date();
     const invoiceDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : today.toLocaleDateString('fr-FR');
     
-    const packName = isElite ? "Pack Excellence Totale (Go'Top Pro)" : `Pack Formation (${user.purchasedModuleIds.length} modules)`;
-    const amount = isElite ? 15000 : (user.purchasedModuleIds.length * 500);
-    const formattedAmount = formatCFA(amount);
-
-    // --- Header Style ---
-    doc.setFillColor(12, 74, 110); // brand-900
-    doc.rect(0, 0, 210, 50, 'F');
+    const trainingAmount = isElite ? 15000 : (user.purchasedModuleIds.length * 500);
+    const gmbAmount = user.gmbStatus !== 'NONE' ? 5000 : 0;
+    const totalAmount = trainingAmount + gmbAmount;
     
+    const formattedAmount = formatCFA(totalAmount);
+
+    // --- Header ---
+    doc.setFillColor(12, 74, 110);
+    doc.rect(0, 0, 210, 50, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(26);
     doc.setFont('helvetica', 'bold');
     doc.text("FACTURE D'HONNEUR", 15, 30);
-    
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
     doc.text("Standard d'Excellence KITA — V2.5", 15, 40);
 
-    // --- Invoice Info ---
-    doc.setTextColor(51, 65, 85);
-    doc.setFontSize(10);
-    doc.text(`Facture N° : INV-${user.uid.substring(0,6).toUpperCase()}`, 150, 65);
-    doc.text(`Date : ${invoiceDate}`, 150, 72);
-
     // --- Vendor & Client ---
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text("ÉMETTEUR :", 15, 65);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(COACH_KITA_FULL_NAME, 15, 72);
-    doc.text("CANTIC THINK IA", 15, 77);
-    doc.text(COACH_KITA_ADDRESS, 15, 82);
-    doc.text(`WhatsApp : ${COACH_KITA_PHONE}`, 15, 87);
-
+    doc.setTextColor(51, 65, 85);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text("CLIENT :", 15, 105);
@@ -78,52 +145,27 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
     doc.setFontSize(10);
     doc.text(`${user.firstName} ${user.lastName}`, 15, 112);
     doc.text(user.establishmentName || "Établissement Indépendant", 15, 117);
-    doc.text(`ID Gérant : ${user.phoneNumber}`, 15, 122);
 
-    // --- Table ---
+    const body = [];
+    if (trainingAmount > 0) {
+      body.push([isElite ? "Pack Excellence Totale" : "Modules Académie", 'Licence Unique', `${formatCFA(trainingAmount)} F`, `${formatCFA(trainingAmount)} F`]);
+    }
+    if (gmbAmount > 0) {
+      body.push(["Contrat Visibilité Google (GMB)", 'Prestation 12 mois', "5 000 F", "5 000 F"]);
+    }
+
     doc.autoTable({
       startY: 135,
-      head: [['Description de l\'Investissement', 'Type', 'Prix Unitaire', 'Total (F CFA)']],
-      body: [
-        [packName, 'Licence Unique', `${formattedAmount} F`, `${formattedAmount} F`]
-      ],
+      head: [['Description', 'Type', 'Prix Unitaire', 'Total']],
+      body: body,
       theme: 'grid',
-      headStyles: { fillColor: [12, 74, 110], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 
-        2: { halign: 'right' },
-        3: { halign: 'right', fontStyle: 'bold' } 
-      }
+      headStyles: { fillColor: [12, 74, 110] }
     });
 
-    // --- Total Section (CORRECTION CHEVAUCHEMENT) ---
     const finalY = (doc as any).lastAutoTable.finalY || 160;
-    
-    // Ligne horizontale de séparation
-    doc.setDrawColor(226, 232, 240);
-    doc.line(15, finalY + 10, 195, finalY + 10);
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(100, 116, 139);
-    doc.text("MONTANT TOTAL RÉGLÉ :", 15, finalY + 22); // Aligné à Gauche
-
-    doc.setFontSize(18);
-    doc.setTextColor(16, 185, 129); // emerald-500
-    doc.text(`${formattedAmount} F CFA`, 195, finalY + 22, { align: 'right' }); // Aligné à Droite
-
-    // --- Stamp & Legal ---
-    doc.setDrawColor(16, 185, 129);
-    doc.setLineWidth(1);
-    doc.setTextColor(16, 185, 129);
     doc.setFontSize(14);
-    // Cadre "PAYÉ" repositionné pour la clarté
-    doc.rect(145, finalY + 35, 50, 20);
-    doc.text("PAYÉ", 160, finalY + 48);
-    
-    doc.setTextColor(148, 163, 184);
-    doc.setFontSize(8);
-    doc.text("Cette facture atteste du paiement intégral via Wave CI.", 15, finalY + 80);
-    doc.text("Go'Top Pro est une propriété exclusive de CANTICTHINKIA.", 15, finalY + 85);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL RÉGLÉ : ${formattedAmount} F CFA`, 15, finalY + 20);
 
     doc.save(`Facture_GoTopPro_${user.establishmentName?.replace(/\s/g, '_')}.pdf`);
     setLoading(false);
@@ -164,11 +206,11 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
            </div>
            <div>
               <h2 className="text-2xl font-serif font-bold text-white tracking-tight">Mon Coffre-Fort Stratégique</h2>
-              <p className="text-amber-400/60 font-black text-[9px] uppercase tracking-[0.3em]">Actes Officiels & Preuves d'Investissement</p>
+              <p className="text-amber-400/60 font-black text-[9px] uppercase tracking-[0.3em]">Actes Officiels & Contrats</p>
            </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
            {/* CARTE FACTURE */}
            <button 
              onClick={generateInvoicePDF}
@@ -180,12 +222,32 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
                     <FileText className="w-7 h-7" />
                  </div>
                  <div>
-                    <h3 className="text-white font-bold text-lg mb-1">Ma Facture d'Honneur</h3>
-                    <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Preuve d'investissement Go'Top Pro</p>
+                    <h3 className="text-white font-bold text-lg mb-1">Ma Facture</h3>
+                    <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Preuve d'investissement</p>
                  </div>
               </div>
               {loading ? <Loader2 className="w-5 h-5 text-amber-400 animate-spin" /> : <Download className="w-5 h-5 text-slate-500 group-hover/card:text-amber-400" />}
            </button>
+
+           {/* CARTE CONTRAT GMB (Si actif ou en attente) */}
+           {user.gmbContractSignedAt && (
+             <button 
+               onClick={generateGMBContractPDF}
+               disabled={loading}
+               className="bg-white/5 hover:bg-white/10 border border-white/10 p-8 rounded-[2.5rem] text-left transition-all group/card flex items-center justify-between shadow-xl"
+             >
+                <div className="flex items-center gap-6">
+                   <div className="h-14 w-14 bg-white/5 rounded-2xl flex items-center justify-center text-sky-400 group-hover/card:scale-110 transition-transform">
+                      <PenTool className="w-7 h-7" />
+                   </div>
+                   <div>
+                      <h3 className="text-white font-bold text-lg mb-1">Mon Contrat GMB</h3>
+                      <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Prestation Visibilité</p>
+                   </div>
+                </div>
+                {loading ? <Loader2 className="w-5 h-5 text-sky-400 animate-spin" /> : <Download className="w-5 h-5 text-slate-500 group-hover/card:text-sky-400" />}
+             </button>
+           )}
 
            {/* CARTE AUDIT */}
            <button 
@@ -197,8 +259,8 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
                     <FileSearch className="w-7 h-7" />
                  </div>
                  <div>
-                    <h3 className="text-white font-bold text-lg mb-1">Mon Diagnostic Initial</h3>
-                    <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Le Baseline du salon au Jour 0</p>
+                    <h3 className="text-white font-bold text-lg mb-1">Mon Diagnostic</h3>
+                    <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Le Baseline du salon</p>
                  </div>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-500 group-hover/card:text-emerald-400" />
@@ -222,7 +284,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ user, isElite }) => {
                     <FileSearch className="w-10 h-10 text-emerald-400" />
                  </div>
                  <div>
-                    <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-tight">Rapport de Diagnostic Initial</h2>
+                    <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-tight">Rapport de Diagnostic</h2>
                     <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em]">Document certifié par Coach Kita</p>
                  </div>
               </div>
