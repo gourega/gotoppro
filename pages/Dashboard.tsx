@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +29,11 @@ import {
   Check,
   Gem,
   Star,
-  Shield
+  Shield,
+  BarChart3,
+  UserCheck,
+  AlertTriangle,
+  Receipt
 } from 'lucide-react';
 import { UserActionCommitment, KitaTransaction } from '../types';
 
@@ -46,8 +49,6 @@ const Dashboard: React.FC = () => {
   const [isInjectingZero, setIsInjectingZero] = useState(false);
   
   const isElite = useMemo(() => user?.isKitaPremium || (user?.purchasedModuleIds?.length || 0) >= 16, [user]);
-  const isPerformance = useMemo(() => user?.hasPerformancePack || false, [user]);
-  const isStockExpert = useMemo(() => user?.hasStockPack || false, [user]);
   const isStaff = useMemo(() => user?.role === 'STAFF_ELITE' || user?.role === 'STAFF_ADMIN', [user]);
 
   useEffect(() => {
@@ -83,12 +84,10 @@ const Dashboard: React.FC = () => {
       const trans = await getKitaTransactions(targetUid);
       setSalonTransactions(trans);
       
-      // LOGIQUE : Injection de la Facture en Dépense (Opération Zéro)
       if (!isStaff && user.isActive && !isInjectingZero) {
         const hasZeroOp = trans.some(t => t.label.includes("Investissement Initial Go'Top Pro"));
         if (!hasZeroOp) {
           setIsInjectingZero(true);
-          // Calcul du montant basé sur le statut
           const amount = isElite ? 15000 : (user.purchasedModuleIds.length * 500);
           if (amount > 0) {
             await addKitaTransaction(user.uid, {
@@ -100,7 +99,6 @@ const Dashboard: React.FC = () => {
               date: user.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
               staffName: "Gérant"
             });
-            // Recharger les transactions pour inclure l'opération zéro
             const updatedTrans = await getKitaTransactions(user.uid);
             setSalonTransactions(updatedTrans);
           }
@@ -118,16 +116,36 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const myPerformance = useMemo(() => {
-    if (!isStaff || !user) return { commissions: 0, tips: 0, count: 0 };
-    const myName = `${user.firstName} ${user.lastName}`.trim();
-    const myTrans = salonTransactions.filter(t => t.staffName === myName || t.staffName === user.firstName);
+  // --- LOGIQUE KPI CALCULÉS ---
+  const kpis = useMemo(() => {
+    const incomeTrans = salonTransactions.filter(t => t.type === 'INCOME' && !t.isCredit);
+    const expenseTrans = salonTransactions.filter(t => t.type === 'EXPENSE');
+    const creditTrans = salonTransactions.filter(t => t.isCredit);
+
+    const totalIncome = incomeTrans.reduce((acc, t) => acc + t.amount, 0);
+    const totalExpenses = expenseTrans.reduce((acc, t) => acc + t.amount, 0);
+    const totalCredits = creditTrans.reduce((acc, t) => acc + t.amount, 0);
     
-    const commissions = myTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || 0) / 100), 0);
-    const tips = myTrans.reduce((acc, t) => acc + (t.tipAmount || 0), 0);
-    
-    return { commissions, tips, count: myTrans.length };
-  }, [salonTransactions, isStaff, user]);
+    // 1. Ticket Moyen
+    const avgTicket = incomeTrans.length > 0 ? Math.round(totalIncome / incomeTrans.length) : 0;
+
+    // 2. Ratio Recettes/Dépenses
+    const expenseRatio = totalIncome > 0 ? Math.min(100, Math.round((totalExpenses / totalIncome) * 100)) : 0;
+
+    // 3. Top Collaborateur
+    const staffSales: Record<string, number> = {};
+    incomeTrans.filter(t => t.staffName && t.staffName !== 'Gérant').forEach(t => {
+      staffSales[t.staffName!] = (staffSales[t.staffName!] || 0) + t.amount;
+    });
+    const topEntry = Object.entries(staffSales).sort((a,b) => b[1] - a[1])[0];
+
+    return {
+      avgTicket,
+      expenseRatio,
+      totalCredits,
+      topCollab: topEntry ? { name: topEntry[0], amount: topEntry[1] } : null
+    };
+  }, [salonTransactions]);
 
   const handleToggleCommitment = async (commitment: UserActionCommitment) => {
     if (!user || isUpdatingCommitment) return;
@@ -194,7 +212,6 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 mt-[-100px] pb-32 space-y-12 relative z-20 w-full">
         
-        {/* COFFRE-FORT STRATÉGIQUE (ACTES OFFICIELS) */}
         {!isStaff && (
           <DocumentVault user={user} isElite={isElite} />
         )}
@@ -216,30 +233,7 @@ const Dashboard: React.FC = () => {
            <QuickActionBtn icon={<Camera className="w-6 h-6" />} label="POST IA" sub="Marketing" onClick={() => navigate('/marketing')} color="bg-indigo-600" />
         </section>
 
-        {/* PERFORMANCE STAFF (Vue Spécifique) */}
-        {isStaff && (
-          <section className="grid md:grid-cols-2 gap-6 animate-in slide-in-from-top-4">
-             <div className="bg-white rounded-[3rem] p-10 shadow-2xl border-l-[12px] border-emerald-500 flex flex-col justify-between group overflow-hidden relative">
-                <TrendingUp className="absolute -bottom-4 -right-4 w-32 h-32 opacity-[0.03] group-hover:rotate-12 transition-transform" />
-                <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Mes Commissions</p>
-                   <p className="text-5xl font-black text-slate-900 tracking-tighter">{myPerformance.commissions.toLocaleString()} <span className="text-sm">F</span></p>
-                </div>
-                <p className="text-[9px] font-bold text-slate-400 mt-6 uppercase">Basé sur {myPerformance.count} prestations terminées</p>
-             </div>
-             
-             <div className="bg-brand-900 rounded-[3rem] p-10 shadow-2xl border-l-[12px] border-amber-400 flex flex-col justify-between group overflow-hidden relative text-white">
-                <Gem className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10 group-hover:rotate-12 transition-transform" />
-                <div>
-                   <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-4">Mes Pourboires 💎</p>
-                   <p className="text-5xl font-black text-amber-400 tracking-tighter">{myPerformance.tips.toLocaleString()} <span className="text-sm">F</span></p>
-                </div>
-                <p className="text-[9px] font-bold text-white/40 mt-6 uppercase">La récompense de votre excellence</p>
-             </div>
-          </section>
-        )}
-
-        {/* ANALYSE PROACTIVE DU MENTOR (Gérant uniquement) */}
+        {/* ANALYSE PROACTIVE DU MENTOR */}
         {businessInsight && !isStaff && (
           <section className="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border-l-[12px] border-emerald-500 animate-in slide-in-from-top-4">
              <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -285,6 +279,70 @@ const Dashboard: React.FC = () => {
               </div>
            </div>
         </div>
+
+        {/* SECTION INDICATEURS DE PERFORMANCE (DÉCISIONNEL) - REMPLACE LES BLOCS LOGISTIQUE/HUMAINS */}
+        {!isStaff && (
+          <section className="space-y-8 animate-in slide-in-from-bottom-6">
+            <div className="flex items-center gap-4 px-4">
+              <BarChart3 className="w-6 h-6 text-brand-600" />
+              <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.4em]">Pilotage Décisionnel</h2>
+              <div className="h-px bg-slate-200 flex-grow"></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+               {/* 1. Ticket Moyen */}
+               <KPICard 
+                 icon={<Receipt className="w-6 h-6" />}
+                 label="Ticket Moyen"
+                 value={`${kpis.avgTicket.toLocaleString()} F`}
+                 sub="CA par client"
+                 color="text-indigo-600"
+                 bgColor="bg-indigo-50"
+               />
+
+               {/* 2. Top Collaborateur */}
+               <KPICard 
+                 icon={<UserCheck className="w-6 h-6" />}
+                 label="Top Staff"
+                 value={kpis.topCollab ? kpis.topCollab.name : "—"}
+                 sub={kpis.topCollab ? `${kpis.topCollab.amount.toLocaleString()} F générés` : "Aucune vente staff"}
+                 color="text-emerald-600"
+                 bgColor="bg-emerald-50"
+                 onClick={() => navigate('/pilotage')}
+               />
+
+               {/* 3. Ardoises Clients */}
+               <KPICard 
+                 icon={<AlertTriangle className="w-6 h-6" />}
+                 label="Dettes Clients"
+                 value={`${kpis.totalCredits.toLocaleString()} F`}
+                 sub="Total à recouvrer"
+                 color={kpis.totalCredits > 0 ? "text-rose-600" : "text-slate-400"}
+                 bgColor="bg-rose-50"
+                 onClick={() => navigate('/caisse')}
+                 alert={kpis.totalCredits > 10000}
+               />
+
+               {/* 4. Ratio Cash-Flow */}
+               <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col justify-between group">
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Charges / CA</p>
+                       <TrendingUp className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <p className="text-3xl font-black text-slate-900 tracking-tighter">{kpis.expenseRatio}%</p>
+                    <p className="text-[9px] font-bold text-slate-400 mt-1">Part des dépenses</p>
+                  </div>
+                  <div className="mt-6 h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${kpis.expenseRatio > 40 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${kpis.expenseRatio}%` }}
+                    ></div>
+                  </div>
+               </div>
+            </div>
+          </section>
+        )}
 
         {/* SECTION MES ENGAGEMENTS D'ÉLITE */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border border-slate-100">
@@ -371,10 +429,11 @@ const Dashboard: React.FC = () => {
            )}
         </section>
 
+        {/* SECTION GESTION FINANCIÈRE (JOURNAL) */}
         <section className="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-t-[8px] border-amber-400 relative overflow-hidden group w-full">
            <div className="flex flex-col md:flex-row justify-between items-center gap-12 relative z-10">
               <div className="space-y-6 text-center md:text-left">
-                 <div className="flex items-center justify-center md:justify-start gap-4"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{isStaff ? 'MA PERFORMANCE' : 'GESTION FINANCIÈRE'}</h2></div>
+                 <div className="flex items-center justify-center md:justify-start gap-4"><Wallet className="w-10 h-10 text-amber-500" /><h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{isStaff ? 'MA PERFORMANCE' : 'HISTORIQUE CAISSE'}</h2></div>
                  <p className="text-slate-500 font-medium max-w-md">
                    {isStaff 
                     ? "Suivez vos commissions et pourboires en temps réel pour mesurer votre montée en gamme." 
@@ -395,24 +454,6 @@ const Dashboard: React.FC = () => {
            </div>
         </section>
 
-        {!isStaff && (
-          <div className="grid lg:grid-cols-2 gap-8">
-             <div className={`rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all ${isStockExpert ? 'bg-slate-900 border-none' : 'bg-white border-2 border-sky-500/20'}`}>
-                <div className="relative z-10 h-full flex flex-col">
-                   <h2 className={`font-black text-[11px] uppercase tracking-[0.3em] mb-4 ${isStockExpert ? 'text-sky-400' : 'text-sky-500'}`}>LOGISTIQUE</h2>
-                   <h3 className={`text-2xl font-serif font-bold mb-6 ${isStockExpert ? 'text-white' : 'text-slate-900'}`}>Gestion du Stock</h3>
-                   {isStockExpert ? <button onClick={() => navigate('/magasin')} className="w-full bg-sky-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Accéder au Magasin</button> : <button onClick={() => navigate('/results?pack=stock')} className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><ShieldAlert className="w-4 h-4" /> Activer le Stock</button>}
-                </div>
-             </div>
-             <div className={`rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group transition-all border-2 ${isPerformance ? 'bg-white border-emerald-500' : 'bg-white border-emerald-500/20'}`}>
-                <div className="relative z-10 h-full flex flex-col">
-                   <h2 className="text-emerald-500 font-black text-[11px] uppercase tracking-[0.3em] mb-4">HUMAINS</h2>
-                   <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6">Pilotage d'Équipe</h3>
-                   {isPerformance ? <button onClick={() => navigate('/pilotage')} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl">Piloter le Staff</button> : <button onClick={() => navigate('/results?pack=performance')} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl"><ShieldAlert className="w-4 h-4" /> Activer les RH</button>}
-                </div>
-             </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -425,6 +466,23 @@ const QuickActionBtn = ({ icon, label, sub, onClick, color }: any) => (
         <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">{label}</p>
         <p className="text-[8px] font-bold text-slate-400 uppercase">{sub}</p>
      </div>
+  </button>
+);
+
+const KPICard = ({ icon, label, value, sub, color, bgColor, onClick, alert }: any) => (
+  <button 
+    onClick={onClick}
+    disabled={!onClick}
+    className={`bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 text-left flex flex-col justify-between group transition-all ${onClick ? 'hover:scale-[1.02] active:scale-95' : 'cursor-default'} ${alert ? 'ring-2 ring-rose-500/20' : ''}`}
+  >
+    <div className={`p-3 rounded-2xl w-fit mb-6 transition-transform group-hover:rotate-12 ${bgColor} ${color}`}>
+      {icon}
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+      <p className={`text-3xl font-black tracking-tighter ${color}`}>{value}</p>
+      <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">{sub}</p>
+    </div>
   </button>
 );
 
