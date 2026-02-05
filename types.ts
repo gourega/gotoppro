@@ -1,4 +1,4 @@
-export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN';
+export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN' | 'PARTNER';
 
 export interface UserActionCommitment {
   moduleId: string;
@@ -36,7 +36,7 @@ export interface KitaTransaction {
   productId?: string;
   staffName?: string;
   commission_rate?: number;
-  tipAmount?: number; // Nouveau: Pourboire pour le collaborateur
+  tipAmount?: number;
   isCredit?: boolean; 
   discount?: number;
   originalAmount?: number;

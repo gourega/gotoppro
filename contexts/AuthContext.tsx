@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
 import { 
@@ -41,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {}
 });
 
+/* Fix: Import React to provide namespace access for FC and ReactNode */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);

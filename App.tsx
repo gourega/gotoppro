@@ -22,6 +22,8 @@ import MarketingVisuel from './pages/MarketingVisuel';
 import Directory from './pages/Directory';
 import PublicProfile from './pages/PublicProfile';
 import ServiceGMB from './pages/ServiceGMB';
+import BecomePartner from './pages/BecomePartner';
+import PartnerDashboard from './pages/PartnerDashboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -65,10 +67,17 @@ const AppContent: React.FC = () => {
           <Route path="/results" element={<Results />} />
           <Route path="/nos-gerants" element={<Directory />} />
           <Route path="/p/:uid" element={<PublicProfile />} />
+          <Route path="/devenir-partenaire" element={<BecomePartner />} />
           
+          <Route path="/partner-dashboard" element={
+            <ProtectedRoute>
+              <PartnerDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <Dashboard />
+              {user?.role === 'PARTNER' ? <Navigate to="/partner-dashboard" replace /> : <Dashboard />}
             </ProtectedRoute>
           } />
 

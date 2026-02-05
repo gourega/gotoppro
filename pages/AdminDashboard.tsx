@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,9 +40,11 @@ import {
   Database,
   ShieldAlert,
   Server,
-  Shield
+  Shield,
+  Handshake
 } from 'lucide-react';
 
+/* Fix: Import React to provide access to FC namespace */
 const AdminDashboard: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'admins'>('inbox');
+  const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'partners' | 'admins'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
@@ -114,7 +116,9 @@ const AdminDashboard: React.FC = () => {
     if (selectedUser) {
       setTempAdminNotes(selectedUser.adminNotes || '');
       setGmbUrlInput(selectedUser.gmbUrl || '');
-      fetchUserFinancials(selectedUser.uid);
+      if (selectedUser.role !== 'PARTNER') {
+        fetchUserFinancials(selectedUser.uid);
+      }
     }
   }, [selectedUser]);
 
@@ -177,6 +181,17 @@ const AdminDashboard: React.FC = () => {
     finally { setIsSavingNotes(false); }
   };
 
+  const handleActivateUser = async (u: UserProfile) => {
+    try {
+      await updateUserProfile(u.uid, { isActive: true });
+      showNotify("Compte activé avec succès !");
+      fetchUsers();
+      setSelectedUser({ ...u, isActive: true });
+    } catch (err) {
+      showNotify("Erreur lors de l'activation", "error");
+    }
+  };
+
   const handleValidateGMB = async () => {
     if (!selectedUser || !gmbUrlInput.trim()) {
       showNotify("L'URL Google Maps est requise.", "error");
@@ -218,15 +233,23 @@ const AdminDashboard: React.FC = () => {
     const s = searchTerm.toLowerCase().trim();
     if (s) return users.filter(u => !u.isAdmin && (`${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || (u.establishmentName || '').toLowerCase().includes(s) || u.phoneNumber.includes(s)));
     if (viewMode === 'inbox') return users.filter(u => !u.isActive && !u.isAdmin);
-    if (viewMode === 'active') return users.filter(u => u.isActive && !u.isAdmin);
+    if (viewMode === 'active') return users.filter(u => u.isActive && (u.role === 'CLIENT' || u.role === 'STAFF_ELITE' || u.role === 'STAFF_ADMIN'));
+    if (viewMode === 'partners') return users.filter(u => u.role === 'PARTNER');
     if (viewMode === 'admins') return users.filter(u => u.isAdmin);
     return users.filter(u => !u.isAdmin);
   }, [users, searchTerm, viewMode]);
 
   const stats = useMemo(() => {
-    const clients = users.filter(u => !u.isAdmin);
+    const clients = users.filter(u => u.role === 'CLIENT' || u.role === 'STAFF_ELITE');
     const activeClients = clients.filter(u => u.isActive);
-    return { total: clients.length, active: activeClients.length, pending: clients.length - activeClients.length, revenue: activeClients.length * 10000 };
+    const partners = users.filter(u => u.role === 'PARTNER');
+    return { 
+      total: clients.length, 
+      active: activeClients.length, 
+      pending: clients.filter(c => !c.isActive).length, 
+      revenue: activeClients.length * 10000,
+      partnerCount: partners.length
+    };
   }, [users]);
 
   const copyToClipboard = (text: string) => {
@@ -256,7 +279,6 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
-            {/* BADGE DE SANTÉ PROACTIF */}
             <div className={`px-4 py-3 rounded-2xl border flex items-center gap-2 transition-all duration-700 ${
               globalDbHealth === 'healthy' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 
               globalDbHealth === 'warning' ? 'bg-rose-50 border-rose-100 text-rose-600 animate-bounce' : 
@@ -288,9 +310,9 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <AdminStatCard icon={<Users />} label="Inscrits" val={stats.total} />
+           <AdminStatCard icon={<Users />} label="Gérants" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
-           <AdminStatCard icon={<PenTool />} label="Google Business" val={users.filter(u => u.gmbContractSignedAt).length} sub="Commandes en cours" />
+           <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} sub="Apporteurs d'affaires" color="text-amber-600" />
            <AdminStatCard icon={<TrendingUp />} label="Recettes" val={`${stats.revenue.toLocaleString()} F`} />
         </section>
 
@@ -303,15 +325,15 @@ const AdminDashboard: React.FC = () => {
             <div className="flex bg-slate-100 p-2 rounded-3xl border">
               <button onClick={() => setViewMode('inbox')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'inbox' && !searchTerm ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Demandes</button>
               <button onClick={() => setViewMode('active')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'active' && !searchTerm ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Actifs</button>
+              <button onClick={() => setViewMode('partners')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'partners' && !searchTerm ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-500'}`}>Partenaires</button>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Gérant & Établissement</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut & Business</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
+              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Utilisateur</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rôle & Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map(u => {
-                  const certs = Object.values(u.progress || {}).filter(s => Number(s) >= 80).length;
                   return (
                     <tr key={u.uid} className="hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => setSelectedUser(u)}>
                       <td className="px-12 py-8">
@@ -319,25 +341,20 @@ const AdminDashboard: React.FC = () => {
                           <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>
                             {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" alt="" /> : u.firstName?.[0]}
                           </div>
-                          <div><p className="font-bold text-slate-900 text-xl leading-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || 'Salon GoTop'} • {u.phoneNumber}</p></div>
+                          <div><p className="font-bold text-slate-900 text-xl leading-tight">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || (u.role === 'PARTNER' ? 'Partenaire' : 'Indépendant')} • {u.phoneNumber}</p></div>
                         </div>
                       </td>
                       <td className="px-8 py-8">
                          <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                                <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{u.isActive ? 'Actif' : 'En attente'}</span>
+                               <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'PARTNER' ? 'text-amber-600' : 'text-slate-600'}`}>{u.role} — {u.isActive ? 'Actif' : 'En attente'}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                               {u.gmbContractSignedAt ? (
-                                  <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border flex items-center gap-1 ${u.gmbStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-sky-50 text-sky-600 border-sky-100'}`}>
-                                    <PenTool className="w-2.5 h-2.5" /> 
-                                    {u.gmbStatus === 'ACTIVE' ? 'Google Actif' : 'Google à créer'}
-                                  </span>
-                               ) : (
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">{certs} / 16 Certifs</span>
-                               )}
-                            </div>
+                            {u.referredBy && (
+                              <div className="flex items-center gap-1 text-[9px] font-bold text-brand-500">
+                                <Handshake className="w-3 h-3" /> Parrainé par {u.referredBy}
+                              </div>
+                            )}
                          </div>
                       </td>
                       <td className="px-12 py-8 text-right"><button className="p-4 bg-slate-100 rounded-2xl text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all shadow-sm"><ChevronRight className="w-5 h-5" /></button></td>
@@ -350,49 +367,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL SCANNER D'INTÉGRITÉ */}
-      {isHealthCheckOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 relative overflow-hidden animate-in zoom-in-95">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.03] text-slate-900 pointer-events-none text-8xl font-black italic">DB</div>
-             <button onClick={() => setIsHealthCheckOpen(false)} className="absolute top-8 right-8 p-3 text-slate-400 hover:text-rose-500 transition-colors"><X /></button>
-             
-             <div className="flex items-center gap-4 mb-10">
-                <div className="h-14 w-14 bg-slate-900 text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg">
-                   <Shield className="w-7 h-7" />
-                </div>
-                <div>
-                   <h2 className="text-2xl font-serif font-bold text-slate-900">Scanner d'Intégrité</h2>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vérification des structures SQL</p>
-                </div>
-             </div>
-
-             <div className="space-y-4">
-                {Object.entries(dbStatus).map(([table, status]) => (
-                  <div key={table} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                     <div className="flex items-center gap-4">
-                        <div className={`h-3 w-3 rounded-full ${status === 'loading' ? 'bg-slate-300 animate-pulse' : status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
-                        <span className="font-mono text-xs font-bold text-slate-700">{table}</span>
-                     </div>
-                     <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg ${status === 'loading' ? 'text-slate-400' : status === 'ok' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        {status === 'loading' ? 'Vérification...' : status === 'ok' ? 'Opérationnelle' : 'Structure Erreur'}
-                     </span>
-                  </div>
-                ))}
-             </div>
-
-             <div className="mt-10 p-6 bg-slate-900 rounded-[2rem] text-white border border-white/5">
-                <div className="flex items-start gap-4">
-                   <ShieldAlert className="w-5 h-5 text-brand-500 shrink-0 mt-1" />
-                   <p className="text-[10px] font-medium leading-relaxed italic opacity-80">
-                     Si une ligne est rouge, copiez-collez le script SQL fourni par le mentor dans l'éditeur de Supabase pour réparer la structure.
-                   </p>
-                </div>
-             </div>
-          </div>
-        </div>
-      )}
-
+      {/* DRAWER PILOTAGE */}
       {selectedUser && (
         <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/40 backdrop-blur-md animate-in fade-in">
           <div className="w-full max-w-2xl bg-white h-full shadow-2xl p-10 md:p-14 overflow-y-auto animate-in slide-in-from-right flex flex-col custom-scrollbar">
@@ -410,101 +385,44 @@ const AdminDashboard: React.FC = () => {
                   </div>
                </div>
 
-               {/* PILOTAGE GOOGLE BUSINESS (GMB) DIRECT */}
-               {selectedUser.gmbContractSignedAt && (
-                 <div className={`rounded-[2.5rem] p-8 border-2 transition-all ${selectedUser.gmbStatus === 'ACTIVE' ? 'bg-emerald-50 border-emerald-100' : 'bg-sky-50 border-sky-100 shadow-xl shadow-sky-100'}`}>
-                    <div className="flex items-center justify-between mb-8">
-                       <div className="flex items-center gap-4">
-                          <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-sm ${selectedUser.gmbStatus === 'ACTIVE' ? 'bg-emerald-500 text-white' : 'bg-sky-500 text-white'}`}>
-                             <Globe className="w-6 h-6" />
-                          </div>
-                          <div>
-                             <h4 className={`text-xl font-bold ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-900' : 'text-sky-900'}`}>
-                                {selectedUser.gmbStatus === 'ACTIVE' ? 'Fiche Google Active' : 'Pilotage Google Business'}
-                             </h4>
-                             <p className={`text-[10px] font-black uppercase tracking-widest ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-600' : 'text-sky-600'}`}>
-                                Commandé le {new Date(selectedUser.gmbContractSignedAt).toLocaleDateString()}
-                             </p>
-                          </div>
-                       </div>
-                       {selectedUser.gmbStatus === 'ACTIVE' && (
-                         <div className="bg-emerald-100 text-emerald-700 p-2 rounded-full">
-                           <CheckCircle2 className="w-6 h-6" />
-                         </div>
-                       )}
+               {/* ACTIONS PRINCIPALES */}
+               <div className="space-y-4">
+                  {!selectedUser.isActive && (
+                    <button 
+                      onClick={() => handleActivateUser(selectedUser)}
+                      className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"
+                    >
+                       <CheckCircle2 className="w-5 h-5" /> Activer ce compte
+                    </button>
+                  )}
+                  
+                  {selectedUser.role === 'PARTNER' && (
+                    <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex items-start gap-4">
+                       <Zap className="w-6 h-6 text-amber-500 shrink-0" />
+                       <p className="text-xs text-amber-800 font-medium italic">
+                         Ce partenaire pourra générer des revenus en propulsant Go'Top Pro dans son réseau d'influence.
+                       </p>
                     </div>
+                  )}
+               </div>
 
-                    <div className="space-y-6">
-                       <div>
-                          <label className={`block text-[9px] font-black uppercase mb-2 ml-4 ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-400' : 'text-sky-400'}`}>
-                             URL Google Maps (Lien final)
-                          </label>
-                          <div className="relative group">
-                             <MapPin className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 ${selectedUser.gmbStatus === 'ACTIVE' ? 'text-emerald-300' : 'text-sky-300'}`} />
-                             <input 
-                               type="text" 
-                               placeholder="https://maps.app.goo.gl/..." 
-                               value={gmbUrlInput}
-                               onChange={e => setGmbUrlInput(e.target.value)}
-                               className="w-full pl-12 pr-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold focus:ring-2 focus:ring-sky-500/20 outline-none"
-                             />
-                          </div>
-                       </div>
-
-                       <div className="flex gap-4">
-                          <button 
-                             onClick={handleValidateGMB}
-                             disabled={isUpdatingGMB || !gmbUrlInput.trim()}
-                             className={`flex-grow py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all ${
-                               selectedUser.gmbStatus === 'ACTIVE' 
-                               ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-                               : 'bg-brand-900 text-white hover:bg-black'
-                             }`}
-                          >
-                             {isUpdatingGMB ? <Loader2 className="w-5 h-5 animate-spin" /> : selectedUser.gmbStatus === 'ACTIVE' ? <Save className="w-5 h-5" /> : <PenTool className="w-5 h-5" />}
-                             {selectedUser.gmbStatus === 'ACTIVE' ? 'Mettre à jour le lien' : 'Publier & Activer la Fiche'}
-                          </button>
-                          
-                          {selectedUser.gmbUrl && (
-                             <a 
-                               href={selectedUser.gmbUrl} 
-                               target="_blank" 
-                               rel="noreferrer" 
-                               className="h-14 w-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-brand-600 hover:border-brand-100 transition-all"
-                             >
-                                <ExternalLink className="w-6 h-6" />
-                             </a>
-                          )}
-                       </div>
-
-                       {selectedUser.gmbStatus !== 'ACTIVE' && (
-                         <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                           <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                           <p className="text-[10px] text-amber-700 font-medium leading-relaxed italic">
-                             Action irréversible : L'activation informera le gérant par notification et débloquera son contrat scellé.
-                           </p>
-                         </div>
-                       )}
+               {selectedUser.role !== 'PARTNER' && (
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                       <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
+                       <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
+                       <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
+                    </div>
+                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                       <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Jetons IA Marketing</p>
+                       <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
                     </div>
                  </div>
                )}
 
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
-                     <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
-                     <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
-                     <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
-                  </div>
-                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                     <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Jetons IA Marketing</p>
-                     <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
-                  </div>
-               </div>
                <section className="space-y-6">
-                  <div className="flex items-center justify-between px-4">
-                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Notes Mentor</h4>
-                  </div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Notes Mentor</h4>
                   <textarea 
                     value={tempAdminNotes}
                     onChange={e => setTempAdminNotes(e.target.value)}
