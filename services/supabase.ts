@@ -39,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.7-FINAL-MAPPING"
+  version: "2.9.11-FINAL-UNIFIED"
 };
 
 const getSafeSupabaseClient = () => {
@@ -65,8 +65,7 @@ export const generateUUID = () => {
 };
 
 /**
- * MAPPAGE VERS DB (ÉCRITURE)
- * FORCE L'UTILISATION DU snake_case POUR EVITER PGRST204
+ * MAPPAGE VERS DB (ÉCRITURE STRICTE SNAKE_CASE)
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
@@ -88,19 +87,25 @@ const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   if (profile.referredBy !== undefined) db.referred_by = profile.referredBy;
   if (profile.marketingCredits !== undefined) db.marketing_credits = profile.marketingCredits;
   if (profile.createdAt !== undefined) db.created_at = profile.createdAt;
+  
+  if (profile.employeeCount !== undefined) db.employee_count = profile.employeeCount;
+  if (profile.openingYear !== undefined) db.opening_year = profile.openingYear;
+  if (profile.purchasedModuleIds !== undefined) db.purchased_module_ids = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) db.pending_module_ids = profile.pendingModuleIds;
+  if (profile.gmbStatus !== undefined) db.gmb_status = profile.gmbStatus;
+  
   return db;
 };
 
 /**
- * MAPPAGE DEPUIS DB (LECTURE)
- * GÈRE LES DEUX FORMATS POUR LA COMPATIBILITÉ
+ * MAPPAGE DEPUIS DB (LECTURE FLEXIBLE)
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     uid: data.uid || data.id,
     phoneNumber: data.phone_number || data.phoneNumber || '',
-    pinCode: data.phone_code || data.pinCode || '1234',
+    pinCode: data.phone_code || data.phone_code || data.pinCode || '1234',
     email: data.email,
     firstName: data.first_name || data.firstName || '',
     lastName: data.last_name || data.lastName || '',
