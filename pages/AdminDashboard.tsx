@@ -130,7 +130,6 @@ const AdminDashboard: React.FC = () => {
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
 
-      // Recherche dans les deux tables via getProfileByPhone
       const existing = await getProfileByPhone(cleanPhone);
       if (existing) {
         showNotify("Ce numéro est déjà utilisé.", "error");
@@ -144,20 +143,19 @@ const AdminDashboard: React.FC = () => {
         firstName: partnerFormData.firstName,
         lastName: partnerFormData.lastName,
         role: 'PARTNER',
-        isActive: true, // Activation automatique forcée
+        isActive: true, 
         isAdmin: false,
         createdAt: new Date().toISOString()
       };
 
-      // saveUserProfile s'occupe du routage vers la table 'partners'
       await saveUserProfile(newPartner);
-      
       showNotify("Partenaire inscrit et activé !");
       setIsPartnerModalOpen(false);
       setPartnerFormData({ firstName: '', lastName: '', whatsapp: '' });
       fetchUsers();
-    } catch (err) {
-      showNotify("Erreur lors de l'inscription.", "error");
+    } catch (err: any) {
+      console.error("Creation Error:", err);
+      showNotify(err.message || "Erreur lors de l'inscription.", "error");
     } finally {
       setIsCreatingPartner(false);
     }
@@ -199,7 +197,7 @@ const AdminDashboard: React.FC = () => {
       const table = u.role === 'PARTNER' ? 'partners' : 'profiles';
       const { error } = await supabase!.from(table).delete().eq('uid', u.uid);
       if (error) throw error;
-      showNotify("Utilisateur supprimé définitivement.");
+      showNotify("Supprimé.");
       setSelectedUser(null);
       fetchUsers();
     } catch (err) { showNotify("Erreur suppression", "error"); }
@@ -217,7 +215,7 @@ const AdminDashboard: React.FC = () => {
       if (error) throw error;
       showNotify(`${pendingUsers.length} gérants activés !`);
       fetchUsers();
-    } catch (err) { showNotify("Erreur lors de l'activation groupée.", "error"); }
+    } catch (err) { showNotify("Erreur groupée.", "error"); }
     finally { setIsActivatingAll(false); }
   };
 
@@ -242,7 +240,7 @@ const AdminDashboard: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    showNotify("Copié dans le presse-papier !");
+    showNotify("Copié !");
   };
 
   return (
