@@ -39,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.14-PARTNER-READY"
+  version: "2.9.15-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -80,7 +80,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>, isPartnerTable: boolean =
   if (profile.bio !== undefined) db.bio = profile.bio;
   if (profile.adminNotes !== undefined) db.admin_notes = profile.adminNotes;
   
-  // On n'écrit pas la colonne "role" dans la table "partners" (rôle implicite)
   if (!isPartnerTable && profile.role !== undefined) db.role = profile.role;
   
   if (profile.isActive !== undefined) db.is_active = profile.isActive;
@@ -139,13 +138,25 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
+  
+  // Normalisation du numéro pour la recherche
   const digitsOnly = phoneNumber.replace(/\D/g, '');
+  const withPlus = `+${digitsOnly}`;
   
   try {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('phone_number', digitsOnly).maybeSingle();
+    // Recherche flexible (avec ou sans le +) dans les deux tables
+    const { data: profile } = await supabase.from('profiles')
+      .select('*')
+      .or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`)
+      .maybeSingle();
+      
     if (profile) return mapProfileFromDB(profile);
 
-    const { data: partner } = await supabase.from('partners').select('*').eq('phone_number', digitsOnly).maybeSingle();
+    const { data: partner } = await supabase.from('partners')
+      .select('*')
+      .or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`)
+      .maybeSingle();
+      
     if (partner) return { ...mapProfileFromDB(partner), role: 'PARTNER' } as UserProfile;
     
     return null;
@@ -206,7 +217,13 @@ export const getReferrals = async (userId: string) => {
     const user = await getUserProfile(userId);
     if (!user) return [];
     const phone = user.phoneNumber;
-    const { data } = await supabase.from('profiles').select('*').eq('referred_by', phone);
+    const digits = phone.replace(/\D/g, '');
+    const withPlus = `+${digits}`;
+    
+    const { data } = await supabase.from('profiles')
+      .select('*')
+      .or(`referred_by.eq.${digits},referred_by.eq.${withPlus}`);
+      
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
 };
@@ -216,7 +233,7 @@ export const getKitaTransactions = async (userId: string) => {
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
+    payment_method: t.payment_method, date: t.date, staffName: t.staff_name,
     commission_rate: t.commission_rate, tipAmount: t.tip_amount || 0,
     isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id,
     discount: t.discount || 0, originalAmount: t.original_amount || t.amount
@@ -229,8 +246,8 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+    // Fix: Using staffName from transaction object (mapped to staff_name in DB)
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
-    // Fix: Access transaction.isCredit instead of transaction.is_credit (property name in Omit<KitaTransaction, 'id'> is isCredit)
     tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
     client_id: transaction.clientId, product_id: transaction.productId,
     original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
@@ -323,6 +340,7 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: product.name, quantity: product.quantity,
     purchase_price: product.purchasePrice, sell_price: product.sellPrice,
+    // Fix: Using product.category instead of undefined profile.category
     alert_threshold: product.alertThreshold, category: product.category, supplier_id: product.supplierId
   });
   if (error) throw error;
