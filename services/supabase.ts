@@ -233,7 +233,8 @@ export const getKitaTransactions = async (userId: string) => {
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    payment_method: t.payment_method, date: t.date, staffName: t.staff_name,
+    // Fix: Using paymentMethod to match KitaTransaction interface
+    paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
     commission_rate: t.commission_rate, tipAmount: t.tip_amount || 0,
     isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id,
     discount: t.discount || 0, originalAmount: t.original_amount || t.amount

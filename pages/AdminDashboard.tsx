@@ -11,7 +11,7 @@ import {
   getProfileByPhone,
   generateUUID
 } from '../services/supabase';
-import { UserProfile } from '../types';
+import { UserProfile, UserRole } from '../types';
 import { 
   Loader2, 
   RefreshCcw, 
@@ -30,17 +30,23 @@ import {
   MessageCircle,
   Copy,
   Shield,
+  // Fix: Add missing ShieldCheck import
+  ShieldCheck,
   Handshake,
   UserPlus,
   Share2,
   Trash2,
-  ShieldX
+  ShieldX,
+  Rocket,
+  ShieldAlert,
+  Coins,
+  Settings2
 } from 'lucide-react';
 
 const COMMISSION_PER_ELITE = 1500;
 
 const AdminDashboard: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -60,6 +66,15 @@ const AdminDashboard: React.FC = () => {
   const [partnerFormData, setPartnerFormData] = useState({ firstName: '', lastName: '', whatsapp: '' });
   const [isCreatingPartner, setIsCreatingPartner] = useState(false);
   const [partnerStats, setPartnerStats] = useState({ referrals: 0, earnings: 0 });
+
+  // Admin Creation State
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminFormData, setAdminFormData] = useState({ firstName: '', lastName: '', email: '', whatsapp: '', pin: '0000' });
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+
+  // User Edit State (Drawer)
+  const [tempRole, setTempRole] = useState<UserRole>('CLIENT');
+  const [tempCredits, setTempCredits] = useState(0);
 
   const fetchLogs = async () => {
     if (!supabase) return;
@@ -92,6 +107,9 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedUser) {
       setTempAdminNotes(selectedUser.adminNotes || '');
+      setTempRole(selectedUser.role);
+      setTempCredits(selectedUser.marketingCredits || 0);
+      
       if (selectedUser.role === 'PARTNER') {
         calculatePartnerStats(selectedUser.phoneNumber);
       } else {
@@ -154,10 +172,42 @@ const AdminDashboard: React.FC = () => {
       setPartnerFormData({ firstName: '', lastName: '', whatsapp: '' });
       fetchUsers();
     } catch (err: any) {
-      console.error("Creation Error:", err);
       showNotify(err.message || "Erreur lors de l'inscription.", "error");
     } finally {
       setIsCreatingPartner(false);
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingAdmin(true);
+    try {
+      let cleanPhone = adminFormData.whatsapp.replace(/\s/g, '').replace(/[^\d+]/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
+      if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
+
+      const newAdmin: any = {
+        uid: generateUUID(),
+        phoneNumber: cleanPhone,
+        pinCode: adminFormData.pin,
+        email: adminFormData.email,
+        firstName: adminFormData.firstName,
+        lastName: adminFormData.lastName,
+        role: 'ADMIN',
+        isAdmin: true,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+
+      await saveUserProfile(newAdmin);
+      showNotify("Nouvel Administrateur créé !");
+      setIsAdminModalOpen(false);
+      setAdminFormData({ firstName: '', lastName: '', email: '', whatsapp: '', pin: '0000' });
+      fetchUsers();
+    } catch (err: any) {
+      showNotify("Erreur lors de la création de l'admin.", "error");
+    } finally {
+      setIsCreatingAdmin(false);
     }
   };
 
@@ -165,8 +215,13 @@ const AdminDashboard: React.FC = () => {
     if (!selectedUser) return;
     setIsSavingNotes(true);
     try {
-      await updateUserProfile(selectedUser.uid, { adminNotes: tempAdminNotes, role: selectedUser.role });
-      showNotify("Notes enregistrées");
+      await updateUserProfile(selectedUser.uid, { 
+        adminNotes: tempAdminNotes, 
+        role: tempRole,
+        marketingCredits: tempCredits,
+        isAdmin: tempRole === 'ADMIN' || tempRole === 'SUPER_ADMIN'
+      });
+      showNotify("Profil mis à jour avec succès");
       fetchUsers();
     } catch (err) { showNotify("Erreur sauvegarde", "error"); }
     finally { setIsSavingNotes(false); }
@@ -205,14 +260,13 @@ const AdminDashboard: React.FC = () => {
 
   const handleActivateAll = async () => {
     if (!supabase || isActivatingAll) return;
-    const pendingUsers = users.filter(u => !u.isActive && u.role !== 'SUPER_ADMIN' && u.role !== 'PARTNER');
+    const pendingUsers = users.filter(u => !u.isActive && u.role !== 'SUPER_ADMIN' && u.role !== 'PARTNER' && u.role !== 'ADMIN');
     if (pendingUsers.length === 0) return;
     if (!window.confirm(`Activer les ${pendingUsers.length} gérants ?`)) return;
 
     setIsActivatingAll(true);
     try {
-      // Correction snake_case pour l'activation groupée
-      const { error } = await supabase.from('profiles').update({ is_active: true }).eq('is_active', false).neq('role', 'SUPER_ADMIN');
+      const { error } = await supabase.from('profiles').update({ is_active: true }).eq('is_active', false).neq('role', 'SUPER_ADMIN').neq('role', 'ADMIN');
       if (error) throw error;
       showNotify(`${pendingUsers.length} gérants activés !`);
       fetchUsers();
@@ -223,9 +277,10 @@ const AdminDashboard: React.FC = () => {
   const filteredUsers = useMemo(() => {
     const s = searchTerm.toLowerCase().trim();
     if (s) return users.filter(u => u.role !== 'SUPER_ADMIN' && (`${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || (u.establishmentName || '').toLowerCase().includes(s) || u.phoneNumber.includes(s)));
-    if (viewMode === 'inbox') return users.filter(u => !u.isActive && u.role !== 'PARTNER' && u.role !== 'SUPER_ADMIN');
-    if (viewMode === 'active') return users.filter(u => u.isActive && u.role !== 'PARTNER' && u.role !== 'SUPER_ADMIN');
+    if (viewMode === 'inbox') return users.filter(u => !u.isActive && u.role !== 'PARTNER' && u.role !== 'SUPER_ADMIN' && u.role !== 'ADMIN');
+    if (viewMode === 'active') return users.filter(u => u.isActive && (u.role === 'CLIENT' || u.role === 'STAFF_ELITE'));
     if (viewMode === 'partners') return users.filter(u => u.role === 'PARTNER');
+    if (viewMode === 'admins') return users.filter(u => u.role === 'ADMIN');
     return users.filter(u => u.role !== 'SUPER_ADMIN');
   }, [users, searchTerm, viewMode]);
 
@@ -235,7 +290,8 @@ const AdminDashboard: React.FC = () => {
       total: clients.length, 
       active: clients.filter(u => u.isActive).length, 
       pending: clients.filter(c => !c.isActive).length, 
-      partnerCount: users.filter(u => u.role === 'PARTNER').length
+      partnerCount: users.filter(u => u.role === 'PARTNER').length,
+      adminCount: users.filter(u => u.role === 'ADMIN').length
     };
   }, [users]);
 
@@ -259,20 +315,18 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
+            <button onClick={() => navigate('/war-room')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"><Rocket className="w-4 h-4 text-amber-500" /> War Room</button>
+            <button onClick={() => setIsAdminModalOpen(true)} className="bg-white border-2 border-brand-900 text-brand-900 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-50 transition-all shadow-sm flex items-center gap-3"><ShieldAlert className="w-4 h-4" /> Créer Admin</button>
             <button onClick={() => setIsPartnerModalOpen(true)} className="bg-amber-500 text-brand-900 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-xl flex items-center gap-3"><Handshake className="w-4 h-4" /> Recruter Partenaire</button>
-            {stats.pending > 0 && (
-              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
-                {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Activer {stats.pending} gérants
-              </button>
-            )}
             <button onClick={fetchUsers} className="bg-white border border-slate-200 p-4 rounded-2xl hover:bg-slate-50 shadow-sm"><RefreshCcw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
         </div>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
            <AdminStatCard icon={<Users />} label="Gérants" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
-           <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} sub="Table 'partners' dédiée" color="text-amber-600" />
+           <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} color="text-amber-600" />
+           <AdminStatCard icon={<ShieldCheck />} label="Admins" val={stats.adminCount} color="text-brand-600" />
            <AdminStatCard icon={<TrendingUp />} label="Recettes Est." val={`${(stats.active * 10000).toLocaleString()} F`} />
         </section>
 
@@ -286,6 +340,7 @@ const AdminDashboard: React.FC = () => {
               <button onClick={() => setViewMode('inbox')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'inbox' ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Demandes</button>
               <button onClick={() => setViewMode('active')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'active' ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Actifs</button>
               <button onClick={() => setViewMode('partners')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'partners' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-500'}`}>Partenaires</button>
+              <button onClick={() => setViewMode('admins')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'admins' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>Admins</button>
             </div>
           </div>
 
@@ -307,7 +362,7 @@ const AdminDashboard: React.FC = () => {
                        <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                              <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                             <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'PARTNER' ? 'text-amber-600' : 'text-slate-600'}`}>{u.role} — {u.isActive ? 'Actif' : 'En attente'}</span>
+                             <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'PARTNER' ? 'text-amber-600' : u.role === 'ADMIN' ? 'text-indigo-600' : 'text-slate-600'}`}>{u.role} — {u.isActive ? 'Actif' : 'En attente'}</span>
                           </div>
                           {u.referredBy && <div className="flex items-center gap-1 text-[9px] font-bold text-brand-500"><Handshake className="w-3 h-3" /> Par {u.referredBy}</div>}
                        </div>
@@ -320,6 +375,33 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* MODALE CRÉATION ADMIN */}
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 md:p-12 relative animate-in zoom-in-95">
+              <button onClick={() => setIsAdminModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
+              <div className="text-center mb-10">
+                 <div className="h-20 w-20 bg-indigo-100 text-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner"><ShieldAlert className="w-10 h-10" /></div>
+                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouvel Admin</h2>
+                 <p className="text-slate-400 text-[9px] mt-2 font-black uppercase tracking-widest italic">Ajouter un gestionnaire système</p>
+              </div>
+              <form onSubmit={handleCreateAdmin} className="space-y-6">
+                 <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="Prénom" value={adminFormData.firstName} onChange={e => setAdminFormData({...adminFormData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
+                    <input type="text" placeholder="Nom" value={adminFormData.lastName} onChange={e => setAdminFormData({...adminFormData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
+                 </div>
+                 <input type="email" placeholder="Email" value={adminFormData.email} onChange={e => setAdminFormData({...adminFormData, email: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
+                 <input type="tel" placeholder="WhatsApp" value={adminFormData.whatsapp} onChange={e => setAdminFormData({...adminFormData, whatsapp: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
+                 <input type="text" placeholder="PIN de secours (4 chiffres)" maxLength={4} value={adminFormData.pin} onChange={e => setAdminFormData({...adminFormData, pin: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-black text-brand-900 shadow-inner text-center" required />
+                 
+                 <button type="submit" disabled={isCreatingAdmin} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all">
+                    {isCreatingAdmin ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-indigo-400" />} Créer le compte Admin
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
 
       {/* MODALE RECRUTEMENT PARTENAIRE */}
       {isPartnerModalOpen && (
@@ -357,7 +439,7 @@ const AdminDashboard: React.FC = () => {
                   <h3 className="text-3xl font-bold text-slate-900">{selectedUser.firstName} {selectedUser.lastName}</h3>
                   <div className="flex items-center justify-center gap-3 mt-4">
                      <button onClick={() => copyToClipboard(selectedUser.phoneNumber)} className="bg-white border px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-slate-50 transition-all"><Copy className="w-3 h-3" /> {selectedUser.phoneNumber}</button>
-                     <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-500 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
+                     <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-50 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
                   </div>
                </div>
 
@@ -391,13 +473,35 @@ const AdminDashboard: React.FC = () => {
                     <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative group">
                        <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Crédits Marketing</p>
-                       <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
+                       <div className="flex items-center gap-4">
+                          <p className="text-3xl font-black text-slate-900 tracking-tighter">{tempCredits} <span className="text-sm opacity-30">PTS</span></p>
+                          <div className="flex gap-2">
+                             <button onClick={() => setTempCredits(Math.max(0, tempCredits - 1))} className="p-2 bg-white rounded-lg border shadow-sm">-</button>
+                             <button onClick={() => setTempCredits(tempCredits + 5)} className="p-2 bg-brand-900 text-white rounded-lg shadow-sm">+</button>
+                          </div>
+                       </div>
                     </div>
                  </div>
                )}
 
                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Actions</h4>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4 flex items-center gap-2"><Settings2 className="w-3 h-3" /> Configuration Technique</h4>
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
+                     <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Changer le Rôle</label>
+                        <select 
+                          value={tempRole} 
+                          onChange={(e) => setTempRole(e.target.value as UserRole)}
+                          className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold outline-none appearance-none"
+                        >
+                           <option value="CLIENT">Gérant (Client)</option>
+                           <option value="STAFF_ELITE">Staff Élite</option>
+                           <option value="ADMIN">Administrateur</option>
+                           <option value="PARTNER">Partenaire Stratégique</option>
+                        </select>
+                     </div>
+                  </div>
+
                   <div className="space-y-4">
                     {!selectedUser.isActive ? (
                       <button onClick={() => handleActivateUser(selectedUser)} className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"><CheckCircle2 className="w-5 h-5" /> Activer le compte</button>
@@ -411,7 +515,7 @@ const AdminDashboard: React.FC = () => {
                <section className="space-y-6">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Notes Mentor</h4>
                   <textarea value={tempAdminNotes} onChange={e => setTempAdminNotes(e.target.value)} className="w-full p-8 rounded-[2rem] bg-slate-50 border-none outline-none font-medium min-h-[200px]" placeholder="Note confidentielle..." />
-                  <button onClick={handleSaveAdminNotes} disabled={isSavingNotes} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">{isSavingNotes ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />} Sauvegarder</button>
+                  <button onClick={handleSaveAdminNotes} disabled={isSavingNotes} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">{isSavingNotes ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />} Sauvegarder les modifications</button>
                </section>
             </div>
           </div>
