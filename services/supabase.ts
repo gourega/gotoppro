@@ -39,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.13-STABLE"
+  version: "2.9.14-PARTNER-READY"
 };
 
 const getSafeSupabaseClient = () => {
@@ -66,9 +66,8 @@ export const generateUUID = () => {
 
 /**
  * MAPPAGE VERS DB (ÉCRITURE STRICTE SNAKE_CASE)
- * On écrit toujours dans les nouvelles colonnes
  */
-const mapProfileToDB = (profile: Partial<UserProfile>): any => {
+const mapProfileToDB = (profile: Partial<UserProfile>, isPartnerTable: boolean = false): any => {
   const db: any = {};
   if (profile.uid !== undefined) db.uid = profile.uid;
   if (profile.phoneNumber !== undefined) db.phone_number = profile.phoneNumber;
@@ -80,7 +79,10 @@ const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   if (profile.photoURL !== undefined) db.photo_url = profile.photoURL;
   if (profile.bio !== undefined) db.bio = profile.bio;
   if (profile.adminNotes !== undefined) db.admin_notes = profile.adminNotes;
-  if (profile.role !== undefined) db.role = profile.role;
+  
+  // On n'écrit pas la colonne "role" dans la table "partners" (rôle implicite)
+  if (!isPartnerTable && profile.role !== undefined) db.role = profile.role;
+  
   if (profile.isActive !== undefined) db.is_active = profile.isActive;
   if (profile.isAdmin !== undefined) db.is_admin = profile.isAdmin;
   if (profile.isPublic !== undefined) db.is_public = profile.isPublic;
@@ -100,7 +102,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>): any => {
 
 /**
  * MAPPAGE DEPUIS DB (LECTURE FLEXIBLE)
- * On accepte de lire l'ancien et le nouveau format pour ne rien perdre
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -166,8 +167,9 @@ export const getUserProfile = async (uid: string) => {
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) return { success: true };
-  const table = profile.role === 'PARTNER' ? 'partners' : 'profiles';
-  const dbData = mapProfileToDB(profile);
+  const isPartner = profile.role === 'PARTNER';
+  const table = isPartner ? 'partners' : 'profiles';
+  const dbData = mapProfileToDB(profile, isPartner);
   try {
     const { error } = await supabase.from(table).upsert(dbData, { onConflict: 'uid' });
     if (error) throw error;
@@ -177,8 +179,9 @@ export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: str
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
-  const table = updates.role === 'PARTNER' ? 'partners' : 'profiles';
-  const dbData = mapProfileToDB(updates);
+  const isPartner = updates.role === 'PARTNER';
+  const table = isPartner ? 'partners' : 'profiles';
+  const dbData = mapProfileToDB(updates, isPartner);
   try {
     await supabase.from(table).update(dbData).eq('uid', uid);
   } catch (err) {}
@@ -227,6 +230,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
+    // Fix: Access transaction.isCredit instead of transaction.is_credit (property name in Omit<KitaTransaction, 'id'> is isCredit)
     tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
     client_id: transaction.clientId, product_id: transaction.productId,
     original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
