@@ -45,7 +45,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.1-HOTFIX"
+  version: "2.9.2-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -71,46 +71,163 @@ export const generateUUID = () => {
 };
 
 /**
- * Traduit un objet Frontend (CamelCase) vers le format Base de données.
- * On essaie d'être compatible avec les deux schémas possibles.
+ * STRATÉGIE DE DOUBLE ÉCRITURE :
+ * On écrit systématiquement dans les deux formats (CamelCase et SnakeCase)
+ * pour garantir la compatibilité avec le schéma réel de la base Supabase.
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
+  
   if (profile.uid !== undefined) db.uid = profile.uid;
-  if (profile.phoneNumber !== undefined) db.phoneNumber = profile.phoneNumber;
-  if (profile.pinCode !== undefined) db.pinCode = profile.pinCode;
+  
+  if (profile.phoneNumber !== undefined) {
+    db.phoneNumber = profile.phoneNumber;
+    db.phone_number = profile.phoneNumber;
+  }
+  
+  if (profile.pinCode !== undefined) {
+    db.pinCode = profile.pinCode;
+    db.phone_code = profile.pinCode;
+  }
+  
   if (profile.email !== undefined) db.email = profile.email;
-  if (profile.firstName !== undefined) db.firstName = profile.firstName;
-  if (profile.lastName !== undefined) db.lastName = profile.lastName;
-  if (profile.establishmentName !== undefined) db.establishmentName = profile.establishmentName;
-  if (profile.photoURL !== undefined) db.photoURL = profile.photoURL;
+  
+  if (profile.firstName !== undefined) {
+    db.firstName = profile.firstName;
+    db.first_name = profile.firstName;
+  }
+  
+  if (profile.lastName !== undefined) {
+    db.lastName = profile.lastName;
+    db.last_name = profile.lastName;
+  }
+  
+  if (profile.establishmentName !== undefined) {
+    db.establishmentName = profile.establishmentName;
+    db.establishment_name = profile.establishmentName;
+  }
+  
+  if (profile.photoURL !== undefined) {
+    db.photoURL = profile.photoURL;
+    db.photo_url = profile.photoURL;
+  }
+  
   if (profile.bio !== undefined) db.bio = profile.bio;
-  if (profile.adminNotes !== undefined) db.adminNotes = profile.adminNotes;
-  if (profile.employeeCount !== undefined) db.employeeCount = profile.employeeCount;
-  if (profile.openingYear !== undefined) db.openingYear = profile.openingYear;
+  
+  if (profile.adminNotes !== undefined) {
+    db.adminNotes = profile.adminNotes;
+    db.admin_notes = profile.adminNotes;
+  }
+  
+  if (profile.employeeCount !== undefined) {
+    db.employeeCount = profile.employeeCount;
+    db.employee_count = profile.employeeCount;
+  }
+  
+  if (profile.openingYear !== undefined) {
+    db.openingYear = profile.openingYear;
+    db.opening_year = profile.openingYear;
+  }
+  
   if (profile.role !== undefined) db.role = profile.role;
-  if (profile.isActive !== undefined) db.isActive = profile.isActive;
-  if (profile.isAdmin !== undefined) db.isAdmin = profile.isAdmin;
-  if (profile.isPublic !== undefined) db.isPublic = profile.isPublic;
-  if (profile.isKitaPremium !== undefined) db.isKitaPremium = profile.isKitaPremium;
-  if (profile.kitaPremiumUntil !== undefined) db.kitaPremiumUntil = profile.kitaPremiumUntil;
-  if (profile.hasPerformancePack !== undefined) db.hasPerformancePack = profile.hasPerformancePack;
-  if (profile.hasStockPack !== undefined) db.hasStockPack = profile.hasStockPack;
-  if (profile.crmExpiryDate !== undefined) db.crmExpiryDate = profile.crmExpiryDate;
-  if (profile.strategicAudit !== undefined) db.strategicAudit = profile.strategicAudit;
-  if (profile.marketingCredits !== undefined) db.marketingCredits = profile.marketingCredits;
-  if (profile.gmbStatus !== undefined) db.gmbStatus = profile.gmbStatus;
-  if (profile.gmbUrl !== undefined) db.gmbUrl = profile.gmbUrl;
-  if (profile.gmbContractSignedAt !== undefined) db.gmbContractSignedAt = profile.gmbContractSignedAt;
+  
+  if (profile.isActive !== undefined) {
+    db.isActive = profile.isActive;
+    db.is_active = profile.isActive;
+  }
+  
+  if (profile.isAdmin !== undefined) {
+    db.isAdmin = profile.isAdmin;
+    db.is_admin = profile.isAdmin;
+  }
+  
+  if (profile.isPublic !== undefined) {
+    db.isPublic = profile.isPublic;
+    db.is_public = profile.isPublic;
+  }
+  
+  if (profile.isKitaPremium !== undefined) {
+    db.isKitaPremium = profile.isKitaPremium;
+    db.is_kita_premium = profile.isKitaPremium;
+  }
+  
+  if (profile.kitaPremiumUntil !== undefined) {
+    db.kitaPremiumUntil = profile.kitaPremiumUntil;
+    db.kita_premium_until = profile.kitaPremiumUntil;
+  }
+  
+  if (profile.hasPerformancePack !== undefined) {
+    db.hasPerformancePack = profile.hasPerformancePack;
+    db.has_performance_pack = profile.hasPerformancePack;
+  }
+  
+  if (profile.hasStockPack !== undefined) {
+    db.hasStockPack = profile.hasStockPack;
+    db.has_stock_pack = profile.hasStockPack;
+  }
+  
+  if (profile.crmExpiryDate !== undefined) {
+    db.crmExpiryDate = profile.crmExpiryDate;
+    db.crm_expiry_date = profile.crmExpiryDate;
+  }
+  
+  if (profile.strategicAudit !== undefined) {
+    db.strategicAudit = profile.strategicAudit;
+    db.strategic_audit = profile.strategicAudit;
+  }
+  
+  if (profile.marketingCredits !== undefined) {
+    db.marketingCredits = profile.marketingCredits;
+    db.marketing_credits = profile.marketingCredits;
+  }
+  
+  if (profile.gmbStatus !== undefined) {
+    db.gmbStatus = profile.gmbStatus;
+    db.gmb_status = profile.gmbStatus;
+  }
+  
+  if (profile.gmbUrl !== undefined) {
+    db.gmbUrl = profile.gmbUrl;
+    db.gmb_url = profile.gmbUrl;
+  }
+  
+  if (profile.gmbContractSignedAt !== undefined) {
+    db.gmbContractSignedAt = profile.gmbContractSignedAt;
+    db.gmb_contract_signed_at = profile.gmbContractSignedAt;
+  }
+  
   if (profile.badges !== undefined) db.badges = profile.badges;
-  if (profile.purchasedModuleIds !== undefined) db.purchasedModuleIds = profile.purchasedModuleIds;
-  if (profile.pendingModuleIds !== undefined) db.pendingModuleIds = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) db.actionPlan = profile.actionPlan;
-  if (profile.referredBy !== undefined) db.referredBy = profile.referredBy;
-  if (profile.referralCount !== undefined) db.referralCount = profile.referralCount;
-  if (profile.createdAt !== undefined) db.createdAt = profile.createdAt;
+  if (profile.purchasedModuleIds !== undefined) {
+    db.purchasedModuleIds = profile.purchasedModuleIds;
+    db.purchased_module_ids = profile.purchasedModuleIds;
+  }
+  if (profile.pendingModuleIds !== undefined) {
+    db.pendingModuleIds = profile.pendingModuleIds;
+    db.pending_module_ids = profile.pendingModuleIds;
+  }
+  if (profile.actionPlan !== undefined) {
+    db.actionPlan = profile.actionPlan;
+    db.action_plan = profile.actionPlan;
+  }
+  
+  if (profile.referredBy !== undefined) {
+    db.referredBy = profile.referredBy;
+    db.referred_by = profile.referredBy;
+  }
+  
+  if (profile.referralCount !== undefined) {
+    db.referralCount = profile.referralCount;
+    db.referral_count = profile.referralCount;
+  }
+  
+  if (profile.createdAt !== undefined) {
+    db.createdAt = profile.createdAt;
+    db.created_at = profile.createdAt;
+  }
+  
   if (profile.progress !== undefined) db.progress = profile.progress;
   if (profile.attempts !== undefined) db.attempts = profile.attempts;
+  
   return db;
 };
 
@@ -269,6 +386,7 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     const { error } = await supabase.from('kita_transactions').insert({
       id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
       label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+      // Fix: Property 'staff_name' does not exist on type 'Omit<KitaTransaction, "id">'. Using 'staffName' instead.
       date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
       tip_amount: transaction.tipAmount || 0,
       is_credit: transaction.isCredit, client_id: transaction.clientId, product_id: transaction.productId,
