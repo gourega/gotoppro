@@ -27,11 +27,6 @@ const getSafeEnv = (key: string): string => {
       return (import.meta as any).env[key];
     }
   } catch (e) {}
-  try {
-    if (typeof process !== 'undefined' && process.env && (process.env as any)[key]) {
-      return (process.env as any)[key];
-    }
-  } catch (e) {}
   return "";
 };
 
@@ -44,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.6-PGRST-FIX"
+  version: "2.9.7-FINAL-MAPPING"
 };
 
 const getSafeSupabaseClient = () => {
@@ -70,7 +65,8 @@ export const generateUUID = () => {
 };
 
 /**
- * MAPPAGE SORTANT (Vers DB) : Utilise uniquement snake_case
+ * MAPPAGE VERS DB (ÉCRITURE)
+ * FORCE L'UTILISATION DU snake_case POUR EVITER PGRST204
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
@@ -96,7 +92,8 @@ const mapProfileToDB = (profile: Partial<UserProfile>): any => {
 };
 
 /**
- * MAPPAGE ENTRANT (Depuis DB) : Supporte camelCase et snake_case
+ * MAPPAGE DEPUIS DB (LECTURE)
+ * GÈRE LES DEUX FORMATS POUR LA COMPATIBILITÉ
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
@@ -137,16 +134,12 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   
   try {
-    // On cherche uniquement sur la colonne standard phone_number pour éviter les 400
     const { data: profile } = await supabase.from('profiles').select('*').eq('phone_number', digitsOnly).maybeSingle();
     if (profile) return mapProfileFromDB(profile);
 
     const { data: partner } = await supabase.from('partners').select('*').eq('phone_number', digitsOnly).maybeSingle();
-    if (partner) {
-      const m = mapProfileFromDB(partner);
-      if (m) m.role = 'PARTNER';
-      return m;
-    }
+    if (partner) return { ...mapProfileFromDB(partner), role: 'PARTNER' } as UserProfile;
+    
     return null;
   } catch (err) { return null; }
 };
@@ -158,11 +151,8 @@ export const getUserProfile = async (uid: string) => {
     if (profile) return mapProfileFromDB(profile);
     
     const { data: partner } = await supabase.from('partners').select('*').eq('uid', uid).maybeSingle();
-    if (partner) {
-      const m = mapProfileFromDB(partner);
-      if (m) m.role = 'PARTNER';
-      return m;
-    }
+    if (partner) return { ...mapProfileFromDB(partner), role: 'PARTNER' } as UserProfile;
+
     return null;
   } catch (e) { return null; }
 };
@@ -195,11 +185,7 @@ export const getAllUsers = async () => {
       supabase.from('partners').select('*')
     ]);
     const profiles = (p || []).map(mapProfileFromDB);
-    const partners = (part || []).map(d => {
-      const m = mapProfileFromDB(d);
-      if (m) m.role = 'PARTNER';
-      return m;
-    });
+    const partners = (part || []).map(d => ({ ...mapProfileFromDB(d), role: 'PARTNER' }));
     return [...profiles, ...partners].filter(Boolean) as UserProfile[];
   } catch (e) { return []; }
 };
@@ -210,8 +196,7 @@ export const getReferrals = async (userId: string) => {
     const user = await getUserProfile(userId);
     if (!user) return [];
     const phone = user.phoneNumber;
-    // Recherche uniquement sur la colonne snake_case
-    const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', phone);
+    const { data } = await supabase.from('profiles').select('*').eq('referred_by', phone);
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
 };

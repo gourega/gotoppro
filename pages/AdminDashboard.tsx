@@ -211,7 +211,8 @@ const AdminDashboard: React.FC = () => {
 
     setIsActivatingAll(true);
     try {
-      const { error } = await supabase.from('profiles').update({ isActive: true }).eq('isActive', false).neq('role', 'SUPER_ADMIN');
+      // Correction snake_case pour l'activation groupée
+      const { error } = await supabase.from('profiles').update({ is_active: true }).eq('is_active', false).neq('role', 'SUPER_ADMIN');
       if (error) throw error;
       showNotify(`${pendingUsers.length} gérants activés !`);
       fetchUsers();
