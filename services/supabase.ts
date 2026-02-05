@@ -27,6 +27,11 @@ const getSafeEnv = (key: string): string => {
       return (import.meta as any).env[key];
     }
   } catch (e) {}
+  try {
+    if (typeof process !== 'undefined' && process.env && (process.env as any)[key]) {
+      return (process.env as any)[key];
+    }
+  } catch (e) {}
   return "";
 };
 
@@ -39,7 +44,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.5-PARTNER-FIX"
+  version: "2.9.6-PGRST-FIX"
 };
 
 const getSafeSupabaseClient = () => {
@@ -64,58 +69,64 @@ export const generateUUID = () => {
   });
 };
 
+/**
+ * MAPPAGE SORTANT (Vers DB) : Utilise uniquement snake_case
+ */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
   if (profile.uid !== undefined) db.uid = profile.uid;
-  if (profile.phoneNumber !== undefined) { db.phoneNumber = profile.phoneNumber; db.phone_number = profile.phoneNumber; }
-  if (profile.pinCode !== undefined) { db.pinCode = profile.pinCode; db.phone_code = profile.pinCode; }
+  if (profile.phoneNumber !== undefined) db.phone_number = profile.phoneNumber;
+  if (profile.pinCode !== undefined) db.phone_code = profile.pinCode;
   if (profile.email !== undefined) db.email = profile.email;
-  if (profile.firstName !== undefined) { db.firstName = profile.firstName; db.first_name = profile.firstName; }
-  if (profile.lastName !== undefined) { db.lastName = profile.lastName; db.last_name = profile.lastName; }
-  if (profile.establishmentName !== undefined) { db.establishmentName = profile.establishmentName; db.establishment_name = profile.establishmentName; }
-  if (profile.photoURL !== undefined) { db.photoURL = profile.photoURL; db.photo_url = profile.photoURL; }
+  if (profile.firstName !== undefined) db.first_name = profile.firstName;
+  if (profile.lastName !== undefined) db.last_name = profile.lastName;
+  if (profile.establishmentName !== undefined) db.establishment_name = profile.establishmentName;
+  if (profile.photoURL !== undefined) db.photo_url = profile.photoURL;
   if (profile.bio !== undefined) db.bio = profile.bio;
-  if (profile.adminNotes !== undefined) { db.adminNotes = profile.adminNotes; db.admin_notes = profile.adminNotes; }
+  if (profile.adminNotes !== undefined) db.admin_notes = profile.adminNotes;
   if (profile.role !== undefined) db.role = profile.role;
-  if (profile.isActive !== undefined) { db.isActive = profile.isActive; db.is_active = profile.isActive; }
-  if (profile.isAdmin !== undefined) { db.isAdmin = profile.isAdmin; db.is_admin = profile.isAdmin; }
-  if (profile.isPublic !== undefined) { db.isPublic = profile.isPublic; db.is_public = profile.isPublic; }
-  if (profile.isKitaPremium !== undefined) { db.isKitaPremium = profile.isKitaPremium; db.is_kita_premium = profile.isKitaPremium; }
-  if (profile.referredBy !== undefined) { db.referredBy = profile.referredBy; db.referred_by = profile.referredBy; }
-  if (profile.marketingCredits !== undefined) { db.marketingCredits = profile.marketingCredits; db.marketing_credits = profile.marketingCredits; }
-  if (profile.createdAt !== undefined) { db.createdAt = profile.createdAt; db.created_at = profile.createdAt; }
+  if (profile.isActive !== undefined) db.is_active = profile.isActive;
+  if (profile.isAdmin !== undefined) db.is_admin = profile.isAdmin;
+  if (profile.isPublic !== undefined) db.is_public = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) db.is_kita_premium = profile.isKitaPremium;
+  if (profile.referredBy !== undefined) db.referred_by = profile.referredBy;
+  if (profile.marketingCredits !== undefined) db.marketing_credits = profile.marketingCredits;
+  if (profile.createdAt !== undefined) db.created_at = profile.createdAt;
   return db;
 };
 
+/**
+ * MAPPAGE ENTRANT (Depuis DB) : Supporte camelCase et snake_case
+ */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
     uid: data.uid || data.id,
-    phoneNumber: data.phoneNumber || data.phone_number || '',
-    pinCode: data.pinCode || data.phone_code || '1234',
+    phoneNumber: data.phone_number || data.phoneNumber || '',
+    pinCode: data.phone_code || data.pinCode || '1234',
     email: data.email,
-    firstName: data.firstName || data.first_name || '',
-    lastName: data.lastName || data.last_name || '',
-    establishmentName: data.establishmentName || data.establishment_name || '',
-    photoURL: data.photoURL || data.photo_url || '',
+    firstName: data.first_name || data.firstName || '',
+    lastName: data.last_name || data.lastName || '',
+    establishmentName: data.establishment_name || data.establishmentName || '',
+    photoURL: data.photo_url || data.photoURL || '',
     bio: data.bio || '',
-    adminNotes: data.adminNotes || data.admin_notes || '',
-    employeeCount: data.employeeCount || data.employee_count || 0,
-    openingYear: data.openingYear || data.opening_year || 0,
+    adminNotes: data.admin_notes || data.adminNotes || '',
+    employeeCount: data.employee_count || data.employeeCount || 0,
+    openingYear: data.opening_year || data.openingYear || 0,
     role: (data.role || 'CLIENT') as UserRole,
-    isActive: data.isActive ?? data.is_active ?? false,
-    isAdmin: data.isAdmin ?? data.is_admin ?? false,
-    isPublic: data.isPublic ?? data.is_public ?? true,
-    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
-    marketingCredits: data.marketingCredits ?? data.marketing_credits ?? 3,
-    gmbStatus: data.gmbStatus || data.gmb_status || 'NONE',
-    gmbUrl: data.gmbUrl || data.gmb_url || '',
+    isActive: data.is_active ?? data.isActive ?? false,
+    isAdmin: data.is_admin ?? data.isAdmin ?? false,
+    isPublic: data.is_public ?? data.isPublic ?? true,
+    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
+    marketingCredits: data.marketing_credits ?? data.marketingCredits ?? 3,
+    gmbStatus: data.gmb_status || data.gmbStatus || 'NONE',
+    gmbUrl: data.gmb_url || data.gmbUrl || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
-    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
-    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
-    referredBy: data.referredBy || data.referred_by || '',
-    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
+    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
+    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
+    referredBy: data.referred_by || data.referredBy || '',
+    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
@@ -124,16 +135,13 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
   const digitsOnly = phoneNumber.replace(/\D/g, '');
-  const last10 = digitsOnly.slice(-10);
-  if (!last10) return null;
-
+  
   try {
-    // 1. Recherche dans gérants
-    const { data: profile } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phone_number.eq.${digitsOnly}`).maybeSingle();
+    // On cherche uniquement sur la colonne standard phone_number pour éviter les 400
+    const { data: profile } = await supabase.from('profiles').select('*').eq('phone_number', digitsOnly).maybeSingle();
     if (profile) return mapProfileFromDB(profile);
 
-    // 2. Recherche dans partenaires
-    const { data: partner } = await supabase.from('partners').select('*').or(`phoneNumber.eq.${digitsOnly},phone_number.eq.${digitsOnly}`).maybeSingle();
+    const { data: partner } = await supabase.from('partners').select('*').eq('phone_number', digitsOnly).maybeSingle();
     if (partner) {
       const m = mapProfileFromDB(partner);
       if (m) m.role = 'PARTNER';
@@ -202,11 +210,8 @@ export const getReferrals = async (userId: string) => {
     const user = await getUserProfile(userId);
     if (!user) return [];
     const phone = user.phoneNumber;
-    const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', phone);
-    if (error) {
-        const { data: fallback } = await supabase.from('profiles').select('*').eq('referred_by', phone);
-        return (fallback || []).map(mapProfileFromDB);
-    }
+    // Recherche uniquement sur la colonne snake_case
+    const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', phone);
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
 };
@@ -351,14 +356,14 @@ export const deleteKitaSupplier = async (id: string) => {
 
 export const getPublicProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
-  const { data } = await supabase.from('profiles').select('*').eq('uid', uid).eq('isPublic', true).maybeSingle();
+  const { data } = await supabase.from('profiles').select('*').eq('uid', uid).eq('is_public', true).maybeSingle();
   return mapProfileFromDB(data);
 };
 
 export const getPublicDirectory = async () => {
   if (!supabase) return [];
   try {
-    const { data } = await supabase.from('profiles').select('*').eq('isPublic', true);
+    const { data } = await supabase.from('profiles').select('*').eq('is_public', true);
     return (data || []).map(mapProfileFromDB).filter(Boolean) as UserProfile[];
   } catch (e) { return []; }
 };
