@@ -6,7 +6,10 @@ import {
   updateUserProfile,
   supabase,
   getAllUsers,
-  getKitaTransactions
+  getKitaTransactions,
+  saveUserProfile,
+  getProfileByPhone,
+  generateUUID
 } from '../services/supabase';
 import { UserProfile } from '../types';
 import { 
@@ -41,10 +44,13 @@ import {
   ShieldAlert,
   Server,
   Shield,
-  Handshake
+  Handshake,
+  UserPlus,
+  Share2
 } from 'lucide-react';
 
-/* Fix: Import React to provide access to FC namespace */
+const COMMISSION_PER_ELITE = 1500;
+
 const AdminDashboard: React.FC = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -60,6 +66,12 @@ const AdminDashboard: React.FC = () => {
   const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
   const [tempAdminNotes, setTempAdminNotes] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // Partner Recruitment State
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [partnerFormData, setPartnerFormData] = useState({ firstName: '', lastName: '', whatsapp: '' });
+  const [isCreatingPartner, setIsCreatingPartner] = useState(false);
+  const [partnerStats, setPartnerStats] = useState({ referrals: 0, earnings: 0 });
 
   // GMB Management States
   const [gmbUrlInput, setGmbUrlInput] = useState('');
@@ -116,11 +128,22 @@ const AdminDashboard: React.FC = () => {
     if (selectedUser) {
       setTempAdminNotes(selectedUser.adminNotes || '');
       setGmbUrlInput(selectedUser.gmbUrl || '');
-      if (selectedUser.role !== 'PARTNER') {
+      if (selectedUser.role === 'PARTNER') {
+        calculatePartnerStats(selectedUser.phoneNumber);
+      } else {
         fetchUserFinancials(selectedUser.uid);
       }
     }
   }, [selectedUser]);
+
+  const calculatePartnerStats = (phone: string) => {
+    const referrals = users.filter(u => u.referredBy === phone);
+    const elites = referrals.filter(u => u.isActive && (u.isKitaPremium || u.hasPerformancePack)).length;
+    setPartnerStats({
+      referrals: referrals.length,
+      earnings: elites * COMMISSION_PER_ELITE
+    });
+  };
 
   const fetchUserFinancials = async (userId: string) => {
     try {
@@ -133,6 +156,50 @@ const AdminDashboard: React.FC = () => {
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleCreatePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingPartner(true);
+    try {
+      let cleanPhone = partnerFormData.whatsapp.replace(/\s/g, '').replace(/[^\d+]/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
+      if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
+
+      const existing = await getProfileByPhone(cleanPhone);
+      if (existing) {
+        showNotify("Ce numéro est déjà utilisé par un utilisateur.", "error");
+        return;
+      }
+
+      const newPartner: any = {
+        uid: generateUUID(),
+        phoneNumber: cleanPhone,
+        pinCode: '1234',
+        firstName: partnerFormData.firstName,
+        lastName: partnerFormData.lastName,
+        role: 'PARTNER',
+        isActive: true, // L'admin l'inscrit lui-même, donc on active direct
+        isAdmin: false,
+        isPublic: false,
+        isKitaPremium: false,
+        createdAt: new Date().toISOString(),
+        marketingCredits: 0,
+        badges: [],
+        purchasedModuleIds: [],
+        pendingModuleIds: []
+      };
+
+      await saveUserProfile(newPartner);
+      showNotify("Apporteur d'affaires inscrit avec succès !");
+      setIsPartnerModalOpen(false);
+      setPartnerFormData({ firstName: '', lastName: '', whatsapp: '' });
+      fetchUsers();
+    } catch (err) {
+      showNotify("Erreur lors de l'inscription du partenaire.", "error");
+    } finally {
+      setIsCreatingPartner(false);
+    }
   };
 
   const runDatabaseDiagnostic = async () => {
@@ -279,16 +346,15 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
-            <div className={`px-4 py-3 rounded-2xl border flex items-center gap-2 transition-all duration-700 ${
-              globalDbHealth === 'healthy' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 
-              globalDbHealth === 'warning' ? 'bg-rose-50 border-rose-100 text-rose-600 animate-bounce' : 
-              'bg-slate-50 border-slate-100 text-slate-400'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${globalDbHealth === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : globalDbHealth === 'warning' ? 'bg-rose-500' : 'bg-slate-300'}`}></div>
-              <span className="text-[9px] font-black uppercase tracking-widest">
-                {globalDbHealth === 'healthy' ? 'Système Sain' : globalDbHealth === 'warning' ? 'Alerte Structure' : 'Diagnostic...'}
-              </span>
-            </div>
+            
+            {/* BOUTON APPORTEUR D'AFFAIRES */}
+            <button 
+              onClick={() => setIsPartnerModalOpen(true)}
+              className="bg-amber-500 text-brand-900 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-xl flex items-center gap-3 ring-4 ring-amber-500/10"
+            >
+              <Handshake className="w-4 h-4" />
+              <span>Recruter Partenaire</span>
+            </button>
 
             <button 
               onClick={runDatabaseDiagnostic}
@@ -300,7 +366,7 @@ const AdminDashboard: React.FC = () => {
             </button>
 
             {stats.pending > 0 && (
-              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
+              <button onClick={handleActivateAll} disabled={isActivatingAll} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-3">
                 {isActivatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Activer les {stats.pending} gérants
               </button>
@@ -367,6 +433,58 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* MODALE RECRUTEMENT PARTENAIRE */}
+      {isPartnerModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 md:p-12 relative animate-in zoom-in-95">
+              <button onClick={() => setIsPartnerModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500 transition-colors"><X /></button>
+              <div className="text-center mb-10">
+                 <div className="h-20 w-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <UserPlus className="w-10 h-10" />
+                 </div>
+                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouvel Apporteur</h2>
+                 <p className="text-slate-400 text-xs mt-2 font-bold uppercase tracking-widest">Enrôlement Partenaire Excellence</p>
+              </div>
+              <form onSubmit={handleCreatePartner} className="space-y-6">
+                 <div className="space-y-4">
+                    <input 
+                      type="text" 
+                      placeholder="Prénom" 
+                      value={partnerFormData.firstName}
+                      onChange={e => setPartnerFormData({...partnerFormData, firstName: e.target.value})}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner"
+                      required
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Nom" 
+                      value={partnerFormData.lastName}
+                      onChange={e => setPartnerFormData({...partnerFormData, lastName: e.target.value})}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner"
+                      required
+                    />
+                    <input 
+                      type="tel" 
+                      placeholder="WhatsApp (07...)" 
+                      value={partnerFormData.whatsapp}
+                      onChange={e => setPartnerFormData({...partnerFormData, whatsapp: e.target.value})}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner"
+                      required
+                    />
+                 </div>
+                 <button 
+                  type="submit" 
+                  disabled={isCreatingPartner}
+                  className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all"
+                 >
+                    {isCreatingPartner ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-amber-500" />}
+                    Inscrire le Partenaire
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
+
       {/* DRAWER PILOTAGE */}
       {selectedUser && (
         <div className="fixed inset-0 z-[150] flex justify-end bg-slate-950/40 backdrop-blur-md animate-in fade-in">
@@ -384,6 +502,56 @@ const AdminDashboard: React.FC = () => {
                      <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-500 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
                   </div>
                </div>
+
+               {/* BLOC SPÉCIFIQUE PARTENAIRE DANS LE DRAWER */}
+               {selectedUser.role === 'PARTNER' ? (
+                 <div className="space-y-8">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                           <Users className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
+                           <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Salons Recrutés</p>
+                           <p className="text-4xl font-black text-white tracking-tighter">{partnerStats.referrals}</p>
+                        </div>
+                        <div className="p-8 bg-amber-500 rounded-[2.5rem] text-brand-900 shadow-xl relative overflow-hidden group">
+                           <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
+                           <p className="text-[9px] font-black text-amber-900/60 uppercase tracking-widest mb-3">Commissions Dues</p>
+                           <p className="text-4xl font-black tracking-tighter">{partnerStats.earnings.toLocaleString()} <span className="text-sm">F</span></p>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 space-y-4">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <Share2 className="w-4 h-4 text-brand-600" /> Lien de parrainage du partenaire
+                       </p>
+                       <div className="flex items-center gap-4">
+                          <div className="bg-white px-6 py-4 rounded-xl border border-slate-200 font-mono text-[10px] text-slate-500 flex-grow truncate">
+                             {`${window.location.origin}/#/quiz?ref=${selectedUser.phoneNumber}`}
+                          </div>
+                          <button 
+                             onClick={() => copyToClipboard(`${window.location.origin}/#/quiz?ref=${selectedUser.phoneNumber}`)}
+                             className="bg-brand-900 text-white p-4 rounded-xl shadow-lg hover:scale-110 transition-all"
+                             title="Copier le lien"
+                          >
+                             <Copy className="w-5 h-5" />
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+               ) : (
+                 /* BLOC GÉRANT CLASSIQUE */
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
+                       <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
+                       <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
+                       <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
+                    </div>
+                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                       <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Jetons IA Marketing</p>
+                       <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
+                    </div>
+                 </div>
+               )}
 
                {/* ACTIONS PRINCIPALES */}
                <div className="space-y-4">
@@ -405,21 +573,6 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   )}
                </div>
-
-               {selectedUser.role !== 'PARTNER' && (
-                 <div className="grid grid-cols-2 gap-6">
-                    <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden group">
-                       <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
-                       <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
-                       <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
-                    </div>
-                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                       <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Jetons IA Marketing</p>
-                       <p className="text-3xl font-black text-slate-900 tracking-tighter">{selectedUser.marketingCredits || 0} <span className="text-sm opacity-30">PTS</span></p>
-                    </div>
-                 </div>
-               )}
 
                <section className="space-y-6">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Notes Mentor</h4>
