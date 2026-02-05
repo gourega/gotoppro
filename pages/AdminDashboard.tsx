@@ -46,7 +46,10 @@ import {
   Shield,
   Handshake,
   UserPlus,
-  Share2
+  Share2,
+  Trash2,
+  UserMinus,
+  ShieldX
 } from 'lucide-react';
 
 const COMMISSION_PER_ELITE = 1500;
@@ -179,7 +182,7 @@ const AdminDashboard: React.FC = () => {
         firstName: partnerFormData.firstName,
         lastName: partnerFormData.lastName,
         role: 'PARTNER',
-        isActive: true, // L'admin l'inscrit lui-même, donc on active direct
+        isActive: true, 
         isAdmin: false,
         isPublic: false,
         isKitaPremium: false,
@@ -259,24 +262,28 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleValidateGMB = async () => {
-    if (!selectedUser || !gmbUrlInput.trim()) {
-      showNotify("L'URL Google Maps est requise.", "error");
-      return;
-    }
-    setIsUpdatingGMB(true);
+  const handleSuspendUser = async (u: UserProfile) => {
+    if (!window.confirm(`Suspendre l'accès de ${u.firstName} ? L'utilisateur ne pourra plus se connecter.`)) return;
     try {
-      await updateUserProfile(selectedUser.uid, { 
-        gmbStatus: 'ACTIVE',
-        gmbUrl: gmbUrlInput.trim()
-      });
-      showNotify("Fiche Google Business activée !");
-      setSelectedUser({ ...selectedUser, gmbStatus: 'ACTIVE', gmbUrl: gmbUrlInput.trim() });
+      await updateUserProfile(u.uid, { isActive: false });
+      showNotify("Accès suspendu.");
+      fetchUsers();
+      setSelectedUser({ ...u, isActive: false });
+    } catch (err) {
+      showNotify("Erreur lors de la suspension", "error");
+    }
+  };
+
+  const handleDeleteUser = async (u: UserProfile) => {
+    if (!window.confirm(`Êtes-vous ABSOLUMENT SÛR de vouloir supprimer DÉFINITIVEMENT le compte de ${u.firstName} ? Cette action est irréversible et supprimera toutes ses données.`)) return;
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('uid', u.uid);
+      if (error) throw error;
+      showNotify("Utilisateur supprimé définitivement.");
+      setSelectedUser(null);
       fetchUsers();
     } catch (err) {
-      showNotify("Erreur lors de la validation GMB", "error");
-    } finally {
-      setIsUpdatingGMB(false);
+      showNotify("Erreur lors de la suppression", "error");
     }
   };
 
@@ -553,25 +560,33 @@ const AdminDashboard: React.FC = () => {
                  </div>
                )}
 
-               {/* ACTIONS PRINCIPALES */}
-               <div className="space-y-4">
-                  {!selectedUser.isActive && (
+               {/* ACTIONS PRINCIPALES DE GESTION */}
+               <div className="space-y-6">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Pilotage du Compte</h4>
+                  <div className="space-y-4">
+                    {!selectedUser.isActive ? (
+                      <button 
+                        onClick={() => handleActivateUser(selectedUser)}
+                        className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"
+                      >
+                         <CheckCircle2 className="w-5 h-5" /> Activer le compte
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleSuspendUser(selectedUser)}
+                        className="w-full py-6 rounded-2xl bg-amber-500 text-brand-900 font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-amber-600 transition-all"
+                      >
+                         <ShieldX className="w-5 h-5" /> Suspendre l'accès
+                      </button>
+                    )}
+
                     <button 
-                      onClick={() => handleActivateUser(selectedUser)}
-                      className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"
+                      onClick={() => handleDeleteUser(selectedUser)}
+                      className="w-full py-6 rounded-2xl border-2 border-rose-500 text-rose-500 font-black uppercase text-[11px] tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-3"
                     >
-                       <CheckCircle2 className="w-5 h-5" /> Activer ce compte
+                       <Trash2 className="w-5 h-5" /> Supprimer Définitivement
                     </button>
-                  )}
-                  
-                  {selectedUser.role === 'PARTNER' && (
-                    <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex items-start gap-4">
-                       <Zap className="w-6 h-6 text-amber-500 shrink-0" />
-                       <p className="text-xs text-amber-800 font-medium italic">
-                         Ce partenaire pourra générer des revenus en propulsant Go'Top Pro dans son réseau d'influence.
-                       </p>
-                    </div>
-                  )}
+                  </div>
                </div>
 
                <section className="space-y-6">
