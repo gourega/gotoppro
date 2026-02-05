@@ -70,46 +70,88 @@ export const generateUUID = () => {
   });
 };
 
+/**
+ * Traduit un objet Frontend (CamelCase) vers le format Base de données (SnakeCase)
+ */
+const mapProfileToDB = (profile: Partial<UserProfile>): any => {
+  const db: any = {};
+  if (profile.uid !== undefined) db.uid = profile.uid;
+  if (profile.phoneNumber !== undefined) db.phone_number = profile.phoneNumber;
+  if (profile.pinCode !== undefined) db.phone_code = profile.pinCode;
+  if (profile.email !== undefined) db.email = profile.email;
+  if (profile.firstName !== undefined) db.first_name = profile.firstName;
+  if (profile.lastName !== undefined) db.last_name = profile.lastName;
+  if (profile.establishmentName !== undefined) db.establishment_name = profile.establishmentName;
+  if (profile.photoURL !== undefined) db.photo_url = profile.photoURL;
+  if (profile.bio !== undefined) db.bio = profile.bio;
+  if (profile.adminNotes !== undefined) db.admin_notes = profile.adminNotes;
+  if (profile.employeeCount !== undefined) db.employee_count = profile.employeeCount;
+  if (profile.openingYear !== undefined) db.opening_year = profile.openingYear;
+  if (profile.role !== undefined) db.role = profile.role;
+  if (profile.isActive !== undefined) db.is_active = profile.isActive;
+  if (profile.isAdmin !== undefined) db.is_admin = profile.isAdmin;
+  if (profile.isPublic !== undefined) db.is_public = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) db.is_kita_premium = profile.isKitaPremium;
+  if (profile.kitaPremiumUntil !== undefined) db.kita_premium_until = profile.kitaPremiumUntil;
+  if (profile.hasPerformancePack !== undefined) db.has_performance_pack = profile.hasPerformancePack;
+  if (profile.hasStockPack !== undefined) db.has_stock_pack = profile.hasStockPack;
+  if (profile.crmExpiryDate !== undefined) db.crm_expiry_date = profile.crmExpiryDate;
+  if (profile.strategicAudit !== undefined) db.strategic_audit = profile.strategicAudit;
+  if (profile.marketingCredits !== undefined) db.marketing_credits = profile.marketingCredits;
+  if (profile.gmbStatus !== undefined) db.gmb_status = profile.gmbStatus;
+  if (profile.gmbUrl !== undefined) db.gmb_url = profile.gmbUrl;
+  if (profile.gmbContractSignedAt !== undefined) db.gmb_contract_signed_at = profile.gmbContractSignedAt;
+  if (profile.badges !== undefined) db.badges = profile.badges;
+  if (profile.purchasedModuleIds !== undefined) db.purchased_module_ids = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) db.pending_module_ids = profile.pendingModuleIds;
+  if (profile.actionPlan !== undefined) db.action_plan = profile.actionPlan;
+  if (profile.referredBy !== undefined) db.referred_by = profile.referredBy;
+  if (profile.referralCount !== undefined) db.referral_count = profile.referralCount;
+  if (profile.createdAt !== undefined) db.created_at = profile.createdAt;
+  if (profile.progress !== undefined) db.progress = profile.progress;
+  if (profile.attempts !== undefined) db.attempts = profile.attempts;
+  return db;
+};
+
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
-  // Resilience Fix: Check both data.uid and data.id (Supabase default)
   const actualUid = data.uid || data.id;
   
   return {
     uid: actualUid,
-    phoneNumber: data.phoneNumber || data.phone_number || '',
-    pinCode: data.pinCode || data.phone_code || '1234',
+    phoneNumber: data.phone_number || data.phoneNumber || '',
+    pinCode: data.phone_code || data.pinCode || '1234',
     email: data.email,
-    firstName: data.firstName || data.first_name || '',
-    lastName: data.lastName || data.last_name || '',
-    establishmentName: data.establishmentName || data.establishment_name || '',
-    photoURL: data.photoURL || data.photo_url || '',
+    firstName: data.first_name || data.firstName || '',
+    lastName: data.last_name || data.lastName || '',
+    establishmentName: data.establishment_name || data.establishmentName || '',
+    photoURL: data.photo_url || data.photoURL || '',
     bio: data.bio || '',
     adminNotes: data.admin_notes || data.adminNotes || '',
-    employeeCount: data.employeeCount || data.employee_count || 0,
-    yearsOfExistence: data.yearsOfExistence || data.years_of_existence || 0,
-    openingYear: data.openingYear || data.opening_year || 0,
+    employeeCount: data.employee_count || data.employeeCount || 0,
+    yearsOfExistence: data.years_of_existence || data.yearsOfExistence || 0,
+    openingYear: data.opening_year || data.openingYear || 0,
     role: (data.role || 'CLIENT') as UserRole,
-    isActive: data.isActive ?? data.is_active ?? false,
-    isAdmin: data.isAdmin ?? data.is_admin ?? false,
-    isPublic: data.isPublic ?? data.is_public ?? true,
-    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
-    kitaPremiumUntil: data.kitaPremiumUntil || data.kita_premium_until,
-    hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
-    hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
-    crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
-    strategicAudit: data.strategicAudit || data.strategic_audit || '',
-    marketingCredits: data.marketingCredits ?? data.marketing_credits ?? 3,
-    gmbStatus: data.gmbStatus || data.gmb_status || 'NONE',
-    gmbUrl: data.gmbUrl || data.gmb_url || '',
-    gmbContractSignedAt: data.gmbContractSignedAt || data.gmb_contract_signed_at || '',
+    isActive: data.is_active ?? data.isActive ?? false,
+    isAdmin: data.is_admin ?? data.isAdmin ?? false,
+    isPublic: data.is_public ?? data.isPublic ?? true,
+    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
+    kitaPremiumUntil: data.kita_premium_until || data.kitaPremiumUntil,
+    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
+    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
+    crmExpiryDate: data.crm_expiry_date || data.crmExpiryDate,
+    strategicAudit: data.strategic_audit || data.strategicAudit || '',
+    marketingCredits: data.marketing_credits ?? data.marketingCredits ?? 3,
+    gmbStatus: data.gmb_status || data.gmbStatus || 'NONE',
+    gmbUrl: data.gmb_url || data.gmbUrl || '',
+    gmbContractSignedAt: data.gmb_contract_signed_at || data.gmbContractSignedAt || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
-    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
+    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
+    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
     actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
-    referralCount: data.referralCount || data.referral_count || 0,
-    referredBy: data.referredBy || data.referred_by || '',
-    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+    referralCount: data.referral_count || data.referralCount || 0,
+    referredBy: data.referred_by || data.referredBy || '',
+    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
@@ -121,7 +163,7 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phoneNumber.ilike.*${last10}`).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').or(`phone_number.eq.${digitsOnly},phone_number.ilike.*${last10},phoneNumber.eq.${digitsOnly}`).maybeSingle();
     if (error) return null;
     return mapProfileFromDB(data);
   } catch (err) { return null; }
@@ -130,10 +172,8 @@ export const getProfileByPhone = async (phoneNumber: string) => {
 export const getUserProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   try {
-    // Check both columns to be sure
     const { data, error } = await supabase.from('profiles').select('*').or(`uid.eq.${uid}`).maybeSingle();
     if (error) {
-        // Fallback for default Supabase column name
         const { data: fallback, error: fbError } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
         if (fbError) throw fbError;
         return mapProfileFromDB(fallback);
@@ -145,21 +185,27 @@ export const getUserProfile = async (uid: string) => {
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) return { success: true };
   try {
-    const { error } = await supabase.from('profiles').upsert(profile, { onConflict: 'uid' });
+    const dbData = mapProfileToDB(profile);
+    const { error } = await supabase.from('profiles').upsert(dbData, { onConflict: 'uid' });
     if (error) throw error;
     return { success: true };
-  } catch (err) { throw err; }
+  } catch (err) { 
+    console.error("Save Error:", err);
+    throw err; 
+  }
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
   try {
-    const { error } = await supabase.from('profiles').update(updates).eq('uid', uid);
+    const dbData = mapProfileToDB(updates);
+    const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
     if (error) {
-        // Fallback to Supabase default column name
-        await supabase.from('profiles').update(updates).eq('id', uid);
+        await supabase.from('profiles').update(dbData).eq('id', uid);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("Update Error:", err);
+  }
 };
 
 export const getAllUsers = async () => {
@@ -255,9 +301,10 @@ export const uploadProfilePhoto = async (file: File, userId: string) => {
 export const getReferrals = async (userId: string) => {
   if (!supabase) return [];
   try {
-    const { data: userProfile } = await supabase.from('profiles').select('phoneNumber').eq('uid', userId).maybeSingle();
+    const { data: userProfile } = await supabase.from('profiles').select('phone_number, phoneNumber').eq('uid', userId).maybeSingle();
     if (!userProfile) return [];
-    const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', userProfile.phoneNumber);
+    const phone = userProfile.phone_number || userProfile.phoneNumber;
+    const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', phone);
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
@@ -448,7 +495,7 @@ export const deleteKitaSupplier = async (id: string) => {
 export const getPublicProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).eq('isPublic', true).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).eq('is_public', true).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (e) { return null; }
