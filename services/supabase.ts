@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole } from '../types';
 
@@ -28,6 +27,11 @@ const getSafeEnv = (key: string): string => {
       return (import.meta as any).env[key];
     }
   } catch (e) {}
+  try {
+    if (typeof process !== 'undefined' && process.env && (process.env as any)[key]) {
+      return (process.env as any)[key];
+    }
+  } catch (e) {}
   return "";
 };
 
@@ -40,7 +44,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.3-PARTNER-CORE"
+  version: "2.9.4-STABLE-PARTNERS"
 };
 
 const getSafeSupabaseClient = () => {
@@ -66,7 +70,8 @@ export const generateUUID = () => {
 };
 
 /**
- * Double Écriture pour support SnakeCase/CamelCase
+ * Mappage robuste supportant CamelCase (TS) et SnakeCase (DB Supabase)
+ * Appliqué aux deux tables : profiles et partners
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
@@ -126,7 +131,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 };
 
 /**
- * RECHERCHE GLOBALE (Login) : Cherche dans profiles OU partners
+ * RECHERCHE GLOBALE (Login) : Analyse en cascade des deux tables
  */
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
@@ -135,15 +140,15 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   if (!last10) return null;
 
   try {
-    // 1. Chercher dans les profils gérants
+    // 1. Recherche dans 'profiles' (Gérants)
     const { data: profile } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phone_number.eq.${digitsOnly}`).maybeSingle();
     if (profile) return mapProfileFromDB(profile);
 
-    // 2. Chercher dans la table dédiée partenaires
+    // 2. Recherche dans 'partners' (Apporteurs d'affaires)
     const { data: partner } = await supabase.from('partners').select('*').or(`phoneNumber.eq.${digitsOnly},phone_number.eq.${digitsOnly}`).maybeSingle();
     if (partner) {
       const mapped = mapProfileFromDB(partner);
-      if (mapped) mapped.role = 'PARTNER'; // Forcer le rôle partenaire
+      if (mapped) mapped.role = 'PARTNER'; // On s'assure du rôle
       return mapped;
     }
 
@@ -169,24 +174,38 @@ export const getUserProfile = async (uid: string) => {
 
 export const saveUserProfile = async (profile: Partial<UserProfile> & { uid: string }) => {
   if (!supabase) return { success: true };
+  
+  // Routage dynamique vers la bonne table
   const table = profile.role === 'PARTNER' ? 'partners' : 'profiles';
+  
   try {
     const dbData = mapProfileToDB(profile);
     const { error } = await supabase.from(table).upsert(dbData, { onConflict: 'uid' });
     if (error) throw error;
     return { success: true };
-  } catch (err) { throw err; }
+  } catch (err) { 
+    console.error(`Save error in table ${table}:`, err);
+    throw err; 
+  }
 };
 
 export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
   if (!supabase || !uid) return;
-  const table = updates.role === 'PARTNER' ? 'partners' : 'profiles';
+  
+  // Tentative intelligente de mise à jour (vérifie les deux tables si le rôle n'est pas spécifié)
+  const dbData = mapProfileToDB(updates);
+  
   try {
-    const dbData = mapProfileToDB(updates);
-    const { error } = await supabase.from(table).update(dbData).eq('uid', uid);
-    if (error && table === 'profiles') {
-        // Essai croisé si on ne sait pas où est l'utilisateur
+    if (updates.role === 'PARTNER') {
+      await supabase.from('partners').update(dbData).eq('uid', uid);
+    } else if (updates.role) {
+      await supabase.from('profiles').update(dbData).eq('uid', uid);
+    } else {
+      // Si on ne sait pas, on essaie 'profiles' puis 'partners'
+      const { error } = await supabase.from('profiles').update(dbData).eq('uid', uid);
+      if (error) {
         await supabase.from('partners').update(dbData).eq('uid', uid);
+      }
     }
   } catch (err) {}
 };
@@ -194,14 +213,18 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
 export const getAllUsers = async () => {
   if (!supabase) return [];
   try {
-    const { data: p } = await supabase.from('profiles').select('*');
-    const { data: part } = await supabase.from('partners').select('*');
+    const [{ data: p }, { data: part }] = await Promise.all([
+      supabase.from('profiles').select('*'),
+      supabase.from('partners').select('*')
+    ]);
+    
     const profiles = (p || []).map(mapProfileFromDB);
     const partners = (part || []).map(d => {
       const m = mapProfileFromDB(d);
       if (m) m.role = 'PARTNER';
       return m;
     });
+    
     return [...profiles, ...partners].filter(Boolean) as UserProfile[];
   } catch (e) { return []; }
 };
@@ -212,6 +235,8 @@ export const getReferrals = async (userId: string) => {
     const user = await getUserProfile(userId);
     if (!user) return [];
     const phone = user.phoneNumber;
+    
+    // Les filleuls sont toujours dans la table 'profiles' (car ce sont des gérants)
     const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', phone);
     if (error) {
         const { data: fallback } = await supabase.from('profiles').select('*').eq('referred_by', phone);
@@ -221,7 +246,7 @@ export const getReferrals = async (userId: string) => {
   } catch (e) { return []; }
 };
 
-// Fonctions Caisse & Services (Toujours liées à 'profiles' car les partenaires n'ont pas de caisse salon)
+// Fonctions Caisse & Services (liées aux gérants dans 'profiles')
 export const getKitaTransactions = async (userId: string) => {
   if (!supabase || !userId) return [];
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -366,10 +391,6 @@ export const getPublicProfile = async (uid: string) => {
   return mapProfileFromDB(data);
 };
 
-/**
- * Fix: Added missing getPublicDirectory export.
- * Retourne tous les profils publics pour l'annuaire de l'excellence.
- */
 export const getPublicDirectory = async () => {
   if (!supabase) return [];
   try {

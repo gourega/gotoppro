@@ -130,6 +130,7 @@ const AdminDashboard: React.FC = () => {
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
 
+      // Recherche dans les deux tables via getProfileByPhone
       const existing = await getProfileByPhone(cleanPhone);
       if (existing) {
         showNotify("Ce numéro est déjà utilisé.", "error");
@@ -143,14 +144,15 @@ const AdminDashboard: React.FC = () => {
         firstName: partnerFormData.firstName,
         lastName: partnerFormData.lastName,
         role: 'PARTNER',
-        isActive: true, 
+        isActive: true, // Activation automatique forcée
         isAdmin: false,
         createdAt: new Date().toISOString()
       };
 
-      // Utilisation de saveUserProfile qui détecte désormais la table 'partners' via le rôle
+      // saveUserProfile s'occupe du routage vers la table 'partners'
       await saveUserProfile(newPartner);
-      showNotify("Partenaire inscrit dans la table dédiée !");
+      
+      showNotify("Partenaire inscrit et activé !");
       setIsPartnerModalOpen(false);
       setPartnerFormData({ firstName: '', lastName: '', whatsapp: '' });
       fetchUsers();
@@ -197,7 +199,7 @@ const AdminDashboard: React.FC = () => {
       const table = u.role === 'PARTNER' ? 'partners' : 'profiles';
       const { error } = await supabase!.from(table).delete().eq('uid', u.uid);
       if (error) throw error;
-      showNotify("Supprimé.");
+      showNotify("Utilisateur supprimé définitivement.");
       setSelectedUser(null);
       fetchUsers();
     } catch (err) { showNotify("Erreur suppression", "error"); }
@@ -215,7 +217,7 @@ const AdminDashboard: React.FC = () => {
       if (error) throw error;
       showNotify(`${pendingUsers.length} gérants activés !`);
       fetchUsers();
-    } catch (err) { showNotify("Erreur groupée.", "error"); }
+    } catch (err) { showNotify("Erreur lors de l'activation groupée.", "error"); }
     finally { setIsActivatingAll(false); }
   };
 
@@ -240,7 +242,7 @@ const AdminDashboard: React.FC = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    showNotify("Copié !");
+    showNotify("Copié dans le presse-papier !");
   };
 
   return (
@@ -271,7 +273,7 @@ const AdminDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <AdminStatCard icon={<Users />} label="Gérants" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
-           <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} sub="Table Dédiée" color="text-amber-600" />
+           <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} sub="Table 'partners' dédiée" color="text-amber-600" />
            <AdminStatCard icon={<TrendingUp />} label="Recettes Est." val={`${(stats.active * 10000).toLocaleString()} F`} />
         </section>
 
@@ -299,7 +301,7 @@ const AdminDashboard: React.FC = () => {
                         <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>
                           {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" /> : u.firstName?.[0]}
                         </div>
-                        <div><p className="font-bold text-slate-900 text-xl">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || (u.role === 'PARTNER' ? 'Partenaire' : 'Indépendant')} • {u.phoneNumber}</p></div>
+                        <div><p className="font-bold text-slate-900 text-xl">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || (u.role === 'PARTNER' ? 'Partenaire Stratégique' : 'Gérant Indépendant')} • {u.phoneNumber}</p></div>
                       </div>
                     </td>
                     <td className="px-8 py-8">
@@ -327,14 +329,14 @@ const AdminDashboard: React.FC = () => {
               <button onClick={() => setIsPartnerModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
               <div className="text-center mb-10">
                  <div className="h-20 w-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner"><UserPlus className="w-10 h-10" /></div>
-                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouveau Partenaire</h2>
-                 <p className="text-slate-400 text-xs mt-2 font-bold uppercase tracking-widest italic">Table 'partners' isolée</p>
+                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouvel Apporteur</h2>
+                 <p className="text-slate-400 text-[9px] mt-2 font-black uppercase tracking-widest italic">Enrôlement Partenaire Excellence</p>
               </div>
               <form onSubmit={handleCreatePartner} className="space-y-6">
                  <input type="text" placeholder="Prénom" value={partnerFormData.firstName} onChange={e => setPartnerFormData({...partnerFormData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
                  <input type="text" placeholder="Nom" value={partnerFormData.lastName} onChange={e => setPartnerFormData({...partnerFormData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
                  <input type="tel" placeholder="WhatsApp (07...)" value={partnerFormData.whatsapp} onChange={e => setPartnerFormData({...partnerFormData, whatsapp: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <button type="submit" disabled={isCreatingPartner} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all">
+                 <button type="submit" disabled={isCreatingPartner} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all">
                     {isCreatingPartner ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-amber-500" />} Inscrire le Partenaire
                  </button>
               </form>
