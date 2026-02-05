@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -8,7 +9,7 @@ import {
   updateKitaStaff,
   getKitaClients, 
   addKitaClient, 
-  deleteKitaStaff,
+  // deleteKitaStaff was removed here as it is not exported from supabase service and not used in this file
   getKitaTransactions,
   getKitaServices,
   addKitaService,
@@ -176,7 +177,8 @@ const PilotagePerformance: React.FC = () => {
       const memberName = `${collab.firstName} ${collab.lastName}`.trim();
       const memberTrans = transactions.filter(t => (t.staffName === memberName || t.staffName === collab.firstName) && t.type === 'INCOME' && !t.isCredit);
       const totalCA = memberTrans.reduce((acc, t) => acc + t.amount, 0);
-      const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commissionRate || 0) / 100), 0);
+      // Fix: Property 'commissionRate' does not exist on type 'KitaTransaction'. Using 'commission_rate' instead.
+      const totalComm = memberTrans.reduce((acc, t) => acc + (t.amount * (t.commission_rate || 0) / 100), 0);
       const totalTips = memberTrans.reduce((acc, t) => acc + (t.tipAmount || 0), 0);
       results.push({ ...collab, totalCA, totalComm, totalTips, count: memberTrans.length, commission_rate: config?.commission_rate || 0 });
     });
