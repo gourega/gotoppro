@@ -39,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.11-FINAL-UNIFIED"
+  version: "2.9.12-FIX-SNAKE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -105,7 +105,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   return {
     uid: data.uid || data.id,
     phoneNumber: data.phone_number || data.phoneNumber || '',
-    pinCode: data.phone_code || data.phone_code || data.pinCode || '1234',
+    pinCode: data.phone_code || data.pinCode || '1234',
     email: data.email,
     firstName: data.first_name || data.firstName || '',
     lastName: data.last_name || data.lastName || '',
