@@ -68,6 +68,7 @@ const AdminDashboard: React.FC = () => {
   
   const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
   const [tempAdminNotes, setTempAdminNotes] = useState('');
+  const [isUpdatingGMB, setIsUpdatingGMB] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   // Partner Recruitment State
@@ -75,10 +76,6 @@ const AdminDashboard: React.FC = () => {
   const [partnerFormData, setPartnerFormData] = useState({ firstName: '', lastName: '', whatsapp: '' });
   const [isCreatingPartner, setIsCreatingPartner] = useState(false);
   const [partnerStats, setPartnerStats] = useState({ referrals: 0, earnings: 0 });
-
-  // GMB Management States
-  const [gmbUrlInput, setGmbUrlInput] = useState('');
-  const [isUpdatingGMB, setIsUpdatingGMB] = useState(false);
 
   // Database Health Check States
   const [isHealthCheckOpen, setIsHealthCheckOpen] = useState(false);
@@ -130,7 +127,6 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedUser) {
       setTempAdminNotes(selectedUser.adminNotes || '');
-      setGmbUrlInput(selectedUser.gmbUrl || '');
       if (selectedUser.role === 'PARTNER') {
         calculatePartnerStats(selectedUser.phoneNumber);
       } else {
@@ -295,7 +291,7 @@ const AdminDashboard: React.FC = () => {
 
     setIsActivatingAll(true);
     try {
-      const { error } = await supabase.from('profiles').update({ isActive: true }).eq('isActive', false).neq('role', 'SUPER_ADMIN');
+      const { error } = await supabase.from('profiles').update({ isActive: true }).eq('isActive', false).neq('isAdmin', true);
       if (error) throw error;
       showNotify(`${pendingUsers.length} gérants activés !`);
       fetchUsers();
@@ -307,7 +303,7 @@ const AdminDashboard: React.FC = () => {
     const s = searchTerm.toLowerCase().trim();
     if (s) return users.filter(u => !u.isAdmin && (`${u.firstName} ${u.lastName}`.toLowerCase().includes(s) || (u.establishmentName || '').toLowerCase().includes(s) || u.phoneNumber.includes(s)));
     if (viewMode === 'inbox') return users.filter(u => !u.isActive && !u.isAdmin);
-    if (viewMode === 'active') return users.filter(u => u.isActive && (u.role === 'CLIENT' || u.role === 'STAFF_ELITE' || u.role === 'STAFF_ADMIN'));
+    if (viewMode === 'active') return users.filter(u => u.isActive && (u.role === 'CLIENT' || u.role === 'STAFF_ELITE' || u.role === 'STAFF_ADMIN') && !u.isAdmin);
     if (viewMode === 'partners') return users.filter(u => u.role === 'PARTNER');
     if (viewMode === 'admins') return users.filter(u => u.isAdmin);
     return users.filter(u => !u.isAdmin);
@@ -519,7 +515,7 @@ const AdminDashboard: React.FC = () => {
                            <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Salons Recrutés</p>
                            <p className="text-4xl font-black text-white tracking-tighter">{partnerStats.referrals}</p>
                         </div>
-                        <div className="p-8 bg-amber-500 rounded-[2.5rem] text-brand-900 shadow-xl relative overflow-hidden group">
+                        <div className="p-8 bg-amber-50 rounded-[2.5rem] text-brand-900 shadow-xl relative overflow-hidden group">
                            <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
                            <p className="text-[9px] font-black text-amber-900/60 uppercase tracking-widest mb-3">Commissions Dues</p>
                            <p className="text-4xl font-black tracking-tighter">{partnerStats.earnings.toLocaleString()} <span className="text-sm">F</span></p>

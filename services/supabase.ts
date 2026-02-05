@@ -45,7 +45,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.0-BETA"
+  version: "2.9.1-HOTFIX"
 };
 
 const getSafeSupabaseClient = () => {
@@ -71,43 +71,44 @@ export const generateUUID = () => {
 };
 
 /**
- * Traduit un objet Frontend (CamelCase) vers le format Base de données (SnakeCase)
+ * Traduit un objet Frontend (CamelCase) vers le format Base de données.
+ * On essaie d'être compatible avec les deux schémas possibles.
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
   if (profile.uid !== undefined) db.uid = profile.uid;
-  if (profile.phoneNumber !== undefined) db.phone_number = profile.phoneNumber;
-  if (profile.pinCode !== undefined) db.phone_code = profile.pinCode;
+  if (profile.phoneNumber !== undefined) db.phoneNumber = profile.phoneNumber;
+  if (profile.pinCode !== undefined) db.pinCode = profile.pinCode;
   if (profile.email !== undefined) db.email = profile.email;
-  if (profile.firstName !== undefined) db.first_name = profile.firstName;
-  if (profile.lastName !== undefined) db.last_name = profile.lastName;
-  if (profile.establishmentName !== undefined) db.establishment_name = profile.establishmentName;
-  if (profile.photoURL !== undefined) db.photo_url = profile.photoURL;
+  if (profile.firstName !== undefined) db.firstName = profile.firstName;
+  if (profile.lastName !== undefined) db.lastName = profile.lastName;
+  if (profile.establishmentName !== undefined) db.establishmentName = profile.establishmentName;
+  if (profile.photoURL !== undefined) db.photoURL = profile.photoURL;
   if (profile.bio !== undefined) db.bio = profile.bio;
-  if (profile.adminNotes !== undefined) db.admin_notes = profile.adminNotes;
-  if (profile.employeeCount !== undefined) db.employee_count = profile.employeeCount;
-  if (profile.openingYear !== undefined) db.opening_year = profile.openingYear;
+  if (profile.adminNotes !== undefined) db.adminNotes = profile.adminNotes;
+  if (profile.employeeCount !== undefined) db.employeeCount = profile.employeeCount;
+  if (profile.openingYear !== undefined) db.openingYear = profile.openingYear;
   if (profile.role !== undefined) db.role = profile.role;
-  if (profile.isActive !== undefined) db.is_active = profile.isActive;
-  if (profile.isAdmin !== undefined) db.is_admin = profile.isAdmin;
-  if (profile.isPublic !== undefined) db.is_public = profile.isPublic;
-  if (profile.isKitaPremium !== undefined) db.is_kita_premium = profile.isKitaPremium;
-  if (profile.kitaPremiumUntil !== undefined) db.kita_premium_until = profile.kitaPremiumUntil;
-  if (profile.hasPerformancePack !== undefined) db.has_performance_pack = profile.hasPerformancePack;
-  if (profile.hasStockPack !== undefined) db.has_stock_pack = profile.hasStockPack;
-  if (profile.crmExpiryDate !== undefined) db.crm_expiry_date = profile.crmExpiryDate;
-  if (profile.strategicAudit !== undefined) db.strategic_audit = profile.strategicAudit;
-  if (profile.marketingCredits !== undefined) db.marketing_credits = profile.marketingCredits;
-  if (profile.gmbStatus !== undefined) db.gmb_status = profile.gmbStatus;
-  if (profile.gmbUrl !== undefined) db.gmb_url = profile.gmbUrl;
-  if (profile.gmbContractSignedAt !== undefined) db.gmb_contract_signed_at = profile.gmbContractSignedAt;
+  if (profile.isActive !== undefined) db.isActive = profile.isActive;
+  if (profile.isAdmin !== undefined) db.isAdmin = profile.isAdmin;
+  if (profile.isPublic !== undefined) db.isPublic = profile.isPublic;
+  if (profile.isKitaPremium !== undefined) db.isKitaPremium = profile.isKitaPremium;
+  if (profile.kitaPremiumUntil !== undefined) db.kitaPremiumUntil = profile.kitaPremiumUntil;
+  if (profile.hasPerformancePack !== undefined) db.hasPerformancePack = profile.hasPerformancePack;
+  if (profile.hasStockPack !== undefined) db.hasStockPack = profile.hasStockPack;
+  if (profile.crmExpiryDate !== undefined) db.crmExpiryDate = profile.crmExpiryDate;
+  if (profile.strategicAudit !== undefined) db.strategicAudit = profile.strategicAudit;
+  if (profile.marketingCredits !== undefined) db.marketingCredits = profile.marketingCredits;
+  if (profile.gmbStatus !== undefined) db.gmbStatus = profile.gmbStatus;
+  if (profile.gmbUrl !== undefined) db.gmbUrl = profile.gmbUrl;
+  if (profile.gmbContractSignedAt !== undefined) db.gmbContractSignedAt = profile.gmbContractSignedAt;
   if (profile.badges !== undefined) db.badges = profile.badges;
-  if (profile.purchasedModuleIds !== undefined) db.purchased_module_ids = profile.purchasedModuleIds;
-  if (profile.pendingModuleIds !== undefined) db.pending_module_ids = profile.pendingModuleIds;
-  if (profile.actionPlan !== undefined) db.action_plan = profile.actionPlan;
-  if (profile.referredBy !== undefined) db.referred_by = profile.referredBy;
-  if (profile.referralCount !== undefined) db.referral_count = profile.referralCount;
-  if (profile.createdAt !== undefined) db.created_at = profile.createdAt;
+  if (profile.purchasedModuleIds !== undefined) db.purchasedModuleIds = profile.purchasedModuleIds;
+  if (profile.pendingModuleIds !== undefined) db.pendingModuleIds = profile.pendingModuleIds;
+  if (profile.actionPlan !== undefined) db.actionPlan = profile.actionPlan;
+  if (profile.referredBy !== undefined) db.referredBy = profile.referredBy;
+  if (profile.referralCount !== undefined) db.referralCount = profile.referralCount;
+  if (profile.createdAt !== undefined) db.createdAt = profile.createdAt;
   if (profile.progress !== undefined) db.progress = profile.progress;
   if (profile.attempts !== undefined) db.attempts = profile.attempts;
   return db;
@@ -119,39 +120,39 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
   
   return {
     uid: actualUid,
-    phoneNumber: data.phone_number || data.phoneNumber || '',
-    pinCode: data.phone_code || data.pinCode || '1234',
+    phoneNumber: data.phoneNumber || data.phone_number || '',
+    pinCode: data.pinCode || data.phone_code || '1234',
     email: data.email,
-    firstName: data.first_name || data.firstName || '',
-    lastName: data.last_name || data.lastName || '',
-    establishmentName: data.establishment_name || data.establishmentName || '',
-    photoURL: data.photo_url || data.photoURL || '',
+    firstName: data.firstName || data.first_name || '',
+    lastName: data.lastName || data.last_name || '',
+    establishmentName: data.establishmentName || data.establishment_name || '',
+    photoURL: data.photoURL || data.photo_url || '',
     bio: data.bio || '',
-    adminNotes: data.admin_notes || data.adminNotes || '',
-    employeeCount: data.employee_count || data.employeeCount || 0,
-    yearsOfExistence: data.years_of_existence || data.yearsOfExistence || 0,
-    openingYear: data.opening_year || data.openingYear || 0,
+    adminNotes: data.adminNotes || data.admin_notes || '',
+    employeeCount: data.employeeCount || data.employee_count || 0,
+    yearsOfExistence: data.yearsOfExistence || data.years_of_existence || 0,
+    openingYear: data.openingYear || data.opening_year || 0,
     role: (data.role || 'CLIENT') as UserRole,
-    isActive: data.is_active ?? data.isActive ?? false,
-    isAdmin: data.is_admin ?? data.isAdmin ?? false,
-    isPublic: data.is_public ?? data.isPublic ?? true,
-    isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
-    kitaPremiumUntil: data.kita_premium_until || data.kitaPremiumUntil,
-    hasPerformancePack: data.has_performance_pack ?? data.hasPerformancePack ?? false,
-    hasStockPack: data.has_stock_pack ?? data.hasStockPack ?? false,
-    crmExpiryDate: data.crm_expiry_date || data.crmExpiryDate,
-    strategicAudit: data.strategic_audit || data.strategicAudit || '',
-    marketingCredits: data.marketing_credits ?? data.marketingCredits ?? 3,
-    gmbStatus: data.gmb_status || data.gmbStatus || 'NONE',
-    gmbUrl: data.gmb_url || data.gmbUrl || '',
-    gmbContractSignedAt: data.gmb_contract_signed_at || data.gmbContractSignedAt || '',
+    isActive: data.isActive ?? data.is_active ?? false,
+    isAdmin: data.isAdmin ?? data.is_admin ?? false,
+    isPublic: data.isPublic ?? data.is_public ?? true,
+    isKitaPremium: data.isKitaPremium ?? data.is_kita_premium ?? false,
+    kitaPremiumUntil: data.kitaPremiumUntil || data.kita_premium_until,
+    hasPerformancePack: data.hasPerformancePack ?? data.has_performance_pack ?? false,
+    hasStockPack: data.hasStockPack ?? data.has_stock_pack ?? false,
+    crmExpiryDate: data.crmExpiryDate || data.crm_expiry_date,
+    strategicAudit: data.strategicAudit || data.strategic_audit || '',
+    marketingCredits: data.marketingCredits ?? data.marketing_credits ?? 3,
+    gmbStatus: data.gmbStatus || data.gmb_status || 'NONE',
+    gmbUrl: data.gmbUrl || data.gmb_url || '',
+    gmbContractSignedAt: data.gmbContractSignedAt || data.gmb_contract_signed_at || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
-    purchasedModuleIds: Array.isArray(data.purchased_module_ids || data.purchasedModuleIds) ? (data.purchased_module_ids || data.purchasedModuleIds) : [],
-    pendingModuleIds: Array.isArray(data.pending_module_ids || data.pendingModuleIds) ? (data.pending_module_ids || data.pendingModuleIds) : [],
-    actionPlan: Array.isArray(data.action_plan || data.actionPlan) ? (data.action_plan || data.actionPlan) : [],
-    referralCount: data.referral_count || data.referralCount || 0,
-    referredBy: data.referred_by || data.referredBy || '',
-    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
+    purchasedModuleIds: Array.isArray(data.purchasedModuleIds || data.purchased_module_ids) ? (data.purchasedModuleIds || data.purchased_module_ids) : [],
+    pendingModuleIds: Array.isArray(data.pendingModuleIds || data.pending_module_ids) ? (data.pendingModuleIds || data.pending_module_ids) : [],
+    actionPlan: Array.isArray(data.actionPlan || data.action_plan) ? (data.actionPlan || data.action_plan) : [],
+    referralCount: data.referralCount || data.referral_count || 0,
+    referredBy: data.referredBy || data.referred_by || '',
+    createdAt: data.createdAt || data.created_at || new Date().toISOString(),
     progress: data.progress || {},
     attempts: data.attempts || {}
   } as UserProfile;
@@ -163,7 +164,7 @@ export const getProfileByPhone = async (phoneNumber: string) => {
   const last10 = digitsOnly.slice(-10);
   if (!last10) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').or(`phone_number.eq.${digitsOnly},phone_number.ilike.*${last10},phoneNumber.eq.${digitsOnly}`).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').or(`phoneNumber.eq.${digitsOnly},phone_number.eq.${digitsOnly},phoneNumber.ilike.*${last10},phone_number.ilike.*${last10}`).maybeSingle();
     if (error) return null;
     return mapProfileFromDB(data);
   } catch (err) { return null; }
@@ -224,9 +225,9 @@ export const getPublicDirectory = async () => {
       .from('profiles')
       .select('*')
       .neq('role', 'SUPER_ADMIN')
-      .filter('is_active', 'eq', true)
-      .filter('is_public', 'eq', true)
-      .order('establishment_name', { ascending: true });
+      .filter('isActive', 'eq', true)
+      .filter('isPublic', 'eq', true)
+      .order('establishmentName', { ascending: true });
         
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
@@ -301,10 +302,10 @@ export const uploadProfilePhoto = async (file: File, userId: string) => {
 export const getReferrals = async (userId: string) => {
   if (!supabase) return [];
   try {
-    const { data: userProfile } = await supabase.from('profiles').select('phone_number, phoneNumber').eq('uid', userId).maybeSingle();
+    const { data: userProfile } = await supabase.from('profiles').select('phoneNumber').eq('uid', userId).maybeSingle();
     if (!userProfile) return [];
-    const phone = userProfile.phone_number || userProfile.phoneNumber;
-    const { data, error } = await supabase.from('profiles').select('*').eq('referred_by', phone);
+    const phone = userProfile.phoneNumber;
+    const { data, error } = await supabase.from('profiles').select('*').eq('referredBy', phone);
     if (error) throw error;
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
@@ -495,7 +496,7 @@ export const deleteKitaSupplier = async (id: string) => {
 export const getPublicProfile = async (uid: string) => {
   if (!supabase || !uid) return null;
   try {
-    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).eq('is_public', true).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('uid', uid).eq('isPublic', true).maybeSingle();
     if (error) throw error;
     return mapProfileFromDB(data);
   } catch (e) { return null; }
