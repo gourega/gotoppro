@@ -39,7 +39,7 @@ export const BUILD_CONFIG = {
   urlSnippet: supabaseUrl ? (supabaseUrl.substring(0, 12) + '...') : 'MANQUANT',
   keySnippet: supabaseAnonKey ? (supabaseAnonKey.substring(0, 8) + '***') : 'MANQUANT',
   buildTime,
-  version: "2.9.12-FIX-SNAKE"
+  version: "2.9.13-STABLE"
 };
 
 const getSafeSupabaseClient = () => {
@@ -66,6 +66,7 @@ export const generateUUID = () => {
 
 /**
  * MAPPAGE VERS DB (ÉCRITURE STRICTE SNAKE_CASE)
+ * On écrit toujours dans les nouvelles colonnes
  */
 const mapProfileToDB = (profile: Partial<UserProfile>): any => {
   const db: any = {};
@@ -99,6 +100,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>): any => {
 
 /**
  * MAPPAGE DEPUIS DB (LECTURE FLEXIBLE)
+ * On accepte de lire l'ancien et le nouveau format pour ne rien perdre
  */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
