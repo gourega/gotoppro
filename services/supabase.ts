@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole } from '../types';
 
@@ -233,11 +234,11 @@ export const getKitaTransactions = async (userId: string) => {
   const { data } = await supabase.from('kita_transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
   return (data || []).map(t => ({
     id: t.id, type: t.type, amount: t.amount, label: t.label, category: t.category,
-    // Fix: Using paymentMethod to match KitaTransaction interface
     paymentMethod: t.payment_method, date: t.date, staffName: t.staff_name,
     commission_rate: t.commission_rate, tipAmount: t.tip_amount || 0,
     isCredit: t.is_credit, clientId: t.client_id, productId: t.product_id,
-    discount: t.discount || 0, originalAmount: t.original_amount || t.amount
+    discount: t.discount || 0, originalAmount: t.original_amount || t.amount,
+    whatsapp_sent: t.whatsapp_sent, client_phone: t.client_phone
   }));
 };
 
@@ -247,14 +248,22 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-    // Fix: Using staffName from transaction object (mapped to staff_name in DB)
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
     tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
     client_id: transaction.clientId, product_id: transaction.productId,
-    original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0
+    original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0,
+    client_phone: transaction.client_phone
   });
   if (error) throw error;
   return { ...transaction, id: newId } as KitaTransaction;
+};
+
+export const updateKitaTransaction = async (id: string, updates: Partial<KitaTransaction>) => {
+  if (!supabase) return;
+  await supabase.from('kita_transactions').update({
+    whatsapp_sent: updates.whatsapp_sent,
+    client_phone: updates.client_phone
+  }).eq('id', id);
 };
 
 export const deleteKitaTransaction = async (id: string) => {
@@ -341,7 +350,6 @@ export const addKitaProduct = async (userId: string, product: Omit<KitaProduct, 
   const { error } = await supabase.from('kita_products').insert({
     id: newId, user_id: userId, name: product.name, quantity: product.quantity,
     purchase_price: product.purchasePrice, sell_price: product.sellPrice,
-    // Fix: Using product.category instead of undefined profile.category
     alert_threshold: product.alertThreshold, category: product.category, supplier_id: product.supplierId
   });
   if (error) throw error;

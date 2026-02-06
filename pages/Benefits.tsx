@@ -2,7 +2,7 @@
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles } from 'lucide-react';
+import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles, MessageCircle } from 'lucide-react';
 
 const Benefits: React.FC = () => {
   return (
@@ -17,9 +17,14 @@ const Benefits: React.FC = () => {
         </p>
       </section>
 
-      {/* The 4 Pillars */}
-      <section className="py-20 max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-8">
+      {/* The Pillars */}
+      <section className="py-12 max-w-7xl mx-auto px-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <BenefitCard 
+            icon={<MessageCircle className="w-8 h-8 text-emerald-500" />}
+            title="Reçus Digitaux Premium"
+            desc="Vos clientes reçoivent leurs reçus par WhatsApp via notre canal officiel certifié. Nous finançons l'API Meta Business pour professionnaliser instantanément votre image de marque."
+          />
           <BenefitCard 
             icon={<Zap className="w-8 h-8 text-amber-500" />}
             title="Audit de Performance Coach Kita"
@@ -40,21 +45,25 @@ const Benefits: React.FC = () => {
             title="Accompagnement Mentoré"
             desc="Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace de chat privé."
           />
+          <BenefitCard 
+            icon={<ShieldCheck className="w-8 h-8 text-brand-600" />}
+            title="Standard International"
+            desc="Adoptez les méthodes des plus grands salons mondiaux adaptées au marché ivoirien pour transformer votre salon de quartier en institution."
+          />
         </div>
       </section>
 
       {/* Pricing Tiers Section */}
-      <section className="py-32 bg-brand-900 text-white overflow-hidden relative">
+      <section className="py-24 bg-brand-900 text-white overflow-hidden relative">
         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-        <div className="max-[1400px] mx-auto px-6 relative z-10">
-          <div className="text-center mb-20">
+        <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+          <div className="text-center mb-16">
             <h2 className="text-brand-500 font-black uppercase text-[10px] tracking-[0.5em] mb-4">Investissement Stratégique</h2>
-            <h3 className="text-4xl md:text-5xl font-serif font-bold mb-6">Des tarifs adaptés à votre ambition</h3>
+            <h3 className="text-3xl md:text-4xl font-serif font-bold mb-6">Des tarifs adaptés à votre ambition</h3>
             <p className="text-slate-400 max-w-2xl mx-auto font-medium">Pas d'abonnement. Vous achetez vos outils une fois, vous les gardez pour toujours.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-stretch">
-            {/* PACK SOLO */}
             <PriceCard 
               tier="Pack Solo" 
               price="500" 
@@ -70,19 +79,17 @@ const Benefits: React.FC = () => {
               icon={<Star className="w-6 h-6" />}
             />
 
-            {/* PACK EXCELLENCE TOTALE - LE TOP */}
             <PriceCard 
               tier="Excellence Totale" 
               price="15 000" 
               unit="Full Option" 
               discount="Prestige Ultime" 
-              desc="Accès intégral : Les 16 Masterclass + Packs RH & Stock + CRM VIP + Sauvegarde Cloud à vie." 
+              desc="Accès intégral : Les 16 Masterclass + Packs RH & Stock + CRM VIP + Reçus WhatsApp API Illimités." 
               icon={<Gem className="w-8 h-8" />}
               highlight
               featured
             />
 
-            {/* ACADÉMIE ÉLITE */}
             <PriceCard 
               tier="Académie Élite" 
               price="10 000" 
@@ -92,7 +99,6 @@ const Benefits: React.FC = () => {
               icon={<Crown className="w-6 h-6" />}
             />
 
-            {/* PERFORMANCE RH */}
             <PriceCard 
               tier="Performance RH" 
               price="5 000" 
@@ -102,7 +108,6 @@ const Benefits: React.FC = () => {
               icon={<Users className="w-6 h-6" />}
             />
 
-            {/* STOCK EXPERT */}
             <PriceCard 
               tier="Stock Expert" 
               price="5 000" 
@@ -113,56 +118,56 @@ const Benefits: React.FC = () => {
             />
           </div>
 
-          <div className="mt-16 text-center">
+          <div className="mt-12 text-center">
             <div className="inline-flex items-center gap-4 bg-white/5 border border-white/10 p-6 rounded-[2.5rem] backdrop-blur-xl">
               <Gift className="text-brand-500 w-8 h-8" />
               <p className="text-sm font-medium text-slate-300 text-left">
                 <span className="text-white font-bold block">Paiement unique via Wave CI</span>
-                Activation manuelle par Coach Kita sous 15 minutes.
+                Activation sous 15 minutes.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Comparison table - Light Version & Compact Rows */}
-      <section className="py-24 bg-white px-6">
+      {/* Comparison table */}
+      <section className="py-20 bg-white px-6">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-center text-slate-900 mb-16 tracking-tight">Un investissement, <br className="md:hidden"/> pas une dépense</h2>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-center text-slate-900 mb-12 tracking-tight">Un investissement, <br className="md:hidden"/> pas une dépense</h2>
           
-          <div className="bg-white rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100">
+          <div className="bg-white rounded-[2rem] overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.04)] border border-slate-100">
             {/* Header */}
             <div className="grid grid-cols-2 border-b border-slate-100">
-              <div className="p-4 md:p-6 text-center bg-slate-50/50">
-                <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Gérant Classique</h4>
+              <div className="p-4 text-center bg-slate-50/50">
+                <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Gérant Classique</h4>
               </div>
-              <div className="p-4 md:p-6 text-center bg-brand-50/30 border-l border-slate-100">
-                <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-600">Go'Top Pro Gérant</h4>
+              <div className="p-4 text-center bg-brand-50/20 border-l border-slate-100">
+                <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-brand-600">Go'Top Pro Gérant</h4>
               </div>
             </div>
 
-            {/* Rows - Compact height */}
-            <div className="divide-y divide-slate-100">
+            {/* Rows */}
+            <div className="divide-y divide-slate-50">
               <ComparisonRow left="Subit son planning" right="Maîtrise ses créneaux" />
               <ComparisonRow left="Baisse les prix pour attirer" right="Augmente les prix pour sa qualité" />
               <ComparisonRow left="Gaspille les produits" right="Pèse chaque gramme de mélange" />
               <ComparisonRow left="Équipe démotivée" right="Équipe engagée et rentable" />
-              <ComparisonRow left="Peu visible en ligne" right="Réseaux sociaux magnétiques" />
+              <ComparisonRow left="Reçu papier souvent perdu" right="Reçu WhatsApp certifié Meta" />
             </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 px-6 text-center">
-        <div className="bg-white rounded-[4rem] p-16 md:p-24 shadow-2xl border border-slate-100 max-w-5xl mx-auto relative overflow-hidden group">
+      <section className="py-24 px-6 text-center">
+        <div className="bg-white rounded-[4rem] p-12 md:p-16 shadow-2xl border border-slate-100 max-w-4xl mx-auto relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000">
             <ShieldCheck className="w-64 h-64" />
           </div>
-          <h2 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 mb-12 tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-serif font-bold text-slate-900 mb-10 tracking-tight">
             Prêt à changer de dimension ?
           </h2>
-          <Link to="/quiz" className="bg-brand-600 text-white px-16 py-8 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-brand-500/20 hover:bg-brand-700 transition flex items-center gap-4 mx-auto w-fit">
+          <Link to="/quiz" className="bg-brand-600 text-white px-12 py-6 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-brand-500/20 hover:bg-brand-700 transition flex items-center gap-4 mx-auto w-fit">
             Lancer mon diagnostic expert <ArrowRight className="w-6 h-6" />
           </Link>
         </div>
@@ -172,67 +177,42 @@ const Benefits: React.FC = () => {
 };
 
 const BenefitCard = ({ icon, title, desc }: any) => (
-  <div className="bg-white p-12 rounded-[3.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group">
-    <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-10 group-hover:scale-110 transition-transform duration-500 shadow-inner">
+  <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group">
+    <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 shadow-inner">
       {icon}
     </div>
-    <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6">{title}</h3>
-    <p className="text-slate-500 font-medium leading-relaxed text-lg">{desc}</p>
+    <h3 className="text-xl font-serif font-bold text-slate-900 mb-4">{title}</h3>
+    <p className="text-slate-500 font-medium leading-relaxed text-base">{desc}</p>
   </div>
 );
 
 const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight, featured }: any) => (
-  <div className={`p-10 rounded-[3rem] border transition-all duration-500 flex flex-col h-full relative overflow-hidden ${
+  <div className={`p-8 rounded-[2.5rem] border transition-all duration-500 flex flex-col h-full relative overflow-hidden ${
     highlight 
     ? 'bg-brand-500 border-brand-400 shadow-2xl shadow-brand-500/20 lg:-translate-y-4 text-white' 
     : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
   } ${featured ? 'ring-4 ring-amber-400/30' : ''}`}>
-    
-    {featured && (
-      <div className="absolute top-4 right-4 animate-pulse">
-        <Sparkles className="w-5 h-5 text-amber-400" />
-      </div>
-    )}
-
-    <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-8 ${highlight ? 'bg-white text-brand-500' : 'bg-white/10 text-brand-500'}`}>
-      {icon}
-    </div>
+    {featured && <div className="absolute top-4 right-4 animate-pulse"><Sparkles className="w-5 h-5 text-amber-400" /></div>}
+    <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-6 ${highlight ? 'bg-white text-brand-500' : 'bg-white/10 text-brand-500'}`}>{icon}</div>
     <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-2 ${highlight ? 'text-brand-900' : 'text-brand-500'}`}>{tier}</h4>
-    <div className="flex items-baseline gap-1 mb-6">
-      <span className="text-4xl font-black">{price}</span>
-      <span className="text-xs font-bold opacity-60">FCFA</span>
-      <span className="text-[10px] font-medium opacity-40 ml-1">{unit}</span>
-    </div>
-    <p className={`text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1.5 rounded-lg inline-block w-fit ${highlight ? 'bg-brand-600' : 'bg-emerald-500/20 text-emerald-400'}`}>
-      {discount}
-    </p>
-    <div className="text-sm font-medium leading-relaxed mb-8 flex-grow opacity-80">{desc}</div>
-    <Link to="/quiz" className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center transition-all ${
-      highlight ? 'bg-white text-brand-900 hover:bg-slate-100' : 'bg-white/10 text-white hover:bg-white/20'
-    }`}>
-      Choisir ce pack
-    </Link>
+    <div className="flex items-baseline gap-1 mb-4"><span className="text-3xl font-black">{price}</span><span className="text-[10px] font-bold opacity-60">FCFA</span></div>
+    <p className={`text-[9px] font-black uppercase tracking-widest mb-4 px-2.5 py-1 rounded-lg inline-block w-fit ${highlight ? 'bg-brand-600' : 'bg-emerald-500/20 text-emerald-400'}`}>{discount}</p>
+    <div className="text-xs font-medium leading-relaxed mb-6 flex-grow opacity-80">{desc}</div>
+    <Link to="/quiz" className={`w-full py-3.5 rounded-xl font-black text-[9px] uppercase tracking-widest text-center transition-all ${highlight ? 'bg-white text-brand-900 hover:bg-slate-100' : 'bg-white/10 text-white hover:bg-white/20'}`}>Choisir</Link>
   </div>
 );
 
 const ComparisonRow = ({ left, right }: any) => (
   <div className="grid grid-cols-2 group items-center">
-    {/* Left Column - Classique */}
-    <div className="p-4 md:p-6 text-center border-r border-slate-100 flex items-center justify-center gap-4 transition-colors group-hover:bg-slate-50/30 min-h-[80px]">
-      <div className="h-1.5 w-1.5 rounded-full bg-rose-300 shrink-0"></div>
-      <p className="text-sm md:text-base text-slate-400 font-medium italic leading-snug">
-        {left}
-      </p>
+    <div className="px-6 py-4 text-center border-r border-slate-50 flex items-center justify-center gap-3 transition-colors group-hover:bg-slate-50/30 min-h-[60px]">
+      <div className="h-1 w-1 rounded-full bg-rose-200 shrink-0"></div>
+      <p className="text-xs md:text-sm text-slate-400 font-medium italic leading-snug">{left}</p>
     </div>
-    
-    {/* Right Column - Excellence */}
-    <div className="p-4 md:p-6 text-center bg-brand-50/[0.15] flex items-center justify-center gap-4 transition-colors group-hover:bg-brand-50/40 border-l border-slate-100 min-h-[80px]">
-      <div className="bg-emerald-500/10 p-1.5 rounded-full border border-emerald-500/20 shrink-0">
-        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+    <div className="px-6 py-4 text-center bg-brand-50/[0.08] flex items-center justify-center gap-3 transition-colors group-hover:bg-brand-50/20 border-l border-slate-50 min-h-[60px]">
+      <div className="bg-emerald-500/10 p-1 rounded-full border border-emerald-500/20 shrink-0">
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
       </div>
-      <p className="text-base md:text-lg text-slate-900 font-black tracking-tight leading-snug">
-        {right}
-      </p>
+      <p className="text-sm md:text-base text-slate-900 font-black tracking-tight leading-snug">{right}</p>
     </div>
   </div>
 );

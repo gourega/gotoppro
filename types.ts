@@ -1,3 +1,4 @@
+
 export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN' | 'PARTNER';
 
 export interface UserActionCommitment {
@@ -40,6 +41,8 @@ export interface KitaTransaction {
   isCredit?: boolean; 
   discount?: number;
   originalAmount?: number;
+  whatsapp_sent?: boolean;
+  client_phone?: string;
 }
 
 export interface KitaDebt {

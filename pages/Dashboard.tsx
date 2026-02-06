@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +36,8 @@ import {
   AlertTriangle,
   Receipt,
   Globe,
-  MapPin
+  MapPin,
+  MessageCircle
 } from 'lucide-react';
 import { UserActionCommitment, KitaTransaction } from '../types';
 
@@ -220,7 +222,12 @@ const Dashboard: React.FC = () => {
 
         {/* QUICK ACTIONS */}
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-           <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
+           <div className="relative group">
+             <div className="absolute -top-3 -right-3 z-10 bg-amber-400 text-brand-900 px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1 border border-white animate-bounce">
+                <MessageCircle className="w-2.5 h-2.5" /> Reçu IA Inclus
+             </div>
+             <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
+           </div>
            
            {(!isStaff || user.role === 'STAFF_ADMIN') && (
              <QuickActionBtn icon={<MinusCircle className="w-6 h-6" />} label="DÉPENSES" sub="Sortie Caisse" onClick={() => navigate('/caisse?mode=expense')} color="bg-rose-500" />
@@ -462,7 +469,7 @@ const Dashboard: React.FC = () => {
 };
 
 const QuickActionBtn = ({ icon, label, sub, onClick, color }: any) => (
-  <button onClick={onClick} className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 hover:scale-105 active:scale-95 transition-all text-left flex flex-col gap-4 group">
+  <button onClick={onClick} className="w-full bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 hover:scale-105 active:scale-95 transition-all text-left flex flex-col gap-4 group">
      <div className={`${color} text-white p-3 rounded-2xl w-fit shadow-lg group-hover:rotate-12 transition-transform`}>{icon}</div>
      <div>
         <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">{label}</p>
