@@ -125,23 +125,23 @@ const Benefits: React.FC = () => {
         </div>
       </section>
 
-      {/* Comparison table - Light Version */}
-      <section className="py-32 bg-white px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-serif font-bold text-center text-slate-900 mb-20 tracking-tight">Un investissement, <br className="md:hidden"/> pas une dépense</h2>
+      {/* Comparison table - Light Version & Compact Rows */}
+      <section className="py-24 bg-white px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-center text-slate-900 mb-16 tracking-tight">Un investissement, <br className="md:hidden"/> pas une dépense</h2>
           
-          <div className="bg-white rounded-[3rem] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.1)] border border-slate-100">
+          <div className="bg-white rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100">
             {/* Header */}
             <div className="grid grid-cols-2 border-b border-slate-100">
-              <div className="p-8 md:p-12 text-center bg-slate-50">
-                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-slate-400">Gérant Classique</h4>
+              <div className="p-4 md:p-6 text-center bg-slate-50/50">
+                <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Gérant Classique</h4>
               </div>
-              <div className="p-8 md:p-12 text-center bg-brand-50 border-l border-slate-100">
-                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-brand-600">Go'Top Pro Gérant</h4>
+              <div className="p-4 md:p-6 text-center bg-brand-50/30 border-l border-slate-100">
+                <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-600">Go'Top Pro Gérant</h4>
               </div>
             </div>
 
-            {/* Rows */}
+            {/* Rows - Compact height */}
             <div className="divide-y divide-slate-100">
               <ComparisonRow left="Subit son planning" right="Maîtrise ses créneaux" />
               <ComparisonRow left="Baisse les prix pour attirer" right="Augmente les prix pour sa qualité" />
@@ -216,21 +216,21 @@ const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight, feature
 );
 
 const ComparisonRow = ({ left, right }: any) => (
-  <div className="grid grid-cols-2 group">
+  <div className="grid grid-cols-2 group items-center">
     {/* Left Column - Classique */}
-    <div className="p-10 md:p-14 text-center border-r border-slate-100 flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-slate-50/50">
-      <div className="h-2 w-2 rounded-full bg-rose-500/30"></div>
-      <p className="text-lg md:text-xl text-slate-400 font-medium italic leading-tight">
+    <div className="p-4 md:p-6 text-center border-r border-slate-100 flex items-center justify-center gap-4 transition-colors group-hover:bg-slate-50/30 min-h-[80px]">
+      <div className="h-1.5 w-1.5 rounded-full bg-rose-300 shrink-0"></div>
+      <p className="text-sm md:text-base text-slate-400 font-medium italic leading-snug">
         {left}
       </p>
     </div>
     
-    {/* Right Column - Excellence (Light background) */}
-    <div className="p-10 md:p-14 text-center bg-brand-50/30 flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-brand-50/60 border-l border-slate-100">
-      <div className="bg-emerald-500/10 p-2 rounded-full border border-emerald-500/20 mb-2">
-        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+    {/* Right Column - Excellence */}
+    <div className="p-4 md:p-6 text-center bg-brand-50/[0.15] flex items-center justify-center gap-4 transition-colors group-hover:bg-brand-50/40 border-l border-slate-100 min-h-[80px]">
+      <div className="bg-emerald-500/10 p-1.5 rounded-full border border-emerald-500/20 shrink-0">
+        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
       </div>
-      <p className="text-xl md:text-2xl text-slate-900 font-black tracking-tight leading-tight">
+      <p className="text-base md:text-lg text-slate-900 font-black tracking-tight leading-snug">
         {right}
       </p>
     </div>
