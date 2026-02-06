@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +20,10 @@ import {
   Activity,
   Globe,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  Smartphone,
+  Database,
+  Layers
 } from 'lucide-react';
 
 const WarRoom: React.FC = () => {
@@ -53,12 +57,28 @@ const WarRoom: React.FC = () => {
       icon: <MessageSquare className="w-6 h-6" />
     },
     {
+      date: "Août 2026",
+      goal: 175,
+      title: "Fluidité : Micro-App Staff (Multi-Tenant)",
+      desc: "Interface ultra-allégée via QR Code. Saisie décentralisée des prestations par le staff sans accès aux finances globales du gérant.",
+      status: totalManagers >= 175 ? 'ACTIVE' : 'LOCKED',
+      icon: <Smartphone className="w-6 h-6" />
+    },
+    {
       date: "Octobre 2026",
       goal: 250,
       title: "Expansion : Empire & Staff",
       desc: "Déploiement de l'accès mobile Collaborateur et de la console Multi-Salons pour gérants multisites.",
       status: totalManagers >= 250 ? 'ACTIVE' : 'LOCKED',
       icon: <Users className="w-6 h-6" />
+    },
+    {
+      date: "Décembre 2026",
+      goal: 400,
+      title: "Scaling : Migration Cloudflare R2",
+      desc: "Optimisation radicale des coûts. Archivage des visuels marketing et PDF vers R2 pour un coût de bande passante (egress) nul.",
+      status: totalManagers >= 400 ? 'ACTIVE' : 'LOCKED',
+      icon: <Database className="w-6 h-6" />
     },
     {
       date: "Janvier 2027",
@@ -83,7 +103,7 @@ const WarRoom: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-amber-500 selection:text-white">
-      {/* HEADER DE CONFIDENTIALITÉ ÉCLAIRCI */}
+      {/* HEADER DE CONFIDENTIALITÉ */}
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -105,7 +125,7 @@ const WarRoom: React.FC = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-12">
-        {/* COMPTEUR STYLE BOURSE - VERSION CLAIRE */}
+        {/* COMPTEUR STYLE BOURSE */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="col-span-2 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-xl relative overflow-hidden group">
             <Globe className="absolute -bottom-10 -right-10 w-64 h-64 opacity-[0.03] text-slate-900 group-hover:rotate-12 transition-transform duration-1000" />
@@ -134,7 +154,7 @@ const WarRoom: React.FC = () => {
           </div>
         </section>
 
-        {/* THERMOMETRE DE PUISSANCE - VERSION CLAIRE */}
+        {/* THERMOMETRE DE PUISSANCE */}
         <section className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-2xl">
            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
@@ -154,7 +174,7 @@ const WarRoom: React.FC = () => {
               ></div>
            </div>
            
-           <div className="grid grid-cols-4 mt-8">
+           <div className="grid grid-cols-6 mt-8">
               {milestones.map((m, i) => (
                 <div key={i} className={`text-center space-y-3 ${totalManagers >= m.goal ? 'text-amber-600' : 'text-slate-300'}`}>
                   <div className={`h-3 w-3 rounded-full mx-auto transition-colors duration-500 ${totalManagers >= m.goal ? 'bg-amber-500' : 'bg-slate-200'}`}></div>
@@ -164,7 +184,7 @@ const WarRoom: React.FC = () => {
            </div>
         </section>
 
-        {/* TIMELINE ERE 2027 - VERSION CLAIRE HAUT CONTRASTE */}
+        {/* TIMELINE ERE 2027 */}
         <section className="space-y-12">
            <div className="flex items-center gap-4">
               <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em]">Rétroplanning Stratégique 2027</h2>
@@ -212,7 +232,7 @@ const WarRoom: React.FC = () => {
            </div>
         </section>
 
-        {/* FOOTER WAR ROOM - VERSION CLAIRE */}
+        {/* FOOTER WAR ROOM */}
         <section className="pt-16 border-t border-slate-200 text-center space-y-6">
            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">
               <ShieldAlert className="w-4 h-4 text-amber-600" /> Secure Admin Session : 001-KITA
@@ -221,7 +241,7 @@ const WarRoom: React.FC = () => {
         </section>
       </main>
 
-      {/* NOISE OVERLAY - ADAPTÉ POUR THÈME CLAIR */}
+      {/* NOISE OVERLAY */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-multiply">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <filter id="noiseFilter">
