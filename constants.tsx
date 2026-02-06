@@ -233,7 +233,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Félicitez en public, recadrez en privé.",
     strategic_mantra: "Seul on va vite, ensemble on bâtit un empire.",
     quiz_questions: [
-      { question: "Comment recadrer ?", options: ["Devant l'équipe", "En privé avec calme", "Par WhatsApp"], correctAnswer: 1, explanation: "Le respect mutuel préserve la dignité." },
+      { question: "Comme recadrer ?", options: ["Devant l'équipe", "En privé avec calme", "Par WhatsApp"], correctAnswer: 1, explanation: "Le respect mutuel préserve la dignité." },
       { question: "Quelle est la durée idéale d'un briefing ?", options: ["1 heure", "5 à 10 minutes", "Toute la matinée"], correctAnswer: 1, explanation: "Un briefing court et percutant donne de l'énergie sans perdre de temps." },
       { question: "C'est quoi l'exemplarité ?", options: ["Donner des ordres", "Faire ce qu'on demande aux autres de faire", "Regarder"], correctAnswer: 1, explanation: "Le leader montre le chemin par ses propres actes." }
     ],
@@ -390,7 +390,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <p>Envoyez un rappel WhatsApp la veille. Cette simple action réduit les oublis de 80% et montre votre professionnalisme.</p>
       <h2>3. Synthèse & Orientation : Maître de son Temps</h2>
       <p>Un gérant délégué est un gérant qui ne pilote plus. Reprenez le contrôle de votre agenda pour libérer du temps pour votre vision stratégique.</p>
-      <p><strong>Votre Défi des 24h :</strong> Appelez ou écrivez à toutes vos cliniques de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
+      <p><strong>Votre Défi des 24h :</strong> Appellez ou écrivez à toutes vos cliniques de demain pour confirmer leur rendez-vous. Validez votre maîtrise du temps avec le quiz.</p>
     `,
     coach_tip: "Prévoyez toujours 15 minutes de marge.",
     strategic_mantra: "Un planning fluide est un gérant serein.",
@@ -523,6 +523,7 @@ export const DIAGNOSTIC_QUESTIONS = [
   { id: 1, text: "Votre équipe est-elle formée à un accueil téléphonique qui transforme chaque appel ?", category: "Accueil", linkedModuleId: "mod_accueil_tel" },
   { id: 2, text: "Réalisez-vous un diagnostic visuel et tactile assis avant chaque prestation ?", category: "Technique", linkedModuleId: "mod_diagnostic" },
   { id: 3, text: "Désinfectez-vous systématiquement vos outils devant la clinique ?", category: "Hygiène", linkedModuleId: "mod_hygiene" },
+  // Fix: Corrected typo where 'id:e 4' was written instead of 'id: 4'
   { id: 4, text: "Le passage au bac est-il un rituel de relaxation avec massage crânien ?", category: "Technique", linkedModuleId: "mod_shampoing" },
   { id: 5, text: "Calculez-vous vos tarifs en fonction de votre coût à la minute réel ?", category: "Finance", linkedModuleId: "mod_pricing" },
   { id: 6, text: "Réunissez-vous votre équipe chaque semaine pour fixer des objectifs ?", category: "Management", linkedModuleId: "mod_management" },

@@ -1,13 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_STYLING_PHOTO, COACH_KITA_PROMO_VIDEO, COACH_KITA_AVATAR } from '../constants';
-import { ArrowRight, Sparkles, Target, TrendingUp, Users, Wallet, ExternalLink, MapPin, Play, MonitorPlay } from 'lucide-react';
+import { ArrowRight, Sparkles, Target, TrendingUp, Users, Wallet, ExternalLink, MapPin, Play, MonitorPlay, X, PlayCircle } from 'lucide-react';
 
 const Home: React.FC = () => {
   const { user } = useAuth();
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col w-full bg-white">
@@ -73,20 +74,52 @@ const Home: React.FC = () => {
                   Ma Caisse KITA
                 </Link>
               ) : (
-                <Link
-                  to="/quiz"
-                  className="bg-[#0ea5e9] text-white px-12 md:px-20 py-6 md:py-8 rounded-2xl font-black [text-[11px]] md:text-xs uppercase tracking-[0.25em] shadow-[0_20px_60px_rgba(14,165,233,0.4)] hover:bg-[#0284c7] hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group"
-                >
-                  Faire mon diagnostic
-                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                <>
+                  <Link
+                    to="/quiz"
+                    className="bg-[#0ea5e9] text-white px-12 md:px-16 py-6 md:py-8 rounded-2xl font-black [text-[11px]] md:text-xs uppercase tracking-[0.25em] shadow-[0_20px_60px_rgba(14,165,233,0.4)] hover:bg-[#0284c7] hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group"
+                  >
+                    Faire mon diagnostic
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <button
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 md:px-14 py-6 md:py-8 rounded-2xl font-black [text-[11px]] md:text-xs uppercase tracking-[0.25em] hover:bg-white/20 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group shadow-xl"
+                  >
+                    <PlayCircle className="w-6 h-6 text-brand-500" />
+                    En savoir plus sur Go'Top Pro
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION VIDÉO DE PRÉSENTATION - NOUVEAU */}
+      {/* MODALE VIDÉO (LIGHTBOX) */}
+      {isVideoModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 bg-slate-950/95 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="relative w-full max-w-6xl aspect-video bg-black rounded-[2rem] md:rounded-[4rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10">
+            <button 
+              onClick={() => setIsVideoModalOpen(false)}
+              className="absolute top-6 right-6 md:top-10 md:right-10 z-[210] p-4 bg-white/10 hover:bg-rose-500 text-white rounded-full backdrop-blur-md transition-all group shadow-2xl"
+            >
+              <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+            </button>
+            <video 
+              className="w-full h-full object-contain"
+              controls
+              autoPlay
+              playsInline
+            >
+              <source src={COACH_KITA_PROMO_VIDEO} type="video/mp4" />
+              Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION VIDÉO DE PRÉSENTATION - (Version statique maintenue plus bas) */}
       <section className="py-24 md:py-32 bg-white w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 md:mb-24">
