@@ -37,7 +37,9 @@ import {
   MessageCircle,
   Sparkles,
   Send,
-  ShieldCheck
+  ShieldCheck,
+  ShieldAlert,
+  Zap
 } from 'lucide-react';
 import KitaTopNav from '../components/KitaTopNav';
 import ExportReportModal from '../components/ExportReportModal';
@@ -290,8 +292,13 @@ const Caisse: React.FC = () => {
                        </div>
 
                        <div className="p-6 bg-white rounded-2xl border border-slate-100 relative group">
-                          <div className="flex items-center gap-2 mb-3 text-brand-600 font-black text-[9px] uppercase tracking-widest">
-                             <Sparkles className="w-3 h-3" /> Message rédigé par Coach Kita
+                          <div className="flex items-center justify-between mb-3">
+                             <div className="flex items-center gap-2 text-brand-600 font-black text-[9px] uppercase tracking-widest">
+                                <Sparkles className="w-3 h-3" /> Message rédigé par Coach Kita
+                             </div>
+                             <div className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1">
+                                <Zap className="w-2.5 h-2.5" /> Service Premium Offert
+                             </div>
                           </div>
                           {isGeneratingMsg ? (
                             <div className="flex items-center gap-3 py-4 text-slate-300 italic text-sm">
@@ -307,14 +314,17 @@ const Caisse: React.FC = () => {
                        </div>
 
                        <div className="space-y-4">
-                          <div className="flex items-center justify-center gap-2 bg-emerald-50 py-3 rounded-xl border border-emerald-100">
-                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                             <span className="text-[9px] font-black text-emerald-800 uppercase tracking-widest">Canal Officiel Certifié Go'Top Pro</span>
+                          <div className="flex items-center justify-center gap-3 bg-emerald-50 py-4 rounded-2xl border-2 border-emerald-100/50 shadow-inner group">
+                             <ShieldCheck className="w-5 h-5 text-emerald-600 animate-pulse" />
+                             <div className="text-left">
+                                <p className="text-[9px] font-black text-emerald-800 uppercase tracking-widest">Canal Officiel Certifié Meta Business</p>
+                                <p className="text-[8px] font-bold text-emerald-600/70 uppercase">Financé par Go'Top Pro pour votre prestige</p>
+                             </div>
                           </div>
                           <button 
                             onClick={handleSendWhatsApp}
                             disabled={isSendingWa || !clientPhone || waSent}
-                            className={`w-full py-5 rounded-2xl font-black uppercase text-[10px] shadow-lg flex items-center justify-center gap-4 transition-all ${waSent ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                            className={`w-full py-5 rounded-2xl font-black uppercase text-[10px] shadow-lg flex items-center justify-center gap-4 transition-all ${waSent ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02]'}`}
                           >
                             {isSendingWa ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
                             {waSent ? 'Reçu Digital Envoyé' : 'Envoyer via WhatsApp API'}

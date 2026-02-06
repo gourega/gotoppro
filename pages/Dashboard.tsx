@@ -37,7 +37,8 @@ import {
   Receipt,
   Globe,
   MapPin,
-  MessageCircle
+  MessageCircle,
+  Sparkles
 } from 'lucide-react';
 import { UserActionCommitment, KitaTransaction } from '../types';
 
@@ -223,8 +224,8 @@ const Dashboard: React.FC = () => {
         {/* QUICK ACTIONS */}
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
            <div className="relative group">
-             <div className="absolute -top-3 -right-3 z-10 bg-amber-400 text-brand-900 px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1 border border-white animate-bounce">
-                <MessageCircle className="w-2.5 h-2.5" /> Reçu IA Inclus
+             <div className="absolute -top-4 -right-2 z-10 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 border-2 border-white animate-bounce">
+                <MessageCircle className="w-3 h-3" /> Reçu IA Premium Inclus
              </div>
              <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            </div>

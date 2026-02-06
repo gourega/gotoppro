@@ -23,7 +23,7 @@ const Benefits: React.FC = () => {
           <BenefitCard 
             icon={<MessageCircle className="w-8 h-8 text-emerald-500" />}
             title="Reçus Digitaux Premium"
-            desc="Vos clientes reçoivent leurs reçus par WhatsApp via notre canal officiel certifié. Nous finançons l'API Meta Business pour professionnaliser instantanément votre image de marque."
+            desc="Vos clientes reçoivent leurs reçus par WhatsApp via notre canal officiel certifié Meta Business. Nous finançons l'infrastructure pour professionnaliser instantanément votre image de marque."
           />
           <BenefitCard 
             icon={<Zap className="w-8 h-8 text-amber-500" />}
@@ -33,22 +33,22 @@ const Benefits: React.FC = () => {
           <BenefitCard 
             icon={<Trophy className="w-8 h-8 text-brand-600" />}
             title="Certification de Prestige"
-            desc="Validez vos acquis avec Coach Kita et obtenez des certificats d'excellence. Affichez-les dans votre salon pour justifier des tarifs premium."
+            desc="Validez vos acquis avec Coach Kita et obtenez des certificats d'excellence. Affichez-les dans votre salon pour justifier des tarifs premium auprès de vos clientes."
           />
           <BenefitCard 
             icon={<TrendingUp className="w-8 h-8 text-emerald-500" />}
             title="Rentabilité Immédiate"
-            desc="Nos modules 'Vente additionnelle' et 'Tarification' sont conçus pour un retour sur investissement en moins de 30 jours."
+            desc="Nos modules 'Vente additionnelle' et 'Tarification' sont conçus pour un retour sur investissement rapide, souvent en moins de 30 jours."
           />
           <BenefitCard 
             icon={<Users className="w-8 h-8 text-indigo-500" />}
             title="Accompagnement Mentoré"
-            desc="Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace de chat privé."
+            desc="Coach Kita répond à toutes vos questions de gestion et de management à tout moment de la journée, directement dans votre espace de chat privé par IA."
           />
           <BenefitCard 
             icon={<ShieldCheck className="w-8 h-8 text-brand-600" />}
             title="Standard International"
-            desc="Adoptez les méthodes des plus grands salons mondiaux adaptées au marché ivoirien pour transformer votre salon de quartier en institution."
+            desc="Adoptez les méthodes des plus grands salons mondiaux adaptées au marché ivoirien pour transformer votre salon de quartier en institution reconnue."
           />
         </div>
       </section>
