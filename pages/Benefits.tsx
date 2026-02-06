@@ -2,7 +2,7 @@
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Zap, Trophy, TrendingUp, Users, ShieldCheck, ArrowRight, Gift, Star, Crown, Package, Gem, Sparkles } from 'lucide-react';
 
 const Benefits: React.FC = () => {
   return (
@@ -125,24 +125,24 @@ const Benefits: React.FC = () => {
         </div>
       </section>
 
-      {/* Comparison table - Refonted based on user request */}
+      {/* Comparison table - Light Version */}
       <section className="py-32 bg-white px-6">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-center text-slate-900 mb-20 tracking-tight">Un investissement, <br className="md:hidden"/> pas une dépense</h2>
           
-          <div className="bg-[#0c1a2e] rounded-[3rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(12,74,110,0.4)] border border-white/5">
+          <div className="bg-white rounded-[3rem] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.1)] border border-slate-100">
             {/* Header */}
-            <div className="grid grid-cols-2 border-b border-white/10">
-              <div className="p-8 md:p-12 text-center">
+            <div className="grid grid-cols-2 border-b border-slate-100">
+              <div className="p-8 md:p-12 text-center bg-slate-50">
                 <h4 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-slate-400">Gérant Classique</h4>
               </div>
-              <div className="p-8 md:p-12 text-center bg-brand-500/5 border-l border-white/10">
-                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-brand-500">Go'Top Pro Gérant</h4>
+              <div className="p-8 md:p-12 text-center bg-brand-50 border-l border-slate-100">
+                <h4 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-brand-600">Go'Top Pro Gérant</h4>
               </div>
             </div>
 
             {/* Rows */}
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-slate-100">
               <ComparisonRow left="Subit son planning" right="Maîtrise ses créneaux" />
               <ComparisonRow left="Baisse les prix pour attirer" right="Augmente les prix pour sa qualité" />
               <ComparisonRow left="Gaspille les produits" right="Pèse chaque gramme de mélange" />
@@ -218,19 +218,19 @@ const PriceCard = ({ tier, price, unit, discount, desc, icon, highlight, feature
 const ComparisonRow = ({ left, right }: any) => (
   <div className="grid grid-cols-2 group">
     {/* Left Column - Classique */}
-    <div className="p-10 md:p-14 text-center border-r border-white/5 flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-white/5">
-      <div className="h-2 w-2 rounded-full bg-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.3)]"></div>
-      <p className="text-lg md:text-xl text-slate-500 font-medium italic opacity-60 leading-tight">
+    <div className="p-10 md:p-14 text-center border-r border-slate-100 flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-slate-50/50">
+      <div className="h-2 w-2 rounded-full bg-rose-500/30"></div>
+      <p className="text-lg md:text-xl text-slate-400 font-medium italic leading-tight">
         {left}
       </p>
     </div>
     
-    {/* Right Column - Excellence */}
-    <div className="p-10 md:p-14 text-center bg-brand-500/[0.02] flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-brand-500/[0.06]">
-      <div className="bg-brand-500/10 p-2 rounded-full border border-brand-500/20 mb-2">
-        <CheckCircle2 className="w-5 h-5 text-brand-500" />
+    {/* Right Column - Excellence (Light background) */}
+    <div className="p-10 md:p-14 text-center bg-brand-50/30 flex flex-col items-center justify-center gap-4 transition-colors group-hover:bg-brand-50/60 border-l border-slate-100">
+      <div className="bg-emerald-500/10 p-2 rounded-full border border-emerald-500/20 mb-2">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
       </div>
-      <p className="text-xl md:text-2xl text-white font-black tracking-tight leading-tight">
+      <p className="text-xl md:text-2xl text-slate-900 font-black tracking-tight leading-tight">
         {right}
       </p>
     </div>
