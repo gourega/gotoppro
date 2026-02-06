@@ -63,7 +63,6 @@
   @apply mb-8 text-lg font-medium leading-relaxed;
 }
 
-/* La Lettrine : Premiere lettre du premier paragraphe apres un H2 */
 .prose-kita h2 + p::first-letter {
   @apply font-serif font-bold text-brand-500 float-left text-7xl mr-4 mt-2;
   line-height: 0.8;
@@ -75,6 +74,19 @@
 
 .prose-kita em {
   @apply font-serif italic text-slate-500;
+}
+
+/* --- VERSION DARK POUR IA PREDICTIVE --- */
+.prose-kita-dark {
+  @apply max-w-none text-slate-300;
+}
+
+.prose-kita-dark p {
+  @apply mb-6 text-lg font-medium leading-relaxed;
+}
+
+.prose-kita-dark strong {
+  @apply font-black text-amber-400;
 }
 
 /* Bloc de Sagesse / Citation interieure */

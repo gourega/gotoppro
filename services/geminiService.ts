@@ -1,9 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// @ts-ignore
-const GEMINI_KEY = typeof __KITA_GEMINI__ !== 'undefined' ? __KITA_GEMINI__ : "";
-
 const QUIZ_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -28,8 +25,11 @@ const QUIZ_SCHEMA = {
   propertyOrdering: ["quiz_questions", "exercises"]
 } as any;
 
+/**
+ * Generates a dynamic quiz based on lesson topics.
+ */
 export const generateDynamicQuiz = async (topic: string, moduleTitle: string) => {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `
     Rôle: Coach Kita. Sujet: "${topic}" (${moduleTitle}).
     Génère 3 questions de quiz et 2 exercices pratiques pour un gérant de salon en Côte d'Ivoire.
@@ -38,7 +38,7 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: prompt,
       config: { 
         responseMimeType: "application/json", 
         responseSchema: QUIZ_SCHEMA,
@@ -51,12 +51,49 @@ export const generateDynamicQuiz = async (topic: string, moduleTitle: string) =>
   }
 };
 
+/**
+ * NEW: Predictive BI Engine
+ * Analyzes transaction history to predict trends and risks.
+ */
+export const analyzePredictiveBI = async (transactions: any[], userName: string) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const dataSummary = transactions.slice(0, 100).map(t => `${t.date}: ${t.amount} F (${t.label})`).join('\n');
+  
+  const prompt = `
+    Rôle: Data Scientist Expert en Beauté (Mentor Coach Kita).
+    Utilisateur: ${userName}.
+    Données: ${dataSummary}
+    
+    TÂCHE: Analyse ces données pour produire une Intelligence Prédictive.
+    1. [MÉTÉO] : Prévision de tendance pour les 7 prochains jours (Haute / Stable / Risque de baisse).
+    2. [CHIFFRE] : Estimation du CA potentiel à gagner la semaine prochaine.
+    3. [RISQUE] : Identifie un risque spécifique (ex: clients fidèles qui ne reviennent plus, dépenses trop hautes).
+    4. [ACTION] : Donne une seule action prioritaire pour "battre" ces prédictions.
+    
+    TON: Expert, visionnaire, motivant. Utilise exclusivement le Franc CFA. 
+    Format court et impactant.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt
+    });
+    return response.text;
+  } catch (err) {
+    return null;
+  }
+};
+
+/**
+ * Generates personalized strategic advice for salon gérants.
+ */
 export const generateStrategicAdvice = async (
   negativePoints: string[], 
   isPerfectScore: boolean = false,
   userContext?: { firstName: string; gender: 'M' | 'F'; domain: string }
 ) => {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const name = userContext?.firstName || "Ami";
   const sibling = userContext?.gender === 'F' ? "petite sœur" : "petit frère";
@@ -88,7 +125,7 @@ export const generateStrategicAdvice = async (
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: prompt,
       config: { temperature: 0.9, topP: 0.95 }
     });
     return response.text;
@@ -97,8 +134,11 @@ export const generateStrategicAdvice = async (
   }
 };
 
+/**
+ * Analyzes transaction data for business insights.
+ */
 export const analyzeBusinessTrends = async (transactions: any[], userName: string) => {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const dataSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.type} ${t.amount} (${t.label})`).join('\n');
   
   const prompt = `
@@ -114,7 +154,7 @@ export const analyzeBusinessTrends = async (transactions: any[], userName: strin
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      contents: prompt
     });
     return response.text;
   } catch (err) {
@@ -122,18 +162,21 @@ export const analyzeBusinessTrends = async (transactions: any[], userName: strin
   }
 };
 
+/**
+ * Uses multimodal input to analyze salon work and generate social content.
+ */
 export const analyzeBeautyImage = async (base64Data: string, mimeType: string) => {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Tu es Coach Kita. Analyse cette photo de réalisation. Identifie la technique, rédige une légende Instagram percutante et WhatsApp, et donne un conseil mentor pour vendre ce service plus cher. Réponds au format [TECHNIQUE], [INSTAGRAM], [WHATSAPP], [CONSEIL], [HASHTAGS].`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: [{ 
+      contents: { 
         parts: [
           { inlineData: { data: base64Data, mimeType: mimeType } }, 
           { text: prompt }
         ] 
-      }]
+      }
     });
     return response.text;
   } catch (error) {
@@ -141,8 +184,11 @@ export const analyzeBeautyImage = async (base64Data: string, mimeType: string) =
   }
 };
 
+/**
+ * Starts a new chat session with Coach Kita.
+ */
 export const createCoachChat = () => {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
