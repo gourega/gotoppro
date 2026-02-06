@@ -5,6 +5,9 @@ import { TrainingModule, Badge, ModuleStatus } from './types';
 export const BRAND_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/logo.png";
 export const KITA_LOGO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/kita/logo-kita.png";
 
+// Vidéo de Présentation (Lien Supabase mis à jour)
+export const COACH_KITA_PROMO_VIDEO = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/assets/gotop-pro_online.mp4";
+
 // Avatar de Coach Kita (Version Officielle extraite de votre bucket 'coach-kita')
 export const COACH_KITA_AVATAR = "https://uyqjorpvmqremxbfeepl.supabase.co/storage/v1/object/public/coach-kita/coach-kita.jpg";
 
@@ -411,7 +414,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
       <h2>1. L'écoute active et le décodage</h2>
       <p>Pratiquez la reformulation : « Si j'ai bien compris, vous souhaitez... ? ». Cela évite les litiges et prouve que vous écoutez.</p>
       <h2>2. Gérer les cliniques difficiles</h2>
-      <p>Restez calme, ne justifiez pas l'erreur, proposez une version de solution. Transformer un litige en succès est votre test de Leader.</p>
+      <p>Restez calme, ne justifiez pas l'erreur, proposez une version de solution. Transformer un litige en succès est votre test de Leader Pendulaire.</p>
       <h2>3. Synthèse & Orientation : La Connexion Humaine</h2>
       <p>Votre salon est un lieu de thérapie autant que de beauté. Maîtriser la psychologie vous rend indispensable aux yeux de vos cliniques.</p>
       <p><strong>Votre Défi des 24h :</strong> Reformulez chaque demande de clinique aujourd'hui pour valider sa compréhension. Passez maintenant à la certification.</p>
@@ -473,7 +476,7 @@ export const TRAINING_CATALOG: TrainingModule[] = [
     coach_tip: "Vérifiez vos chiffres tous les soirs.",
     strategic_mantra: "Ce qui ne se mesure pas ne s'amplifie pas.",
     quiz_questions: [
-      { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicateur de votre performance de vente." },
+      { question: "C'est quoi le ticket moyen ?", options: ["Prix baguette", "CA / Nombre de clients", "Prix loyer"], correctAnswer: 1, explanation: "C'est l'indicator de votre performance de vente." },
       { question: "Que faire du stock dormant ?", options: ["Le laisser", "Le vendre en promotion ou en coffret", "Le jeter"], correctAnswer: 1, explanation: "Chaque produit non vendu est une perte de trésorerie." },
       { question: "À quelle fréquence analyser ses chiffres ?", options: ["Par an", "Tous les soirs", "Jamais"], correctAnswer: 1, explanation: "L'analyse quotidienne permet des corrections rapides." }
     ],
