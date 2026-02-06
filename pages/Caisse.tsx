@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -22,7 +23,7 @@ import {
   ChevronLeft, 
   Loader2, 
   Wallet,
-  CheckCircle2,
+  CheckCircle2, 
   X,
   Users,
   FileText,
@@ -229,9 +230,18 @@ const Caisse: React.FC = () => {
               </div>
            </div>
            <div className="flex gap-4">
-              <button onClick={() => handleOpenModal('INCOME')} className="h-16 px-6 rounded-[2rem] bg-emerald-500 text-white flex items-center justify-center shadow-2xl hover:scale-105 transition-all gap-3 font-black text-[10px] uppercase tracking-widest border-2 border-emerald-400">
-                <PlusCircle className="w-5 h-5" /> Encaisser
+              <button onClick={() => handleOpenModal('EXPENSE')} className="h-16 px-6 rounded-[2rem] bg-rose-500 text-white flex items-center justify-center shadow-2xl hover:scale-105 transition-all gap-3 font-black text-[10px] uppercase tracking-widest border-2 border-rose-400">
+                <MinusCircle className="w-5 h-5" /> Dépense
               </button>
+              
+              <div className="relative group">
+                <div className="absolute -top-4 -right-2 z-10 bg-amber-400 text-brand-900 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 border-2 border-white animate-bounce pointer-events-none">
+                    <Sparkles className="w-3 h-3" /> Reçu IA Inclus
+                </div>
+                <button onClick={() => handleOpenModal('INCOME')} className="h-16 px-6 rounded-[2rem] bg-emerald-500 text-white flex items-center justify-center shadow-2xl hover:scale-105 transition-all gap-3 font-black text-[10px] uppercase tracking-widest border-2 border-emerald-400">
+                    <PlusCircle className="w-5 h-5" /> Encaisser
+                </button>
+              </div>
            </div>
         </div>
       </header>
@@ -241,8 +251,8 @@ const Caisse: React.FC = () => {
             {[...getSyncQueue().map(q => ({...q, id: q.tempId, isLocal: true})), ...transactions].map(t => (
                <div key={(t as any).id} className="bg-white p-6 rounded-2xl border flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-4">
-                     <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${(t as any).isLocal ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                        {(t as any).isLocal ? <CloudOff className="w-6 h-6" /> : <TrendingUp className="w-6 h-6" />}
+                     <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${(t as any).isLocal ? 'bg-amber-50 text-amber-500' : t.type === 'INCOME' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
+                        {(t as any).isLocal ? <CloudOff className="w-6 h-6" /> : t.type === 'INCOME' ? <TrendingUp className="w-6 h-6" /> : <MinusCircle className="w-6 h-6" />}
                      </div>
                      <div>
                         <p className="font-bold text-slate-900">{t.label}</p>
@@ -250,7 +260,7 @@ const Caisse: React.FC = () => {
                      </div>
                   </div>
                   <div className="flex items-center gap-4">
-                     <p className="font-black text-emerald-500">+{t.amount.toLocaleString()} F</p>
+                     <p className={`font-black ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} F</p>
                      {t.whatsapp_sent && <MessageCircle className="w-4 h-4 text-emerald-500" />}
                   </div>
                </div>
@@ -336,35 +346,50 @@ const Caisse: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handleSaveTransaction} className="space-y-8">
-                <div className="flex justify-between items-center"><h2 className="text-2xl font-serif font-bold text-slate-900">Nouvelle Vente</h2><button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-rose-500 p-2"><X /></button></div>
+                <div className="flex justify-between items-center"><h2 className="text-2xl font-serif font-bold text-slate-900">{newTrans.type === 'INCOME' ? 'Nouvelle Vente' : 'Nouvelle Dépense'}</h2><button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-rose-500 p-2"><X /></button></div>
                 
                 <div className="space-y-6">
-                   <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
-                      <div className="flex justify-between items-center mb-6"><h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panier</h3><button type="button" onClick={() => setIsServiceListOpen(true)} className="bg-brand-900 text-white p-2 rounded-xl"><Plus className="w-4 h-4" /></button></div>
-                      <div className="space-y-3">
-                         {basket.map((item, idx) => (
-                            <div key={idx} className="bg-white p-4 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
-                               <p className="text-xs font-bold">{item.label}</p>
-                               <p className="font-black">{item.amount.toLocaleString()} F</p>
-                            </div>
-                         ))}
-                      </div>
-                   </div>
+                   {newTrans.type === 'INCOME' ? (
+                     <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
+                        <div className="flex justify-between items-center mb-6"><h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panier</h3><button type="button" onClick={() => setIsServiceListOpen(true)} className="bg-brand-900 text-white p-2 rounded-xl"><Plus className="w-4 h-4" /></button></div>
+                        <div className="space-y-3">
+                           {basket.map((item, idx) => (
+                              <div key={idx} className="bg-white p-4 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
+                                 <p className="text-xs font-bold">{item.label}</p>
+                                 <p className="font-black">{item.amount.toLocaleString()} F</p>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                   ) : (
+                     <div className="space-y-4">
+                        <div>
+                           <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Libellé de la dépense</label>
+                           <input type="text" value={newTrans.label} onChange={e => setNewTrans({...newTrans, label: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="Ex: Achat Gazoil" />
+                        </div>
+                        <div>
+                           <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Montant (F)</label>
+                           <input type="number" value={newTrans.amount || ''} onChange={e => setNewTrans({...newTrans, amount: Number(e.target.value)})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-black text-rose-600" placeholder="0" />
+                        </div>
+                     </div>
+                   )}
                    
-                   <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du client VIP (pour le message personnalisé)</label>
-                      <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Ex: Mme Traoré" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
-                   </div>
+                   {newTrans.type === 'INCOME' && (
+                     <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-4">Nom du client VIP (pour le message personnalisé)</label>
+                        <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Ex: Mme Traoré" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
+                     </div>
+                   )}
 
-                   <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 flex justify-between items-center">
-                      <div><p className="text-[9px] font-black text-emerald-600 uppercase mb-1">Total Net</p><p className="text-3xl font-black text-emerald-700">{finalTotal.toLocaleString()} F</p></div>
-                      <CheckCircle2 className="w-10 h-10 text-emerald-200" />
+                   <div className={`${newTrans.type === 'INCOME' ? 'bg-emerald-50' : 'bg-rose-50'} p-8 rounded-[2.5rem] border ${newTrans.type === 'INCOME' ? 'border-emerald-100' : 'border-rose-100'} flex justify-between items-center`}>
+                      <div><p className={`text-[9px] font-black uppercase mb-1 ${newTrans.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>Total Net</p><p className={`text-3xl font-black ${newTrans.type === 'INCOME' ? 'text-emerald-700' : 'text-rose-700'}`}>{finalTotal.toLocaleString()} F</p></div>
+                      {newTrans.type === 'INCOME' ? <CheckCircle2 className="w-10 h-10 text-emerald-200" /> : <MinusCircle className="w-10 h-10 text-rose-200" />}
                    </div>
                 </div>
 
-                <button type="submit" disabled={saving || basket.length === 0} className="w-full py-8 rounded-[2.5rem] bg-brand-900 text-white font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-4 transition-all">
+                <button type="submit" disabled={saving || (newTrans.type === 'INCOME' && basket.length === 0) || (newTrans.type === 'EXPENSE' && !newTrans.label)} className="w-full py-8 rounded-[2.5rem] bg-brand-900 text-white font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-4 transition-all">
                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isOnline ? <CheckCircle2 className="w-5 h-5" /> : <CloudOff className="w-5 h-5" />} 
-                   {isOnline ? "Valider & Préparer Reçu IA" : "Sécuriser sur mon téléphone"}
+                   {isOnline ? (newTrans.type === 'INCOME' ? "Valider & Préparer Reçu IA" : "Valider la Dépense") : "Sécuriser sur mon téléphone"}
                 </button>
               </form>
             )}

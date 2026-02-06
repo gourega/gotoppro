@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -207,7 +208,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Score Académie</p>
                 <p className="text-3xl font-black text-white">{stats.percent}%</p>
               </div>
-              <button onClick={() => navigate('/mes-formations')} className="bg-brand-500 text-white p-4 rounded-2xl hover:bg-brand-400 transition-all shadow-xl"><ArrowRight className="w-5 h-5" /></button>
+              <button onClick={() => navigate('/mes-formations')} className="bg-brand-50 text-white p-4 rounded-2xl hover:bg-brand-400 transition-all shadow-xl"><ArrowRight className="w-5 h-5" /></button>
           </div>
         </div>
       </div>
@@ -221,8 +222,8 @@ const Dashboard: React.FC = () => {
         {/* QUICK ACTIONS */}
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
            <div className="relative group">
-             <div className="absolute -top-4 -right-2 z-10 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 border-2 border-white animate-bounce">
-                <MessageCircle className="w-3 h-3" /> Reçu IA Premium Inclus
+             <div className="absolute -top-4 -right-2 z-10 bg-amber-400 text-brand-900 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 border-2 border-white animate-bounce pointer-events-none">
+                <Sparkles className="w-3 h-3" /> IA Premium
              </div>
              <QuickActionBtn icon={<PlusCircle className="w-6 h-6" />} label="ENCAISSER" sub="Vente Directe" onClick={() => navigate('/caisse')} color="bg-emerald-500" />
            </div>
@@ -467,7 +468,7 @@ const Dashboard: React.FC = () => {
 };
 
 const QuickActionBtn = ({ icon, label, sub, onClick, color }: any) => (
-  <button onClick={onClick} className="w-full bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 hover:scale-105 active:scale-95 transition-all text-left flex flex-col gap-4 group">
+  <button onClick={onClick} className="w-full bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 hover:scale-[1.02] active:scale-95 transition-all text-left flex flex-col gap-4 group">
      <div className={`${color} text-white p-3 rounded-2xl w-fit shadow-lg group-hover:rotate-12 transition-transform`}>{icon}</div>
      <div>
         <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">{label}</p>
