@@ -1,4 +1,3 @@
-
 import React from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
@@ -22,8 +21,8 @@ const Benefits: React.FC = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <BenefitCard 
             icon={<MessageCircle className="w-8 h-8 text-emerald-500" />}
-            title="Reçus Digitaux Premium"
-            desc="Vos clientes reçoivent leurs reçus par WhatsApp via notre canal officiel certifié Meta Business. Nous finançons l'infrastructure pour professionnaliser instantanément votre image de marque."
+            title="Service Conciergerie WhatsApp"
+            desc="Envoyez des reçus digitaux via notre canal officiel certifié Meta Business. Nous finançons l'infrastructure technique (Valeur 10.000F/mois) pour professionnaliser instantanément votre image."
           />
           <BenefitCard 
             icon={<Zap className="w-8 h-8 text-amber-500" />}
@@ -84,7 +83,7 @@ const Benefits: React.FC = () => {
               price="15 000" 
               unit="Full Option" 
               discount="Prestige Ultime" 
-              desc="Accès intégral : Les 16 Masterclass + Packs RH & Stock + CRM VIP + Reçus WhatsApp API Illimités." 
+              desc="Accès intégral : Les 16 Masterclass + Packs RH & Stock + CRM VIP + Conciergerie WhatsApp API Illimitée." 
               icon={<Gem className="w-8 h-8" />}
               highlight
               featured

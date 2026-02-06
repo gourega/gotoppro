@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -197,12 +196,10 @@ const Dashboard: React.FC = () => {
                    {isElite ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4 animate-pulse" />}
                    <span className="text-[9px] font-black uppercase tracking-widest">{isElite ? 'Compte Elite' : 'Mode Local'}</span>
               </div>
-              {isStaff && (
-                <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 text-amber-400 backdrop-blur-md">
-                   <Star className="w-4 h-4" />
-                   <span className="text-[9px] font-black uppercase tracking-widest">{user.role === 'STAFF_ADMIN' ? 'Staff Admin' : 'Collaborateur Kita'}</span>
-                </div>
-              )}
+              <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 backdrop-blur-md">
+                   <MessageCircle className="w-4 h-4" />
+                   <span className="text-[9px] font-black uppercase tracking-widest">Conciergerie WhatsApp IA : ACTIVE</span>
+              </div>
             </div>
           </div>
           <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[3rem] border border-white/10 flex items-center gap-6 shadow-2xl">
