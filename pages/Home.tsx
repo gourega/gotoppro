@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 // @ts-ignore
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_STYLING_PHOTO, COACH_KITA_PROMO_VIDEO, COACH_KITA_AVATAR } from '../constants';
-import { ArrowRight, Sparkles, Target, TrendingUp, Users, Wallet, ExternalLink, MapPin, Play, MonitorPlay, X, PlayCircle } from 'lucide-react';
+import { RAYMOND_LOGO, RAYMOND_FB_URL, RAYMOND_ADDRESS, RAYMOND_STYLING_PHOTO, COACH_KITA_PROMO_VIDEO } from '../constants';
+import { ArrowRight, Sparkles, Target, TrendingUp, Users, Wallet, ExternalLink, MapPin, X, PlayCircle } from 'lucide-react';
 
 const Home: React.FC = () => {
   const { user } = useAuth();
@@ -118,63 +118,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* SECTION VIDÉO DE PRÉSENTATION - (Version statique maintenue plus bas) */}
-      <section className="py-24 md:py-32 bg-white w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16 md:mb-24">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-[0.3em] mb-6 shadow-sm border border-brand-100">
-               <MonitorPlay className="w-4 h-4" /> En direct du cabinet
-             </div>
-             <h2 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 tracking-tight leading-tight">
-               L'Excellence en <span className="text-brand-600 italic">Mouvement</span>
-             </h2>
-          </div>
-
-          <div className="max-w-5xl mx-auto">
-             <div className="bg-slate-900 rounded-[3rem] md:rounded-[4rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(12,74,110,0.3)] relative border-[12px] border-slate-50 group">
-                <div className="absolute top-8 left-8 z-20 flex items-center gap-3">
-                   <div className="h-10 w-10 rounded-xl overflow-hidden border-2 border-white shadow-xl">
-                      <img src={COACH_KITA_AVATAR} className="w-full h-full object-cover" alt="Coach" />
-                   </div>
-                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
-                      <span className="text-white text-[9px] font-black uppercase tracking-widest">Masterclass Kita</span>
-                   </div>
-                </div>
-
-                <video 
-                  className="w-full aspect-video object-cover cursor-pointer"
-                  controls
-                  playsInline
-                  poster={RAYMOND_STYLING_PHOTO}
-                >
-                  <source src={COACH_KITA_PROMO_VIDEO} type="video/mp4" />
-                  Votre navigateur ne supporte pas la lecture de vidéos.
-                </video>
-
-                {/* Overlay discret si non en lecture */}
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-slate-950/40 to-transparent opacity-60 group-hover:opacity-20 transition-opacity"></div>
-             </div>
-
-             <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-8 bg-slate-50 p-8 md:p-12 rounded-[3rem] border border-slate-100">
-                <div className="flex items-center gap-6">
-                   <div className="h-14 w-14 bg-brand-900 text-brand-500 rounded-2xl flex items-center justify-center shadow-xl">
-                      <Sparkles className="w-8 h-8" />
-                   </div>
-                   <div>
-                      <h4 className="text-xl font-bold text-slate-900">Pourquoi Go'Top Pro ?</h4>
-                      <p className="text-slate-500 font-medium">Découvrez la vision de Coach Kita pour votre réussite.</p>
-                   </div>
-                </div>
-                {!user && (
-                   <Link to="/quiz" className="bg-brand-900 text-white px-10 py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3">
-                      Lancer mon Diagnostic <ArrowRight className="w-4 h-4" />
-                   </Link>
-                )}
-             </div>
-          </div>
-        </div>
-      </section>
 
       {/* Partenaire Section - Images robustes */}
       <section className="py-24 bg-slate-50">
