@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, getUserProfile, getProfileByPhone } from '../services/supabase';
 import { UserProfile } from '../types';
@@ -64,6 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasPerformancePack: true,
     hasStockPack: true,
     marketingCredits: 999,
+    // Fix: Added missing announcementCredits property
+    announcementCredits: 999,
     badges: BADGES.map(b => b.id),
     purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),
     pendingModuleIds: [],

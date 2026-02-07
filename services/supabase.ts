@@ -2,8 +2,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole, KitaAnnouncement } from '../types';
 
-// ... (Garder le début du fichier identique jusqu'aux fonctions KitaTransactions)
-
 // @ts-ignore
 const definedUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
 // @ts-ignore
@@ -57,9 +55,6 @@ export const generateUUID = () => {
   });
 };
 
-/**
- * MAPPAGE VERS DB (ÉCRITURE STRICTE SNAKE_CASE)
- */
 const mapProfileToDB = (profile: Partial<UserProfile>, isPartnerTable: boolean = false): any => {
   const db: any = {};
   if (profile.uid !== undefined) db.uid = profile.uid;
@@ -81,6 +76,7 @@ const mapProfileToDB = (profile: Partial<UserProfile>, isPartnerTable: boolean =
   if (profile.isKitaPremium !== undefined) db.is_kita_premium = profile.isKitaPremium;
   if (profile.referredBy !== undefined) db.referred_by = profile.referredBy;
   if (profile.marketingCredits !== undefined) db.marketing_credits = profile.marketingCredits;
+  if (profile.announcementCredits !== undefined) db.announcement_credits = profile.announcementCredits;
   if (profile.createdAt !== undefined) db.created_at = profile.createdAt;
   
   if (profile.employeeCount !== undefined) db.employee_count = profile.employeeCount;
@@ -92,9 +88,6 @@ const mapProfileToDB = (profile: Partial<UserProfile>, isPartnerTable: boolean =
   return db;
 };
 
-/**
- * MAPPAGE DEPUIS DB (LECTURE FLEXIBLE)
- */
 const mapProfileFromDB = (data: any): UserProfile | null => {
   if (!data) return null;
   return {
@@ -116,6 +109,7 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
     isPublic: data.is_public ?? data.isPublic ?? true,
     isKitaPremium: data.is_kita_premium ?? data.isKitaPremium ?? false,
     marketingCredits: data.marketing_credits ?? data.marketingCredits ?? 3,
+    announcementCredits: data.announcement_credits ?? data.announcementCredits ?? 0,
     gmbStatus: data.gmb_status || data.gmbStatus || 'NONE',
     gmbUrl: data.gmb_url || data.gmbUrl || '',
     badges: Array.isArray(data.badges) ? data.badges : [],
@@ -222,8 +216,7 @@ export const getAllAnnouncementsAdmin = async () => {
   })) as KitaAnnouncement[];
 };
 
-// Fix: Updated createAnnouncement signature to also omit 'userId' from the second parameter since it's already passed separately as the first parameter.
-export const createAnnouncement = async (userId: string, ad: Omit<KitaAnnouncement, 'id' | 'status' | 'createdAt' | 'expiresAt' | 'userId'>) => {
+export const createAnnouncement = async (userId: string, ad: Omit<KitaAnnouncement, 'id' | 'status' | 'createdAt' | 'expiresAt' | 'userId'>, useCredit: boolean = false) => {
   if (!supabase) return;
   const { error } = await supabase.from('announcements').insert({
     id: generateUUID(),
@@ -231,12 +224,13 @@ export const createAnnouncement = async (userId: string, ad: Omit<KitaAnnounceme
     type: ad.type,
     title: ad.title,
     description: ad.description,
-    proposed_price: ad.proposedPrice,
-    status: 'PENDING',
+    proposed_price: ad.proposed_price,
+    status: useCredit ? 'ACTIVE' : 'PENDING',
     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    contact_phone: ad.contactPhone,
+    contact_phone: ad.contact_phone,
     establishment_name: ad.establishment_name
   });
+  
   if (error) throw error;
 };
 
@@ -248,8 +242,6 @@ export const updateAnnouncementStatus = async (id: string, status: 'ACTIVE' | 'E
 export const deleteAnnouncement = async (id: string) => {
   if (supabase) await supabase.from('announcements').delete().eq('id', id);
 };
-
-// ... (reste du fichier avec KitaTransactions, Services, Staff, etc. identique)
 
 export const getKitaTransactions = async (userId: string) => {
   if (!supabase || !userId) return [];
@@ -270,10 +262,11 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
+    // Fix: Updated property access from transaction object to match KitaTransaction type (camelCase)
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
-    tip_amount: transaction.tip_amount || 0, is_credit: transaction.is_credit,
+    tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
     client_id: transaction.clientId, product_id: transaction.productId,
-    original_amount: transaction.original_amount || transaction.amount, discount: transaction.discount || 0,
+    original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0,
     client_phone: transaction.client_phone
   });
   if (error) throw error;

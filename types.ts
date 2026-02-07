@@ -25,7 +25,7 @@ export interface UserActionCommitment {
   date: string;
   isCompleted: boolean;
 }
-// ... (reste du fichier identique)
+
 export interface KitaService {
   id: string;
   name: string;
@@ -119,6 +119,7 @@ export interface UserProfile {
   
   strategicAudit?: string;
   marketingCredits: number;
+  announcementCredits: number;
 
   // Google My Business Integration
   gmbStatus?: 'NONE' | 'PENDING' | 'ACTIVE';

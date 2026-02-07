@@ -45,7 +45,9 @@ import {
   Coins,
   Settings2,
   Megaphone,
-  Eye
+  Eye,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 const COMMISSION_PER_ELITE = 1500;
@@ -57,13 +59,11 @@ const AdminDashboard: React.FC = () => {
   const [announcements, setAnnouncements] = useState<KitaAnnouncement[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'partners' | 'admins' | 'ads'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  const [selectedUserTurnover, setSelectedUserTurnover] = useState<number>(0);
   const [tempAdminNotes, setTempAdminNotes] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
@@ -71,7 +71,6 @@ const AdminDashboard: React.FC = () => {
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
   const [partnerFormData, setPartnerFormData] = useState({ firstName: '', lastName: '', whatsapp: '' });
   const [isCreatingPartner, setIsCreatingPartner] = useState(false);
-  const [partnerStats, setPartnerStats] = useState({ referrals: 0, earnings: 0 });
 
   // Admin Creation State
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -81,14 +80,7 @@ const AdminDashboard: React.FC = () => {
   // User Edit State (Drawer)
   const [tempRole, setTempRole] = useState<UserRole>('CLIENT');
   const [tempCredits, setTempCredits] = useState(0);
-
-  const fetchLogs = async () => {
-    if (!supabase) return;
-    try {
-      const { data } = await supabase.from('automation_logs').select('*').order('created_at', { ascending: false }).limit(6);
-      if (data) setLogs(data);
-    } catch (e) {}
-  };
+  const [tempAdCredits, setTempAdCredits] = useState(0);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -99,7 +91,6 @@ const AdminDashboard: React.FC = () => {
       ]);
       setUsers(allUsers || []);
       setAnnouncements(allAds || []);
-      await fetchLogs();
     } catch (err) { 
       showNotify("Erreur de connexion base de données", "error");
     }
@@ -119,27 +110,9 @@ const AdminDashboard: React.FC = () => {
       setTempAdminNotes(selectedUser.adminNotes || '');
       setTempRole(selectedUser.role);
       setTempCredits(selectedUser.marketingCredits || 0);
-      if (selectedUser.role === 'PARTNER') {
-        calculatePartnerStats(selectedUser.phoneNumber);
-      } else {
-        fetchUserFinancials(selectedUser.uid);
-      }
+      setTempAdCredits(selectedUser.announcementCredits || 0);
     }
   }, [selectedUser]);
-
-  const calculatePartnerStats = (phone: string) => {
-    const referrals = users.filter(u => u.referredBy === phone);
-    const elites = referrals.filter(u => u.isActive && (u.isKitaPremium || u.hasPerformancePack)).length;
-    setPartnerStats({ referrals: referrals.length, earnings: elites * COMMISSION_PER_ELITE });
-  };
-
-  const fetchUserFinancials = async (userId: string) => {
-    try {
-      const transactions = await getKitaTransactions(userId);
-      const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-      setSelectedUserTurnover(totalIncome);
-    } catch (e) {}
-  };
 
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -186,7 +159,13 @@ const AdminDashboard: React.FC = () => {
     if (!selectedUser) return;
     setIsSavingNotes(true);
     try {
-      await updateUserProfile(selectedUser.uid, { adminNotes: tempAdminNotes, role: tempRole, marketingCredits: tempCredits, isAdmin: tempRole === 'ADMIN' || tempRole === 'SUPER_ADMIN' });
+      await updateUserProfile(selectedUser.uid, { 
+        adminNotes: tempAdminNotes, 
+        role: tempRole, 
+        marketingCredits: tempCredits, 
+        announcementCredits: tempAdCredits,
+        isAdmin: tempRole === 'ADMIN' || tempRole === 'SUPER_ADMIN' 
+      });
       showNotify("Profil mis à jour avec succès");
       fetchUsers();
     } catch (err) { showNotify("Erreur sauvegarde", "error"); }
@@ -244,13 +223,15 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const clients = users.filter(u => u.role === 'CLIENT' || u.role === 'STAFF_ELITE');
-    return { total: clients.length, active: clients.filter(u => u.isActive).length, pending: clients.filter(c => !c.isActive).length, partnerCount: users.filter(u => u.role === 'PARTNER').length, adminCount: users.filter(u => u.role === 'ADMIN').length, pendingAds: announcements.filter(a => a.status === 'PENDING').length };
+    return { 
+      total: clients.length, 
+      active: clients.filter(u => u.isActive).length, 
+      pending: clients.filter(c => !c.isActive).length, 
+      partnerCount: users.filter(u => u.role === 'PARTNER').length, 
+      adminCount: users.filter(u => u.role === 'ADMIN').length, 
+      pendingAds: announcements.filter(a => a.status === 'PENDING').length 
+    };
   }, [users, announcements]);
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    showNotify("Copié !");
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
@@ -368,13 +349,41 @@ const AdminDashboard: React.FC = () => {
                   <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" alt="" /> : selectedUser.firstName?.[0]}</div>
                   <h3 className="text-3xl font-bold text-slate-900">{selectedUser.firstName} {selectedUser.lastName}</h3>
                </div>
-               {/* Actions et Paramètres de l'utilisateur (identique à la version précédente) */}
+               
                <div className="space-y-6">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4 flex items-center gap-2"><Settings2 className="w-3 h-3" /> Configuration Technique</h4>
-                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
-                     <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Changer le Rôle</label>
-                     <select value={tempRole} onChange={(e) => setTempRole(e.target.value as UserRole)} className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold outline-none"><option value="CLIENT">Gérant (Client)</option><option value="STAFF_ELITE">Staff Élite</option><option value="ADMIN">Administrateur</option><option value="PARTNER">Partenaire Stratégique</option></select>
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-8">
+                     <div>
+                       <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Rôle</label>
+                       <select value={tempRole} onChange={(e) => setTempRole(e.target.value as UserRole)} className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold outline-none"><option value="CLIENT">Gérant (Client)</option><option value="STAFF_ELITE">Staff Élite</option><option value="ADMIN">Administrateur</option><option value="PARTNER">Partenaire Stratégique</option></select>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Crédits Marketing IA</label>
+                           <div className="flex items-center gap-3">
+                              <button onClick={() => setTempCredits(Math.max(0, tempCredits - 1))} className="p-2 bg-white rounded-lg border shadow-sm"><Minus className="w-4 h-4" /></button>
+                              <span className="text-xl font-black">{tempCredits}</span>
+                              <button onClick={() => setTempCredits(tempCredits + 1)} className="p-2 bg-white rounded-lg border shadow-sm"><Plus className="w-4 h-4" /></button>
+                           </div>
+                        </div>
+                        <div>
+                           <label className="block text-[9px] font-black text-brand-600 uppercase mb-2 ml-2">Crédits Annonces</label>
+                           <div className="flex items-center gap-3">
+                              <button onClick={() => setTempAdCredits(Math.max(0, tempAdCredits - 1))} className="p-2 bg-white rounded-lg border shadow-sm"><Minus className="w-4 h-4" /></button>
+                              <span className="text-xl font-black text-brand-900">{tempAdCredits}</span>
+                              <button onClick={() => setTempAdCredits(tempAdCredits + 1)} className="p-2 bg-white rounded-lg border shadow-sm"><Plus className="w-4 h-4" /></button>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Notes Mentor</label>
+                        <textarea value={tempAdminNotes} onChange={(e) => setTempAdminNotes(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-medium text-sm min-h-[100px]" placeholder="Observations privées..." />
+                     </div>
+                     <button onClick={handleSaveAdminNotes} disabled={isSavingNotes} className="w-full py-4 rounded-xl bg-brand-900 text-white font-black uppercase text-[10px] flex items-center justify-center gap-3 shadow-lg">{isSavingNotes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer les modifications</button>
                   </div>
+
                   <div className="space-y-4">
                     {!selectedUser.isActive ? <button onClick={() => handleActivateUser(selectedUser)} className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"><CheckCircle2 className="w-5 h-5" /> Activer le compte</button> : <button onClick={() => handleSuspendUser(selectedUser)} className="w-full py-6 rounded-2xl bg-amber-500 text-brand-900 font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3 hover:bg-amber-600 transition-all"><ShieldX className="w-5 h-5" /> Suspendre l'accès</button>}
                     <button onClick={() => handleDeleteUser(selectedUser)} className="w-full py-6 rounded-2xl border-2 border-rose-500 text-rose-500 font-black uppercase text-[11px] tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-3"><Trash2 className="w-5 h-5" /> Supprimer Définitivement</button>
@@ -384,8 +393,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* MODAUX CRÉATION ADMIN / PARTENAIRE (identiques à la version précédente) */}
     </div>
   );
 };
