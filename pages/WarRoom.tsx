@@ -111,7 +111,7 @@ const WarRoom: React.FC = () => {
               <ChevronLeft className="w-5 h-5 text-slate-900" />
             </button>
             <div>
-              <p className="text-[8px] font-black tracking-[0.4em] text-slate-400 uppercase">CLASSIFIED — INTERNAL ONLY</p>
+              <p className="text-[8px] font-black tracking-[0.4em] text-slate-500 uppercase">CLASSIFIED — INTERNAL ONLY</p>
               <h1 className="text-xl font-bold tracking-tighter text-slate-900">PROJECT 2027 : <span className="text-amber-600 uppercase">War Room</span></h1>
             </div>
           </div>
@@ -134,10 +134,10 @@ const WarRoom: React.FC = () => {
               <div className="flex items-baseline gap-6">
                 <span className="text-8xl font-black tracking-tighter text-slate-900">{totalManagers}</span>
                 <div className="flex flex-col">
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                  <span className="text-emerald-700 font-bold flex items-center gap-1">
                     <ArrowUpRight className="w-4 h-4" /> +12%
                   </span>
-                  <span className="text-slate-400 text-xs font-bold uppercase">Gérants Actifs</span>
+                  <span className="text-slate-600 text-xs font-bold uppercase">Gérants Actifs</span>
                 </div>
               </div>
             </div>
@@ -145,7 +145,7 @@ const WarRoom: React.FC = () => {
 
           <div className="bg-amber-500 p-10 rounded-[3rem] text-slate-950 flex flex-col justify-between shadow-2xl">
             <div>
-              <p className="font-black text-[10px] uppercase tracking-[0.4em] mb-4 opacity-60">Mentor Protocol</p>
+              <p className="font-black text-[10px] uppercase tracking-[0.4em] mb-4 opacity-80">Mentor Protocol</p>
               <h3 className="text-2xl font-bold leading-tight mb-6 italic">"L'échelle est la seule preuve du succès."</h3>
             </div>
             <button className="bg-slate-950 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 transition-all">
@@ -159,11 +159,11 @@ const WarRoom: React.FC = () => {
            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <h2 className="text-3xl font-serif font-bold text-slate-900 mb-2 tracking-tight">Thermomètre de Croissance</h2>
-                <p className="text-slate-500 text-sm font-medium">Prochain palier stratégique : <span className="text-amber-600 font-black">{nextMilestone.goal} Gérants</span></p>
+                <p className="text-slate-700 text-sm font-medium">Prochain palier stratégique : <span className="text-amber-600 font-black">{nextMilestone.goal} Gérants</span></p>
               </div>
               <div className="text-right">
                 <p className="text-6xl font-black text-amber-600 tracking-tighter">{Math.round(progressPercent)}%</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capacité Système Go'Top</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Capacité Système Go'Top</p>
               </div>
            </div>
            
@@ -176,8 +176,8 @@ const WarRoom: React.FC = () => {
            
            <div className="grid grid-cols-6 mt-8">
               {milestones.map((m, i) => (
-                <div key={i} className={`text-center space-y-3 ${totalManagers >= m.goal ? 'text-amber-600' : 'text-slate-300'}`}>
-                  <div className={`h-3 w-3 rounded-full mx-auto transition-colors duration-500 ${totalManagers >= m.goal ? 'bg-amber-500' : 'bg-slate-200'}`}></div>
+                <div key={i} className={`text-center space-y-3 ${totalManagers >= m.goal ? 'text-amber-600' : 'text-slate-400'}`}>
+                  <div className={`h-3 w-3 rounded-full mx-auto transition-colors duration-500 ${totalManagers >= m.goal ? 'bg-amber-500' : 'bg-slate-300'}`}></div>
                   <p className="text-[10px] font-black uppercase tracking-widest">{m.goal}</p>
                 </div>
               ))}
@@ -187,17 +187,17 @@ const WarRoom: React.FC = () => {
         {/* TIMELINE ERE 2027 */}
         <section className="space-y-12">
            <div className="flex items-center gap-4">
-              <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em]">Rétroplanning Stratégique 2027</h2>
+              <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em]">Rétroplanning Stratégique 2027</h2>
               <div className="h-px bg-slate-200 flex-grow"></div>
            </div>
 
-           <div className="relative space-y-12 before:absolute before:left-[2.25rem] before:top-4 before:bottom-4 before:w-1 before:bg-slate-100">
+           <div className="relative space-y-12 before:absolute before:left-[2.25rem] before:top-4 before:bottom-4 before:w-1 before:bg-slate-200">
               {milestones.map((m, i) => (
-                <div key={i} className={`relative pl-24 group ${m.status === 'LOCKED' ? 'opacity-50' : 'opacity-100'}`}>
+                <div key={i} className={`relative pl-24 group ${m.status === 'LOCKED' ? 'opacity-60' : 'opacity-100'}`}>
                    <div className={`absolute left-0 top-0 h-[4.5rem] w-[4.5rem] rounded-3xl border-4 flex items-center justify-center transition-all duration-500 z-10 ${
                       m.status === 'ACTIVE' 
                       ? 'bg-amber-500 border-white text-white shadow-xl' 
-                      : 'bg-white border-slate-100 text-slate-300 shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-400 shadow-sm'
                    }`}>
                       {m.status === 'ACTIVE' ? <CheckCircle2 className="w-8 h-8" /> : m.icon}
                    </div>
@@ -205,23 +205,23 @@ const WarRoom: React.FC = () => {
                    <div className={`p-10 rounded-[3rem] border-2 transition-all duration-500 ${
                      m.status === 'ACTIVE' 
                      ? 'bg-white border-amber-200 shadow-2xl' 
-                     : 'bg-white/50 border-slate-100'
+                     : 'bg-white/50 border-slate-200'
                    }`}>
                       <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                         <div>
                           <p className="text-amber-600 font-black text-[10px] uppercase tracking-widest mb-1">{m.date}</p>
                           <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{m.title}</h3>
                         </div>
-                        <div className="px-5 py-2.5 rounded-xl bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-200">
+                        <div className="px-5 py-2.5 rounded-xl bg-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-700 border border-slate-200">
                           Cible : {m.goal} Gérants
                         </div>
                       </div>
-                      <p className="text-slate-600 text-xl leading-relaxed max-w-3xl font-medium">
+                      <p className="text-slate-800 text-xl leading-relaxed max-w-3xl font-medium">
                         {m.desc}
                       </p>
                       
                       {m.status === 'LOCKED' && (
-                        <div className="mt-8 flex items-center gap-3 text-slate-300">
+                        <div className="mt-8 flex items-center gap-3 text-slate-400">
                           <Lock className="w-5 h-5" />
                           <span className="text-[10px] font-black uppercase tracking-widest">En attente de masse critique</span>
                         </div>
@@ -234,10 +234,10 @@ const WarRoom: React.FC = () => {
 
         {/* FOOTER WAR ROOM */}
         <section className="pt-16 border-t border-slate-200 text-center space-y-6">
-           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">
+           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-slate-700 border border-slate-200 text-[10px] font-black uppercase tracking-widest shadow-sm">
               <ShieldAlert className="w-4 h-4 text-amber-600" /> Secure Admin Session : 001-KITA
            </div>
-           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026-2027 Go'Top Pro Expansion — Strategic Intelligence Department</p>
+           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">© 2026-2027 Go'Top Pro Expansion — Strategic Intelligence Department</p>
         </section>
       </main>
 
