@@ -41,7 +41,6 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {}
 });
 
-/* Fix: Import React to provide namespace access for FC and ReactNode */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,12 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: 'SUPER_ADMIN',
     isActive: true,
     isAdmin: true,
-    isPublic: true,
+    isPublic: false, // Super Admin ne doit pas apparaître dans l'annuaire
     isKitaPremium: true,
     hasPerformancePack: true,
     hasStockPack: true,
     marketingCredits: 999,
-    // Fix: Added missing announcementCredits property
     announcementCredits: 999,
     badges: BADGES.map(b => b.id),
     purchasedModuleIds: TRAINING_CATALOG.map(m => m.id),

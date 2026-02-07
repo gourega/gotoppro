@@ -224,11 +224,13 @@ export const createAnnouncement = async (userId: string, ad: Omit<KitaAnnounceme
     type: ad.type,
     title: ad.title,
     description: ad.description,
-    proposed_price: ad.proposed_price,
+    // Fix: access proposedPrice property from ad object instead of proposed_price
+    proposed_price: ad.proposedPrice,
     status: useCredit ? 'ACTIVE' : 'PENDING',
     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    contact_phone: ad.contact_phone,
-    establishment_name: ad.establishment_name
+    contact_phone: ad.contactPhone,
+    // Fix: access establishmentName property from ad object instead of establishment_name
+    establishment_name: ad.establishmentName
   });
   
   if (error) throw error;
@@ -262,7 +264,6 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
   const { error } = await supabase.from('kita_transactions').insert({
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
-    // Fix: Updated property access from transaction object to match KitaTransaction type (camelCase)
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
     tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
     client_id: transaction.clientId, product_id: transaction.productId,
@@ -401,7 +402,10 @@ export const getPublicProfile = async (uid: string) => {
 export const getPublicDirectory = async () => {
   if (!supabase) return [];
   try {
-    const { data } = await supabase.from('profiles').select('*').eq('is_public', true);
+    const { data } = await supabase.from('profiles')
+      .select('*')
+      .eq('is_public', true)
+      .neq('role', 'SUPER_ADMIN'); // Sécurité supplémentaire : exclure les rôles SUPER_ADMIN
     return (data || []).map(mapProfileFromDB).filter(Boolean) as UserProfile[];
   } catch (e) { return []; }
 };
