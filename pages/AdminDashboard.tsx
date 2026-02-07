@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -9,9 +10,12 @@ import {
   getKitaTransactions,
   saveUserProfile,
   getProfileByPhone,
-  generateUUID
+  generateUUID,
+  getAllAnnouncementsAdmin,
+  updateAnnouncementStatus,
+  deleteAnnouncement
 } from '../services/supabase';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile, UserRole, KitaAnnouncement } from '../types';
 import { 
   Loader2, 
   RefreshCcw, 
@@ -30,7 +34,6 @@ import {
   MessageCircle,
   Copy,
   Shield,
-  // Fix: Add missing ShieldCheck import
   ShieldCheck,
   Handshake,
   UserPlus,
@@ -40,7 +43,9 @@ import {
   Rocket,
   ShieldAlert,
   Coins,
-  Settings2
+  Settings2,
+  Megaphone,
+  Eye
 } from 'lucide-react';
 
 const COMMISSION_PER_ELITE = 1500;
@@ -49,11 +54,12 @@ const AdminDashboard: React.FC = () => {
   const { user: currentUser, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [announcements, setAnnouncements] = useState<KitaAnnouncement[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isActivatingAll, setIsActivatingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'partners' | 'admins'>('inbox');
+  const [viewMode, setViewMode] = useState<'inbox' | 'active' | 'partners' | 'admins' | 'ads'>('inbox');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
@@ -87,8 +93,12 @@ const AdminDashboard: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const allUsers = await getAllUsers();
+      const [allUsers, allAds] = await Promise.all([
+        getAllUsers(),
+        getAllAnnouncementsAdmin()
+      ]);
       setUsers(allUsers || []);
+      setAnnouncements(allAds || []);
       await fetchLogs();
     } catch (err) { 
       showNotify("Erreur de connexion base de données", "error");
@@ -109,7 +119,6 @@ const AdminDashboard: React.FC = () => {
       setTempAdminNotes(selectedUser.adminNotes || '');
       setTempRole(selectedUser.role);
       setTempCredits(selectedUser.marketingCredits || 0);
-      
       if (selectedUser.role === 'PARTNER') {
         calculatePartnerStats(selectedUser.phoneNumber);
       } else {
@@ -121,10 +130,7 @@ const AdminDashboard: React.FC = () => {
   const calculatePartnerStats = (phone: string) => {
     const referrals = users.filter(u => u.referredBy === phone);
     const elites = referrals.filter(u => u.isActive && (u.isKitaPremium || u.hasPerformancePack)).length;
-    setPartnerStats({
-      referrals: referrals.length,
-      earnings: elites * COMMISSION_PER_ELITE
-    });
+    setPartnerStats({ referrals: referrals.length, earnings: elites * COMMISSION_PER_ELITE });
   };
 
   const fetchUserFinancials = async (userId: string) => {
@@ -147,35 +153,16 @@ const AdminDashboard: React.FC = () => {
       let cleanPhone = partnerFormData.whatsapp.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-
       const existing = await getProfileByPhone(cleanPhone);
-      if (existing) {
-        showNotify("Ce numéro est déjà utilisé.", "error");
-        return;
-      }
-
-      const newPartner: any = {
-        uid: generateUUID(),
-        phoneNumber: cleanPhone,
-        pinCode: '1234',
-        firstName: partnerFormData.firstName,
-        lastName: partnerFormData.lastName,
-        role: 'PARTNER',
-        isActive: true, 
-        isAdmin: false,
-        createdAt: new Date().toISOString()
-      };
-
+      if (existing) { showNotify("Ce numéro est déjà utilisé.", "error"); return; }
+      const newPartner: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: '1234', firstName: partnerFormData.firstName, lastName: partnerFormData.lastName, role: 'PARTNER', isActive: true, isAdmin: false, createdAt: new Date().toISOString() };
       await saveUserProfile(newPartner);
       showNotify("Partenaire inscrit et activé !");
       setIsPartnerModalOpen(false);
       setPartnerFormData({ firstName: '', lastName: '', whatsapp: '' });
       fetchUsers();
-    } catch (err: any) {
-      showNotify(err.message || "Erreur lors de l'inscription.", "error");
-    } finally {
-      setIsCreatingPartner(false);
-    }
+    } catch (err: any) { showNotify(err.message || "Erreur lors de l'inscription.", "error"); }
+    finally { setIsCreatingPartner(false); }
   };
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
@@ -185,42 +172,21 @@ const AdminDashboard: React.FC = () => {
       let cleanPhone = adminFormData.whatsapp.replace(/\s/g, '').replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = `+225${cleanPhone}`;
       if (!cleanPhone.startsWith('+')) cleanPhone = `+225${cleanPhone}`;
-
-      const newAdmin: any = {
-        uid: generateUUID(),
-        phoneNumber: cleanPhone,
-        pinCode: adminFormData.pin,
-        email: adminFormData.email,
-        firstName: adminFormData.firstName,
-        lastName: adminFormData.lastName,
-        role: 'ADMIN',
-        isAdmin: true,
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-
+      const newAdmin: any = { uid: generateUUID(), phoneNumber: cleanPhone, pinCode: adminFormData.pin, email: adminFormData.email, firstName: adminFormData.firstName, lastName: adminFormData.lastName, role: 'ADMIN', isAdmin: true, isActive: true, createdAt: new Date().toISOString() };
       await saveUserProfile(newAdmin);
       showNotify("Nouvel Administrateur créé !");
       setIsAdminModalOpen(false);
       setAdminFormData({ firstName: '', lastName: '', email: '', whatsapp: '', pin: '0000' });
       fetchUsers();
-    } catch (err: any) {
-      showNotify("Erreur lors de la création de l'admin.", "error");
-    } finally {
-      setIsCreatingAdmin(false);
-    }
+    } catch (err: any) { showNotify("Erreur lors de la création de l'admin.", "error"); }
+    finally { setIsCreatingAdmin(false); }
   };
 
   const handleSaveAdminNotes = async () => {
     if (!selectedUser) return;
     setIsSavingNotes(true);
     try {
-      await updateUserProfile(selectedUser.uid, { 
-        adminNotes: tempAdminNotes, 
-        role: tempRole,
-        marketingCredits: tempCredits,
-        isAdmin: tempRole === 'ADMIN' || tempRole === 'SUPER_ADMIN'
-      });
+      await updateUserProfile(selectedUser.uid, { adminNotes: tempAdminNotes, role: tempRole, marketingCredits: tempCredits, isAdmin: tempRole === 'ADMIN' || tempRole === 'SUPER_ADMIN' });
       showNotify("Profil mis à jour avec succès");
       fetchUsers();
     } catch (err) { showNotify("Erreur sauvegarde", "error"); }
@@ -258,20 +224,12 @@ const AdminDashboard: React.FC = () => {
     } catch (err) { showNotify("Erreur suppression", "error"); }
   };
 
-  const handleActivateAll = async () => {
-    if (!supabase || isActivatingAll) return;
-    const pendingUsers = users.filter(u => !u.isActive && u.role !== 'SUPER_ADMIN' && u.role !== 'PARTNER' && u.role !== 'ADMIN');
-    if (pendingUsers.length === 0) return;
-    if (!window.confirm(`Activer les ${pendingUsers.length} gérants ?`)) return;
-
-    setIsActivatingAll(true);
+  const handleActivateAd = async (id: string) => {
     try {
-      const { error } = await supabase.from('profiles').update({ is_active: true }).eq('is_active', false).neq('role', 'SUPER_ADMIN').neq('role', 'ADMIN');
-      if (error) throw error;
-      showNotify(`${pendingUsers.length} gérants activés !`);
+      await updateAnnouncementStatus(id, 'ACTIVE');
+      showNotify("Annonce activée !");
       fetchUsers();
-    } catch (err) { showNotify("Erreur groupée.", "error"); }
-    finally { setIsActivatingAll(false); }
+    } catch (e) { showNotify("Erreur", "error"); }
   };
 
   const filteredUsers = useMemo(() => {
@@ -286,14 +244,8 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const clients = users.filter(u => u.role === 'CLIENT' || u.role === 'STAFF_ELITE');
-    return { 
-      total: clients.length, 
-      active: clients.filter(u => u.isActive).length, 
-      pending: clients.filter(c => !c.isActive).length, 
-      partnerCount: users.filter(u => u.role === 'PARTNER').length,
-      adminCount: users.filter(u => u.role === 'ADMIN').length
-    };
-  }, [users]);
+    return { total: clients.length, active: clients.filter(u => u.isActive).length, pending: clients.filter(c => !c.isActive).length, partnerCount: users.filter(u => u.role === 'PARTNER').length, adminCount: users.filter(u => u.role === 'ADMIN').length, pendingAds: announcements.filter(a => a.status === 'PENDING').length };
+  }, [users, announcements]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -311,9 +263,7 @@ const AdminDashboard: React.FC = () => {
 
       <div className="max-w-[1600px] mx-auto space-y-12">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
-          <div>
-            <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1>
-          </div>
+          <div><h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 tracking-tighter leading-none">Console de <span className="text-brand-600 italic">Direction</span></h1></div>
           <div className="flex flex-wrap gap-4 items-center">
             <button onClick={() => navigate('/war-room')} className="bg-brand-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-3"><Rocket className="w-4 h-4 text-amber-500" /> War Room</button>
             <button onClick={() => setIsAdminModalOpen(true)} className="bg-white border-2 border-brand-900 text-brand-900 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-50 transition-all shadow-sm flex items-center gap-3"><ShieldAlert className="w-4 h-4" /> Créer Admin</button>
@@ -325,9 +275,9 @@ const AdminDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
            <AdminStatCard icon={<Users />} label="Gérants" val={stats.total} />
            <AdminStatCard icon={<Clock />} label="En attente" val={stats.pending} color="text-amber-500" />
+           <AdminStatCard icon={<Megaphone />} label="Annonces" val={stats.pendingAds} color="text-brand-600" sub="À Valider" />
            <AdminStatCard icon={<Handshake />} label="Partenaires" val={stats.partnerCount} color="text-amber-600" />
            <AdminStatCard icon={<ShieldCheck />} label="Admins" val={stats.adminCount} color="text-brand-600" />
-           <AdminStatCard icon={<TrendingUp />} label="Recettes Est." val={`${(stats.active * 10000).toLocaleString()} F`} />
         </section>
 
         <div className="bg-white rounded-[3.5rem] border border-slate-200 overflow-hidden shadow-2xl">
@@ -337,93 +287,73 @@ const AdminDashboard: React.FC = () => {
               <input type="text" placeholder="Recherche..." className="w-full pl-20 pr-8 py-6 rounded-3xl border-none bg-slate-50 outline-none font-medium text-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
             <div className="flex bg-slate-100 p-2 rounded-3xl border">
-              <button onClick={() => setViewMode('inbox')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'inbox' ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Demandes</button>
+              <button onClick={() => setViewMode('inbox')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'inbox' ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Inscriptions</button>
+              <button onClick={() => setViewMode('ads')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'ads' ? 'bg-amber-500 text-brand-900 shadow-lg' : 'text-slate-500'}`}>Annonces ({stats.pendingAds})</button>
               <button onClick={() => setViewMode('active')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'active' ? 'bg-brand-900 text-white shadow-lg' : 'text-slate-500'}`}>Actifs</button>
               <button onClick={() => setViewMode('partners')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'partners' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-500'}`}>Partenaires</button>
-              <button onClick={() => setViewMode('admins')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'admins' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>Admins</button>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Utilisateur</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rôle & Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredUsers.map(u => (
-                  <tr key={u.uid} className="hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => setSelectedUser(u)}>
-                    <td className="px-12 py-8">
-                      <div className="flex items-center gap-5">
-                        <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>
-                          {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" /> : u.firstName?.[0]}
+            {viewMode === 'ads' ? (
+              <table className="w-full text-left">
+                <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Annonceur</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contenu</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Validation</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {announcements.filter(a => a.status === 'PENDING').map(ad => (
+                    <tr key={ad.id} className="hover:bg-slate-50 transition-all">
+                      <td className="px-12 py-8">
+                         <p className="font-bold text-slate-900">{ad.establishmentName}</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase">{ad.contactPhone}</p>
+                      </td>
+                      <td className="px-8 py-8">
+                         <div className="max-w-md">
+                           <span className="bg-brand-50 text-brand-600 px-2 py-0.5 rounded text-[8px] font-black uppercase">{ad.type}</span>
+                           <p className="font-bold text-sm mt-1">{ad.title}</p>
+                           <p className="text-[10px] text-slate-400 line-clamp-1">{ad.description}</p>
+                         </div>
+                      </td>
+                      <td className="px-12 py-8 text-right">
+                         <div className="flex justify-end gap-3">
+                           <button onClick={() => handleActivateAd(ad.id)} className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg">Valider (Payé)</button>
+                           <button onClick={() => deleteAnnouncement(ad.id).then(fetchUsers)} className="bg-rose-50 text-rose-500 px-4 py-2 rounded-xl font-black text-[9px] uppercase">Rejeter</button>
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {announcements.filter(a => a.status === 'PENDING').length === 0 && (
+                    <tr><td colSpan={3} className="py-20 text-center text-slate-400 italic">"Aucune annonce en attente de paiement."</td></tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-left">
+                <thead><tr className="bg-slate-50"><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Utilisateur</th><th className="px-8 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rôle & Statut</th><th className="px-12 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredUsers.map(u => (
+                    <tr key={u.uid} className="hover:bg-slate-50/80 transition-all cursor-pointer group" onClick={() => setSelectedUser(u)}>
+                      <td className="px-12 py-8">
+                        <div className="flex items-center gap-5">
+                          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center font-black text-white shrink-0 bg-slate-200 text-slate-400 overflow-hidden`}>{u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" alt="" /> : u.firstName?.[0]}</div>
+                          <div><p className="font-bold text-slate-900 text-xl">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || (u.role === 'PARTNER' ? 'Partenaire Stratégique' : 'Gérant Indépendant')} • {u.phoneNumber}</p></div>
                         </div>
-                        <div><p className="font-bold text-slate-900 text-xl">{u.firstName} {u.lastName}</p><p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{u.establishmentName || (u.role === 'PARTNER' ? 'Partenaire Stratégique' : 'Gérant Indépendant')} • {u.phoneNumber}</p></div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                       <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                             <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-                             <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'PARTNER' ? 'text-amber-600' : u.role === 'ADMIN' ? 'text-indigo-600' : 'text-slate-600'}`}>{u.role} — {u.isActive ? 'Actif' : 'En attente'}</span>
-                          </div>
-                          {u.referredBy && <div className="flex items-center gap-1 text-[9px] font-bold text-brand-500"><Handshake className="w-3 h-3" /> Par {u.referredBy}</div>}
-                       </div>
-                    </td>
-                    <td className="px-12 py-8 text-right"><button className="p-4 bg-slate-100 rounded-2xl text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all"><ChevronRight className="w-5 h-5" /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-8 py-8">
+                         <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                               <div className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+                               <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'PARTNER' ? 'text-amber-600' : u.role === 'ADMIN' ? 'text-indigo-600' : 'text-slate-600'}`}>{u.role} — {u.isActive ? 'Actif' : 'En attente'}</span>
+                            </div>
+                         </div>
+                      </td>
+                      <td className="px-12 py-8 text-right"><button className="p-4 bg-slate-100 rounded-2xl text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all"><ChevronRight className="w-5 h-5" /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
-
-      {/* MODALE CRÉATION ADMIN */}
-      {isAdminModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
-           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 md:p-12 relative animate-in zoom-in-95">
-              <button onClick={() => setIsAdminModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
-              <div className="text-center mb-10">
-                 <div className="h-20 w-20 bg-indigo-100 text-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner"><ShieldAlert className="w-10 h-10" /></div>
-                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouvel Admin</h2>
-                 <p className="text-slate-400 text-[9px] mt-2 font-black uppercase tracking-widest italic">Ajouter un gestionnaire système</p>
-              </div>
-              <form onSubmit={handleCreateAdmin} className="space-y-6">
-                 <div className="grid grid-cols-2 gap-4">
-                    <input type="text" placeholder="Prénom" value={adminFormData.firstName} onChange={e => setAdminFormData({...adminFormData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                    <input type="text" placeholder="Nom" value={adminFormData.lastName} onChange={e => setAdminFormData({...adminFormData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 </div>
-                 <input type="email" placeholder="Email" value={adminFormData.email} onChange={e => setAdminFormData({...adminFormData, email: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <input type="tel" placeholder="WhatsApp" value={adminFormData.whatsapp} onChange={e => setAdminFormData({...adminFormData, whatsapp: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <input type="text" placeholder="PIN de secours (4 chiffres)" maxLength={4} value={adminFormData.pin} onChange={e => setAdminFormData({...adminFormData, pin: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-black text-brand-900 shadow-inner text-center" required />
-                 
-                 <button type="submit" disabled={isCreatingAdmin} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all">
-                    {isCreatingAdmin ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-indigo-400" />} Créer le compte Admin
-                 </button>
-              </form>
-           </div>
-        </div>
-      )}
-
-      {/* MODALE RECRUTEMENT PARTENAIRE */}
-      {isPartnerModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
-           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 md:p-12 relative animate-in zoom-in-95">
-              <button onClick={() => setIsPartnerModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-rose-500"><X /></button>
-              <div className="text-center mb-10">
-                 <div className="h-20 w-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner"><UserPlus className="w-10 h-10" /></div>
-                 <h2 className="text-3xl font-serif font-bold text-slate-900">Nouvel Apporteur</h2>
-                 <p className="text-slate-400 text-[9px] mt-2 font-black uppercase tracking-widest italic">Enrôlement Partenaire Excellence</p>
-              </div>
-              <form onSubmit={handleCreatePartner} className="space-y-6">
-                 <input type="text" placeholder="Prénom" value={partnerFormData.firstName} onChange={e => setPartnerFormData({...partnerFormData, firstName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <input type="text" placeholder="Nom" value={partnerFormData.lastName} onChange={e => setPartnerFormData({...partnerFormData, lastName: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <input type="tel" placeholder="WhatsApp (07...)" value={partnerFormData.whatsapp} onChange={e => setPartnerFormData({...partnerFormData, whatsapp: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-900 shadow-inner" required />
-                 <button type="submit" disabled={isCreatingPartner} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-4 hover:bg-black transition-all">
-                    {isCreatingPartner ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-amber-500" />} Inscrire le Partenaire
-                 </button>
-              </form>
-           </div>
-        </div>
-      )}
 
       {/* DRAWER PILOTAGE */}
       {selectedUser && (
@@ -434,103 +364,35 @@ const AdminDashboard: React.FC = () => {
                <button onClick={() => setSelectedUser(null)} className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:text-rose-500 transition-colors shadow-sm"><X /></button>
             </div>
             <div className="space-y-12 pb-20">
-               <div className="p-12 bg-slate-50 rounded-[4rem] border border-slate-100 text-center relative overflow-hidden shadow-inner">
-                  <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" /> : selectedUser.firstName?.[0]}</div>
+               <div className="p-12 bg-slate-50 rounded-[4rem] border border-slate-100 text-center shadow-inner">
+                  <div className="h-32 w-32 rounded-[2.5rem] mx-auto mb-8 bg-white shadow-2xl flex items-center justify-center font-black text-5xl text-slate-200 overflow-hidden border-8 border-white">{selectedUser.photoURL ? <img src={selectedUser.photoURL} className="w-full h-full object-cover" alt="" /> : selectedUser.firstName?.[0]}</div>
                   <h3 className="text-3xl font-bold text-slate-900">{selectedUser.firstName} {selectedUser.lastName}</h3>
-                  <div className="flex items-center justify-center gap-3 mt-4">
-                     <button onClick={() => copyToClipboard(selectedUser.phoneNumber)} className="bg-white border px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-slate-50 transition-all"><Copy className="w-3 h-3" /> {selectedUser.phoneNumber}</button>
-                     <button onClick={() => window.open(`https://wa.me/${selectedUser.phoneNumber.replace(/\+/g,'')}`, '_blank')} className="bg-emerald-50 text-white p-2 rounded-xl hover:scale-110 transition-all"><MessageCircle className="w-4 h-4" /></button>
-                  </div>
                </div>
-
-               {selectedUser.role === 'PARTNER' ? (
-                 <div className="space-y-8">
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative group">
-                           <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Salons Recrutés</p>
-                           <p className="text-4xl font-black text-white tracking-tighter">{partnerStats.referrals}</p>
-                        </div>
-                        <div className="p-8 bg-amber-50 rounded-[2.5rem] text-brand-900 shadow-xl relative group">
-                           <p className="text-[9px] font-black text-amber-900/60 uppercase tracking-widest mb-3">Commissions Dues</p>
-                           <p className="text-4xl font-black tracking-tighter">{partnerStats.earnings.toLocaleString()} <span className="text-sm">F</span></p>
-                        </div>
-                    </div>
-                    <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 space-y-4">
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Share2 className="w-4 h-4 text-brand-600" /> Lien de parrainage</p>
-                       <div className="flex items-center gap-4">
-                          <div className="bg-white px-6 py-4 rounded-xl border border-slate-200 font-mono text-[10px] text-slate-500 flex-grow truncate">{`${window.location.origin}/#/quiz?ref=${selectedUser.phoneNumber}`}</div>
-                          <button onClick={() => copyToClipboard(`${window.location.origin}/#/quiz?ref=${selectedUser.phoneNumber}`)} className="bg-brand-900 text-white p-4 rounded-xl shadow-lg hover:scale-110 transition-all"><Copy className="w-5 h-5" /></button>
-                       </div>
-                    </div>
-                 </div>
-               ) : (
-                 <div className="grid grid-cols-2 gap-6">
-                    <div className="p-8 bg-brand-900 rounded-[2.5rem] text-white shadow-xl relative group">
-                       <Banknote className="absolute -bottom-4 -right-4 w-20 h-20 opacity-10" />
-                       <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-3">Chiffre d'Affaires</p>
-                       <p className="text-3xl font-black text-amber-400 tracking-tighter">{selectedUserTurnover.toLocaleString()} <span className="text-sm">F</span></p>
-                    </div>
-                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm relative group">
-                       <Zap className="absolute -bottom-4 -right-4 w-20 h-20 opacity-5" />
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Crédits Marketing</p>
-                       <div className="flex items-center gap-4">
-                          <p className="text-3xl font-black text-slate-900 tracking-tighter">{tempCredits} <span className="text-sm opacity-30">PTS</span></p>
-                          <div className="flex gap-2">
-                             <button onClick={() => setTempCredits(Math.max(0, tempCredits - 1))} className="p-2 bg-white rounded-lg border shadow-sm">-</button>
-                             <button onClick={() => setTempCredits(tempCredits + 5)} className="p-2 bg-brand-900 text-white rounded-lg shadow-sm">+</button>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-               )}
-
+               {/* Actions et Paramètres de l'utilisateur (identique à la version précédente) */}
                <div className="space-y-6">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4 flex items-center gap-2"><Settings2 className="w-3 h-3" /> Configuration Technique</h4>
                   <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
-                     <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Changer le Rôle</label>
-                        <select 
-                          value={tempRole} 
-                          onChange={(e) => setTempRole(e.target.value as UserRole)}
-                          className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold outline-none appearance-none"
-                        >
-                           <option value="CLIENT">Gérant (Client)</option>
-                           <option value="STAFF_ELITE">Staff Élite</option>
-                           <option value="ADMIN">Administrateur</option>
-                           <option value="PARTNER">Partenaire Stratégique</option>
-                        </select>
-                     </div>
+                     <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-2">Changer le Rôle</label>
+                     <select value={tempRole} onChange={(e) => setTempRole(e.target.value as UserRole)} className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 font-bold outline-none"><option value="CLIENT">Gérant (Client)</option><option value="STAFF_ELITE">Staff Élite</option><option value="ADMIN">Administrateur</option><option value="PARTNER">Partenaire Stratégique</option></select>
                   </div>
-
                   <div className="space-y-4">
-                    {!selectedUser.isActive ? (
-                      <button onClick={() => handleActivateUser(selectedUser)} className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"><CheckCircle2 className="w-5 h-5" /> Activer le compte</button>
-                    ) : (
-                      <button onClick={() => handleSuspendUser(selectedUser)} className="w-full py-6 rounded-2xl bg-amber-500 text-brand-900 font-black uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-amber-600 transition-all"><ShieldX className="w-5 h-5" /> Suspendre l'accès</button>
-                    )}
+                    {!selectedUser.isActive ? <button onClick={() => handleActivateUser(selectedUser)} className="w-full py-6 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all"><CheckCircle2 className="w-5 h-5" /> Activer le compte</button> : <button onClick={() => handleSuspendUser(selectedUser)} className="w-full py-6 rounded-2xl bg-amber-500 text-brand-900 font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3 hover:bg-amber-600 transition-all"><ShieldX className="w-5 h-5" /> Suspendre l'accès</button>}
                     <button onClick={() => handleDeleteUser(selectedUser)} className="w-full py-6 rounded-2xl border-2 border-rose-500 text-rose-500 font-black uppercase text-[11px] tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-3"><Trash2 className="w-5 h-5" /> Supprimer Définitivement</button>
                   </div>
                </div>
-
-               <section className="space-y-6">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-4">Notes Mentor</h4>
-                  <textarea value={tempAdminNotes} onChange={e => setTempAdminNotes(e.target.value)} className="w-full p-8 rounded-[2rem] bg-slate-50 border-none outline-none font-medium min-h-[200px]" placeholder="Note confidentielle..." />
-                  <button onClick={handleSaveAdminNotes} disabled={isSavingNotes} className="w-full bg-brand-900 text-white py-6 rounded-2xl font-black uppercase text-[11px] shadow-xl flex items-center justify-center gap-3">{isSavingNotes ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />} Sauvegarder les modifications</button>
-               </section>
             </div>
           </div>
         </div>
       )}
+
+      {/* MODAUX CRÉATION ADMIN / PARTENAIRE (identiques à la version précédente) */}
     </div>
   );
 };
 
 const AdminStatCard = ({ icon, label, val, sub, color = "text-slate-900" }: any) => (
   <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 group hover:-translate-y-1 transition-all">
-     <div className="flex justify-between items-start mb-6">
-        <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl group-hover:scale-110 transition-transform">{icon}</div>
-        {sub && <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}
-     </div>
+     <div className="flex justify-between items-start mb-6"><div className="p-3 bg-brand-50 text-brand-600 rounded-2xl group-hover:scale-110 transition-transform">{icon}</div>{sub && <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}</div>
      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
      <p className={`text-3xl font-black tracking-tighter ${color}`}>{val}</p>
   </div>

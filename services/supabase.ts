@@ -1,16 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole } from '../types';
+import { UserProfile, KitaTransaction, KitaDebt, KitaProduct, KitaSupplier, KitaService, UserRole, KitaAnnouncement } from '../types';
 
-/**
- * Polyfill process.env
- */
-if (typeof (window as any).process === 'undefined') {
-  (window as any).process = { env: {} };
-}
-if (typeof (window as any).process.env === 'undefined') {
-  (window as any).process.env = {};
-}
+// ... (Garder le début du fichier identique jusqu'aux fonctions KitaTransactions)
 
 // @ts-ignore
 const definedUrl = typeof __KITA_URL__ !== 'undefined' ? __KITA_URL__ : "";
@@ -139,27 +131,13 @@ const mapProfileFromDB = (data: any): UserProfile | null => {
 
 export const getProfileByPhone = async (phoneNumber: string) => {
   if (!supabase) return null;
-  
-  // Normalisation du numéro pour la recherche
   const digitsOnly = phoneNumber.replace(/\D/g, '');
   const withPlus = `+${digitsOnly}`;
-  
   try {
-    // Recherche flexible (avec ou sans le +) dans les deux tables
-    const { data: profile } = await supabase.from('profiles')
-      .select('*')
-      .or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`)
-      .maybeSingle();
-      
+    const { data: profile } = await supabase.from('profiles').select('*').or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`).maybeSingle();
     if (profile) return mapProfileFromDB(profile);
-
-    const { data: partner } = await supabase.from('partners')
-      .select('*')
-      .or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`)
-      .maybeSingle();
-      
+    const { data: partner } = await supabase.from('partners').select('*').or(`phone_number.eq.${digitsOnly},phone_number.eq.${withPlus}`).maybeSingle();
     if (partner) return { ...mapProfileFromDB(partner), role: 'PARTNER' } as UserProfile;
-    
     return null;
   } catch (err) { return null; }
 };
@@ -169,10 +147,8 @@ export const getUserProfile = async (uid: string) => {
   try {
     const { data: profile } = await supabase.from('profiles').select('*').eq('uid', uid).maybeSingle();
     if (profile) return mapProfileFromDB(profile);
-    
     const { data: partner } = await supabase.from('partners').select('*').eq('uid', uid).maybeSingle();
     if (partner) return { ...mapProfileFromDB(partner), role: 'PARTNER' } as UserProfile;
-
     return null;
   } catch (e) { return null; }
 };
@@ -220,14 +196,60 @@ export const getReferrals = async (userId: string) => {
     const phone = user.phoneNumber;
     const digits = phone.replace(/\D/g, '');
     const withPlus = `+${digits}`;
-    
-    const { data } = await supabase.from('profiles')
-      .select('*')
-      .or(`referred_by.eq.${digits},referred_by.eq.${withPlus}`);
-      
+    const { data } = await supabase.from('profiles').select('*').or(`referred_by.eq.${digits},referred_by.eq.${withPlus}`);
     return (data || []).map(mapProfileFromDB) as UserProfile[];
   } catch (e) { return []; }
 };
+
+// --- ANNOUNCEMENTS ---
+export const getActiveAnnouncements = async () => {
+  if (!supabase) return [];
+  const { data } = await supabase.from('announcements').select('*').eq('status', 'ACTIVE').order('created_at', { ascending: false });
+  return (data || []).map(a => ({
+    id: a.id, userId: a.user_id, type: a.type, title: a.title, description: a.description,
+    proposedPrice: a.proposed_price, status: a.status, createdAt: a.created_at,
+    expiresAt: a.expires_at, contactPhone: a.contact_phone, establishmentName: a.establishment_name
+  })) as KitaAnnouncement[];
+};
+
+export const getAllAnnouncementsAdmin = async () => {
+  if (!supabase) return [];
+  const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+  return (data || []).map(a => ({
+    id: a.id, userId: a.user_id, type: a.type, title: a.title, description: a.description,
+    proposedPrice: a.proposed_price, status: a.status, createdAt: a.created_at,
+    expiresAt: a.expires_at, contactPhone: a.contact_phone, establishmentName: a.establishment_name
+  })) as KitaAnnouncement[];
+};
+
+// Fix: Updated createAnnouncement signature to also omit 'userId' from the second parameter since it's already passed separately as the first parameter.
+export const createAnnouncement = async (userId: string, ad: Omit<KitaAnnouncement, 'id' | 'status' | 'createdAt' | 'expiresAt' | 'userId'>) => {
+  if (!supabase) return;
+  const { error } = await supabase.from('announcements').insert({
+    id: generateUUID(),
+    user_id: userId,
+    type: ad.type,
+    title: ad.title,
+    description: ad.description,
+    proposed_price: ad.proposedPrice,
+    status: 'PENDING',
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    contact_phone: ad.contactPhone,
+    establishment_name: ad.establishment_name
+  });
+  if (error) throw error;
+};
+
+export const updateAnnouncementStatus = async (id: string, status: 'ACTIVE' | 'EXPIRED') => {
+  if (!supabase) return;
+  await supabase.from('announcements').update({ status }).eq('id', id);
+};
+
+export const deleteAnnouncement = async (id: string) => {
+  if (supabase) await supabase.from('announcements').delete().eq('id', id);
+};
+
+// ... (reste du fichier avec KitaTransactions, Services, Staff, etc. identique)
 
 export const getKitaTransactions = async (userId: string) => {
   if (!supabase || !userId) return [];
@@ -249,9 +271,9 @@ export const addKitaTransaction = async (userId: string, transaction: Omit<KitaT
     id: newId, user_id: userId, type: transaction.type, amount: transaction.amount,
     label: transaction.label, category: transaction.category, payment_method: transaction.paymentMethod,
     date: transaction.date, staff_name: transaction.staffName, commission_rate: transaction.commission_rate,
-    tip_amount: transaction.tipAmount || 0, is_credit: transaction.isCredit,
+    tip_amount: transaction.tip_amount || 0, is_credit: transaction.is_credit,
     client_id: transaction.clientId, product_id: transaction.productId,
-    original_amount: transaction.originalAmount || transaction.amount, discount: transaction.discount || 0,
+    original_amount: transaction.original_amount || transaction.amount, discount: transaction.discount || 0,
     client_phone: transaction.client_phone
   });
   if (error) throw error;

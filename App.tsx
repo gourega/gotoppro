@@ -1,3 +1,4 @@
+
 import React from 'react';
 // @ts-ignore
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -24,6 +25,7 @@ import PublicProfile from './pages/PublicProfile';
 import ServiceGMB from './pages/ServiceGMB';
 import BecomePartner from './pages/BecomePartner';
 import PartnerDashboard from './pages/PartnerDashboard';
+import PublishAd from './pages/PublishAd';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CoachChat from './components/CoachChat';
@@ -126,6 +128,12 @@ const AppContent: React.FC = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/publier-annonce" element={
+            <ProtectedRoute>
+              <PublishAd />
             </ProtectedRoute>
           } />
           

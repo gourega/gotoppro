@@ -1,6 +1,23 @@
 
 export type UserRole = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'STAFF_ELITE' | 'STAFF_ADMIN' | 'PARTNER';
 
+export type AnnouncementType = 'RECRUTEMENT' | 'FREELANCE' | 'VENTE_MATERIEL';
+export type AnnouncementStatus = 'PENDING' | 'ACTIVE' | 'EXPIRED';
+
+export interface KitaAnnouncement {
+  id: string;
+  userId: string;
+  type: AnnouncementType;
+  title: string;
+  description: string;
+  proposedPrice?: number;
+  status: AnnouncementStatus;
+  createdAt: string;
+  expiresAt: string;
+  contactPhone: string;
+  establishmentName: string;
+}
+
 export interface UserActionCommitment {
   moduleId: string;
   moduleTitle: string;
@@ -8,7 +25,7 @@ export interface UserActionCommitment {
   date: string;
   isCompleted: boolean;
 }
-
+// ... (reste du fichier identique)
 export interface KitaService {
   id: string;
   name: string;
